@@ -1,0 +1,253 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import Main from "@/components/Main.astro";
+import config from "@/config";
+
+const buyerTools = [
+  {
+    icon: "🧮",
+    name: "買方費用試算（新青安 vs 一般房貸）",
+    desc: "一次性費用 + 月付金。新青安 2026/7/31 前申辦能拿 0.375% 政府補貼，這個工具幫你看 30 年差多少",
+    url: "https://teddy-share-app.vercel.app/buyer-fee2/index.html",
+    external: true,
+    status: "上線",
+  },
+  {
+    icon: "📋",
+    name: "看屋 checklist",
+    desc: "60+ 項屋況/嫌惡/凶宅檢查項目，去看屋前印一份帶著",
+    url: null,
+    external: false,
+    status: "整理中",
+  },
+  {
+    icon: "🗺️",
+    name: "嫌惡設施 Google Map 揪查",
+    desc: "10 大嫌惡設施（殯儀館 / 高壓電塔 / 垃圾掩埋場 / 宮廟）一鍵在 Google Map 圈出社區周邊",
+    url: null,
+    external: false,
+    status: "規劃中",
+  },
+  {
+    icon: "💰",
+    name: "議價 7 心法",
+    desc: "我幫過的客戶議價案例 — 從查實價、留尾數、哀兵政策到「其他家房仲說...」",
+    url: null,
+    external: false,
+    status: "規劃中",
+  },
+  {
+    icon: "📊",
+    name: "台中各區行情查詢",
+    desc: "北屯 / 西屯 / 南屯 / 七期 / 中區 / 太平實價登錄整合",
+    url: null,
+    external: false,
+    status: "規劃中",
+  },
+];
+
+const sellerTools = [
+  {
+    icon: "🏷️",
+    name: "屋況自評（10 個問題）",
+    desc: "屋齡 / 格局 / 樓層 / 採光 / 學區 — 自己先打分，再讓我看一次",
+    url: null,
+    external: false,
+    status: "規劃中",
+  },
+  {
+    icon: "💵",
+    name: "定價分析（AI 看 500 筆實價）",
+    desc: "你社區附近 500 筆成交，AI 找合理區間。比信義房屋的單筆鑑價更精準",
+    url: null,
+    external: false,
+    status: "規劃中",
+  },
+  {
+    icon: "📑",
+    name: "賣屋流程懶人包",
+    desc: "委託 → 估價 → 上架 → 帶看 → 議價 → 簽約 → 用印 → 完稅 → 交屋",
+    url: null,
+    external: false,
+    status: "規劃中",
+  },
+  {
+    icon: "🤝",
+    name: "仲介費議價空間",
+    desc: "6% 不是天上掉下來的。賣 4% / 買 2% 是慣例，但加盟店有議價空間",
+    url: null,
+    external: false,
+    status: "規劃中",
+  },
+];
+
+const externalResources = [
+  {
+    icon: "🏛️",
+    name: "內政部不動產交易實價查詢",
+    desc: "官方資料，每月更新",
+    url: "https://lvr.land.moi.gov.tw/",
+  },
+  {
+    icon: "🏛️",
+    name: "內政部不動產說明書範本",
+    desc: "看屋前下載一份，逐條檢查",
+    url: "https://land.moi.gov.tw/",
+  },
+  {
+    icon: "🏦",
+    name: "財政部新青安貸款說明",
+    desc: "2026/7/31 補貼到期前申辦能拿 0.375%",
+    url: "https://www.mof.gov.tw/",
+  },
+  {
+    icon: "📍",
+    name: "台中市政府都市計畫查詢",
+    desc: "看你的地是否劃在住宅區/商業區/工業區",
+    url: "https://landchart.tw/",
+  },
+  {
+    icon: "🏚️",
+    name: "凶宅查詢（社區網）",
+    desc: "民間整理，僅供參考。最終以委託書揭露為準",
+    url: "https://www.unluckyhouse.com/",
+  },
+  {
+    icon: "💳",
+    name: "聯徵中心信用評分查詢",
+    desc: "申請房貸前先查自己的信用分數",
+    url: "https://www.jcic.org.tw/",
+  },
+];
+---
+
+<Layout
+  title={`給客戶的工具 | ${config.site.title}`}
+  description="買房、賣房用得到的工具 + 政府/民間公開資源整合。"
+>
+  <Header />
+
+  <Main
+    pageTitle="給客戶的工具 + 資源"
+    pageDesc="你買賣房路上會用到的東西，都先在這裡列好。能不用 LINE 問就不用問。有問題隨時 LINE sky811117。"
+  >
+    {/* ===== 給買方 ===== */}
+    <section class="mt-8">
+      <h2 class="text-foreground border-accent border-b-2 pb-2 text-2xl font-bold">
+        🏠 給買方
+      </h2>
+      <ul class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {
+          buyerTools.map(t => (
+            <li class="border-border bg-card rounded-lg border p-5">
+              <div class="flex items-start justify-between gap-3">
+                <div class="text-3xl">{t.icon}</div>
+                <span
+                  class:list={[
+                    "rounded px-2 py-0.5 text-xs whitespace-nowrap",
+                    t.status === "上線"
+                      ? "bg-accent text-accent-foreground"
+                      : "bg-muted text-muted-foreground",
+                  ]}
+                >
+                  {t.status}
+                </span>
+              </div>
+              <h3 class="text-foreground mt-3 text-lg font-bold">{t.name}</h3>
+              <p class="text-muted-foreground mt-2 leading-relaxed">
+                {t.desc}
+              </p>
+              {t.url && (
+                <a
+                  href={t.url}
+                  target={t.external ? "_blank" : undefined}
+                  rel={t.external ? "noopener" : undefined}
+                  class="text-accent mt-3 inline-block font-medium hover:underline"
+                >
+                  → 打開工具
+                </a>
+              )}
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    {/* ===== 給賣方 ===== */}
+    <section class="mt-12">
+      <h2 class="text-foreground border-accent border-b-2 pb-2 text-2xl font-bold">
+        💰 給賣方
+      </h2>
+      <ul class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {
+          sellerTools.map(t => (
+            <li class="border-border bg-card rounded-lg border p-5">
+              <div class="flex items-start justify-between gap-3">
+                <div class="text-3xl">{t.icon}</div>
+                <span class="bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs whitespace-nowrap">
+                  {t.status}
+                </span>
+              </div>
+              <h3 class="text-foreground mt-3 text-lg font-bold">{t.name}</h3>
+              <p class="text-muted-foreground mt-2 leading-relaxed">
+                {t.desc}
+              </p>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    {/* ===== 政府 / 民間公開資源 ===== */}
+    <section class="mt-12">
+      <h2 class="text-foreground border-accent border-b-2 pb-2 text-2xl font-bold">
+        📚 政府 / 民間公開資源
+      </h2>
+      <p class="text-muted-foreground mt-3 text-sm">
+        你買賣房路上會需要的官方/公開資料。我幫你整理好，省你 Google 找的時間。
+      </p>
+      <ul class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {
+          externalResources.map(r => (
+            <li>
+              <a
+                href={r.url}
+                target="_blank"
+                rel="noopener"
+                class="border-border bg-card hover:border-accent block rounded-lg border p-4 no-underline transition-colors"
+              >
+                <div class="text-2xl">{r.icon}</div>
+                <h3 class="text-foreground mt-2 font-medium">{r.name}</h3>
+                <p class="text-muted-foreground mt-1 text-sm leading-relaxed">
+                  {r.desc}
+                </p>
+                <p class="text-accent mt-2 text-xs">→ 開啟</p>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    {/* ===== CTA ===== */}
+    <section
+      class="border-border mt-12 rounded-lg border border-dashed p-6 text-center"
+    >
+      <p class="text-foreground font-medium">沒找到你要的工具？</p>
+      <p class="text-muted-foreground mt-2 text-sm">
+        LINE 私訊我，**告訴我你需要什麼**，我會看狀況：
+        ①直接幫你算 ②做成工具放這頁 ③幫你連到我認識的同業
+      </p>
+      <a
+        href="https://line.me/ti/p/sky811117"
+        class="bg-accent text-accent-foreground mt-4 inline-block rounded px-6 py-2 font-medium no-underline"
+      >
+        LINE 私訊 sky811117
+      </a>
+    </section>
+  </Main>
+
+  <Footer />
+</Layout>

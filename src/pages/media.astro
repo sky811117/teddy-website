@@ -1,0 +1,113 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import Main from "@/components/Main.astro";
+import config from "@/config";
+
+const accounts = [
+  {
+    platform: "Instagram",
+    handle: "@bigkanban",
+    role: "主帳號",
+    desc: "BOSS｜房仲大看板的主 IG，11K 追蹤。發物件開箱、看屋小知識、房市快訊。台中買賣房客人會在這找到我們。",
+    url: "https://instagram.com/bigkanban",
+    icon: "📷",
+    color: "from-pink-500/20 to-purple-500/20",
+  },
+  {
+    platform: "Instagram",
+    handle: "@bigkanban.boss",
+    role: "BOSS 個人帳",
+    desc: "BOSS 本尊的個人帳號 — 20 年房仲、法拍 + 銀行貸款專家。日常房地產分享，比較個人風格。",
+    url: "https://instagram.com/bigkanban.boss",
+    icon: "👔",
+    color: "from-blue-500/20 to-cyan-500/20",
+  },
+  {
+    platform: "TikTok",
+    handle: "@bigkanban2.0",
+    role: "短影音主帳",
+    desc: "房屋開箱短影音、看屋現場、講解小知識。30 秒一鏡到底，最快了解一間房的格局氛圍。",
+    url: "https://www.tiktok.com/@bigkanban2.0",
+    icon: "🎬",
+    color: "from-red-500/20 to-orange-500/20",
+  },
+  {
+    platform: "Facebook",
+    handle: "BigKanBan 粉專",
+    role: "深度長文+物件",
+    desc: "適合看長篇分析、社區深度報導、賣方故事。比 IG/TT 內容更完整。",
+    url: "https://www.facebook.com/bigkanban",
+    icon: "📘",
+    color: "from-blue-600/20 to-blue-400/20",
+  },
+];
+---
+
+<Layout
+  title={`房仲大看板 BigKanBan | ${config.site.title}`}
+  description="我所在公司經營的房仲業 KOL IP — IG 11K 粉、跨 IG/TikTok/FB 4 個平台、每天 50+ 客戶詢問。"
+>
+  <Header />
+
+  <Main
+    pageTitle="房仲大看板 BigKanBan"
+    pageDesc="我所在公司的自媒體 IP — 房仲業界 KOL、跨 4 平台、IG 主帳 11K 粉。每天 50+ 客戶詢問、單社區成交破百筆。你的物件曝光，背後是整套團隊。"
+  >
+    <section class="mt-8 grid grid-cols-1 gap-6">
+      {
+        accounts.map(acc => (
+          <a
+            href={acc.url}
+            target="_blank"
+            rel="noopener"
+            class:list={[
+              "border-border bg-card hover:border-accent block rounded-lg border p-6 no-underline transition-colors",
+              `bg-gradient-to-br ${acc.color}`,
+            ]}
+          >
+            <div class="flex items-start gap-4">
+              <div class="text-5xl">{acc.icon}</div>
+              <div class="flex-1">
+                <div class="flex flex-wrap items-baseline gap-2">
+                  <h2 class="text-foreground text-xl font-bold sm:text-2xl">
+                    {acc.platform}
+                  </h2>
+                  <span class="text-accent text-lg">{acc.handle}</span>
+                  <span class="bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs">
+                    {acc.role}
+                  </span>
+                </div>
+                <p class="text-foreground mt-3 leading-relaxed">{acc.desc}</p>
+                <p class="text-accent mt-3 font-medium">→ 開啟 / 追蹤</p>
+              </div>
+            </div>
+          </a>
+        ))
+      }
+    </section>
+
+    <section
+      class="border-border mt-12 rounded-lg border border-dashed p-6 text-center"
+    >
+      <p class="text-foreground font-medium">為什麼這對你有意義？</p>
+      <p class="text-muted-foreground mt-3 leading-relaxed">
+        賣方角度：你的物件不只刊到 591 / 樂屋 / 5168，<strong class="text-foreground"
+          >還會透過 BigKanBan 4 帳號跨平台曝光</strong
+        >，被更多買家看到。<br />
+        買方角度：你看到的不只是我一個房仲的眼界 — <strong class="text-foreground"
+          >是整個公司 20 年經驗 + AI 工具 + KOL 流量</strong
+        >的累積。
+      </p>
+      <a
+        href="https://line.me/ti/p/sky811117"
+        class="bg-accent text-accent-foreground mt-6 inline-block rounded px-6 py-2 font-medium no-underline"
+      >
+        LINE 私訊景泰 sky811117
+      </a>
+    </section>
+  </Main>
+
+  <Footer />
+</Layout>

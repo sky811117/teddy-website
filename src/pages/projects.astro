@@ -4,155 +4,50 @@ import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Main from "@/components/Main.astro";
 import config from "@/config";
-
-const projects = [
-  {
-    name: "泰迪刊登台 Dashboard",
-    tagline: "整合 591 / 樂屋 / 5168 三平台的內部運作中樞",
-    desc: "NiceGUI + Python 自架的個人房仲業務 dashboard，跑在開機自動啟動的 port 8080。整合三大刊登平台的物件清單、廣告效益、客戶筆記，串到 Tailscale 私網 永久 URL teddy-pc:8080，手機/平板都能看。",
-    tech: ["NiceGUI", "Python", "Playwright", "Tailscale"],
-    status: "production",
-    url: null,
-  },
-  {
-    name: "teddy-share-app",
-    tagline: "客戶推薦頁產生器 — 5 分鐘做出一份專屬給客戶的物件清單頁",
-    desc: "Vercel 上線的 Web 工具，輸入物件 URL 自動抓 OG meta、產出客製化推薦頁推到 GitHub Pages。每位客戶有專屬主題色和訪問追蹤（寫進 Notion DB）。",
-    tech: ["Vercel", "Flask", "GitHub Pages", "Notion API"],
-    status: "production",
-    url: "https://teddy-share-app.vercel.app",
-  },
-  {
-    name: "「泰迪的小聲音」TG Bot",
-    tagline: "私人復盤對話夥伴，跨手機/電腦/Claude Code 三邊同步",
-    desc: "Telegram bot 接 Claude Sonnet 4.5 + prompt caching，整合 Notion 日記 DB、NAS 個人格、房仲工作站全部資料。8 個 tool 可呼叫，從寫日記、查物件、查客戶到接近個人秘書。",
-    tech: ["Python", "Telegram Bot API", "Claude API", "Notion API"],
-    status: "production",
-    url: null,
-  },
-  {
-    name: "三大平台拆機研究 v3/v4/v5",
-    tagline: "591 / 5168 / 樂屋 三大房仲刊登平台演算法逆向工程",
-    desc: "從 JS bundle 反編譯出排序公式、廣告產品 SKU、競價機制、免費福利 endpoint。591 v3 拆完 875KB 主 bundle + 481 個 API endpoint + 7 個 BFF host map；5168 v4 拆完 4.5MB SPA + 143 API + 6 加值商品；樂屋 v5 拆出 70+ endpoint 跨 7 baseURL。",
-    tech: ["DevTools", "Source Maps", "Reverse Engineering"],
-    status: "research",
-    url: null,
-  },
-  {
-    name: "BigKanBan 留言監控",
-    tagline: "4 平台 scraper 跨 FB/IG/TikTok 每 30 分鐘抓房仲業 KOL 留言",
-    desc: "監控業界 KOL「房仲大看板」4 個帳號的每篇貼文新留言，逐條即時推到 Telegram bot。核心策略「比同行快」— 在客戶提問時搶在同行業務前面接觸。4 個 scraper 各有反爬技術細節。",
-    tech: ["Playwright", "anti-bot bypass", "Telegram Bot"],
-    status: "production",
-    url: null,
-  },
-  {
-    name: "泰迪修圖工坊 PhotoLab",
-    tagline: "Real-ESRGAN x2 房屋照片智能增強 + 批次一致性處理",
-    desc: "用訓練過的 Real-ESRGAN 做細節增強、色彩零漂移。AI 先掃整批拿目標色調，再個別微調 70% 避免「AI 感重」。",
-    tech: ["Real-ESRGAN", "Python", "Computer Vision"],
-    status: "production",
-    url: null,
-  },
-  {
-    name: "591 自動登入突破",
-    tagline: "OS 層 Win32 SendInput 繞過 CDP hook 完全自動化登入",
-    desc: "591 anti-bot 在 CDP（Chrome DevTools Protocol）層攔截瀏覽器自動化操作。改用 Win32 API 直接送鍵盤輸入到 OS 層，繞過 CDP，達成完全自動化登入。",
-    tech: ["pyautogui", "Win32 API", "CDP bypass"],
-    status: "production",
-    url: null,
-  },
-  {
-    name: "morning skill + 每日群組問候",
-    tagline: "06:00-07:00 三波自動推送（房市新聞 / 群組問候 / 業務早報）",
-    desc: "Windows Task Scheduler + Claude Code headless 跑 prompt 產生內容，推到 Telegram「泰迪的小聲音」。06:25 群組問候三段式素材 → 06:30 業務早報 → 07:00 房市新聞長篇報告。",
-    tech: ["Windows Task Scheduler", "Claude Code headless", "Telegram"],
-    status: "production",
-    url: null,
-  },
-];
-
-const statusLabel = {
-  production: { text: "上線中", className: "bg-accent text-accent-foreground" },
-  research: {
-    text: "研究筆記",
-    className: "bg-muted text-muted-foreground border border-border",
-  },
-  development: {
-    text: "開發中",
-    className: "bg-muted text-foreground border border-border",
-  },
-};
 ---
 
 <Layout
-  title={`作品集 | ${config.site.title}`}
-  description="景泰 14 個月用 Claude Code 做的所有工具、dashboard、自動化系統。地下兵工廠搬到地面上。"
+  title={`整理中 | ${config.site.title}`}
+  description="作品集軟性版本整理中。"
 >
   <Header />
 
   <Main
-    pageTitle="作品集"
-    pageDesc="14 個月用 Claude Code 把房仲業務一塊一塊自動化的東西。從 dashboard / TG bot / 三平台拆機 / 修圖到留言監控 — 每件都還在線。"
+    pageTitle="整理中…"
+    pageDesc="原本這頁列了一堆內部工具 — 後來想想，把 know-how 全部攤開不是好主意。正在改寫成「對你有用的版本」。"
   >
-    <ul class="mt-6 grid grid-cols-1 gap-6">
-      {
-        projects.map(p => {
-          const badge = statusLabel[p.status as keyof typeof statusLabel];
-          return (
-            <li class="border-border bg-card rounded-lg border p-5 transition-shadow hover:shadow-lg">
-              <div class="flex items-start justify-between gap-3">
-                <h2 class="text-foreground text-xl font-bold sm:text-2xl">
-                  {p.name}
-                </h2>
-                <span
-                  class:list={[
-                    "shrink-0 rounded px-2 py-0.5 text-xs whitespace-nowrap",
-                    badge.className,
-                  ]}
-                >
-                  {badge.text}
-                </span>
-              </div>
+    <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
+      <a
+        href="/tools"
+        class="border-border bg-card hover:border-accent block rounded-lg border p-6 no-underline transition-colors"
+      >
+        <div class="text-4xl">🧮</div>
+        <h2 class="text-foreground mt-3 text-xl font-bold">給客戶的工具</h2>
+        <p class="text-muted-foreground mt-2 leading-relaxed">
+          買方費用試算、看屋 checklist、議價心法、台中各區行情、政府/民間公開資源整合。
+        </p>
+        <p class="text-accent mt-3 font-medium">→ /tools</p>
+      </a>
 
-              <p class="text-accent mt-2 font-medium">{p.tagline}</p>
-
-              <p class="text-foreground mt-3 leading-relaxed">{p.desc}</p>
-
-              <div class="mt-4 flex flex-wrap gap-2">
-                {p.tech.map(t => (
-                  <span class="bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs">
-                    {t}
-                  </span>
-                ))}
-              </div>
-
-              {p.url && (
-                <a
-                  href={p.url}
-                  target="_blank"
-                  rel="noopener"
-                  class="text-accent mt-4 inline-block text-sm hover:underline"
-                >
-                  → 看作品 ({p.url.replace("https://", "")})
-                </a>
-              )}
-            </li>
-          );
-        })
-      }
-    </ul>
-
-    <div
-      class="border-border mt-12 rounded-lg border border-dashed p-6 text-center"
-    >
-      <p class="text-foreground font-medium">想看更多沒列出來的？</p>
-      <p class="text-muted-foreground mt-2 text-sm">
-        還有更多細節在
-        <a href="/posts" class="text-accent hover:underline">工程日誌</a>
-        裡，每週一篇實作故事。
-      </p>
+      <a
+        href="/posts"
+        class="border-border bg-card hover:border-accent block rounded-lg border p-6 no-underline transition-colors"
+      >
+        <div class="text-4xl">📝</div>
+        <h2 class="text-foreground mt-3 text-xl font-bold">工程日誌</h2>
+        <p class="text-muted-foreground mt-2 leading-relaxed">
+          Claude Design Weekly — 我用 AI 怎麼幫客戶解問題的故事。每週一篇。
+        </p>
+        <p class="text-accent mt-3 font-medium">→ /posts</p>
+      </a>
     </div>
+
+    <p class="text-muted-foreground mt-12 text-center text-sm">
+      想知道更多 — <a
+        href="https://line.me/ti/p/sky811117"
+        class="text-accent hover:underline">LINE sky811117</a
+      >。
+    </p>
   </Main>
 
   <Footer />

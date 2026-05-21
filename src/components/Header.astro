@@ -84,10 +84,10 @@ const isActive = (path: string) => {
         </li>
         <li class="col-span-2">
           <a
-            href={getRelativeLocaleUrl(locale, "projects")}
-            class:list={{ "active-nav": isActive("/projects") }}
+            href={getRelativeLocaleUrl(locale, "tools")}
+            class:list={{ "active-nav": isActive("/tools") }}
           >
-            作品集
+            工具
           </a>
         </li>
         <li class="col-span-2">
@@ -96,6 +96,14 @@ const isActive = (path: string) => {
             class:list={{ "active-nav": isActive("/properties") }}
           >
             在售物件
+          </a>
+        </li>
+        <li class="col-span-2">
+          <a
+            href={getRelativeLocaleUrl(locale, "media")}
+            class:list={{ "active-nav": isActive("/media") }}
+          >
+            大看板
           </a>
         </li>
         <li class="col-span-2">
