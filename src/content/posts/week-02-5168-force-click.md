@@ -7,7 +7,7 @@ featured: false
 draft: false
 tags:
   - weekly-recap
-  - 5168
+  - "5168"
   - 自動化
   - Playwright
 description: "想做一鍵改價，卡在「完成」按鈕灰掉兩小時。最後硬把 disabled attribute 拔掉去點，後端居然接受、價格真的改了，而且沒扣額度。"
