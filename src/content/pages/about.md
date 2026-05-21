@@ -3,6 +3,8 @@ title: "關於景泰"
 description: "台中房仲 × AI 工程 — 我做這件事的方式跟別人不一樣"
 ---
 
+<img src="/photos/teddy-about.jpg" alt="陳景泰 / 泰迪 — 一品不動產有巢氏房屋台中世界之心加盟店" style="float: right; width: 200px; margin: 0 0 1rem 1.5rem; border-radius: 8px;" />
+
 我是**陳景泰**，台中房仲。
 
 短影音上叫**泰迪** — 在公司自媒體 [房仲大看板 BigKanBan](/media) 團隊、個人 [YouTube @泰迪001](https://www.youtube.com/@%E6%B3%B0%E8%BF%AA001) / [TikTok @sky811117](https://www.tiktok.com/@sky811117) 都用這個名字。本名陳景泰、IP 名泰迪 / Teddy，是同一個人。
