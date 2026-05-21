@@ -83,6 +83,57 @@ const rssHref = getRelativeLocaleUrl(
     <!-- Filled at runtime by theme.ts to match the current background colour -->
     <meta name="theme-color" content="" />
 
+    <!-- JSON-LD: RealEstateAgent schema（影響 Google 搜尋呈現） -->
+    <script
+      type="application/ld+json"
+      is:inline
+      set:html={JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "RealEstateAgent",
+        name: "陳景泰",
+        alternateName: "Teddy Chen",
+        url: site.url,
+        image: socialImageURL.href,
+        telephone: "+886-920-118-756",
+        email: "a0920118756@gmail.com",
+        jobTitle: "Real Estate Agent",
+        worksFor: {
+          "@type": "Organization",
+          name: "一品不動產 有巢氏房屋 台中世界之心加盟店",
+        },
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: "台中市",
+          addressRegion: "Taichung",
+          addressCountry: "TW",
+        },
+        sameAs: [
+          "https://line.me/ti/p/sky811117",
+          "https://github.com/sky811117",
+          "https://instagram.com/nov__817",
+        ],
+        knowsAbout: [
+          "房地產",
+          "台中買房",
+          "房仲業務",
+          "Claude Code",
+          "AI 自動化",
+          "Web Scraping",
+          "591",
+          "樂屋網",
+          "5168",
+        ],
+        areaServed: {
+          "@type": "City",
+          name: "Taichung",
+        },
+        hasCredential: [
+          "經紀人 黃永隆 113彰縣字324",
+          "營業員 陳景泰 114登字488296",
+        ],
+      })}
+    />
+
     <!-- Extra head content injected by child layouts (e.g. JSON-LD, article meta) -->
     <slot name="head" />
 

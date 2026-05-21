@@ -2,33 +2,43 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
-  --font-app: var(--font-google-sans-code);
+  --font-app: var(--font-app-cjk), var(--font-google-sans-code);
 }
 
-/* Light theme values */
+/* Light theme — 米色 + 淺木色（景泰美學鐵則：現代簡約北歐風） */
 :root,
 [data-theme="light"] {
-  --background: #fdfdfd;
-  --foreground: #282728;
-  --accent: #006cac;
+  --background: #f5f1eb; /* 米色 */
+  --card: #ffffff;
+  --foreground: #2c2522; /* 深棕黑 */
+  --accent: #a0826d; /* 淺木色 / 駝色 */
   --accent-foreground: #ffffff;
-  --muted: #e6e6e6;
-  --muted-foreground: #6b7280;
-  --border: #ece9e9;
+  --muted: #efe9de; /* 米色再深一點 */
+  --muted-foreground: #7a6e66; /* 暖灰 */
+  --border: #e8e0d5;
 }
 
-/* Dark theme values */
+/* Dark theme — 深咖啡 + 暖金 */
 [data-theme="dark"] {
-  --background: #212737;
-  --foreground: #eaedf3;
-  --accent: #ff6b01;
-  --accent-foreground: #ffffff;
-  --muted: #343f60;
-  --muted-foreground: #afb9ca;
-  --border: #ab4b08;
+  --background: #1f1b17; /* 深咖啡 */
+  --card: #2c2522;
+  --foreground: #f5f1eb;
+  --accent: #c9a87c; /* 暖金 */
+  --accent-foreground: #1f1b17;
+  --muted: #2c2522;
+  --muted-foreground: #9a8e86;
+  --border: #3a3530;
+}
+
+/* CJK 字型優先 — Noto Sans TC，落到 Google Sans Code（程式碼）跟系統字 */
+:root {
+  --font-app-cjk:
+    "Noto Sans TC", "PingFang TC", "Heiti TC", "Microsoft JhengHei",
+    "微軟正黑體", sans-serif;
 }

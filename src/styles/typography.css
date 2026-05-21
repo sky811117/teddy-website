@@ -1,9 +1,20 @@
 @plugin "@tailwindcss/typography";
 
 @layer base {
+  /* 全域基礎字級放大 — 景泰偏好「客戶年紀都不小」鐵則
+     內文 17-18px、寬鬆行高 */
+  html {
+    font-size: 17px;
+  }
+
+  body {
+    @apply leading-relaxed;
+    font-family: var(--font-app-cjk);
+  }
+
   /* ===== Override default Tailwind Typography styles ===== */
   .app-prose {
-    @apply prose;
+    @apply prose prose-lg;
 
     h1,
     h2,
