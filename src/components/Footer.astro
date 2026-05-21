@@ -18,17 +18,52 @@ const currentYear = new Date().getFullYear();
   {...attrs}
 >
   <div
-    class="border-border flex flex-col items-center justify-between border-t py-6 sm:flex-row-reverse sm:py-4"
+    class="border-border flex flex-col items-center gap-3 border-t py-5 sm:flex-row sm:justify-between"
   >
-    <Socials />
-    <div class="my-2 flex flex-col items-center whitespace-nowrap sm:flex-row">
-      <span>&#169; {currentYear} 陳景泰</span>
-      <span class="hidden sm:inline">&nbsp;|&nbsp;</span>
-      <span>
-        <a href="https://line.me/ti/p/sky811117" class="hover:text-accent"
-          >LINE sky811117</a
-        >
-      </span>
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+      <a
+        href="https://line.me/ti/p/sky811117"
+        class="hover:text-accent"
+        title="LINE">💬 LINE</a
+      >
+      <a
+        href="https://www.instagram.com/nov__817/"
+        target="_blank"
+        rel="noopener"
+        class="hover:text-accent"
+        title="Instagram">📷 IG</a
+      >
+      <a
+        href="https://www.facebook.com/profile.php?id=61575492127872"
+        target="_blank"
+        rel="noopener"
+        class="hover:text-accent"
+        title="Facebook">📘 FB</a
+      >
+      <a
+        href="https://www.youtube.com/@%E6%B3%B0%E8%BF%AA001"
+        target="_blank"
+        rel="noopener"
+        class="hover:text-accent"
+        title="YouTube">📺 YouTube</a
+      >
+      <a
+        href="https://www.tiktok.com/@sky811117"
+        target="_blank"
+        rel="noopener"
+        class="hover:text-accent"
+        title="TikTok">🎬 TikTok</a
+      >
+      <a
+        href="https://github.com/sky811117"
+        target="_blank"
+        rel="noopener"
+        class="hover:text-accent"
+        title="GitHub">🐙 GitHub</a
+      >
+    </div>
+    <div class="text-muted-foreground text-sm whitespace-nowrap">
+      &#169; {currentYear} 陳景泰
     </div>
   </div>
   <div
