@@ -9,7 +9,7 @@ import config from "@/config";
 
 const locale = Astro.currentLocale ?? config.site.lang;
 
-// 最新文章 3 篇（給首頁工程日誌 section）
+// 最新文章 3 篇（給首頁房市筆記 section）
 const posts = await getCollection("posts", ({ data }) => !data.draft);
 const recentPosts = getSortedPosts(posts).slice(0, 3);
 
@@ -112,6 +112,9 @@ const bigKanBanAccounts = [
 
       <p class="text-muted-foreground mx-auto mt-6 max-w-xl text-lg leading-relaxed">
         我是<strong class="text-foreground">陳景泰</strong>，台中房仲。
+        短影音上叫<strong class="text-foreground">泰迪</strong> — 在公司自媒體
+        <a href="/media" class="text-accent hover:underline">房仲大看板 BigKanBan</a>
+        團隊也是這個名字。<br />
         一邊跑業務，一邊用 Claude Code 把整套工作自動化 —
         讓你的物件多平台曝光、看屋資料整齊、決策有 AI 算過。
       </p>
@@ -147,6 +150,104 @@ const bigKanBanAccounts = [
           114登字488296
         </p>
       </div>
+    </section>
+
+    {/* ============ SECTION 1.5: 網站地圖入口（給手機 / 第一眼客戶看內容廣度） ============ */}
+    <section class="border-border border-b py-10 sm:py-12">
+      <div class="text-center">
+        <p class="text-muted-foreground text-sm">看你想看的</p>
+        <h2 class="text-foreground mt-2 text-xl font-bold sm:text-2xl">
+          這個網站有什麼
+        </h2>
+      </div>
+      <ul
+        class="mt-6 grid grid-cols-2 gap-3 sm:mt-8 sm:grid-cols-3 sm:gap-4"
+      >
+        <li>
+          <a
+            href="/posts"
+            class="border-border bg-card hover:border-accent block h-full rounded-lg border p-4 no-underline transition-colors sm:p-5"
+          >
+            <div class="text-3xl sm:text-4xl">📝</div>
+            <h3 class="text-foreground mt-2 text-base font-bold sm:text-lg">
+              房市筆記
+            </h3>
+            <p class="text-muted-foreground mt-1 text-xs leading-relaxed sm:text-sm">
+              議價、新青安、嫌惡設施、不動產說明書
+            </p>
+          </a>
+        </li>
+        <li>
+          <a
+            href="/properties"
+            class="border-border bg-card hover:border-accent block h-full rounded-lg border p-4 no-underline transition-colors sm:p-5"
+          >
+            <div class="text-3xl sm:text-4xl">🏠</div>
+            <h3 class="text-foreground mt-2 text-base font-bold sm:text-lg">
+              在售物件
+            </h3>
+            <p class="text-muted-foreground mt-1 text-xs leading-relaxed sm:text-sm">
+              北屯 / 西屯 / 南屯 / 七期 都有
+            </p>
+          </a>
+        </li>
+        <li>
+          <a
+            href="/tools"
+            class="border-border bg-card hover:border-accent block h-full rounded-lg border p-4 no-underline transition-colors sm:p-5"
+          >
+            <div class="text-3xl sm:text-4xl">🧮</div>
+            <h3 class="text-foreground mt-2 text-base font-bold sm:text-lg">
+              客戶工具
+            </h3>
+            <p class="text-muted-foreground mt-1 text-xs leading-relaxed sm:text-sm">
+              買方試算、看屋 checklist、政府資源
+            </p>
+          </a>
+        </li>
+        <li>
+          <a
+            href="/media"
+            class="border-border bg-card hover:border-accent block h-full rounded-lg border p-4 no-underline transition-colors sm:p-5"
+          >
+            <div class="text-3xl sm:text-4xl">📣</div>
+            <h3 class="text-foreground mt-2 text-base font-bold sm:text-lg">
+              大看板 + 個人 5 平台
+            </h3>
+            <p class="text-muted-foreground mt-1 text-xs leading-relaxed sm:text-sm">
+              BigKanBan 公司 IP + IG / FB / YouTube / TikTok
+            </p>
+          </a>
+        </li>
+        <li>
+          <a
+            href="/about"
+            class="border-border bg-card hover:border-accent block h-full rounded-lg border p-4 no-underline transition-colors sm:p-5"
+          >
+            <div class="text-3xl sm:text-4xl">👤</div>
+            <h3 class="text-foreground mt-2 text-base font-bold sm:text-lg">
+              關於景泰
+            </h3>
+            <p class="text-muted-foreground mt-1 text-xs leading-relaxed sm:text-sm">
+              廚師 → 房仲 → AI 工程，跟別人不一樣
+            </p>
+          </a>
+        </li>
+        <li>
+          <a
+            href="https://line.me/ti/p/sky811117"
+            class="bg-accent text-accent-foreground hover:opacity-90 block h-full rounded-lg p-4 no-underline transition-opacity sm:p-5"
+          >
+            <div class="text-3xl sm:text-4xl">💬</div>
+            <h3 class="mt-2 text-base font-bold sm:text-lg">
+              直接 LINE 我
+            </h3>
+            <p class="mt-1 text-xs leading-relaxed opacity-90 sm:text-sm">
+              sky811117 ・ 30 秒到 30 分鐘會回
+            </p>
+          </a>
+        </li>
+      </ul>
     </section>
 
     {/* ============ SECTION 2: USP 三大價值 ============ */}
@@ -362,7 +463,7 @@ const bigKanBanAccounts = [
       </div>
     </section>
 
-    {/* ============ SECTION 6: 工程日誌精選 ============ */}
+    {/* ============ SECTION 6: 房市筆記精選 ============ */}
     {
       recentPosts.length > 0 && (
         <section class="border-border border-b py-12 sm:py-16">

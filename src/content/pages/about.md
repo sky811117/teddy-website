@@ -5,6 +5,8 @@ description: "台中房仲 × AI 工程 — 我做這件事的方式跟別人不
 
 我是**陳景泰**，台中房仲。
 
+短影音上叫**泰迪** — 在公司自媒體 [房仲大看板 BigKanBan](/media) 團隊、個人 [YouTube @泰迪001](https://www.youtube.com/@%E6%B3%B0%E8%BF%AA001) / [TikTok @sky811117](https://www.tiktok.com/@sky811117) 都用這個名字。本名陳景泰、IP 名泰迪 / Teddy，是同一個人。
+
 一品不動產有巢氏房屋台中世界之心加盟店、營業員證號 114登字488296。
 
 ---
@@ -56,7 +58,7 @@ description: "台中房仲 × AI 工程 — 我做這件事的方式跟別人不
 
 ### B 軌：AI 工程（公開）
 
-- [工程日誌](/posts) — 每週寫一篇我用 AI 解的客戶問題
+- [房市筆記](/posts) — 我幫客戶踩過的雷、算過的數字（議價、新青安、嫌惡設施、不動產說明書）
 - [客戶工具](/tools) — 給買方 / 賣方 / 資源懶人包
 - [大看板](/media) — 公司自媒體 BigKanBan + 我個人 5 平台
 
@@ -73,7 +75,6 @@ description: "台中房仲 × AI 工程 — 我做這件事的方式跟別人不
 - 📺 [YouTube @泰迪001](https://www.youtube.com/@%E6%B3%B0%E8%BF%AA001)
 - 🎬 [TikTok @sky811117](https://www.tiktok.com/@sky811117)
 - 📧 Email [a0920118756@gmail.com](mailto:a0920118756@gmail.com)
-- 🐙 [GitHub @sky811117](https://github.com/sky811117)（給對技術好奇的人）
 
 ---
 
