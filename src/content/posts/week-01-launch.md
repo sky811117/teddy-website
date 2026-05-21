@@ -3,8 +3,8 @@ title: Week 01：今晚從 0 把個人網站架起來了
 author: 陳景泰
 pubDatetime: 2026-05-21T23:00:00.000+08:00
 slug: week-01-launch
-featured: true
-draft: false
+featured: false
+draft: true
 tags:
   - weekly-recap
   - Astro
