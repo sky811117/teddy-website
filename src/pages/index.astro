@@ -35,7 +35,7 @@ const homePath = getRelativeLocaleUrl(locale, "");
   >
     <section id="hero" class="border-border border-b pt-8 pb-6">
       <h1 class="my-4 inline-block text-4xl font-bold sm:my-8 sm:text-5xl">
-        Mingalaba
+        Hi, 我是景泰
       </h1>
       <a
         target="_blank"
@@ -53,19 +53,31 @@ const homePath = getRelativeLocaleUrl(locale, "");
       </a>
 
       <p>
-        AstroPaper is a minimal, responsive, accessible and SEO-friendly Astro
-        blog theme. This theme follows best practices and provides accessibility
-        out of the box. Light and dark mode are supported by default. Moreover,
-        additional color schemes can also be configured.
+        台中房仲，2025 年 3 月入行。一邊在台中世界之心店跑業務，一邊用 Claude
+        Code 把整套房仲工作自動化 — 從 591 / 樂屋 / 5168
+        三大刊登平台拆機，到客戶/物件管理 dashboard、TG bot、批量修圖工坊。
       </p>
       <p class="mt-2">
-        Read the blog posts or check
+        這裡公開所有過程、踩到的坑、寫的程式。逛
         <LinkButton
           class="hover:text-accent underline decoration-dashed underline-offset-4"
-          href="https://github.com/satnaing/astro-paper#readme"
+          href={getRelativeLocaleUrl(locale, "posts")}
         >
-          README
-        </LinkButton> for more info.
+          工程日誌
+        </LinkButton>
+        看在做什麼，或看
+        <LinkButton
+          class="hover:text-accent underline decoration-dashed underline-offset-4"
+          href={getRelativeLocaleUrl(locale, "properties")}
+        >
+          在售物件
+        </LinkButton>。有事 LINE 私訊
+        <LinkButton
+          class="hover:text-accent underline decoration-dashed underline-offset-4"
+          href="https://line.me/ti/p/sky811117"
+        >
+          sky811117
+        </LinkButton>。
       </p>
       {
         socials.length > 0 && (
