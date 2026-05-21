@@ -26,6 +26,37 @@ const featuredProperties = allProperties
   })
   .slice(0, 3);
 
+const personalAccounts = [
+  {
+    platform: "Facebook",
+    handle: "陳景泰",
+    desc: "日常 + 房仲業務分享",
+    url: "https://www.facebook.com/profile.php?id=61575492127872",
+    icon: "📘",
+  },
+  {
+    platform: "YouTube",
+    handle: "@泰迪001",
+    desc: "房屋開箱 + 看屋影片",
+    url: "https://www.youtube.com/@%E6%B3%B0%E8%BF%AA001",
+    icon: "📺",
+  },
+  {
+    platform: "TikTok",
+    handle: "@sky811117",
+    desc: "短影音 + 物件快剪",
+    url: "https://www.tiktok.com/@sky811117",
+    icon: "🎬",
+  },
+  {
+    platform: "LINE",
+    handle: "sky811117",
+    desc: "私訊我（30 秒回）",
+    url: "https://line.me/ti/p/sky811117",
+    icon: "💬",
+  },
+];
+
 const bigKanBanAccounts = [
   {
     platform: "Instagram",
@@ -235,10 +266,46 @@ const bigKanBanAccounts = [
       )
     }
 
-    {/* ============ SECTION 5: 公司自媒體 BigKanBan ============ */}
+    {/* ============ SECTION 5: 找景泰個人 ============ */}
     <section class="border-border border-b py-12 sm:py-16">
       <div class="text-center">
-        <p class="text-muted-foreground text-sm">公司自媒體</p>
+        <p class="text-muted-foreground text-sm">找景泰</p>
+        <h2 class="mt-2 text-2xl font-bold sm:text-3xl">
+          四個平台都找得到我
+        </h2>
+        <p class="text-muted-foreground mx-auto mt-3 max-w-2xl leading-relaxed">
+          看你習慣哪個平台 — FB 看長文 / YouTube 看影片 / TikTok 看短影音 / LINE
+          直接問。通常 30 秒到 30 分鐘會回。
+        </p>
+      </div>
+
+      <ul class="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {
+          personalAccounts.map(acc => (
+            <li>
+              <a
+                href={acc.url}
+                target="_blank"
+                rel="noopener"
+                class="border-border bg-card hover:border-accent block rounded-lg border p-4 text-center no-underline transition-colors"
+              >
+                <div class="text-3xl">{acc.icon}</div>
+                <p class="text-foreground mt-2 text-sm font-medium">
+                  {acc.platform}
+                </p>
+                <p class="text-accent mt-1 text-xs">{acc.handle}</p>
+                <p class="text-muted-foreground mt-1 text-xs">{acc.desc}</p>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    {/* ============ SECTION 6: 公司自媒體 BigKanBan ============ */}
+    <section class="border-border border-b py-12 sm:py-16">
+      <div class="text-center">
+        <p class="text-muted-foreground text-sm">公司自媒體後盾</p>
         <h2 class="mt-2 text-2xl font-bold sm:text-3xl">
           房仲大看板 <span class="text-accent">BigKanBan</span>
         </h2>
