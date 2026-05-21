@@ -5,6 +5,54 @@ import Footer from "@/components/Footer.astro";
 import Main from "@/components/Main.astro";
 import config from "@/config";
 
+const personalAccounts = [
+  {
+    platform: "Instagram",
+    handle: "@nov__817",
+    role: "主帳號 · 房仲日常",
+    desc: "我的主 IG 帳號。最新物件、看屋日常、房市觀察都在這。想知道我每天在跑什麼，這裡最直接。",
+    url: "https://www.instagram.com/nov__817/",
+    icon: "📷",
+    color: "from-pink-500/20 to-purple-500/20",
+  },
+  {
+    platform: "Facebook",
+    handle: "陳景泰",
+    role: "個人主頁",
+    desc: "日常 + 房仲業務分享，看我每天在跑什麼物件、做什麼決定。長文比較完整。",
+    url: "https://www.facebook.com/profile.php?id=61575492127872",
+    icon: "📘",
+    color: "from-blue-600/20 to-blue-400/20",
+  },
+  {
+    platform: "YouTube",
+    handle: "@泰迪001",
+    role: "影片頻道",
+    desc: "房屋開箱、看屋現場、講解小知識。比短影音更完整，適合一邊吃飯一邊看。",
+    url: "https://www.youtube.com/@%E6%B3%B0%E8%BF%AA001",
+    icon: "📺",
+    color: "from-red-500/20 to-red-300/20",
+  },
+  {
+    platform: "TikTok",
+    handle: "@sky811117",
+    role: "短影音",
+    desc: "30 秒看完一間房 — 一鏡到底、快剪、看屋現場最快感受。台中房市快訊也在這。",
+    url: "https://www.tiktok.com/@sky811117",
+    icon: "🎬",
+    color: "from-pink-500/20 to-purple-500/20",
+  },
+  {
+    platform: "LINE",
+    handle: "sky811117",
+    role: "直接私訊",
+    desc: "上面平台都看完還想問？直接 LINE 我。通常 30 秒到 30 分鐘會回（除非帶看或開會）。",
+    url: "https://line.me/ti/p/sky811117",
+    icon: "💬",
+    color: "from-green-500/20 to-emerald-500/20",
+  },
+];
+
 const accounts = [
   {
     platform: "Instagram",
@@ -46,18 +94,66 @@ const accounts = [
 ---
 
 <Layout
-  title={`房仲大看板 BigKanBan | ${config.site.title}`}
-  description="我所在公司經營的房仲業 KOL IP — IG 11K 粉、跨 IG/TikTok/FB 4 個平台、每天 50+ 客戶詢問。"
+  title={`找景泰 + 房仲大看板 | ${config.site.title}`}
+  description="景泰個人 4 平台 + 公司房仲大看板 BigKanBan 4 帳號 — 8 個觸點都找得到我。"
 >
   <Header />
 
   <Main
-    pageTitle="房仲大看板 BigKanBan"
-    pageDesc="我所在公司的自媒體 IP — 房仲業界 KOL、跨 4 平台、IG 主帳 11K 粉。每天 50+ 客戶詢問、單社區成交破百筆。你的物件曝光，背後是整套團隊。"
+    pageTitle="找景泰 + 大看板"
+    pageDesc="你看哪個平台順手就追哪個。景泰個人 4 個 + 公司房仲大看板 4 個 — 8 個觸點都會看到我們在跑什麼。"
   >
-    <section class="mt-8 grid grid-cols-1 gap-6">
-      {
-        accounts.map(acc => (
+    {/* ===== 景泰個人 4 帳號 ===== */}
+    <section class="mt-8">
+      <h2 class="text-foreground border-accent border-b-2 pb-2 text-2xl font-bold">
+        👤 景泰個人
+      </h2>
+      <div class="mt-6 grid grid-cols-1 gap-6">
+        {
+          personalAccounts.map(acc => (
+            <a
+              href={acc.url}
+              target="_blank"
+              rel="noopener"
+              class:list={[
+                "border-border bg-card hover:border-accent block rounded-lg border p-6 no-underline transition-colors",
+                `bg-gradient-to-br ${acc.color}`,
+              ]}
+            >
+              <div class="flex items-start gap-4">
+                <div class="text-5xl">{acc.icon}</div>
+                <div class="flex-1">
+                  <div class="flex flex-wrap items-baseline gap-2">
+                    <h3 class="text-foreground text-xl font-bold sm:text-2xl">
+                      {acc.platform}
+                    </h3>
+                    <span class="text-accent text-lg">{acc.handle}</span>
+                    <span class="bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs">
+                      {acc.role}
+                    </span>
+                  </div>
+                  <p class="text-foreground mt-3 leading-relaxed">{acc.desc}</p>
+                  <p class="text-accent mt-3 font-medium">→ 開啟 / 追蹤</p>
+                </div>
+              </div>
+            </a>
+          ))
+        }
+      </div>
+    </section>
+
+    {/* ===== 公司 BigKanBan 4 帳號 ===== */}
+    <section class="mt-12">
+      <h2 class="text-foreground border-accent border-b-2 pb-2 text-2xl font-bold">
+        📣 公司房仲大看板 BigKanBan
+      </h2>
+      <p class="text-muted-foreground mt-3 leading-relaxed">
+        我所在公司經營的房仲業 KOL IP — IG 主帳 11K 粉、跨 4 平台、每天 50+
+        客戶詢問、單社區成交破百筆。<strong class="text-foreground">你的物件曝光，不只我一個人在做，是整套團隊。</strong>
+      </p>
+      <div class="mt-6 grid grid-cols-1 gap-6">
+        {
+          accounts.map(acc => (
           <a
             href={acc.url}
             target="_blank"

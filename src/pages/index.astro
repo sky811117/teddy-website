@@ -28,30 +28,37 @@ const featuredProperties = allProperties
 
 const personalAccounts = [
   {
+    platform: "Instagram",
+    handle: "@nov__817",
+    desc: "主帳號 · 房仲日常",
+    url: "https://www.instagram.com/nov__817/",
+    icon: "📷",
+  },
+  {
     platform: "Facebook",
     handle: "陳景泰",
-    desc: "日常 + 房仲業務分享",
+    desc: "日常 + 業務分享",
     url: "https://www.facebook.com/profile.php?id=61575492127872",
     icon: "📘",
   },
   {
     platform: "YouTube",
     handle: "@泰迪001",
-    desc: "房屋開箱 + 看屋影片",
+    desc: "房屋開箱 + 看屋",
     url: "https://www.youtube.com/@%E6%B3%B0%E8%BF%AA001",
     icon: "📺",
   },
   {
     platform: "TikTok",
     handle: "@sky811117",
-    desc: "短影音 + 物件快剪",
+    desc: "短影音 + 快剪",
     url: "https://www.tiktok.com/@sky811117",
     icon: "🎬",
   },
   {
     platform: "LINE",
     handle: "sky811117",
-    desc: "私訊我（30 秒回）",
+    desc: "私訊（30 秒回）",
     url: "https://line.me/ti/p/sky811117",
     icon: "💬",
   },
@@ -279,7 +286,7 @@ const bigKanBanAccounts = [
         </p>
       </div>
 
-      <ul class="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <ul class="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {
           personalAccounts.map(acc => (
             <li>
