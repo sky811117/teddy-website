@@ -1,0 +1,157 @@
+---
+import { type CollectionEntry, getCollection, render } from "astro:content";
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import config from "@/config";
+
+export async function getStaticPaths() {
+  const properties = await getCollection("properties");
+  return properties.map(property => ({
+    params: { slug: property.id },
+    props: { property },
+  }));
+}
+
+type Props = {
+  property: CollectionEntry<"properties">;
+};
+
+const { property } = Astro.props;
+const { Content } = await render(property);
+
+const formatPrice = (price: number) => {
+  if (price >= 10000) return `${(price / 10000).toFixed(2)} 億`;
+  return `${price.toLocaleString()} 萬`;
+};
+---
+
+<Layout
+  title={`${property.data.title} | ${config.site.title}`}
+  description={property.data.description}
+>
+  <Header />
+
+  <main id="main-content" class="app-layout max-w-app py-8">
+    <a
+      href="/properties"
+      class="text-muted-foreground hover:text-accent mb-4 inline-block text-sm no-underline"
+    >
+      ← 返回在售物件列表
+    </a>
+
+    <article>
+      <h1 class="text-accent text-2xl font-bold sm:text-3xl">
+        {property.data.title}
+      </h1>
+
+      <p class="text-muted-foreground mt-2 text-sm">
+        📍 {property.data.district}
+        {property.data.streetArea ? `・${property.data.streetArea}` : ""}
+        {property.data.community ? `・${property.data.community}` : ""}
+      </p>
+
+      <div class="text-accent mt-4 text-3xl font-bold sm:text-4xl">
+        {formatPrice(property.data.totalPrice)}
+        {
+          property.data.pricePerPing && (
+            <span class="text-muted-foreground ml-3 text-base font-normal">
+              單坪 {property.data.pricePerPing.toFixed(1)} 萬
+            </span>
+          )
+        }
+      </div>
+
+      {
+        property.data.coverImage && (
+          <div class="bg-muted my-6 aspect-[16/10] w-full overflow-hidden rounded-lg">
+            <img
+              src={
+                typeof property.data.coverImage === "string"
+                  ? property.data.coverImage
+                  : property.data.coverImage.src
+              }
+              alt={property.data.title}
+              class="h-full w-full object-cover"
+            />
+          </div>
+        )
+      }
+
+      <div
+        class="border-border bg-card mt-6 grid grid-cols-2 gap-4 rounded-lg border p-4 sm:grid-cols-4"
+      >
+        <div>
+          <div class="text-muted-foreground text-xs">格局</div>
+          <div class="mt-1 font-medium">{property.data.layout}</div>
+        </div>
+        <div>
+          <div class="text-muted-foreground text-xs">權狀</div>
+          <div class="mt-1 font-medium">{property.data.area} 坪</div>
+        </div>
+        {
+          property.data.age !== undefined && (
+            <div>
+              <div class="text-muted-foreground text-xs">屋齡</div>
+              <div class="mt-1 font-medium">{property.data.age} 年</div>
+            </div>
+          )
+        }
+        {
+          property.data.floor && (
+            <div>
+              <div class="text-muted-foreground text-xs">樓層</div>
+              <div class="mt-1 font-medium">{property.data.floor}</div>
+            </div>
+          )
+        }
+        {
+          property.data.parking && (
+            <div>
+              <div class="text-muted-foreground text-xs">車位</div>
+              <div class="mt-1 font-medium">{property.data.parking}</div>
+            </div>
+          )
+        }
+      </div>
+
+      {
+        property.data.highlights.length > 0 && (
+          <div class="mt-6">
+            <h2 class="text-lg font-bold">物件亮點</h2>
+            <ul class="mt-2 list-disc space-y-1 ps-6">
+              {property.data.highlights.map(h => (
+                <li>{h}</li>
+              ))}
+            </ul>
+          </div>
+        )
+      }
+
+      <div
+        class="app-prose max-w-app prose-pre:bg-(--shiki-light-bg) dark:prose-pre:bg-(--shiki-dark-bg) mt-8"
+      >
+        <Content />
+      </div>
+
+      <hr class="my-8 border-dashed" />
+
+      <div class="border-border rounded-lg border p-6 text-center">
+        <p class="text-lg font-medium">想看更多細節？想預約看屋？</p>
+        <a
+          href="https://line.me/ti/p/sky811117"
+          class="bg-accent text-background mt-3 inline-block rounded px-6 py-3 font-medium no-underline"
+        >
+          LINE 私訊 sky811117
+        </a>
+        <p class="text-muted-foreground mt-4 text-xs">
+          一品不動產 有巢氏房屋 台中世界之心加盟店<br />
+          經紀人 {property.data.brokerLicense}
+          ・ 營業員 {property.data.agentLicense}
+        </p>
+      </div>
+    </article>
+  </main>
+
+  <Footer />
+</Layout>
