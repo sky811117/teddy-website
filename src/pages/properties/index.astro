@@ -1,0 +1,129 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import Main from "@/components/Main.astro";
+import config from "@/config";
+
+// 只取 active 的，沒被屋主撤回 / 售出 / 暫停的不顯示
+const allProperties = await getCollection(
+  "properties",
+  ({ data }) => data.status === "active"
+);
+
+// 精選優先，再依發佈時間倒序
+const sortedProperties = allProperties.sort((a, b) => {
+  if (a.data.featured && !b.data.featured) return -1;
+  if (!a.data.featured && b.data.featured) return 1;
+  return b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime();
+});
+
+const formatPrice = (price: number) => {
+  if (price >= 10000) return `${(price / 10000).toFixed(2)} 億`;
+  return `${price.toLocaleString()} 萬`;
+};
+---
+
+<Layout title={`在售物件 | ${config.site.title}`}>
+  <Header />
+
+  <Main
+    pageTitle="在售物件"
+    pageDesc="台中精選物件，所有資料皆為合法登錄。想看更多細節請 LINE 私訊。"
+  >
+    {
+      sortedProperties.length === 0 ? (
+        <p class="text-muted-foreground py-12 text-center">
+          目前沒有開放公開的物件，<a
+            href="https://line.me/ti/p/sky811117"
+            class="text-accent underline">LINE 私訊</a
+          >了解未公開物件。
+        </p>
+      ) : (
+        <ul class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {sortedProperties.map(property => (
+            <li class="border-border bg-card overflow-hidden rounded-lg border transition-shadow hover:shadow-lg">
+              <a
+                href={`/properties/${property.id}`}
+                class="block no-underline"
+              >
+                {property.data.coverImage ? (
+                  <div class="bg-muted aspect-[4/3] w-full overflow-hidden">
+                    <img
+                      src={
+                        typeof property.data.coverImage === "string"
+                          ? property.data.coverImage
+                          : property.data.coverImage.src
+                      }
+                      alt={property.data.title}
+                      class="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                ) : (
+                  <div class="bg-muted text-muted-foreground flex aspect-[4/3] w-full items-center justify-center">
+                    <span>📷 照片整理中</span>
+                  </div>
+                )}
+
+                <div class="p-4">
+                  {property.data.featured && (
+                    <span class="bg-accent text-background mb-2 inline-block rounded px-2 py-0.5 text-xs">
+                      🔥 精選
+                    </span>
+                  )}
+
+                  <h2 class="text-foreground line-clamp-2 text-lg font-bold">
+                    {property.data.title}
+                  </h2>
+
+                  <p class="text-muted-foreground mt-1 text-sm">
+                    📍 {property.data.district}
+                    {property.data.streetArea
+                      ? `・${property.data.streetArea}`
+                      : ""}
+                  </p>
+
+                  <div class="text-accent mt-3 text-2xl font-bold">
+                    {formatPrice(property.data.totalPrice)}
+                  </div>
+
+                  <div class="text-muted-foreground mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm">
+                    <span>{property.data.layout}</span>
+                    <span>·</span>
+                    <span>{property.data.area} 坪</span>
+                    {property.data.age !== undefined && (
+                      <>
+                        <span>·</span>
+                        <span>屋齡 {property.data.age} 年</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+
+    <div class="border-border mt-12 rounded-lg border border-dashed p-6 text-center">
+      <p class="text-muted-foreground mb-3 text-sm">
+        看到喜歡的物件？或想看未公開物件？
+      </p>
+      <a
+        href="https://line.me/ti/p/sky811117"
+        class="bg-accent text-background inline-block rounded px-4 py-2 font-medium no-underline"
+      >
+        LINE 私訊 sky811117
+      </a>
+      <p class="text-muted-foreground mt-4 text-xs">
+        一品不動產 有巢氏房屋 台中世界之心加盟店<br />
+        經紀人 黃永隆 113彰縣字324 ・ 營業員 陳景泰 114登字488296
+      </p>
+    </div>
+  </Main>
+
+  <Footer />
+</Layout>
