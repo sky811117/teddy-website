@@ -8,7 +8,7 @@ export default defineAstroPaperConfig({
     author: "陳景泰",
     profile: "https://teddy-website.pages.dev/",
     ogImage: "default-og.jpg",
-    lang: "zh-tw",
+    lang: "en",
     timezone: "Asia/Taipei",
     dir: "ltr",
   },
