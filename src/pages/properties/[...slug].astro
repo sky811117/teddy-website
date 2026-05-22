@@ -3,6 +3,7 @@ import { type CollectionEntry, getCollection, render } from "astro:content";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
+import ContactForm from "@/components/ContactForm.astro";
 import config from "@/config";
 
 // 縣市對照（與 index.astro 同步）
@@ -140,7 +141,12 @@ const sameCounty = properties
               <img
                 src={property.data.photos[0]}
                 alt={`${property.data.title}（第 1 張，共 ${property.data.photos.length} 張）`}
+                width="800"
+                height="600"
                 class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                loading="eager"
+                fetchpriority="high"
+                decoding="sync"
                 data-gallery-main
               />
               <span
@@ -175,7 +181,10 @@ const sameCounty = properties
                     <img
                       src={p}
                       alt={`${property.data.title} 縮圖 ${i + 1}`}
+                      width="120"
+                      height="90"
                       loading="lazy"
+                      decoding="async"
                       class="h-full w-full object-cover"
                     />
                   </button>
@@ -202,6 +211,10 @@ const sameCounty = properties
                 data-gallery-lightbox-img
                 src={property.data.photos[0]}
                 alt={property.data.title}
+                width="1600"
+                height="1200"
+                loading="lazy"
+                decoding="async"
                 class="max-h-[92vh] max-w-[96vw] object-contain"
               />
 
@@ -323,8 +336,11 @@ const sameCounty = properties
                               : p.data.coverImage.src
                           }
                           alt={p.data.title}
+                          width="400"
+                          height="300"
                           class="h-full w-full object-cover"
                           loading="lazy"
+                          decoding="async"
                         />
                       </div>
                     ) : (
@@ -356,15 +372,39 @@ const sameCounty = properties
 
       <hr class="my-8 border-dashed" />
 
-      <div class="border-border rounded-lg border p-6 text-center">
-        <p class="text-lg font-medium">想看更多細節？想預約看屋？</p>
-        <a
-          href="https://line.me/ti/p/sky811117"
-          class="bg-accent text-background mt-3 inline-block rounded px-6 py-3 font-medium no-underline"
+      {/* 主表單 — 預填物件編號 + 標題 */}
+      <ContactForm
+        propertyId={property.data.listingCode}
+        propertyTitle={property.data.title}
+        defaultIntent="buy"
+        title="想看這戶？留你的聯絡方式"
+        subtitle="物件編號已幫你預填、補完聯絡方式就送出。30 分鐘內回。"
+      />
+
+      {/* 快速 LINE / 電話通道 — 給急的人 */}
+      <div
+        class="border-border rounded-lg border border-dashed p-6 text-center"
+      >
+        <p class="text-foreground text-[17px] font-medium">
+          想直接聊、不想填表單？
+        </p>
+        <div
+          class="mt-4 flex flex-col items-center justify-center gap-3 sm:flex-row"
         >
-          LINE 私訊 sky811117
-        </a>
-        <p class="text-muted-foreground mt-4 text-xs">
+          <a
+            href="https://line.me/ti/p/sky811117"
+            class="bg-accent text-accent-foreground inline-block rounded-md px-6 py-3 text-[17px] font-medium no-underline"
+          >
+            💬 LINE sky811117
+          </a>
+          <a
+            href="tel:+886920118756"
+            class="border-accent text-accent inline-block rounded-md border-2 px-6 py-3 text-[17px] font-medium no-underline"
+          >
+            📞 0920-118-756
+          </a>
+        </div>
+        <p class="text-muted-foreground mt-4 text-[13px]">
           一品不動產 有巢氏房屋 台中世界之心加盟店<br />
           經紀人 {property.data.brokerLicense}
           ・ 營業員 {property.data.agentLicense}

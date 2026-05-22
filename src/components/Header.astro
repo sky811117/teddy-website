@@ -55,7 +55,10 @@ const isActive = (path: string) => {
       <img
         src="/logos/yochaoshi.png"
         alt="有巢氏房屋"
+        width="116"
+        height="36"
         class="h-7 w-auto sm:h-9"
+        fetchpriority="high"
       />
       <span class="text-xl leading-8 font-semibold sm:text-2xl sm:leading-none">
         陳景泰
@@ -138,6 +141,14 @@ const isActive = (path: string) => {
             class:list={{ "active-nav": isActive("/media") }}
           >
             大看板
+          </a>
+        </li>
+        <li class="col-span-2">
+          <a
+            href={getRelativeLocaleUrl(locale, "contact")}
+            class:list={{ "active-nav": isActive("/contact") }}
+          >
+            聯絡
           </a>
         </li>
         <li class="col-span-2">

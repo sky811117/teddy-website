@@ -11,16 +11,17 @@
   --font-app: var(--font-app-cjk), var(--font-google-sans-code);
 }
 
-/* Light theme — 米色 + 淺木色（景泰美學鐵則：現代簡約北歐風） */
+/* Light theme — 米色 + 淺木色（景泰美學鐵則：現代簡約北歐風）
+ * accent 從 #a0826d 略加深 → #8a6539（深駝木色），達 WCAG AA 4.5:1 */
 :root,
 [data-theme="light"] {
   --background: #f5f1eb; /* 米色 */
   --card: #ffffff;
   --foreground: #2c2522; /* 深棕黑 */
-  --accent: #a0826d; /* 淺木色 / 駝色 */
+  --accent: #8a6539; /* 深駝木色 — 對米色 contrast 4.7:1 */
   --accent-foreground: #ffffff;
   --muted: #efe9de; /* 米色再深一點 */
-  --muted-foreground: #7a6e66; /* 暖灰 */
+  --muted-foreground: #6b5e54; /* 深暖灰 — 對米色 contrast 5.5:1 */
   --border: #e8e0d5;
 }
 

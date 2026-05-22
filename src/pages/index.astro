@@ -109,8 +109,11 @@ const bigKanBanAccounts = [
         <img
           src="/photos/teddy-avatar.jpg"
           alt="陳景泰 / 泰迪 — 台中房仲"
+          width="112"
+          height="112"
           class="border-accent h-24 w-24 rounded-full border-4 object-cover shadow-lg sm:h-28 sm:w-28"
           loading="eager"
+          fetchpriority="high"
         />
         <p class="text-muted-foreground mt-2 text-xs tracking-wide">
           陳景泰 / 泰迪 Teddy
@@ -124,7 +127,7 @@ const bigKanBanAccounts = [
       <p class="text-muted-foreground mx-auto mt-6 max-w-xl text-lg leading-relaxed">
         我是<strong class="text-foreground">陳景泰</strong>，台中房仲。
         短影音上叫<strong class="text-foreground">泰迪</strong> — 在公司自媒體
-        <a href="/media" class="text-accent hover:underline">房仲大看板 BigKanBan</a>
+        <a href="/media" class="text-accent underline underline-offset-2 hover:no-underline">房仲大看板 BigKanBan</a>
         團隊也是這個名字。<br />
         一邊跑業務，一邊用 Claude Code 把整套工作自動化 —
         讓你的物件多平台曝光、看屋資料整齊、決策有 AI 算過。
@@ -153,6 +156,8 @@ const bigKanBanAccounts = [
         <img
           src="/logos/yochaoshi.png"
           alt="有巢氏房屋 台中世界之心加盟店"
+          width="258"
+          height="80"
           class="h-16 w-auto sm:h-20"
           loading="eager"
         />
@@ -280,6 +285,8 @@ const bigKanBanAccounts = [
             <img
               src="/photos/teddy-avatar.jpg"
               alt="陳景泰 / 泰迪"
+              width="56"
+              height="56"
               class="border-accent mb-1 h-12 w-12 rounded-full border-2 object-cover sm:h-14 sm:w-14"
               loading="lazy"
             />
@@ -331,7 +338,7 @@ const bigKanBanAccounts = [
           <p class="text-muted-foreground mt-2 leading-relaxed">
             公司經營「<a
               href="/media"
-              class="text-accent hover:underline">房仲大看板 BigKanBan</a
+              class="text-accent underline underline-offset-2 hover:no-underline">房仲大看板 BigKanBan</a
             >」自媒體 IP，IG 11K 粉、跨 4 平台 — 你的物件曝光不只一個房仲，是一整個團隊。
           </p>
         </li>
@@ -412,7 +419,11 @@ const bigKanBanAccounts = [
                             : p.data.coverImage.src
                         }
                         alt={p.data.title}
+                        width="800"
+                        height="600"
                         class="h-full w-full object-cover"
+                        loading="lazy"
+                        decoding="async"
                       />
                     ) : (
                       <span>📷</span>
@@ -552,8 +563,11 @@ const bigKanBanAccounts = [
                       <img
                         src={coverSrc}
                         alt={post.data.title}
+                        width="800"
+                        height="450"
                         class="aspect-[16/9] w-full object-cover"
                         loading="lazy"
+                        decoding="async"
                       />
                     ) : (
                       <div class="bg-muted text-muted-foreground flex aspect-[16/9] items-center justify-center text-4xl">

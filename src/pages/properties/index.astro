@@ -405,7 +405,7 @@ const formatPrice = (price: number) => {
           class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
           data-property-list
         >
-          {propertyMeta.map(({ p: property, district, type, priceBucket, newListing, dropPct }) => (
+          {propertyMeta.map(({ p: property, district, type, priceBucket, newListing, dropPct }, idx) => (
             <li
               class="border-border bg-card overflow-hidden rounded-lg border transition-shadow hover:shadow-lg"
               data-district={district}
@@ -426,8 +426,12 @@ const formatPrice = (price: number) => {
                           : property.data.coverImage.src
                       }
                       alt={property.data.title}
+                      width="800"
+                      height="600"
                       class="h-full w-full object-cover"
-                      loading="lazy"
+                      loading={idx < 3 ? "eager" : "lazy"}
+                      fetchpriority={idx === 0 ? "high" : undefined}
+                      decoding={idx < 3 ? "sync" : "async"}
                     />
                   </div>
                 ) : (

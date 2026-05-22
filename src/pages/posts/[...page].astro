@@ -30,7 +30,7 @@ const t = useTranslations(locale);
 
   <Main pageTitle={t.pages.postsTitle} pageDesc={t.pages.postsDesc}>
     <ul>
-      {page.data.map(data => <Card {...data} />)}
+      {page.data.map((data, idx) => <Card {...data} priority={idx === 0 && page.currentPage === 1} />)}
     </ul>
   </Main>
 
