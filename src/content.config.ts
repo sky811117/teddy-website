@@ -16,7 +16,10 @@ const posts = defineCollection({
       featured: z.boolean().optional(),
       draft: z.boolean().optional(),
       tags: z.array(z.string()).default(["others"]),
-      ogImage: image().or(z.string()).optional(),
+      // 注意：string 必須在 image() 前面，否則 image() 對相對路徑/public 路徑會拋
+      // ImageNotFound (非 ZodError)，導致 union fallback 失效，build 失敗
+      // (跟 properties.coverImage 同樣的雷)
+      ogImage: z.string().or(image()).optional(),
       description: z.string(),
       canonicalURL: z.string().optional(),
       hideEditPost: z.boolean().optional(),
