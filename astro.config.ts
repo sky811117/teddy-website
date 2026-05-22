@@ -68,6 +68,11 @@ export default defineConfig({
         context: "client",
         optional: true,
       }),
+      PUBLIC_FORMSPREE_FORM_ID: envField.string({
+        access: "public",
+        context: "client",
+        optional: true,
+      }),
     },
   },
   experimental: {

@@ -1,0 +1,627 @@
+---
+/**
+ * ContactForm — 客戶詢價 / 預約看屋表單
+ *
+ * 後端：Formspree（email）+ Cloudflare Pages Functions `/api/contact-tg`（TG 通知）
+ * 表單同時 POST 兩個 endpoint、互不依賴。
+ *
+ * Props 用來讓不同入口頁面預填欄位（詳情頁帶物件編號、服務頁帶意圖）。
+ */
+import { PUBLIC_FORMSPREE_FORM_ID } from "astro:env/client";
+
+type Props = {
+  /** 預填物件編號（詳情頁帶入） */
+  propertyId?: string;
+  /** 預填物件標題（顯示用） */
+  propertyTitle?: string;
+  /** 預填「我想」（buy / sell / consult / upgrade / invest） */
+  defaultIntent?: "buy" | "sell" | "consult" | "upgrade" | "invest";
+  /** 表單標題 */
+  title?: string;
+  /** 副標 / 引導文 */
+  subtitle?: string;
+};
+
+const {
+  propertyId,
+  propertyTitle,
+  defaultIntent,
+  title = "想聊聊？留你的聯絡方式",
+  subtitle = "30 秒到 30 分鐘內回你，看你的需求複雜程度。",
+} = Astro.props;
+
+const formspreeId = PUBLIC_FORMSPREE_FORM_ID;
+const formspreeEndpoint = formspreeId
+  ? `https://formspree.io/f/${formspreeId}`
+  : "";
+
+const TAICHUNG_AREAS = [
+  "北屯區", "西屯區", "南屯區", "北區", "南區", "東區", "西區", "中區",
+  "太平區", "大里區", "霧峰區", "烏日區", "大肚區", "沙鹿區", "梧棲區",
+  "清水區", "潭子區", "大雅區", "神岡區", "豐原區", "后里區", "新社區", "石岡區",
+];
+
+// 預先運算的「物件提示文字」— 詳情頁帶 propertyId / propertyTitle 進來時顯示
+const propertyHintText = propertyTitle
+  ? `物件編號 ${propertyId}・${propertyTitle}`
+  : propertyId
+    ? `物件編號 ${propertyId}`
+    : "";
+
+// 給 textarea 預填的描述
+const defaultDescription = propertyId
+  ? `想了解物件 ${propertyId}${propertyTitle ? `（${propertyTitle}）` : ""}`
+  : "";
+---
+
+<section
+  class="border-border bg-card my-8 rounded-lg border p-6 sm:p-8"
+  data-contact-form-section
+>
+  <header>
+    <h2 class="text-foreground text-2xl font-bold sm:text-3xl">
+      {title}
+    </h2>
+    <p class="text-muted-foreground mt-2 text-[17px] leading-relaxed">
+      {subtitle}
+    </p>
+    {
+      propertyHintText && (
+        <p class="text-accent mt-2 text-[15px]">📌 {propertyHintText}</p>
+      )
+    }
+  </header>
+
+  <form
+    data-contact-form
+    action={formspreeEndpoint || "#"}
+    method="POST"
+    novalidate
+    class="mt-6 space-y-5"
+    data-formspree-id={formspreeId || ""}
+  >
+    {/* honeypot — bot 才會填，人類看不到 */}
+    <input
+      type="text"
+      name="_gotcha"
+      tabindex="-1"
+      autocomplete="off"
+      class="absolute -left-[9999px] h-0 w-0 opacity-0"
+      aria-hidden="true"
+    />
+
+    {/* 載入時間戳 — 用來偵測 3 秒內 submit 的 bot */}
+    <input type="hidden" name="_loaded_at" data-loaded-at />
+
+    {/* 預填欄位（hidden） */}
+    {
+      propertyId && (
+        <input type="hidden" name="物件編號" value={propertyId} />
+      )
+    }
+    {
+      propertyTitle && (
+        <input type="hidden" name="物件標題" value={propertyTitle} />
+      )
+    }
+
+    {/* 來源頁（讓景泰知道客戶從哪一頁送來） */}
+    <input type="hidden" name="_subject" data-form-subject />
+    <input type="hidden" name="來源頁" data-source-page />
+
+    {/* === 第一排：姓名 === */}
+    <div>
+      <label
+        for="cf-name"
+        class="text-foreground block text-[17px] font-medium"
+      >
+        姓名 <span class="text-red-500">*</span>
+      </label>
+      <input
+        id="cf-name"
+        type="text"
+        name="姓名"
+        required
+        autocomplete="name"
+        placeholder="陳先生 / 王小姐"
+        class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 mt-2 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2"
+      />
+      <p
+        data-error-for="姓名"
+        class="mt-1 hidden text-[14px] text-red-500"
+      ></p>
+    </div>
+
+    {/* === 第二排：手機 + Email === */}
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+      <div>
+        <label
+          for="cf-phone"
+          class="text-foreground block text-[17px] font-medium"
+        >
+          手機
+          <span class="text-muted-foreground text-[13px] font-normal">
+            （手機 / Email 至少填一個）
+          </span>
+        </label>
+        <input
+          id="cf-phone"
+          type="tel"
+          name="手機"
+          autocomplete="tel"
+          inputmode="tel"
+          placeholder="0912-345-678"
+          pattern="[\d\s\-\+]{8,}"
+          class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 mt-2 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2"
+        />
+        <p
+          data-error-for="手機"
+          class="mt-1 hidden text-[14px] text-red-500"
+        ></p>
+      </div>
+
+      <div>
+        <label
+          for="cf-email"
+          class="text-foreground block text-[17px] font-medium"
+        >
+          Email
+        </label>
+        <input
+          id="cf-email"
+          type="email"
+          name="Email"
+          autocomplete="email"
+          inputmode="email"
+          placeholder="you@example.com"
+          class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 mt-2 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2"
+        />
+        <p
+          data-error-for="Email"
+          class="mt-1 hidden text-[14px] text-red-500"
+        ></p>
+      </div>
+    </div>
+
+    {/* === 第三排：我想 + 預算 === */}
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+      <div>
+        <label
+          for="cf-intent"
+          class="text-foreground block text-[17px] font-medium"
+        >
+          我想 <span class="text-red-500">*</span>
+        </label>
+        <select
+          id="cf-intent"
+          name="我想"
+          required
+          class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 mt-2 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2"
+        >
+          <option value="" disabled selected={!defaultIntent}>
+            -- 請選擇 --
+          </option>
+          <option value="找房" selected={defaultIntent === "buy"}>找房</option>
+          <option value="賣房" selected={defaultIntent === "sell"}>賣房</option>
+          <option value="換屋" selected={defaultIntent === "upgrade"}>換屋</option>
+          <option value="投資諮詢" selected={defaultIntent === "invest"}>投資諮詢</option>
+          <option value="一般諮詢" selected={defaultIntent === "consult"}>一般諮詢</option>
+        </select>
+        <p
+          data-error-for="我想"
+          class="mt-1 hidden text-[14px] text-red-500"
+        ></p>
+      </div>
+
+      <div>
+        <label
+          for="cf-budget"
+          class="text-foreground block text-[17px] font-medium"
+        >
+          預算
+          <span class="text-muted-foreground text-[13px] font-normal">
+            （選填）
+          </span>
+        </label>
+        <select
+          id="cf-budget"
+          name="預算"
+          class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 mt-2 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2"
+        >
+          <option value="">不限 / 未定</option>
+          <option value="500萬以下">500 萬以下</option>
+          <option value="500-1000萬">500 - 1,000 萬</option>
+          <option value="1000-1500萬">1,000 - 1,500 萬</option>
+          <option value="1500-2000萬">1,500 - 2,000 萬</option>
+          <option value="2000-3000萬">2,000 - 3,000 萬</option>
+          <option value="3000萬以上">3,000 萬以上</option>
+        </select>
+      </div>
+    </div>
+
+    {/* === 第四排：物件編號（手動輸入用，預填時隱藏） === */}
+    {
+      !propertyId && (
+        <div>
+          <label
+            for="cf-listing-code"
+            class="text-foreground block text-[17px] font-medium"
+          >
+            物件編號 / 案件描述
+            <span class="text-muted-foreground text-[13px] font-normal">
+              （選填）
+            </span>
+          </label>
+          <input
+            id="cf-listing-code"
+            type="text"
+            name="物件編號或描述"
+            placeholder="UG1234567 / 看到您 IG 的某一戶 / 北屯機捷 2 房"
+            class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 mt-2 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2"
+          />
+        </div>
+      )
+    }
+
+    {/* === 第五排：區域偏好（多選 checkbox） === */}
+    <div>
+      <label class="text-foreground block text-[17px] font-medium">
+        區域偏好
+        <span class="text-muted-foreground text-[13px] font-normal">
+          （多選、選填）
+        </span>
+      </label>
+      <details class="border-border bg-background mt-2 rounded-md border">
+        <summary
+          class="text-muted-foreground cursor-pointer px-4 py-3 text-[16px] select-none"
+          data-area-summary
+        >
+          點開選擇區域 ▾
+        </summary>
+        <div
+          class="grid max-h-60 grid-cols-2 gap-x-3 gap-y-2 overflow-y-auto p-4 sm:grid-cols-3"
+        >
+          {TAICHUNG_AREAS.map(area => (
+            <label
+              class="text-foreground hover:bg-card flex cursor-pointer items-center gap-2 rounded p-1 text-[15px]"
+            >
+              <input
+                type="checkbox"
+                name="區域偏好"
+                value={area}
+                class="accent-accent h-4 w-4"
+                data-area-checkbox
+              />
+              {area}
+            </label>
+          ))}
+        </div>
+      </details>
+    </div>
+
+    {/* === 第六排：訊息 === */}
+    <div>
+      <label
+        for="cf-message"
+        class="text-foreground block text-[17px] font-medium"
+      >
+        訊息
+        <span class="text-muted-foreground text-[13px] font-normal">
+          （選填、有什麼想先告訴我的、寫這）
+        </span>
+      </label>
+      <textarea
+        id="cf-message"
+        name="訊息"
+        rows="4"
+        placeholder={
+          defaultIntent === "sell"
+            ? "目前住的地址 / 想賣的時程 / 心中目標價..."
+            : "想看的物件條件 / 預計入住時間 / 自備款大概..."
+        }
+        class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 mt-2 block w-full rounded-md border px-4 py-3 text-[17px] leading-relaxed outline-none focus:ring-2"
+        >{defaultDescription}</textarea>
+    </div>
+
+    {/* === 提交按鈕 + 狀態訊息 === */}
+    <div class="border-border border-t pt-5">
+      <button
+        type="submit"
+        data-submit-btn
+        class="bg-accent text-accent-foreground hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60 w-full rounded-md px-6 py-4 text-[18px] font-medium transition-all sm:w-auto sm:min-w-[200px]"
+      >
+        送出 → 等景泰回你
+      </button>
+
+      <p
+        data-form-error
+        class="mt-4 hidden text-[15px] text-red-500"
+        role="alert"
+      ></p>
+
+      <p class="text-muted-foreground mt-4 text-[14px] leading-relaxed">
+        送出後直接寄到景泰個人 Email + TG 通知。
+        如果你急 — LINE
+        <a
+          href="https://line.me/ti/p/sky811117"
+          class="text-accent font-medium hover:underline"
+          target="_blank"
+          rel="noopener"
+        >
+          sky811117
+        </a>
+        或撥
+        <a
+          href="tel:+886920118756"
+          class="text-accent font-medium hover:underline"
+        >
+          0920-118-756
+        </a>
+        最快。
+      </p>
+    </div>
+  </form>
+</section>
+
+<script>
+  function initContactForm() {
+    const formRaw = document.querySelector<HTMLFormElement>(
+      "[data-contact-form]"
+    );
+    if (!formRaw || formRaw.dataset.initialized === "true") return;
+    formRaw.dataset.initialized = "true";
+    const form: HTMLFormElement = formRaw;
+
+    const formspreeId = form.dataset.formspreeId || "";
+    const submitBtn = form.querySelector<HTMLButtonElement>(
+      "[data-submit-btn]"
+    );
+    const formError = form.querySelector<HTMLElement>("[data-form-error]");
+    const loadedAtInput = form.querySelector<HTMLInputElement>(
+      "[data-loaded-at]"
+    );
+    const subjectInput = form.querySelector<HTMLInputElement>(
+      "[data-form-subject]"
+    );
+    const sourceInput = form.querySelector<HTMLInputElement>(
+      "[data-source-page]"
+    );
+    const areaSummary = form.querySelector<HTMLElement>("[data-area-summary]");
+    const areaCheckboxes = form.querySelectorAll<HTMLInputElement>(
+      "[data-area-checkbox]"
+    );
+
+    // 載入時間戳（給 bot 偵測用）
+    const loadedAt = Date.now();
+    if (loadedAtInput) loadedAtInput.value = String(loadedAt);
+
+    // 來源頁
+    if (sourceInput) sourceInput.value = window.location.pathname;
+
+    // 預設 subject — 客戶送出後景泰 email 一眼看出意圖
+    function updateSubject() {
+      if (!subjectInput) return;
+      const intent =
+        (form.querySelector<HTMLSelectElement>("[name='我想']")?.value) ||
+        "詢價";
+      const name =
+        (form.querySelector<HTMLInputElement>("[name='姓名']")?.value) ||
+        "新訪客";
+      subjectInput.value = `【網站詢價】${name} - ${intent}`;
+    }
+    form.addEventListener("input", updateSubject);
+    updateSubject();
+
+    // 區域選擇顯示計數
+    function updateAreaSummary() {
+      if (!areaSummary) return;
+      const count = Array.from(areaCheckboxes).filter(c => c.checked).length;
+      areaSummary.textContent =
+        count > 0
+          ? `已選 ${count} 個區域 ▾（點開修改）`
+          : "點開選擇區域 ▾";
+    }
+    areaCheckboxes.forEach(c =>
+      c.addEventListener("change", updateAreaSummary)
+    );
+
+    // 即時驗證 helpers
+    function showError(field: string, msg: string) {
+      const el = form.querySelector<HTMLElement>(
+        `[data-error-for="${field}"]`
+      );
+      if (el) {
+        el.textContent = msg;
+        el.classList.remove("hidden");
+      }
+    }
+    function clearError(field: string) {
+      const el = form.querySelector<HTMLElement>(
+        `[data-error-for="${field}"]`
+      );
+      if (el) {
+        el.textContent = "";
+        el.classList.add("hidden");
+      }
+    }
+    function showFormError(msg: string) {
+      if (!formError) return;
+      formError.textContent = msg;
+      formError.classList.remove("hidden");
+    }
+    function clearFormError() {
+      if (!formError) return;
+      formError.textContent = "";
+      formError.classList.add("hidden");
+    }
+
+    // 個別欄位 blur 驗證
+    form
+      .querySelector<HTMLInputElement>("[name='姓名']")
+      ?.addEventListener("blur", e => {
+        const v = (e.target as HTMLInputElement).value.trim();
+        if (!v) showError("姓名", "姓名是必填的");
+        else clearError("姓名");
+      });
+
+    function validatePhoneEmail() {
+      const phone =
+        form.querySelector<HTMLInputElement>("[name='手機']")?.value.trim() ||
+        "";
+      const email =
+        form.querySelector<HTMLInputElement>("[name='Email']")?.value.trim() ||
+        "";
+      if (!phone && !email) {
+        showError("手機", "手機 / Email 至少要填一個");
+        return false;
+      }
+      clearError("手機");
+      clearError("Email");
+
+      // 手機格式（台灣手機 09xx-xxx-xxx 或 09xxxxxxxx）
+      if (phone) {
+        const phoneClean = phone.replace(/[\s\-+]/g, "");
+        if (!/^\d{8,12}$/.test(phoneClean)) {
+          showError("手機", "手機號碼格式怪怪的，幫我看一下");
+          return false;
+        }
+      }
+
+      // Email 格式
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showError("Email", "Email 格式怪怪的，幫我看一下");
+        return false;
+      }
+      return true;
+    }
+    form
+      .querySelector<HTMLInputElement>("[name='手機']")
+      ?.addEventListener("blur", validatePhoneEmail);
+    form
+      .querySelector<HTMLInputElement>("[name='Email']")
+      ?.addEventListener("blur", validatePhoneEmail);
+
+    function validateAll() {
+      let ok = true;
+      const nameVal =
+        form
+          .querySelector<HTMLInputElement>("[name='姓名']")
+          ?.value.trim() || "";
+      if (!nameVal) {
+        showError("姓名", "姓名是必填的");
+        ok = false;
+      }
+      if (!validatePhoneEmail()) ok = false;
+      const intentVal =
+        form.querySelector<HTMLSelectElement>("[name='我想']")?.value || "";
+      if (!intentVal) {
+        showError("我想", "請選一個");
+        ok = false;
+      }
+      return ok;
+    }
+
+    // submit handler
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      clearFormError();
+
+      // honeypot
+      const honeypot =
+        form.querySelector<HTMLInputElement>("[name='_gotcha']")?.value || "";
+      if (honeypot) {
+        // bot 中招、靜默 fail（直接導 thank-you 讓 bot 以為成功）
+        window.location.href = "/thank-you";
+        return;
+      }
+
+      // 3 秒內 submit = bot
+      if (Date.now() - loadedAt < 3000) {
+        showFormError("送太快了、確認一下訊息再送");
+        return;
+      }
+
+      if (!validateAll()) {
+        showFormError("有幾個欄位需要補一下");
+        return;
+      }
+
+      if (!formspreeId) {
+        showFormError(
+          "表單後端還沒設定好，請直接 LINE sky811117 或撥 0920-118-756"
+        );
+        return;
+      }
+
+      // 收集 FormData
+      const fd = new FormData(form);
+
+      // 區域偏好 — FormData 多值會自動合併、但要 join 起來給 email 好讀
+      const areas = fd.getAll("區域偏好").map(a => String(a));
+      if (areas.length > 0) {
+        fd.delete("區域偏好");
+        fd.append("區域偏好", areas.join("、"));
+      }
+
+      // disable 按鈕
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "送出中...";
+      }
+
+      // 並行 POST 兩個 endpoint
+      const formspreeUrl = `https://formspree.io/f/${formspreeId}`;
+
+      // Formspree 用 JSON、要 Accept: application/json 才不會 redirect
+      const payload: Record<string, string> = {};
+      fd.forEach((v, k) => {
+        payload[k] = String(v);
+      });
+
+      const tasks: Promise<unknown>[] = [
+        // 1. Formspree（email）
+        fetch(formspreeUrl, {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }),
+        // 2. TG 通知（Pages Functions、失敗不影響主流程）
+        fetch("/api/contact-tg", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }).catch(() => null),
+      ];
+
+      try {
+        const [formspreeRes] = await Promise.all(tasks);
+        const res = formspreeRes as Response;
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Formspree HTTP ${res.status}: ${text.slice(0, 100)}`);
+        }
+
+        // 成功 → 導向 thank-you 頁
+        const intent = String(payload["我想"] || "");
+        const intentQs = intent ? `?intent=${encodeURIComponent(intent)}` : "";
+        window.location.href = `/thank-you${intentQs}`;
+      } catch (err) {
+        console.error("Contact form submit failed:", err);
+        showFormError(
+          "送出失敗了、再試一次。或直接 LINE sky811117 / 撥 0920-118-756"
+        );
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "送出 → 等景泰回你";
+        }
+      }
+    });
+  }
+
+  initContactForm();
+  document.addEventListener("astro:after-swap", initContactForm);
+  document.addEventListener("astro:page-load", initContactForm);
+</script>
