@@ -90,6 +90,7 @@ const properties = defineCollection({
       featured: z.boolean().optional(), // 首頁精選
       pubDatetime: z.date(),
       modDatetime: z.date().optional().nullable(),
+      lastSeen: z.date().optional(), // 同事物件每次 sync 寫今天；7 天無更新 → 自動標 withdrawn
 
       // 法規揭露（廣告必載）
       brokerLicense: z.string().default("黃永隆 113彰縣字324"),
