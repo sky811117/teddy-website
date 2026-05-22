@@ -1,0 +1,181 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import Main from "@/components/Main.astro";
+import config from "@/config";
+
+const services = [
+  {
+    slug: "buy",
+    emoji: "🏠",
+    name: "買房諮詢",
+    headline: "從預算評估到簽約點交全程協助",
+    targetUsers: [
+      "首購族（新青安資格 + 自備款不夠）",
+      "換屋族（要先賣 + 同步找新家）",
+      "投資族（看 NPV 不看感覺）",
+      "外地買家（給預算我幫你過濾）",
+    ],
+    whatYouGet: [
+      "客需訪談 → 過濾 30+ 物件 → 推薦 5-8 間",
+      "陪看 + 議價（用真實案例 + 數據）",
+      "貸款規劃（新青安 vs 一般、跑 2-3 家銀行比較）",
+      "簽約 / 過戶 / 點交全程陪同",
+      "履約保證 + 漏水保固條款協助",
+    ],
+    timeline: "從訪談到交屋 1-3 個月",
+    cta: "找我看房",
+  },
+  {
+    slug: "sell",
+    emoji: "💰",
+    name: "賣房協助",
+    headline: "AI 修圖 + 多平台曝光 + 議價談判",
+    targetUsers: [
+      "急售族（時間敏感、要快速成交）",
+      "換屋族（要先賣 + 同步買新）",
+      "投資出場族（算稅後利潤）",
+      "繼承族（不熟流程、要全程協助）",
+    ],
+    whatYouGet: [
+      "AI 工具定價分析（500 筆實價找合理區間）",
+      "物件照 AI 修圖（提高點擊率 30-50%）",
+      "591 / 樂屋 / 5168 多平台同步上架",
+      "公司自媒體 BigKanBan 跨 IG / TT / FB 曝光",
+      "議價 + 簽約全程協助",
+    ],
+    timeline: "從委託到成交 1-4 個月（依物件熱度）",
+    cta: "找我賣房",
+  },
+  {
+    slug: "invest",
+    emoji: "📊",
+    name: "投資諮詢",
+    headline: "看數字不看感覺、算 NPV 不靠直覺",
+    targetUsers: [
+      "收租型投資（看年化報酬率）",
+      "短線轉手族（看區段成長性）",
+      "資產配置族（房地產 vs 其他資產）",
+      "公司戶（節稅 + 資產活化）",
+    ],
+    whatYouGet: [
+      "區段 ROI 分析（用合泰建經 + 實價登錄）",
+      "租金行情 + 收益率試算",
+      "稅務規劃（房地合一 2.0 試算）",
+      "進場 / 出場時機建議",
+      "投資物件挑選（避開地雷區）",
+    ],
+    timeline: "從評估到買入 2-6 週",
+    cta: "找我談投資",
+  },
+  {
+    slug: "upgrade",
+    emoji: "🔄",
+    name: "換屋升級",
+    headline: "賣舊買新中間 3 個月不踩雷",
+    targetUsers: [
+      "首購升級（小換大、市區換郊區）",
+      "三代同堂（要找符合家庭結構的物件）",
+      "區位調整（從南屯換七期 / 北屯換西屯）",
+      "退休換屋（要無障礙、低公設）",
+    ],
+    whatYouGet: [
+      "舊屋估價 + 賣屋規劃",
+      "新屋同步找 + 議價",
+      "貸款橋接（避免雙重房貸壓力）",
+      "時間軸協調（賣完才搬 vs 先住新家）",
+      "稅務優化（自住換屋豁免條件）",
+    ],
+    timeline: "從規劃到搬家 3-6 個月",
+    cta: "找我談換屋",
+  },
+];
+---
+
+<Layout
+  title={`服務項目 | ${config.site.title}`}
+  description="台中房仲陳景泰 4 大服務 — 買房諮詢 / 賣房協助 / 投資諮詢 / 換屋升級。從預算評估到簽約點交全程協助、用 AI 工具加持。"
+>
+  <Header />
+
+  <Main
+    pageTitle="服務項目"
+    pageDesc="買、賣、投資、換屋 4 大方向。看你是哪一種、我給你對應流程跟工具。"
+  >
+    {/* 4 大服務 cards */}
+    <div class="mt-8 space-y-8">
+      {
+        services.map(s => (
+          <section
+            id={s.slug}
+            class="border-border bg-card rounded-lg border p-6 sm:p-8"
+          >
+            <header class="border-border border-b pb-4">
+              <h2 class="text-foreground flex items-center gap-3 text-2xl font-bold sm:text-3xl">
+                <span class="text-4xl">{s.emoji}</span>
+                {s.name}
+              </h2>
+              <p class="text-accent mt-2 text-lg font-medium">{s.headline}</p>
+            </header>
+
+            <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div>
+                <h3 class="text-foreground text-base font-bold">
+                  🎯 適合誰找
+                </h3>
+                <ul class="text-muted-foreground mt-2 space-y-1 text-sm leading-relaxed">
+                  {s.targetUsers.map(u => (
+                    <li>・{u}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <h3 class="text-foreground text-base font-bold">
+                  📋 我幫你做的事
+                </h3>
+                <ul class="text-muted-foreground mt-2 space-y-1 text-sm leading-relaxed">
+                  {s.whatYouGet.map(w => (
+                    <li>・{w}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div class="border-border mt-6 flex flex-wrap items-center justify-between gap-4 border-t pt-4">
+              <p class="text-muted-foreground text-sm">
+                ⏱️ {s.timeline}
+              </p>
+              <a
+                href="https://line.me/ti/p/sky811117"
+                class="bg-accent text-accent-foreground rounded-lg px-4 py-2 text-sm font-medium no-underline"
+              >
+                💬 {s.cta}
+              </a>
+            </div>
+          </section>
+        ))
+      }
+    </div>
+
+    {/* 底部說明 */}
+    <section
+      class="border-border mt-12 rounded-lg border border-dashed p-6 text-center"
+    >
+      <p class="text-foreground font-medium">不確定自己屬於哪一類？</p>
+      <p class="text-muted-foreground mt-3 leading-relaxed">
+        買賣房很多情況交叉 — 換屋族同時是買 + 賣、投資族可能要換屋。<br />
+        LINE 我說你的狀況、我直接幫你判斷對應流程。
+      </p>
+      <a
+        href="https://line.me/ti/p/sky811117"
+        class="bg-accent text-accent-foreground mt-6 inline-block rounded px-6 py-2 font-medium no-underline"
+      >
+        💬 LINE 私訊景泰 sky811117
+      </a>
+    </section>
+  </Main>
+
+  <Footer />
+</Layout>
