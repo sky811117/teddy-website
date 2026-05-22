@@ -10,19 +10,43 @@ type Props = {
 
 const { variant: Heading = "h2", id, data, filePath } = Astro.props;
 
-const { title, description, ...props } = data;
+const { title, description, ogImage, ...props } = data;
+
+// cover image: 可能是 string (public 路徑) 或 image() object
+const coverSrc =
+  typeof ogImage === "string"
+    ? ogImage
+    : ogImage && "src" in ogImage
+      ? ogImage.src
+      : null;
+
+const postUrl = getPostUrl(id, filePath, Astro.currentLocale);
 ---
 
 <li class="my-6">
   <a
-    href={getPostUrl(id, filePath, Astro.currentLocale)}
+    href={postUrl}
     class:list={[
-      "text-accent inline-block text-lg font-medium",
-      "decoration-dashed underline-offset-4 hover:underline",
-      "focus-visible:no-underline focus-visible:underline-offset-0",
+      "group block no-underline",
     ]}
   >
-    <Heading transition:name={slugifyStr(title.replaceAll(".", "-"))}>
+    {
+      coverSrc && (
+        <img
+          src={coverSrc}
+          alt={title}
+          class="border-border mb-3 aspect-[16/9] w-full rounded-lg border object-cover transition-opacity group-hover:opacity-90"
+          loading="lazy"
+        />
+      )
+    }
+    <Heading
+      transition:name={slugifyStr(title.replaceAll(".", "-"))}
+      class:list={[
+        "text-accent inline-block text-lg font-medium",
+        "decoration-dashed underline-offset-4 group-hover:underline",
+      ]}
+    >
       {title}
     </Heading>
   </a>

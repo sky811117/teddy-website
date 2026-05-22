@@ -534,24 +534,46 @@ const bigKanBanAccounts = [
               買賣房遇到的眉角，我寫下來給你看。看屋議價、新青安、嫌惡設施、不動產說明書怎麼讀 — 你會用到的都在這。
             </p>
           </div>
-          <ul class="mt-8 space-y-4">
-            {recentPosts.map(post => (
-              <li class="border-border bg-card rounded-lg border p-5">
-                <a
-                  href={`/posts/${post.id}`}
-                  class="block no-underline hover:opacity-90"
-                >
-                  <h3 class="text-foreground text-lg font-bold sm:text-xl">
-                    {post.data.title}
-                  </h3>
-                  {post.data.description && (
-                    <p class="text-muted-foreground mt-2 line-clamp-2 leading-relaxed">
-                      {post.data.description}
-                    </p>
-                  )}
-                </a>
-              </li>
-            ))}
+          <ul class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
+            {recentPosts.map(post => {
+              const coverSrc =
+                typeof post.data.ogImage === "string"
+                  ? post.data.ogImage
+                  : post.data.ogImage && "src" in post.data.ogImage
+                    ? post.data.ogImage.src
+                    : null;
+              return (
+                <li class="border-border bg-card overflow-hidden rounded-lg border">
+                  <a
+                    href={`/posts/${post.id}`}
+                    class="block no-underline hover:opacity-90"
+                  >
+                    {coverSrc ? (
+                      <img
+                        src={coverSrc}
+                        alt={post.data.title}
+                        class="aspect-[16/9] w-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div class="bg-muted text-muted-foreground flex aspect-[16/9] items-center justify-center text-4xl">
+                        📝
+                      </div>
+                    )}
+                    <div class="p-4">
+                      <h3 class="text-foreground line-clamp-2 text-lg font-bold sm:text-xl">
+                        {post.data.title}
+                      </h3>
+                      {post.data.description && (
+                        <p class="text-muted-foreground mt-2 line-clamp-3 text-sm leading-relaxed">
+                          {post.data.description}
+                        </p>
+                      )}
+                    </div>
+                  </a>
+                </li>
+              );
+            })}
           </ul>
           <div class="mt-6 text-center">
             <a
