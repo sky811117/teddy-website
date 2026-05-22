@@ -56,6 +56,7 @@ const properties = defineCollection({
 
       // 價格
       totalPrice: z.number(), // 總價（單位：萬）
+      lastPrice: z.number().optional(), // 前次售價（用來算降價 — > totalPrice 就是降價）
       pricePerPing: z.number().optional(), // 單坪
 
       // 規格

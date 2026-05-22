@@ -47,6 +47,16 @@ const formatPrice = (price: number) => {
   return `${price.toLocaleString()} 萬`;
 };
 
+// 新上架 / 降價 判斷
+const NEW_DAYS = 7;
+const isNew =
+  property.data.pubDatetime &&
+  (Date.now() - property.data.pubDatetime.getTime()) / 86400000 <= NEW_DAYS;
+const dropPct =
+  property.data.lastPrice && property.data.lastPrice > property.data.totalPrice
+    ? Math.round(((property.data.lastPrice - property.data.totalPrice) / property.data.lastPrice) * 100)
+    : null;
+
 // 找同縣市其他物件（最多 6 筆）
 const thisCounty = getCounty(property.data.district);
 const sameCounty = properties
@@ -86,11 +96,31 @@ const sameCounty = properties
         {property.data.community ? `・${property.data.community}` : ""}
       </p>
 
-      <div class="text-accent mt-4 text-3xl font-bold sm:text-4xl">
-        {formatPrice(property.data.totalPrice)}
+      <div class="mt-4 flex flex-wrap gap-2">
+        {isNew && (
+          <span class="inline-block rounded bg-emerald-500 px-2 py-1 text-xs font-medium text-white">
+            🔥 新上架
+          </span>
+        )}
+        {dropPct && (
+          <span class="inline-block rounded bg-red-500 px-2 py-1 text-xs font-medium text-white">
+            💰 降價 {dropPct}%
+          </span>
+        )}
+      </div>
+
+      <div class="text-accent mt-3 flex flex-wrap items-baseline gap-3 text-3xl font-bold sm:text-4xl">
+        <span>{formatPrice(property.data.totalPrice)}</span>
+        {
+          dropPct && property.data.lastPrice && (
+            <span class="text-muted-foreground text-lg font-normal line-through">
+              {formatPrice(property.data.lastPrice)}
+            </span>
+          )
+        }
         {
           property.data.pricePerPing && (
-            <span class="text-muted-foreground ml-3 text-base font-normal">
+            <span class="text-muted-foreground text-base font-normal">
               單坪 {property.data.pricePerPing.toFixed(1)} 萬
             </span>
           )

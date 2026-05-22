@@ -64,19 +64,39 @@ const sortedProperties = allProperties.sort((a, b) => {
   return b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime();
 });
 
+// 標籤判斷
+const NEW_LISTING_DAYS = 7;
+const now = Date.now();
+function isNewListing(p: (typeof allProperties)[number]): boolean {
+  if (!p.data.pubDatetime) return false;
+  return (now - p.data.pubDatetime.getTime()) / 86400000 <= NEW_LISTING_DAYS;
+}
+function priceDropPct(p: (typeof allProperties)[number]): number | null {
+  if (!p.data.lastPrice || p.data.lastPrice <= p.data.totalPrice) return null;
+  return Math.round(
+    ((p.data.lastPrice - p.data.totalPrice) / p.data.lastPrice) * 100
+  );
+}
+
 // 統計 chip 選項 + 數量
 const districtCount: Record<string, number> = {};
 const typeCount: Record<string, number> = {};
 const priceCount: Record<string, number> = {};
+let newCount = 0;
+let dropCount = 0;
 
 const propertyMeta = sortedProperties.map(p => {
   const district = p.data.district || "未分類";
   const type = getType(p);
   const priceBucket = getPriceBucket(p.data.totalPrice);
+  const newListing = isNewListing(p);
+  const dropPct = priceDropPct(p);
   districtCount[district] = (districtCount[district] || 0) + 1;
   typeCount[type] = (typeCount[type] || 0) + 1;
   priceCount[priceBucket] = (priceCount[priceBucket] || 0) + 1;
-  return { p, district, type, priceBucket };
+  if (newListing) newCount++;
+  if (dropPct) dropCount++;
+  return { p, district, type, priceBucket, newListing, dropPct };
 });
 
 // district → county mapping
@@ -250,6 +270,42 @@ const formatPrice = (price: number) => {
   >
     <!-- 篩選列 -->
     <div class="border-border bg-card mb-6 space-y-3 rounded-lg border p-4">
+      <!-- 快選（降價 / 新上架） -->
+      <div>
+        <div class="text-muted-foreground mb-2 text-xs font-medium">⚡ 快選</div>
+        <div class="flex flex-wrap gap-2" data-filter-group="quick">
+          <button
+            type="button"
+            data-filter-value=""
+            class="filter-chip filter-chip-active"
+          >
+            全部
+          </button>
+          {
+            newCount > 0 && (
+              <button
+                type="button"
+                data-filter-value="new"
+                class="filter-chip"
+              >
+                🔥 新上架 ({newCount})
+              </button>
+            )
+          }
+          {
+            dropCount > 0 && (
+              <button
+                type="button"
+                data-filter-value="drop"
+                class="filter-chip"
+              >
+                💰 降價中 ({dropCount})
+              </button>
+            )
+          }
+        </div>
+      </div>
+
       <!-- 區域（按縣市分組） -->
       <div>
         <div class="text-muted-foreground mb-2 text-xs font-medium">📍 區域</div>
@@ -349,12 +405,13 @@ const formatPrice = (price: number) => {
           class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
           data-property-list
         >
-          {propertyMeta.map(({ p: property, district, type, priceBucket }) => (
+          {propertyMeta.map(({ p: property, district, type, priceBucket, newListing, dropPct }) => (
             <li
               class="border-border bg-card overflow-hidden rounded-lg border transition-shadow hover:shadow-lg"
               data-district={district}
               data-type={type}
               data-price={priceBucket}
+              data-quick={[newListing ? "new" : "", dropPct ? "drop" : ""].filter(Boolean).join(" ")}
             >
               <a
                 href={`/properties/${property.id}`}
@@ -380,14 +437,26 @@ const formatPrice = (price: number) => {
                 )}
 
                 <div class="p-4">
-                  {property.data.featured && (
-                    <span class="bg-accent text-background mb-2 inline-block rounded px-2 py-0.5 text-xs">
-                      🔥 精選
+                  <div class="mb-2 flex flex-wrap gap-1">
+                    {property.data.featured && (
+                      <span class="bg-accent text-background inline-block rounded px-2 py-0.5 text-xs">
+                        🔥 精選
+                      </span>
+                    )}
+                    {newListing && (
+                      <span class="inline-block rounded bg-emerald-500 px-2 py-0.5 text-xs text-white">
+                        🔥 新上架
+                      </span>
+                    )}
+                    {dropPct && (
+                      <span class="inline-block rounded bg-red-500 px-2 py-0.5 text-xs text-white">
+                        💰 降價 {dropPct}%
+                      </span>
+                    )}
+                    <span class="bg-muted text-muted-foreground inline-block rounded px-2 py-0.5 text-xs">
+                      {type}
                     </span>
-                  )}
-                  <span class="bg-muted text-muted-foreground mb-2 mr-1 inline-block rounded px-2 py-0.5 text-xs">
-                    {type}
-                  </span>
+                  </div>
 
                   <h2 class="text-foreground line-clamp-2 text-lg font-bold">
                     {property.data.title}
@@ -400,8 +469,15 @@ const formatPrice = (price: number) => {
                       : ""}
                   </p>
 
-                  <div class="text-accent mt-3 text-2xl font-bold">
-                    {formatPrice(property.data.totalPrice)}
+                  <div class="mt-3 flex items-baseline gap-2">
+                    <span class="text-accent text-2xl font-bold">
+                      {formatPrice(property.data.totalPrice)}
+                    </span>
+                    {dropPct && property.data.lastPrice && (
+                      <span class="text-muted-foreground text-sm line-through">
+                        {formatPrice(property.data.lastPrice)}
+                      </span>
+                    )}
                   </div>
 
                   <div class="text-muted-foreground mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm">
@@ -486,7 +562,8 @@ const formatPrice = (price: number) => {
     const countEl = document.querySelector("[data-filter-count]");
     const emptyEl = document.querySelector("[data-filter-empty]");
 
-    const state = { district: "", type: "", price: "" };
+    const state = { district: "", type: "", price: "", quick: "" };
+    const KEYS = ["district", "type", "price", "quick"];
 
     function apply() {
       let visible = 0;
@@ -494,7 +571,10 @@ const formatPrice = (price: number) => {
         const okD = !state.district || li.dataset.district === state.district;
         const okT = !state.type || li.dataset.type === state.type;
         const okP = !state.price || li.dataset.price === state.price;
-        const show = okD && okT && okP;
+        // quick 是空白分隔多值，contains check
+        const quickTokens = (li.dataset.quick || "").split(/\s+/).filter(Boolean);
+        const okQ = !state.quick || quickTokens.includes(state.quick);
+        const show = okD && okT && okP && okQ;
         li.style.display = show ? "" : "none";
         if (show) visible++;
       }
@@ -503,7 +583,7 @@ const formatPrice = (price: number) => {
       list.classList.toggle("hidden", visible === 0);
       // URL sync
       const url = new URL(location.href);
-      ["district", "type", "price"].forEach(k => {
+      KEYS.forEach(k => {
         if (state[k]) url.searchParams.set(k, state[k]);
         else url.searchParams.delete(k);
       });
@@ -520,7 +600,7 @@ const formatPrice = (price: number) => {
 
     // 初始 URL state
     const params = new URLSearchParams(location.search);
-    ["district", "type", "price"].forEach(k => {
+    KEYS.forEach(k => {
       const v = params.get(k);
       if (v) state[k] = v;
     });
