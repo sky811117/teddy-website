@@ -21,6 +21,7 @@ const posts = defineCollection({
       canonicalURL: z.string().optional(),
       hideEditPost: z.boolean().optional(),
       timezone: z.string().optional(),
+      faqSchema: z.unknown().optional(),
     }),
 });
 
@@ -63,7 +64,9 @@ const properties = defineCollection({
       parking: z.string().optional(), // 車位 例「平面式 x1」
 
       // 媒體
-      coverImage: image().or(z.string()).optional(),
+      // 注意：string 必須在 image() 前面，否則 image() 對 public/ 絕對路徑會拋
+      // ImageNotFound (非 ZodError)，導致 union fallback 失效，build 失敗
+      coverImage: z.string().or(image()).optional(),
       photos: z.array(z.string()).default([]),
 
       // 行銷內容
