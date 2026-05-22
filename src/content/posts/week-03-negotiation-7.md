@@ -5,6 +5,7 @@ pubDatetime: 2026-05-21T22:30:00.000+08:00
 slug: week-03-negotiation-7
 featured: false
 draft: false
+ogImage: ../../../assets/images/covers/negotiation-handshake.png
 tags:
   - weekly-recap
   - 買方教學
@@ -188,9 +189,14 @@ LINE 我 [sky811117](https://line.me/ti/p/sky811117)，給我**社區 + 樓層 +
 
 ---
 
-## 下次補充
+## 延伸閱讀
 
-之後會寫：
-- 〈用 Google Map 揪出 10 大嫌惡設施〉
-- 〈不動產說明書 5 大抓鬼重點 — 屋主想藏的都在這〉
-- 〈履約保證費誰要付、怎麼省〉
+**買賣房眉角：**
+- [台中買房 30 題 FAQ](/faq) — 仲介費議價、出價 vs 議價、斡旋金 vs 訂金
+- [台中 7 區買房指南](/areas) — 各區議價空間不同
+- [4 大服務項目](/services) — 買 / 賣 / 投資 / 換屋
+
+**同系列文章：**
+- [新青安 vs 一般房貸 AI 算 30 年](/posts/week-02-new-housing-loan) — 議好價之後算貸款
+- [嫌惡設施 Google Map 10 大設施](/posts/week-04-undesirable-facilities) — 嫌惡設施可當議價籌碼
+- [不動產說明書 5 個含糊欄位](/posts/week-05-property-disclosure) — 議價時對照說明書找空間

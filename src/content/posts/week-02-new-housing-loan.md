@@ -5,6 +5,7 @@ pubDatetime: 2026-05-21T22:00:00.000+08:00
 slug: week-02-new-housing-loan
 featured: true
 draft: false
+ogImage: ../../../assets/images/covers/new-housing-loan-family.png
 tags:
   - weekly-recap
   - 買方教學
@@ -159,3 +160,17 @@ timezone: "Asia/Taipei"
 真的要用新青安，從今天算大概剩 **70 天**做完「確認資格 → 看屋下訂 → 申辦核貸 → 對保撥款」整套流程。
 
 時間趕，但還來得及。
+
+---
+
+## 延伸閱讀
+
+**買賣房眉角：**
+- [台中買房 30 題 FAQ](/faq) — 仲介費、自備款、凶宅查詢、過戶稅務一次答
+- [台中 7 區買房指南](/areas) — 北屯 / 西屯七期 / 南屯 / 北區 / 中區 / 太平 / 大里
+- [4 大服務項目](/services) — 買 / 賣 / 投資 / 換屋
+
+**同系列文章：**
+- [議價 7 心法（北屯客戶談下 80 萬實戰）](/posts/week-03-negotiation-7) — 議到價格再算貸款
+- [嫌惡設施 Google Map 10 大設施](/posts/week-04-undesirable-facilities) — 看屋前先過濾
+- [不動產說明書 5 個含糊欄位](/posts/week-05-property-disclosure) — 簽約前必看

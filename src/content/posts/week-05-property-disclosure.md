@@ -5,6 +5,7 @@ pubDatetime: 2026-05-21T23:30:00.000+08:00
 slug: week-05-property-disclosure
 featured: false
 draft: false
+ogImage: ../../../assets/images/covers/disclosure-document.png
 tags:
   - 買方教學
   - 不動產說明書
@@ -228,6 +229,20 @@ timezone: "Asia/Taipei"
 不是所有屋主都在含糊、也不是所有仲介都把問題問得淺 — 但**問題通常都在這幾格**。
 
 如果你手上有說明書但不確定哪裡要注意 — 可以直接傳給我看。
+
+---
+
+## 延伸閱讀
+
+**買賣房眉角：**
+- [台中買房 30 題 FAQ](/faq) — 海砂屋輻射、漏水、履約保證、車位產權
+- [台中 7 區買房指南](/areas) — 各區老屋分布不同、說明書要注意的重點不同
+- [4 大服務項目](/services) — 買 / 賣 / 投資 / 換屋
+
+**同系列文章：**
+- [嫌惡設施 Google Map 10 大設施](/posts/week-04-undesirable-facilities) — 說明書揭露的「鄰近嫌惡設施」怎麼看
+- [議價 7 心法](/posts/week-03-negotiation-7) — 看完說明書找議價空間
+- [新青安 vs 一般房貸](/posts/week-02-new-housing-loan) — 說明書揭露的屋況影響貸款成數
 
 ---
 
