@@ -1,0 +1,243 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import Main from "@/components/Main.astro";
+import config from "@/config";
+
+// 台中 7 區重點資料 — 景泰主跑區
+const areas = [
+  {
+    slug: "north-tun",
+    name: "北屯區",
+    emoji: "🏗️",
+    headline: "預售屋大爆發、新青安族最熱",
+    summary: "2026 Q1 預售屋成交 72 件（全市最多）— 北屯特區、廍子、機捷段是主要案源。成屋反而冷、新成屋議價空間大。",
+    keyStats: [
+      "預售屋平均單價 35-40 萬/坪",
+      "成屋大樓 35 萬/坪",
+      "透天 33 萬/坪",
+      "Q1 成交大樓 15 件 / 預售 72 件",
+    ],
+    hotCommunities: ["總太心之所向", "總太 2020", "皇普莊園", "宏總加州"],
+    suitableFor: ["首購族新青安", "三代同堂自住", "投資新案"],
+    avoidIf: ["想要快速增值（已被炒過一輪）", "預算 1000 萬以下（新案多 1500+）"],
+  },
+  {
+    slug: "west-tun",
+    name: "西屯區（含七期）",
+    emoji: "🏙️",
+    headline: "七期效應外溢、單價跳到 42 萬",
+    summary: "2026 年 2 月大樓單價 42.92 萬/坪、單月跳 4.2 萬。七期黃金段 + 文心路 + 河南路是主軸。預售 + 成屋雙熱。",
+    keyStats: [
+      "大樓平均 42.92 萬/坪（全市最高）",
+      "透天 41 萬/坪",
+      "套房 28 萬/坪",
+      "Q1 成屋 41 件 / 預售 46 件",
+    ],
+    hotCommunities: ["滿庭芳花園", "聯聚中雍", "網銀國際"],
+    suitableFor: ["高資產族", "企業主自住", "投資七期長線"],
+    avoidIf: ["首購預算 1500 以下", "想要透天獨棟（七期幾乎沒透天）"],
+  },
+  {
+    slug: "south-tun",
+    name: "南屯區",
+    emoji: "🌳",
+    headline: "大樓連 3 月下跌、是修正還是陷阱",
+    summary: "2026 Q1 大樓單價 34→32→30 萬/坪、連跌 3 月。但黎明特區、向上市場周邊仍熱。透天暴跌要謹慎。",
+    keyStats: [
+      "大樓平均 30.62 萬/坪（下跌中）",
+      "透天 25.63 萬/坪（暴跌）",
+      "Q1 成屋 35 件 / 預售 38 件",
+    ],
+    hotCommunities: ["富宇世界花園", "向上市場周邊新案"],
+    suitableFor: ["想撿便宜的自住族", "南屯舊住戶換屋"],
+    avoidIf: ["短線投資（趨勢偏弱）", "想要快速增值"],
+  },
+  {
+    slug: "north-district",
+    name: "北區",
+    emoji: "🏛️",
+    headline: "老社區翻新潮、中古屋低點進場",
+    summary: "美麗殿 31 年、皇普莊園 2 年新 — 屋齡兩極化。中古屋單價 23-28 萬 / 新案 33-40 萬。一中商圈周邊熱。",
+    keyStats: [
+      "大樓中位 30 萬/坪",
+      "華廈 21 萬/坪",
+      "Q1 成屋 34 件 / 預售 4 件",
+    ],
+    hotCommunities: ["美麗殿", "皇普莊園", "微笑世紀雲品", "麗園道"],
+    suitableFor: ["首購中古屋族", "想要一中商圈生活機能"],
+    avoidIf: ["想要新成屋（選擇少）", "怕老屋管線結構"],
+  },
+  {
+    slug: "central-district",
+    name: "中區",
+    emoji: "🏯",
+    headline: "舊城區重生、總價 500 萬以下選擇多",
+    summary: "舊城區房價低、未滿 500 萬佔 27%。台中車站特定區計畫帶動翻新潮、但結構老化要評估。",
+    keyStats: [
+      "大樓中位 25 萬/坪",
+      "未滿 500 萬物件佔 27%",
+      "Q1 成屋少、流動性低",
+    ],
+    hotCommunities: ["車站周邊老公寓翻新案"],
+    suitableFor: ["低預算首購", "投資收租（短期租金回報率高）"],
+    avoidIf: ["想要新建案", "重視社區管理品質"],
+  },
+  {
+    slug: "taiping",
+    name: "太平區",
+    emoji: "🌄",
+    headline: "穩定上漲、北屯外溢買家首選",
+    summary: "大樓近半年 28.70→30.04→30.34 萬/坪、穩漲。被北屯擠出的首購族最常落腳這。國光路 + 太平公園周邊熱。",
+    keyStats: [
+      "大樓平均 30.34 萬/坪",
+      "透天 32.31 萬/坪",
+      "Q1 成屋穩定、預售有限",
+    ],
+    hotCommunities: ["春福興波", "陞霖執美"],
+    suitableFor: ["首購族（北屯買不起）", "想透天的小家庭"],
+    avoidIf: ["重視商圈密度", "通勤不到台中市區"],
+  },
+  {
+    slug: "dali",
+    name: "大里區",
+    emoji: "🌾",
+    headline: "波動大、新成屋平均單價 31.55 萬",
+    summary: "2026 Q1 大樓單價 30.94→25.85→31.55 萬/坪、波動大。新成屋 vs 中古屋差別大、要分清楚買哪種。",
+    keyStats: [
+      "大樓平均 31.55 萬/坪（波動）",
+      "透天 34.08 萬/坪",
+      "套房漲到 59 萬/坪（小坪數爆炸）",
+    ],
+    hotCommunities: ["大里成功路新案"],
+    suitableFor: ["想透天的首購族", "中科外圍工程師"],
+    avoidIf: ["套房投資（單價已過高）", "求穩定漲幅"],
+  },
+];
+---
+
+<Layout
+  title={`台中 7 區買房指南 | ${config.site.title}`}
+  description="台中 7 大行政區（北屯 / 西屯七期 / 南屯 / 北區 / 中區 / 太平 / 大里）2026 Q1 行情、熱門社區、適合誰買、要避開什麼 — 一個房仲的實戰觀察。"
+>
+  <Header />
+
+  <Main
+    pageTitle="台中 7 區買房指南"
+    pageDesc="不同區房價走勢差很多。我把 2026 Q1 各區行情、熱門社區、適合誰買整理出來。你看哪區順手點哪區。"
+  >
+    {/* Quick navigation chips */}
+    <nav class="mt-6 flex flex-wrap gap-2" aria-label="台中區域快速導航">
+      {areas.map(area => (
+        <a
+          href={`#${area.slug}`}
+          class="border-border bg-card hover:border-accent rounded-full border px-4 py-2 text-sm no-underline transition-colors"
+        >
+          {area.emoji} {area.name}
+        </a>
+      ))}
+    </nav>
+
+    {/* 7 區詳細 cards */}
+    <div class="mt-10 space-y-10">
+      {
+        areas.map(area => (
+          <section
+            id={area.slug}
+            class="border-border bg-card rounded-lg border p-6 sm:p-8"
+          >
+            <header class="border-border border-b pb-4">
+              <h2 class="text-foreground flex items-center gap-3 text-2xl font-bold sm:text-3xl">
+                <span class="text-4xl">{area.emoji}</span>
+                {area.name}
+              </h2>
+              <p class="text-accent mt-2 text-lg font-medium">
+                {area.headline}
+              </p>
+            </header>
+
+            <p class="text-foreground mt-4 leading-relaxed">{area.summary}</p>
+
+            <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div>
+                <h3 class="text-foreground text-base font-bold">
+                  📊 2026 Q1 關鍵數據
+                </h3>
+                <ul class="text-muted-foreground mt-2 space-y-1 text-sm leading-relaxed">
+                  {area.keyStats.map(stat => (
+                    <li>・{stat}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <h3 class="text-foreground text-base font-bold">
+                  🏘️ 熱門社區
+                </h3>
+                <ul class="text-muted-foreground mt-2 space-y-1 text-sm leading-relaxed">
+                  {area.hotCommunities.map(c => (
+                    <li>・{c}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <h3 class="text-foreground text-base font-bold">
+                  ✅ 適合誰買
+                </h3>
+                <ul class="text-muted-foreground mt-2 space-y-1 text-sm leading-relaxed">
+                  {area.suitableFor.map(s => (
+                    <li>・{s}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <h3 class="text-foreground text-base font-bold">
+                  ⚠️ 不建議的情況
+                </h3>
+                <ul class="text-muted-foreground mt-2 space-y-1 text-sm leading-relaxed">
+                  {area.avoidIf.map(a => (
+                    <li>・{a}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div class="border-border mt-6 flex flex-wrap items-center justify-between gap-4 border-t pt-4">
+              <p class="text-muted-foreground text-sm">
+                想問{area.name}行情？
+              </p>
+              <a
+                href="https://line.me/ti/p/sky811117"
+                class="bg-accent text-accent-foreground rounded-lg px-4 py-2 text-sm font-medium no-underline"
+              >
+                💬 LINE 問景泰
+              </a>
+            </div>
+          </section>
+        ))
+      }
+    </div>
+
+    {/* 底部 CTA */}
+    <section
+      class="border-border mt-12 rounded-lg border border-dashed p-6 text-center"
+    >
+      <p class="text-foreground font-medium">想看其他區？</p>
+      <p class="text-muted-foreground mt-3 leading-relaxed">
+        東區 / 南區 / 西區 / 烏日 / 大雅 / 豐原 / 海線（梧棲 / 沙鹿 / 龍井 / 清水）
+        — 整個台中我都跑。LINE 我說你想看哪、我給你最近 3 個月當區行情 + 推薦物件。
+      </p>
+      <a
+        href="https://line.me/ti/p/sky811117"
+        class="bg-accent text-accent-foreground mt-6 inline-block rounded px-6 py-2 font-medium no-underline"
+      >
+        LINE sky811117 問景泰
+      </a>
+    </section>
+  </Main>
+
+  <Footer />
+</Layout>
