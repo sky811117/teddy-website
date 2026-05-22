@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>IG OAuth Callback</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+  body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:40px;background:#0a0a0a;color:#eee;max-width:720px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 8px}
+  p{font-size:14px;color:#aaa;margin:8px 0 20px}
+  code{font-size:14px;background:#1a1a1a;padding:14px;display:block;word-break:break-all;border-radius:6px;border:1px solid #333;color:#a8e6a8;font-family:Consolas,Monaco,monospace}
+  button{padding:12px 24px;font-size:16px;background:#3897f0;color:#fff;border:0;cursor:pointer;border-radius:6px;margin-top:16px}
+  button:hover{background:#1d7fdf}
+  .ok{color:#a8e6a8}
+  .err{color:#f0808a}
+</style>
+</head>
+<body>
+  <h1>📡 Instagram OAuth Callback</h1>
+  <p id="status">處理中…</p>
+  <code id="code">(loading)</code>
+  <button onclick="copyCode()">📋 複製 code 到剪貼簿</button>
+  <p style="margin-top:32px;font-size:12px;color:#666">把 code 貼回 AI 對話 / 或丟進 <code style="display:inline;background:transparent;padding:0;border:0">get_long_token.py</code> 換 token。</p>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const error = params.get('error') || params.get('error_message');
+  const codeEl = document.getElementById('code');
+  const statusEl = document.getElementById('status');
+
+  if (error) {
+    codeEl.textContent = error;
+    codeEl.className = 'err';
+    statusEl.textContent = '❌ 授權失敗';
+  } else if (code) {
+    codeEl.textContent = code;
+    statusEl.textContent = '✓ code 已取得，複製貼回對話';
+    statusEl.className = 'ok';
+  } else {
+    codeEl.textContent = '(URL 沒有 code 參數)';
+    statusEl.textContent = '⚠ 沒拿到 code';
+  }
+
+  function copyCode() {
+    navigator.clipboard.writeText(codeEl.textContent).then(() => {
+      const btn = event.target;
+      btn.textContent = '✓ 已複製';
+      setTimeout(() => { btn.textContent = '📋 複製 code 到剪貼簿'; }, 2000);
+    });
+  }
+</script>
+</body>
+</html>
