@@ -46,7 +46,7 @@ const isActive = (path: string) => {
   class="app-layout flex flex-col items-center justify-between sm:flex-row"
 >
   <div
-    class="border-border bg-background relative flex w-full items-baseline justify-between border-b py-4 sm:items-center sm:py-6"
+    class="border-border bg-background relative flex w-full items-baseline justify-between border-b py-4 sm:items-center sm:gap-x-10 sm:py-6"
   >
     <a
       href={getRelativeLocaleUrl(locale, "")}
@@ -66,7 +66,7 @@ const isActive = (path: string) => {
     </a>
     <nav
       id="nav-menu"
-      class="flex w-full flex-col items-center sm:ms-2 sm:flex-row sm:justify-end sm:space-x-4 sm:py-0"
+      class="flex w-full flex-col items-center sm:w-auto sm:flex-row sm:justify-end sm:space-x-4 sm:py-0"
     >
       <button
         id="menu-btn"
@@ -89,7 +89,7 @@ const isActive = (path: string) => {
             href={getRelativeLocaleUrl(locale, "posts")}
             class:list={{ "active-nav": isActive("/posts") }}
           >
-            工程日誌
+            房市筆記
           </a>
         </li>
         <li class="col-span-2">

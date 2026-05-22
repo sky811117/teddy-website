@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-06-16T11:00:00.000+08:00
 slug: faq-16-transfer-documents
 featured: false
-draft: false
+draft: true
 tags:
   - faq
   - 買方教學

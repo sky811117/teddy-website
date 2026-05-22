@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-06-02T11:00:00.000+08:00
 slug: faq-02-down-payment
 featured: false
-draft: false
+draft: true
 tags:
   - faq
   - 買方教學
