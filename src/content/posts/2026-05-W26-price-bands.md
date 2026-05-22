@@ -5,6 +5,7 @@ pubDatetime: 2026-06-26T09:00:00.000+08:00
 slug: 2026-05-W26-price-bands
 featured: false
 draft: true
+ogImage: ../../assets/images/covers/transfer-calculator.png
 tags:
   - 結構分析
   - 總價帶

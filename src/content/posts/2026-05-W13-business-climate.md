@@ -5,6 +5,7 @@ pubDatetime: 2026-06-09T09:00:00.000+08:00
 slug: 2026-05-W13-business-climate
 featured: false
 draft: true
+ogImage: ../../assets/images/covers/transfer-tax.png
 tags:
   - 數據篇
   - 景氣燈號

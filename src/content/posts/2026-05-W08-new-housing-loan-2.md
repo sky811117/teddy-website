@@ -5,6 +5,7 @@ pubDatetime: 2026-06-02T09:00:00.000+08:00
 slug: 2026-05-W08-new-housing-loan-2
 featured: false
 draft: true
+ogImage: ../../assets/images/covers/new-housing-loan-family.png
 tags:
   - 政策篇
   - 新青安

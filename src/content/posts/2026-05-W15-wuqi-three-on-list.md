@@ -5,6 +5,7 @@ pubDatetime: 2026-06-11T09:00:00.000+08:00
 slug: 2026-05-W15-wuqi-three-on-list
 featured: false
 draft: true
+ogImage: ../../assets/images/covers/community-garden.png
 tags:
   - 熱門社區
   - 梧棲
