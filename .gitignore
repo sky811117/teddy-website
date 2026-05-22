@@ -24,4 +24,20 @@ pnpm-debug.log*
 .idea/
 
 # pagefind
-public/pagefind.claude/
+public/pagefind/
+
+# claude code local settings
+.claude/
+
+# skill outputs (social-cards / policy-cards generated)
+output/
+
+# scratch build logs
+.build.log
+
+# python cache
+__pycache__/
+*.pyc
+
+# FLUX intermediate work files
+public/photos/contexts/_work/
