@@ -5,25 +5,60 @@ import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import config from "@/config";
 
+// 縣市對照（與 index.astro 同步）
+const TAICHUNG = new Set([
+  "北屯區","西屯區","南屯區","北區","南區","東區","西區","中區","太平區","大里區",
+  "霧峰區","烏日區","大肚區","沙鹿區","梧棲區","清水區","大甲區","外埔區","大安區",
+  "龍井區","潭子區","大雅區","神岡區","豐原區","后里區","東勢區","和平區","新社區","石岡區",
+]);
+const NANTOU = new Set(["南投市","草屯鎮","埔里鎮","竹山鎮","集集鎮","名間鄉","中寮鄉","水里鄉","魚池鄉","國姓鄉","信義鄉","仁愛鄉","鹿谷鄉"]);
+const CHANGHUA = new Set(["彰化市","和美鎮","田中鎮","二林鎮","北斗鎮","員林市","溪湖鎮","鹿港鎮","大村鄉","田尾鄉","秀水鄉","花壇鄉","芬園鄉","福興鄉","線西鄉","伸港鄉","埔鹽鄉","埔心鄉","永靖鄉","社頭鄉","二水鄉","竹塘鄉","溪州鄉","大城鄉","芳苑鄉"]);
+const MIAOLI = new Set(["苗栗市","竹南鎮","頭份市","卓蘭鎮","苑裡鎮","通霄鎮","後龍鎮","獅潭鄉","泰安鄉","銅鑼鄉","三義鄉","西湖鄉","造橋鄉","公館鄉","三灣鄉","南庄鄉","頭屋鄉"]);
+
+function getCounty(d: string): string {
+  if (TAICHUNG.has(d)) return "台中市";
+  if (NANTOU.has(d)) return "南投縣";
+  if (CHANGHUA.has(d)) return "彰化縣";
+  if (MIAOLI.has(d)) return "苗栗縣";
+  for (const [p, c] of [["南投","南投縣"],["彰化","彰化縣"],["苗栗","苗栗縣"],["台中","台中市"],["臺中","台中市"]] as const) {
+    if (d.startsWith(p)) return c;
+  }
+  return "其他";
+}
+
 export async function getStaticPaths() {
-  const properties = await getCollection("properties");
+  const properties = await getCollection("properties", ({ data }) => data.status === "active");
   return properties.map(property => ({
     params: { slug: property.id },
-    props: { property },
+    props: { property, properties },
   }));
 }
 
 type Props = {
   property: CollectionEntry<"properties">;
+  properties: CollectionEntry<"properties">[];
 };
 
-const { property } = Astro.props;
+const { property, properties } = Astro.props;
 const { Content } = await render(property);
 
 const formatPrice = (price: number) => {
   if (price >= 10000) return `${(price / 10000).toFixed(2)} 億`;
   return `${price.toLocaleString()} 萬`;
 };
+
+// 找同縣市其他物件（最多 6 筆）
+const thisCounty = getCounty(property.data.district);
+const sameCounty = properties
+  .filter(p => p.id !== property.id && getCounty(p.data.district) === thisCounty)
+  // 同區域優先，其次按價格相近排序
+  .sort((a, b) => {
+    const aSameDistrict = a.data.district === property.data.district ? 0 : 1;
+    const bSameDistrict = b.data.district === property.data.district ? 0 : 1;
+    if (aSameDistrict !== bSameDistrict) return aSameDistrict - bSameDistrict;
+    return Math.abs(a.data.totalPrice - property.data.totalPrice) - Math.abs(b.data.totalPrice - property.data.totalPrice);
+  })
+  .slice(0, 6);
 ---
 
 <Layout
@@ -155,6 +190,59 @@ const formatPrice = (price: number) => {
       >
         <Content />
       </div>
+
+      {
+        sameCounty.length > 0 && (
+          <div class="mt-12">
+            <h2 class="text-lg font-bold">
+              {thisCounty}其他物件
+              <span class="text-muted-foreground ml-2 text-sm font-normal">
+                ({sameCounty.length} 筆精選)
+              </span>
+            </h2>
+            <ul class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {sameCounty.map(p => (
+                <li class="border-border bg-card overflow-hidden rounded-lg border transition-shadow hover:shadow-md">
+                  <a href={`/properties/${p.id}`} class="block no-underline">
+                    {p.data.coverImage ? (
+                      <div class="bg-muted aspect-[4/3] w-full overflow-hidden">
+                        <img
+                          src={
+                            typeof p.data.coverImage === "string"
+                              ? p.data.coverImage
+                              : p.data.coverImage.src
+                          }
+                          alt={p.data.title}
+                          class="h-full w-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    ) : (
+                      <div class="bg-muted text-muted-foreground flex aspect-[4/3] w-full items-center justify-center text-xs">
+                        📷
+                      </div>
+                    )}
+                    <div class="p-3">
+                      <h3 class="text-foreground line-clamp-2 text-sm font-bold">
+                        {p.data.title}
+                      </h3>
+                      <p class="text-muted-foreground mt-1 text-xs">
+                        📍 {p.data.district}
+                      </p>
+                      <div class="text-accent mt-2 text-base font-bold">
+                        {formatPrice(p.data.totalPrice)}
+                      </div>
+                      <div class="text-muted-foreground mt-1 text-xs">
+                        {p.data.layout} · {p.data.area} 坪
+                      </div>
+                    </div>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
+      }
 
       <hr class="my-8 border-dashed" />
 
