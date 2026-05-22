@@ -1,0 +1,126 @@
+---
+import { getCollection, type CollectionEntry } from "astro:content";
+import { getPostUrl } from "@/utils/getPostPaths";
+import config from "@/config";
+
+type Props = {
+  post: CollectionEntry<"posts">;
+};
+
+const { post: currentPost } = Astro.props;
+const locale = Astro.currentLocale ?? config.site.lang;
+
+const SERIES_PREFIXES = [
+  "week-",
+  "case-",
+  "community-",
+  "faq-",
+  "policy-",
+  "term-",
+  "tool-",
+  "viewing-",
+];
+
+const getSeriesPrefix = (id: string): string | null =>
+  SERIES_PREFIXES.find(p => id.startsWith(p)) ?? null;
+
+const currentSeries = getSeriesPrefix(currentPost.id);
+const currentTags = currentPost.data.tags ?? [];
+
+const allPosts = await getCollection(
+  "posts",
+  ({ id, data }) => !data.draft && id !== currentPost.id
+);
+
+type Scored = {
+  post: CollectionEntry<"posts">;
+  tagMatch: number;
+  sameSeries: boolean;
+  pubTime: number;
+};
+
+const scored: Scored[] = allPosts.map(p => {
+  const tagMatch = (p.data.tags ?? []).filter(t =>
+    currentTags.includes(t)
+  ).length;
+  const series = getSeriesPrefix(p.id);
+  const sameSeries = !!currentSeries && series === currentSeries;
+  return {
+    post: p,
+    tagMatch,
+    sameSeries,
+    pubTime: p.data.pubDatetime?.getTime() ?? 0,
+  };
+});
+
+const tier1 = scored
+  .filter(s => s.tagMatch >= 2)
+  .sort((a, b) => b.tagMatch - a.tagMatch || b.pubTime - a.pubTime);
+
+const tier1Ids = new Set(tier1.map(s => s.post.id));
+
+const tier2 = scored
+  .filter(s => !tier1Ids.has(s.post.id) && s.sameSeries)
+  .sort((a, b) => b.pubTime - a.pubTime);
+
+const tier2Ids = new Set(tier2.map(s => s.post.id));
+
+const tier3 = scored
+  .filter(s => !tier1Ids.has(s.post.id) && !tier2Ids.has(s.post.id))
+  .sort((a, b) => b.pubTime - a.pubTime);
+
+const LIMIT = 6;
+const recommended = [...tier1, ...tier2, ...tier3].slice(0, LIMIT);
+
+const getCover = (data: CollectionEntry<"posts">["data"]): string | null => {
+  const og = data.ogImage;
+  if (typeof og === "string") return og;
+  if (og && "src" in og) return og.src;
+  return null;
+};
+---
+
+{
+  recommended.length > 0 && (
+    <section data-pagefind-ignore class="my-10">
+      <h2 class="text-foreground text-xl font-bold sm:text-2xl">
+        📚 相關文章
+      </h2>
+      <p class="text-muted-foreground mt-2 text-sm">你可能也想看的</p>
+      <ul class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {recommended.map(({ post }) => {
+          const cover = getCover(post.data);
+          return (
+            <li class="border-border bg-card overflow-hidden rounded-lg border transition-shadow hover:shadow-lg">
+              <a
+                href={getPostUrl(post.id, post.filePath, locale)}
+                class="block no-underline"
+              >
+                {cover ? (
+                  <img
+                    src={cover}
+                    alt={post.data.title}
+                    class="aspect-[16/9] w-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div class="bg-muted text-muted-foreground flex aspect-[16/9] w-full items-center justify-center text-sm">
+                    📷 照片整理中
+                  </div>
+                )}
+                <div class="p-4">
+                  <h3 class="text-foreground line-clamp-2 text-base font-bold">
+                    {post.data.title}
+                  </h3>
+                  <p class="text-muted-foreground mt-2 line-clamp-2 text-sm">
+                    {post.data.description}
+                  </p>
+                </div>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  )
+}
