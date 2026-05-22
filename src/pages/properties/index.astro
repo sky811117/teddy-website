@@ -12,12 +12,96 @@ const allProperties = await getCollection(
   ({ data }) => data.status === "active"
 );
 
+// 從 title / layout 推類型（純字串 keyword 法）
+const TYPE_KEYWORDS: Array<[string, string]> = [
+  ["透天", "透天"],
+  ["別墅", "別墅"],
+  ["店面", "店面"],
+  ["套房", "套房"],
+  ["農地", "農地"],
+  ["建地", "土地"],
+  ["土地", "土地"],
+  ["林地", "土地"],
+  ["商辦", "商辦"],
+  ["廠房", "廠房"],
+  ["公寓", "公寓"],
+  ["華廈", "華廈"],
+  ["大樓", "大樓"],
+];
+
+function getType(p: (typeof allProperties)[number]): string {
+  const t = p.data.title + " " + (p.data.layout || "");
+  for (const [kw, label] of TYPE_KEYWORDS) {
+    if (t.includes(kw)) return label;
+  }
+  // 沒命中 → 從格局推：含「房」當大樓 / 公寓
+  if (/\d房/.test(p.data.layout || "")) return "大樓";
+  return "其他";
+}
+
+// 總價分段
+function getPriceBucket(price: number): string {
+  if (price < 500) return "500萬以下";
+  if (price < 1000) return "500-1000萬";
+  if (price < 2000) return "1000-2000萬";
+  if (price < 3000) return "2000-3000萬";
+  if (price < 5000) return "3000-5000萬";
+  return "5000萬以上";
+}
+const PRICE_BUCKETS = [
+  "500萬以下",
+  "500-1000萬",
+  "1000-2000萬",
+  "2000-3000萬",
+  "3000-5000萬",
+  "5000萬以上",
+];
+
 // 精選優先，再依發佈時間倒序
 const sortedProperties = allProperties.sort((a, b) => {
   if (a.data.featured && !b.data.featured) return -1;
   if (!a.data.featured && b.data.featured) return 1;
   return b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime();
 });
+
+// 統計 chip 選項 + 數量
+const districtCount: Record<string, number> = {};
+const typeCount: Record<string, number> = {};
+const priceCount: Record<string, number> = {};
+
+const propertyMeta = sortedProperties.map(p => {
+  const district = p.data.district || "未分類";
+  const type = getType(p);
+  const priceBucket = getPriceBucket(p.data.totalPrice);
+  districtCount[district] = (districtCount[district] || 0) + 1;
+  typeCount[type] = (typeCount[type] || 0) + 1;
+  priceCount[priceBucket] = (priceCount[priceBucket] || 0) + 1;
+  return { p, district, type, priceBucket };
+});
+
+// 區域順序：台中市區先（按筆數多寡），再台中市郊、再外縣市
+const TAICHUNG_URBAN = [
+  "北屯區",
+  "西屯區",
+  "南屯區",
+  "北區",
+  "南區",
+  "東區",
+  "西區",
+  "中區",
+  "太平區",
+  "大里區",
+];
+const districts = Object.entries(districtCount).sort((a, b) => {
+  const aUrban = TAICHUNG_URBAN.includes(a[0]);
+  const bUrban = TAICHUNG_URBAN.includes(b[0]);
+  if (aUrban !== bUrban) return aUrban ? -1 : 1;
+  return b[1] - a[1];
+});
+
+const types = Object.entries(typeCount).sort((a, b) => b[1] - a[1]);
+
+const priceBuckets = PRICE_BUCKETS.filter(b => priceCount[b]);
 
 const formatPrice = (price: number) => {
   if (price >= 10000) return `${(price / 10000).toFixed(2)} 億`;
@@ -30,20 +114,103 @@ const formatPrice = (price: number) => {
 
   <Main
     pageTitle="在售物件"
-    pageDesc="台中精選物件，所有資料皆為合法登錄。想看更多細節請 LINE 私訊。"
+    pageDesc={`${sortedProperties.length} 筆台中精選物件，含本店所有同事聯賣案件。`}
   >
+    <!-- 篩選列 -->
+    <div class="border-border bg-card mb-6 space-y-3 rounded-lg border p-4">
+      <!-- 區域 -->
+      <div>
+        <div class="text-muted-foreground mb-2 text-xs font-medium">📍 區域</div>
+        <div class="flex flex-wrap gap-2" data-filter-group="district">
+          <button
+            type="button"
+            data-filter-value=""
+            class="filter-chip filter-chip-active"
+          >
+            全部 ({sortedProperties.length})
+          </button>
+          {
+            districts.map(([d, n]) => (
+              <button type="button" data-filter-value={d} class="filter-chip">
+                {d} ({n})
+              </button>
+            ))
+          }
+        </div>
+      </div>
+
+      <!-- 類型 -->
+      <div>
+        <div class="text-muted-foreground mb-2 text-xs font-medium">🏠 類型</div>
+        <div class="flex flex-wrap gap-2" data-filter-group="type">
+          <button
+            type="button"
+            data-filter-value=""
+            class="filter-chip filter-chip-active"
+          >
+            全部
+          </button>
+          {
+            types.map(([t, n]) => (
+              <button type="button" data-filter-value={t} class="filter-chip">
+                {t} ({n})
+              </button>
+            ))
+          }
+        </div>
+      </div>
+
+      <!-- 總價 -->
+      <div>
+        <div class="text-muted-foreground mb-2 text-xs font-medium">💰 總價</div>
+        <div class="flex flex-wrap gap-2" data-filter-group="price">
+          <button
+            type="button"
+            data-filter-value=""
+            class="filter-chip filter-chip-active"
+          >
+            全部
+          </button>
+          {
+            priceBuckets.map(b => (
+              <button type="button" data-filter-value={b} class="filter-chip">
+                {b} ({priceCount[b]})
+              </button>
+            ))
+          }
+        </div>
+      </div>
+
+      <!-- 結果計數 -->
+      <div
+        class="text-muted-foreground border-border border-t pt-3 text-sm"
+        data-filter-summary
+      >
+        顯示 <span data-filter-count>{sortedProperties.length}</span> 筆
+      </div>
+    </div>
+
     {
       sortedProperties.length === 0 ? (
         <p class="text-muted-foreground py-12 text-center">
-          目前沒有開放公開的物件，<a
-            href="https://line.me/ti/p/sky811117"
-            class="text-accent underline">LINE 私訊</a
-          >了解未公開物件。
+          目前沒有開放公開的物件，
+          <a href="https://line.me/ti/p/sky811117" class="text-accent underline">
+            LINE 私訊
+          </a>
+          了解未公開物件。
         </p>
       ) : (
-        <ul class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {sortedProperties.map(property => (
-            <li class="border-border bg-card overflow-hidden rounded-lg border transition-shadow hover:shadow-lg">
+        <ul
+          class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
+          data-property-list
+        >
+          {propertyMeta.map(({ p: property, district, type, priceBucket }) => (
+            <li
+              class="border-border bg-card overflow-hidden rounded-lg border transition-shadow hover:shadow-lg"
+              data-district={district}
+              data-type={type}
+              data-price={priceBucket}
+            >
               <a
                 href={`/properties/${property.id}`}
                 class="block no-underline"
@@ -73,6 +240,9 @@ const formatPrice = (price: number) => {
                       🔥 精選
                     </span>
                   )}
+                  <span class="bg-muted text-muted-foreground mb-2 mr-1 inline-block rounded px-2 py-0.5 text-xs">
+                    {type}
+                  </span>
 
                   <h2 class="text-foreground line-clamp-2 text-lg font-bold">
                     {property.data.title}
@@ -108,6 +278,17 @@ const formatPrice = (price: number) => {
       )
     }
 
+    <p
+      class="text-muted-foreground hidden py-12 text-center"
+      data-filter-empty
+    >
+      沒有符合條件的物件，試試放寬篩選或
+      <a href="https://line.me/ti/p/sky811117" class="text-accent underline">
+        LINE 私訊
+      </a>
+      告訴我需求。
+    </p>
+
     <div class="border-border mt-12 rounded-lg border border-dashed p-6 text-center">
       <p class="text-muted-foreground mb-3 text-sm">
         看到喜歡的物件？或想看未公開物件？
@@ -127,3 +308,75 @@ const formatPrice = (price: number) => {
 
   <Footer />
 </Layout>
+
+<style>
+  .filter-chip {
+    @apply border-border bg-background text-foreground hover:border-accent hover:text-accent cursor-pointer rounded-full border px-3 py-1 text-sm transition-colors;
+  }
+  .filter-chip-active {
+    @apply border-accent bg-accent text-background hover:text-background hover:border-accent;
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    const groups = document.querySelectorAll("[data-filter-group]");
+    const list = document.querySelector("[data-property-list]");
+    if (!list) return;
+    const items = Array.from(list.children);
+    const countEl = document.querySelector("[data-filter-count]");
+    const emptyEl = document.querySelector("[data-filter-empty]");
+
+    const state = { district: "", type: "", price: "" };
+
+    function apply() {
+      let visible = 0;
+      for (const li of items) {
+        const okD = !state.district || li.dataset.district === state.district;
+        const okT = !state.type || li.dataset.type === state.type;
+        const okP = !state.price || li.dataset.price === state.price;
+        const show = okD && okT && okP;
+        li.style.display = show ? "" : "none";
+        if (show) visible++;
+      }
+      if (countEl) countEl.textContent = String(visible);
+      if (emptyEl) emptyEl.classList.toggle("hidden", visible !== 0);
+      list.classList.toggle("hidden", visible === 0);
+      // URL sync
+      const url = new URL(location.href);
+      ["district", "type", "price"].forEach(k => {
+        if (state[k]) url.searchParams.set(k, state[k]);
+        else url.searchParams.delete(k);
+      });
+      history.replaceState(null, "", url.toString());
+    }
+
+    function setActive(group, value) {
+      const btns = group.querySelectorAll(".filter-chip");
+      btns.forEach(b => {
+        const match = (b.dataset.filterValue || "") === value;
+        b.classList.toggle("filter-chip-active", match);
+      });
+    }
+
+    // 初始 URL state
+    const params = new URLSearchParams(location.search);
+    ["district", "type", "price"].forEach(k => {
+      const v = params.get(k);
+      if (v) state[k] = v;
+    });
+    groups.forEach(g => {
+      const key = g.dataset.filterGroup;
+      setActive(g, state[key] || "");
+      g.addEventListener("click", e => {
+        const btn = e.target.closest(".filter-chip");
+        if (!btn) return;
+        const v = btn.dataset.filterValue || "";
+        state[key] = v;
+        setActive(g, v);
+        apply();
+      });
+    });
+    apply();
+  })();
+</script>
