@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # 每天 03:00 UTC = 台灣 11:00 自動 rebuild，讓當天到期的 scheduled post 上線
+    # GitHub Actions cron 自然 delay 5-15 分鐘，實際上線約 11:05-11:20 +08
+    - cron: "0 3 * * *"
 
 jobs:
   deploy:

@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-06-15T11:00:00.000+08:00
 slug: faq-15-leak-warranty
 featured: false
-draft: true
+draft: false
 tags:
   - faq
   - 買方教學
