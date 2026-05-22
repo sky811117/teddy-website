@@ -78,6 +78,28 @@ const formatPrice = (price: number) => {
         )
       }
 
+      {
+        property.data.photos.length > 1 && (
+          <div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
+            {property.data.photos.slice(1).map((p, i) => (
+              <a
+                href={p}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="bg-muted aspect-[4/3] block overflow-hidden rounded-md"
+              >
+                <img
+                  src={p}
+                  alt={`${property.data.title} 室內照 ${i + 2}`}
+                  loading="lazy"
+                  class="h-full w-full object-cover transition-transform hover:scale-105"
+                />
+              </a>
+            ))}
+          </div>
+        )
+      }
+
       <div
         class="border-border bg-card mt-6 grid grid-cols-2 gap-4 rounded-lg border p-4 sm:grid-cols-4"
       >
