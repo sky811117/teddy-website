@@ -1,17 +1,17 @@
 ---
-title: "房地產名詞 14：權狀 — 你家的身分證，但實體不如你想的重要"
+title: 房地產名詞 14：權狀 — 你家的身分證，但實體不如你想的重要
 author: 陳景泰
-pubDatetime: 2026-04-01T20:00:00+08:00
+pubDatetime: 2026-04-01 20:00:00+08:00
 slug: term-14-deed
 featured: false
 draft: false
-ogImage: /covers/disclosure-document.png
+ogImage: /og/term-14-deed.jpg
 tags:
-  - 房地產詞典
-  - 買方教學
-  - 權狀
-description: "權狀是房子的『身分證』，但實體權狀可能過期、可能造假、可能跟現況不符。買房前不能只看權狀，必須調謄本確認當下狀態。這篇講為什麼權狀很重要、又為什麼還不夠。"
-timezone: "Asia/Taipei"
+- 房地產詞典
+- 買方教學
+- 權狀
+description: 權狀是房子的『身分證』，但實體權狀可能過期、可能造假、可能跟現況不符。買房前不能只看權狀，必須調謄本確認當下狀態。這篇講為什麼權狀很重要、又為什麼還不夠。
+timezone: Asia/Taipei
 ---
 
 ## 一句話定義

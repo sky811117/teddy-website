@@ -1,36 +1,38 @@
 ---
-title: "FAQ 29:共有人怎麼處理?買到一半才發現屋主不是唯一所有權人怎辦"
+title: FAQ 29:共有人怎麼處理?買到一半才發現屋主不是唯一所有權人怎辦
 author: 陳景泰
-pubDatetime: 2026-06-19T11:00:00.000+08:00
+pubDatetime: 2026-06-19 11:00:00+08:00
 slug: faq-29-co-owner
 featured: false
 draft: true
-ogImage: /covers/disclosure-law.png
+ogImage: /og/faq-29-co-owner.jpg
 tags:
-  - faq
-  - 買方教學
-  - 共有
-description: "去年有客戶下了斡旋金 30 萬,簽約前才發現屋主只有 1/3 持分,另外兩個哥哥還沒同意賣。我當下叫他先別簽。這篇講共有人怎麼判斷、怎麼處理。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 共有
+description: 去年有客戶下了斡旋金 30 萬,簽約前才發現屋主只有 1/3 持分,另外兩個哥哥還沒同意賣。我當下叫他先別簽。這篇講共有人怎麼判斷、怎麼處理。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "怎麼知道房子有沒有共有人?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "看謄本的「所有權部」。如果只有一個人名字、權利範圍寫「全部」就是單一所有權。如果列出多個人名、各自寫「1/2」「1/3」之類就是分別共有。寫「公同共有」則是繼承未分割或夫妻共同財產,處分要全體同意。"
-    - "@type": "Question"
-      name: "共有人不同意賣怎麼辦?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "分兩種情況。分別共有可以只賣自己的持分,但其他共有人有優先承買權(土地法 34-1)。公同共有則需要全體同意,沒辦法單方面處分。如果共有人就是不簽,只能走「裁判分割共有物」訴訟,通常 1-2 年才有結果。"
-    - "@type": "Question"
-      name: "繼承房子要怎麼辦才能賣?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "繼承發生後要先辦「繼承登記」,把所有權從被繼承人名下移轉到所有繼承人公同共有(或依分割協議分別共有)。沒辦繼承登記前,房子在謄本上還是死者名下,不能買賣。辦繼承登記要交遺產稅單(或核發證明)、印鑑證明、戶籍謄本、繼承系統表等,流程約 1-3 個月。"
+  - '@type': Question
+    name: 怎麼知道房子有沒有共有人?
+    acceptedAnswer:
+      '@type': Answer
+      text: 看謄本的「所有權部」。如果只有一個人名字、權利範圍寫「全部」就是單一所有權。如果列出多個人名、各自寫「1/2」「1/3」之類就是分別共有。寫「公同共有」則是繼承未分割或夫妻共同財產,處分要全體同意。
+  - '@type': Question
+    name: 共有人不同意賣怎麼辦?
+    acceptedAnswer:
+      '@type': Answer
+      text: 分兩種情況。分別共有可以只賣自己的持分,但其他共有人有優先承買權(土地法 34-1)。公同共有則需要全體同意,沒辦法單方面處分。如果共有人就是不簽,只能走「裁判分割共有物」訴訟,通常
+        1-2 年才有結果。
+  - '@type': Question
+    name: 繼承房子要怎麼辦才能賣?
+    acceptedAnswer:
+      '@type': Answer
+      text: 繼承發生後要先辦「繼承登記」,把所有權從被繼承人名下移轉到所有繼承人公同共有(或依分割協議分別共有)。沒辦繼承登記前,房子在謄本上還是死者名下,不能買賣。辦繼承登記要交遺產稅單(或核發證明)、印鑑證明、戶籍謄本、繼承系統表等,流程約
+        1-3 個月。
 ---
 
 去年北屯一筆案子。

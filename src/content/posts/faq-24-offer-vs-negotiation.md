@@ -1,37 +1,39 @@
 ---
-title: "FAQ 24:出價跟議價有什麼不同?斡旋金跟要約書又該選哪個"
+title: FAQ 24:出價跟議價有什麼不同?斡旋金跟要約書又該選哪個
 author: 陳景泰
-pubDatetime: 2026-06-14T11:00:00.000+08:00
+pubDatetime: 2026-06-14 11:00:00+08:00
 slug: faq-24-offer-vs-negotiation
 featured: false
 draft: true
-ogImage: /covers/negotiation-talk.png
+ogImage: /og/faq-24-offer-vs-negotiation.jpg
 tags:
-  - faq
-  - 買方教學
-  - 議價
-  - 出價
-description: "上週客戶問我「我要下斡旋還是要約書?」我反問她「妳出價了嗎?還是已經在議價了?」她當場愣住 — 因為她不知道這兩個是不同階段。這篇把出價、議價、斡旋金、要約書一次講清楚。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 議價
+- 出價
+description: 上週客戶問我「我要下斡旋還是要約書?」我反問她「妳出價了嗎?還是已經在議價了?」她當場愣住 — 因為她不知道這兩個是不同階段。這篇把出價、議價、斡旋金、要約書一次講清楚。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "出價跟議價有什麼不同?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "出價(offer)是你開出第一個願意付的金額,讓賣方知道你的意願;議價(negotiation)是雙方來回喊價的協商過程。完整順序:看屋 → 出價 → 賣方回價 → 議價 → 達成共識 → 簽約。出價是議價的開始,不是結束。"
-    - "@type": "Question"
-      name: "斡旋金跟要約書差在哪?該選哪個?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "斡旋金需付錢給仲介保管(通常 5-10 萬),賣方同意才成立、買方撤回會被沒收;要約書不付錢但有書面承諾,撤回成本低,但有法律效力。建議買方優先選要約書 — 不用先付錢、撤回容易、效力一樣。內政部也建議要約書優於斡旋金。"
-    - "@type": "Question"
-      name: "斡旋金或要約書可以撤回嗎?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "要約書在賣方未簽署同意前可隨時撤回;斡旋金在賣方未同意前理論上可撤回但實務上仲介會百般阻撓,且如果賣方已同意你的價格而你想撤回,定金會被沒收(賣方拿一半、仲介拿一半)。要約書撤回較單純,斡旋金撤回常有糾紛。"
+  - '@type': Question
+    name: 出價跟議價有什麼不同?
+    acceptedAnswer:
+      '@type': Answer
+      text: 出價(offer)是你開出第一個願意付的金額,讓賣方知道你的意願;議價(negotiation)是雙方來回喊價的協商過程。完整順序:看屋 →
+        出價 → 賣方回價 → 議價 → 達成共識 → 簽約。出價是議價的開始,不是結束。
+  - '@type': Question
+    name: 斡旋金跟要約書差在哪?該選哪個?
+    acceptedAnswer:
+      '@type': Answer
+      text: 斡旋金需付錢給仲介保管(通常 5-10 萬),賣方同意才成立、買方撤回會被沒收;要約書不付錢但有書面承諾,撤回成本低,但有法律效力。建議買方優先選要約書
+        — 不用先付錢、撤回容易、效力一樣。內政部也建議要約書優於斡旋金。
+  - '@type': Question
+    name: 斡旋金或要約書可以撤回嗎?
+    acceptedAnswer:
+      '@type': Answer
+      text: 要約書在賣方未簽署同意前可隨時撤回;斡旋金在賣方未同意前理論上可撤回但實務上仲介會百般阻撓,且如果賣方已同意你的價格而你想撤回,定金會被沒收(賣方拿一半、仲介拿一半)。要約書撤回較單純,斡旋金撤回常有糾紛。
 ---
 
 上週一位北屯客戶看完第 5 間房子,LINE 訊息丟過來:

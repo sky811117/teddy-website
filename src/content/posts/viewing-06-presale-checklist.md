@@ -1,18 +1,19 @@
 ---
-title: "看屋實戰 06：預售屋交屋驗收 25 個 Checkpoint（建商還能幫你修的最後機會）"
+title: 看屋實戰 06：預售屋交屋驗收 25 個 Checkpoint（建商還能幫你修的最後機會）
 author: 陳景泰
-pubDatetime: 2026-02-17T09:00:00+08:00
+pubDatetime: 2026-02-17 09:00:00+08:00
 slug: viewing-06-presale-checklist
 featured: false
 draft: false
-ogImage: /covers/viewing-checklist.png
+ogImage: /og/viewing-06-presale-checklist.jpg
 tags:
-  - 看屋實戰
-  - 買方教學
-  - 預售屋
-  - 交屋驗收
-description: "去年我陪一位客戶驗收北屯預售屋，找到 17 處問題，建商一個月內全部處理掉。交屋是「建商還會免費幫你修」的最後機會 — 過了就要自己花錢。這篇 25 個 checkpoint 分 5 大類，一個下午跑完。"
-timezone: "Asia/Taipei"
+- 看屋實戰
+- 買方教學
+- 預售屋
+- 交屋驗收
+description: 去年我陪一位客戶驗收北屯預售屋，找到 17 處問題，建商一個月內全部處理掉。交屋是「建商還會免費幫你修」的最後機會 — 過了就要自己花錢。這篇
+  25 個 checkpoint 分 5 大類，一個下午跑完。
+timezone: Asia/Taipei
 ---
 
 去年我陪一位客戶驗收北屯預售屋。

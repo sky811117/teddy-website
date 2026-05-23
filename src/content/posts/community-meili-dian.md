@@ -1,18 +1,19 @@
 ---
-title: "美麗殿（北區）：31 年老社區的真相 — 我看過好幾戶後的 honest 評估"
+title: 美麗殿（北區）：31 年老社區的真相 — 我看過好幾戶後的 honest 評估
 author: 陳景泰
-pubDatetime: 2026-04-15T09:00:00+08:00
+pubDatetime: 2026-04-15 09:00:00+08:00
 slug: community-meili-dian
 featured: false
 draft: false
-ogImage: /communities/meili-dian.png
+ogImage: /og/community-meili-dian.jpg
 tags:
-  - community-review
-  - 北區
-  - 美麗殿
-  - 老屋
-description: "美麗殿是北區的老牌大樓社區，屋齡 31 年。地點佳、機能成熟，但管路老化、銀行貸款只給 7 成是真實要面對的問題。這篇給你 honest take。"
-timezone: "Asia/Taipei"
+- community-review
+- 北區
+- 美麗殿
+- 老屋
+description: 美麗殿是北區的老牌大樓社區，屋齡 31 年。地點佳、機能成熟，但管路老化、銀行貸款只給 7 成是真實要面對的問題。這篇給你 honest
+  take。
+timezone: Asia/Taipei
 ---
 
 上個月有位 38 歲的買方來找我。

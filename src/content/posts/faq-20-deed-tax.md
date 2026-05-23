@@ -1,36 +1,38 @@
 ---
-title: "FAQ 20:契稅是什麼?6% 聽起來很多但其實沒你想的可怕"
+title: FAQ 20:契稅是什麼?6% 聽起來很多但其實沒你想的可怕
 author: 陳景泰
-pubDatetime: 2026-06-10T11:00:00.000+08:00
+pubDatetime: 2026-06-10 11:00:00+08:00
 slug: faq-20-deed-tax
 featured: false
 draft: true
-ogImage: /covers/transfer-tax.png
+ogImage: /og/faq-20-deed-tax.jpg
 tags:
-  - faq
-  - 買方教學
-  - 稅務
-description: "客戶聽到契稅 6% 都會皺眉:1,200 萬乘 6% 不就 72 萬?其實不是。契稅是用「房屋評定現值」算,中古屋通常只繳 1.8-6 萬。這篇把計算公式、申報期限、3 個常見錯誤一次講清楚。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 稅務
+description: 客戶聽到契稅 6% 都會皺眉:1,200 萬乘 6% 不就 72 萬?其實不是。契稅是用「房屋評定現值」算,中古屋通常只繳 1.8-6 萬。這篇把計算公式、申報期限、3
+  個常見錯誤一次講清楚。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "契稅稅率多少?怎麼算?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "不動產買賣契稅稅率是 6%,但計算基礎不是成交價,而是「房屋評定現值」(由地方稅務局評定,通常遠低於市價)。30 年老屋評定現值約 30-100 萬,所以實際契稅約 1.8-6 萬元,不是成交價的 6%。"
-    - "@type": "Question"
-      name: "契稅誰要繳?什麼時候申報?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "契稅由買方繳納。必須在不動產買賣契約成立之日起 30 天內,到房屋所在地的地方稅務局申報,逾期會被加徵滯納金,最多可罰 1 倍應納稅額。"
-    - "@type": "Question"
-      name: "契稅跟印花稅差在哪?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "契稅針對「房屋」課徵(稅率 6%),印花稅針對「公契」課徵(稅率 0.1%);契稅的計算基礎是房屋評定現值,印花稅是土地公告現值加房屋評定現值。兩者都由買方繳納,且都在過戶前必須完成。"
+  - '@type': Question
+    name: 契稅稅率多少?怎麼算?
+    acceptedAnswer:
+      '@type': Answer
+      text: 不動產買賣契稅稅率是 6%,但計算基礎不是成交價,而是「房屋評定現值」(由地方稅務局評定,通常遠低於市價)。30 年老屋評定現值約 30-100
+        萬,所以實際契稅約 1.8-6 萬元,不是成交價的 6%。
+  - '@type': Question
+    name: 契稅誰要繳?什麼時候申報?
+    acceptedAnswer:
+      '@type': Answer
+      text: 契稅由買方繳納。必須在不動產買賣契約成立之日起 30 天內,到房屋所在地的地方稅務局申報,逾期會被加徵滯納金,最多可罰 1 倍應納稅額。
+  - '@type': Question
+    name: 契稅跟印花稅差在哪?
+    acceptedAnswer:
+      '@type': Answer
+      text: 契稅針對「房屋」課徵(稅率 6%),印花稅針對「公契」課徵(稅率 0.1%);契稅的計算基礎是房屋評定現值,印花稅是土地公告現值加房屋評定現值。兩者都由買方繳納,且都在過戶前必須完成。
 ---
 
 最近有個南屯客戶看了一間 1,180 萬的房子。

@@ -1,18 +1,19 @@
 ---
-title: "看屋實戰 03：漏水怎麼測 — 5 個免費招（看屋當天就用得上）"
+title: 看屋實戰 03：漏水怎麼測 — 5 個免費招（看屋當天就用得上）
 author: 陳景泰
-pubDatetime: 2026-02-06T09:00:00+08:00
+pubDatetime: 2026-02-06 09:00:00+08:00
 slug: viewing-03-leak-test
 featured: false
 draft: false
-ogImage: /covers/undesirable-checklist.png
+ogImage: /og/viewing-03-leak-test.jpg
 tags:
-  - 看屋實戰
-  - 買方教學
-  - 漏水檢測
-  - 中古屋
-description: "今年 4 月一位客戶看上北屯一間 15 年大樓，當天下大雨。我繞牆角摸了一圈，3 處手心黏黏的 — 後來查出來是樓上漏水沒處理。這篇 5 個免費招數，看屋當天就用得上，不用帶儀器、不用花錢。"
-timezone: "Asia/Taipei"
+- 看屋實戰
+- 買方教學
+- 漏水檢測
+- 中古屋
+description: 今年 4 月一位客戶看上北屯一間 15 年大樓，當天下大雨。我繞牆角摸了一圈，3 處手心黏黏的 — 後來查出來是樓上漏水沒處理。這篇 5
+  個免費招數，看屋當天就用得上，不用帶儀器、不用花錢。
+timezone: Asia/Taipei
 ---
 
 今年 4 月一位客戶看上北屯一間 15 年大樓。

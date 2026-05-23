@@ -1,17 +1,17 @@
 ---
-title: "房地產名詞 03：公設 — 你買了卻不能進去的那塊地"
+title: 房地產名詞 03：公設 — 你買了卻不能進去的那塊地
 author: 陳景泰
-pubDatetime: 2026-02-26T20:00:00+08:00
+pubDatetime: 2026-02-26 20:00:00+08:00
 slug: term-03-public-facilities
 featured: false
 draft: false
-ogImage: /covers/community-architecture.png
+ogImage: /og/term-03-public-facilities.jpg
 tags:
-  - 房地產詞典
-  - 買方教學
-  - 公設
-description: "台中新案公設比普遍 32-38%，意思是你花 1000 萬買的房，有 350 萬是花在大廳跟健身房。這篇講公設怎麼算、什麼叫實用公設、什麼叫蚊子公設。"
-timezone: "Asia/Taipei"
+- 房地產詞典
+- 買方教學
+- 公設
+description: 台中新案公設比普遍 32-38%，意思是你花 1000 萬買的房，有 350 萬是花在大廳跟健身房。這篇講公設怎麼算、什麼叫實用公設、什麼叫蚊子公設。
+timezone: Asia/Taipei
 ---
 
 ## 一句話定義

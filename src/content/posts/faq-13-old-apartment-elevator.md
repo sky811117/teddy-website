@@ -1,36 +1,36 @@
 ---
-title: "FAQ 13:老公寓加裝電梯可行嗎?我陪客戶跑過 2 案的真實成本"
+title: FAQ 13:老公寓加裝電梯可行嗎?我陪客戶跑過 2 案的真實成本
 author: 陳景泰
-pubDatetime: 2026-06-03T11:00:00.000+08:00
+pubDatetime: 2026-06-03 11:00:00+08:00
 slug: faq-13-old-apartment-elevator
 featured: false
 draft: true
-ogImage: /covers/community-architecture.png
+ogImage: /og/faq-13-old-apartment-elevator.jpg
 tags:
-  - faq
-  - 買方教學
-  - 老屋
-description: "前陣子一位 60 多歲的阿姨來找我,她要買 4 樓老公寓,問我「裝電梯要多少錢、會不會被鄰居擋」。我陪過 2 個案子真的把電梯裝起來,這篇把成本、法規、難點、補助全寫下來。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 老屋
+description: 前陣子一位 60 多歲的阿姨來找我,她要買 4 樓老公寓,問我「裝電梯要多少錢、會不會被鄰居擋」。我陪過 2 個案子真的把電梯裝起來,這篇把成本、法規、難點、補助全寫下來。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "老公寓加裝電梯需要多少錢?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "整棟 300-800 萬,分攤到每戶大約 30-80 萬。台中市建管處有補助方案,最高一棟可補助 220 萬。實際金額看樓層數、電梯位置(戶外/樓梯間/後陽台)、是否要拆牆改結構而定。"
-    - "@type": "Question"
-      name: "老公寓加裝電梯法規門檻?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "最大門檻是全體區分所有權人 3/4 同意(都更條例放寬後從 100% 降到 3/4)。其次是建照變更、結構安全評估、消防動線檢討。各縣市建管處有「都市更新建築物耐震評估與整建維護補助」可申請。"
-    - "@type": "Question"
-      name: "加裝電梯後分攤怎麼算公平?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "最常見爭議。實務上有「樓層加成」算法:1 樓 0.5、2 樓 1、3 樓 1.5、4 樓 2、5 樓 2.5 — 高樓層分擔較多。但 1 樓住戶常主張「我不用搭電梯」拒絕分攤,要靠協商或法院強制執行。"
+  - '@type': Question
+    name: 老公寓加裝電梯需要多少錢?
+    acceptedAnswer:
+      '@type': Answer
+      text: 整棟 300-800 萬,分攤到每戶大約 30-80 萬。台中市建管處有補助方案,最高一棟可補助 220 萬。實際金額看樓層數、電梯位置(戶外/樓梯間/後陽台)、是否要拆牆改結構而定。
+  - '@type': Question
+    name: 老公寓加裝電梯法規門檻?
+    acceptedAnswer:
+      '@type': Answer
+      text: 最大門檻是全體區分所有權人 3/4 同意(都更條例放寬後從 100% 降到 3/4)。其次是建照變更、結構安全評估、消防動線檢討。各縣市建管處有「都市更新建築物耐震評估與整建維護補助」可申請。
+  - '@type': Question
+    name: 加裝電梯後分攤怎麼算公平?
+    acceptedAnswer:
+      '@type': Answer
+      text: 最常見爭議。實務上有「樓層加成」算法:1 樓 0.5、2 樓 1、3 樓 1.5、4 樓 2、5 樓 2.5 — 高樓層分擔較多。但 1 樓住戶常主張「我不用搭電梯」拒絕分攤,要靠協商或法院強制執行。
 ---
 
 前陣子一位 60 多歲的阿姨來找我看房。

@@ -1,18 +1,19 @@
 ---
-title: "Week 04：用 Google Map 揪出 10 大嫌惡設施 — 看屋前 30 分鐘做完"
+title: Week 04：用 Google Map 揪出 10 大嫌惡設施 — 看屋前 30 分鐘做完
 author: 陳景泰
-pubDatetime: 2026-05-21T23:00:00.000+08:00
+pubDatetime: 2026-05-21 23:00:00+08:00
 slug: week-04-undesirable-facilities
 featured: false
 draft: false
-ogImage: /covers/undesirable-overview.png
+ogImage: /og/week-04-undesirable-facilities.jpg
 tags:
-  - weekly-recap
-  - 買方教學
-  - 嫌惡設施
-  - 看屋
-description: "去年我差點讓一位客戶買到旁邊有殯儀館的房。她看屋 3 次都沒發現 — 因為從房子大門出來那邊都被建築擋住。後來我用 Google Map 換了視角才抓到。這篇把我會用的 10 個嫌惡設施查法寫下來。"
-timezone: "Asia/Taipei"
+- weekly-recap
+- 買方教學
+- 嫌惡設施
+- 看屋
+description: 去年我差點讓一位客戶買到旁邊有殯儀館的房。她看屋 3 次都沒發現 — 因為從房子大門出來那邊都被建築擋住。後來我用 Google Map
+  換了視角才抓到。這篇把我會用的 10 個嫌惡設施查法寫下來。
+timezone: Asia/Taipei
 ---
 
 去年我帶一位客戶看西屯一間房。

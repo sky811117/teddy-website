@@ -3,6 +3,7 @@ title: Week 02：5168「完成」按鈕灰掉，但後端其實接受
 author: 陳景泰
 pubDatetime: 2026-05-21T23:30:00.000+08:00
 slug: week-02-5168-force-click
+ogImage: /og/week-02-5168-force-click.jpg
 featured: false
 draft: true
 tags:
@@ -13,7 +14,6 @@ tags:
 description: "想做一鍵改價，卡在「完成」按鈕灰掉兩小時。最後硬把 disabled attribute 拔掉去點，後端居然接受、價格真的改了，而且沒扣額度。"
 timezone: "Asia/Taipei"
 ---
-
 5/2 那天晚上想做的事其實很單純：**一鍵改價**。
 
 屋主常常打電話來說「啊那個 320 改 319 啦」「再降 5 萬看看」。每次我都要進 5168 後台、點開物件、滑到價格欄位、改數字、按完成。一次三分鐘，一週改個五六次就快半小時沒了。

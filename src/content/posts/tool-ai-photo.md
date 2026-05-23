@@ -1,18 +1,18 @@
 ---
-title: "工具：AI 修圖 — 為什麼我的物件照看起來比同行專業"
+title: 工具：AI 修圖 — 為什麼我的物件照看起來比同行專業
 author: 陳景泰
-pubDatetime: 2026-05-31T08:00:00.000+08:00
+pubDatetime: 2026-05-31 08:00:00+08:00
 slug: tool-ai-photo
 featured: false
 draft: false
-ogImage: /covers/viewing-natural-light.png
+ogImage: /og/tool-ai-photo.jpg
 tags:
-  - 工具
-  - 賣方教學
-  - AI修圖
-  - 物件照
-description: "在 591、樂屋、5168 的搜尋頁，買家滑過你的物件只有 3 秒。3 秒內決定點不點。你自己手機拍的原圖，跟我用 AI 修過的，買家會點哪個？"
-timezone: "Asia/Taipei"
+- 工具
+- 賣方教學
+- AI修圖
+- 物件照
+description: 在 591、樂屋、5168 的搜尋頁，買家滑過你的物件只有 3 秒。3 秒內決定點不點。你自己手機拍的原圖，跟我用 AI 修過的，買家會點哪個？
+timezone: Asia/Taipei
 ---
 
 很多屋主跟我說：「景泰，我自己用手機拍就好，反正都看得到。」

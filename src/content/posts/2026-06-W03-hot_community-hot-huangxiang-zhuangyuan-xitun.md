@@ -3,6 +3,7 @@ title: 西屯皇翔莊園 50 筆成交 — 屋齡 2 年、單坪 22.94-40.40 萬
 author: 陳景泰
 pubDatetime: 2026-06-16T09:00:00+08:00
 slug: 2026-06-W03-hot_community-hot-huangxiang-zhuangyuan-xitun
+ogImage: /og/2026-06-W03-hot_community-hot-huangxiang-zhuangyuan-xitun.jpg
 featured: false
 draft: true
 tags:
@@ -15,7 +16,6 @@ tags:
 description: "西屯皇翔莊園 4 月台中熱門 No.4、近 12 個月 50 筆。22.94-40.40 萬/坪、總價 517-1818 萬、屋齡 2 年。從成交數據看：這是豪宅還是自住？"
 timezone: "Asia/Taipei"
 ---
-
 「景泰，皇翔莊園聽起來像豪宅，但價格範圍從 517 萬到 1818 萬差很多，到底是什麼樣的社區？」
 
 好問題。皇翔莊園的成交範圍跨度大 — 同社區單坪 22.94-40.40 萬、總價 517-1818 萬，**這代表社區內坪數和樓層分化大**。

@@ -1,18 +1,18 @@
 ---
-title: "微笑世紀雲品特區（北區）：屋齡 6 年的中古近新 — 我看過好幾戶後的 honest take"
+title: 微笑世紀雲品特區（北區）：屋齡 6 年的中古近新 — 我看過好幾戶後的 honest take
 author: 陳景泰
-pubDatetime: 2026-04-20T20:00:00+08:00
+pubDatetime: 2026-04-20 20:00:00+08:00
 slug: community-smile-century-yunpin
 featured: false
 draft: false
-ogImage: /communities/smile-century-yunpin.png
+ogImage: /og/community-smile-century-yunpin.jpg
 tags:
-  - community-review
-  - 北區
-  - 微笑世紀雲品特區
-  - 中古
-description: "微笑世紀雲品特區是北區雲品特區內的中古近新社區，雲品建設 2020 年完工，屋齡 6 年。屋齡甜蜜點、公設成熟、行情透明，但區段話題性起伏要先評估。"
-timezone: "Asia/Taipei"
+- community-review
+- 北區
+- 微笑世紀雲品特區
+- 中古
+description: 微笑世紀雲品特區是北區雲品特區內的中古近新社區，雲品建設 2020 年完工，屋齡 6 年。屋齡甜蜜點、公設成熟、行情透明，但區段話題性起伏要先評估。
+timezone: Asia/Taipei
 ---
 
 2 月有位 45 歲的買方來找我，想找北區、屋齡 5-8 年、3 房 30 坪以上、預算 1300-1600 萬。

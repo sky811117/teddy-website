@@ -1,36 +1,37 @@
 ---
-title: "FAQ 04:看屋順序怎麼安排?3 階段 SOP 從線上篩到驗屋"
+title: FAQ 04:看屋順序怎麼安排?3 階段 SOP 從線上篩到驗屋
 author: 陳景泰
-pubDatetime: 2026-05-25T11:00:00.000+08:00
+pubDatetime: 2026-05-25 11:00:00+08:00
 slug: faq-04-viewing-order
 featured: false
 draft: true
-ogImage: /covers/viewing-checklist.png
+ogImage: /og/faq-04-viewing-order.jpg
 tags:
-  - faq
-  - 買方教學
-  - 看屋
-description: "一句話:看屋分 3 個階段 — 線上篩選、現場初看、進階驗證。買方最常犯的錯是「第一次看就帶長輩」「看一次就出價」。這篇把我帶過上百組客戶整理的看屋 SOP 寫下來,告訴你每階段該做什麼、不該做什麼。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 看屋
+description: 一句話:看屋分 3 個階段 — 線上篩選、現場初看、進階驗證。買方最常犯的錯是「第一次看就帶長輩」「看一次就出價」。這篇把我帶過上百組客戶整理的看屋
+  SOP 寫下來,告訴你每階段該做什麼、不該做什麼。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "看屋要看幾次才能下決定?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "至少 2-3 次,涵蓋不同時段。第一次白天看屋況、第二次傍晚或晚上看噪音光線、第三次雨天看漏水。看一次就下訂常常踩雷。"
-    - "@type": "Question"
-      name: "第一次看屋要帶長輩 / 朋友來嗎?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "不建議。第一次看屋目的是「篩掉不合適的」,人多反而干擾判斷,長輩跟你的需求不一定一致。建議第二次或第三次再帶長輩或設計師。第一次自己看，省時也省壓力。"
-    - "@type": "Question"
-      name: "看屋每次要看幾間?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "一天最多 4 間。超過會疲累混淆。我幫客戶安排通常是一天 2-3 間,每間 20-30 分鐘,中間休息 15 分鐘。看完當天寫筆記,不然第二天就忘了。"
+  - '@type': Question
+    name: 看屋要看幾次才能下決定?
+    acceptedAnswer:
+      '@type': Answer
+      text: 至少 2-3 次,涵蓋不同時段。第一次白天看屋況、第二次傍晚或晚上看噪音光線、第三次雨天看漏水。看一次就下訂常常踩雷。
+  - '@type': Question
+    name: 第一次看屋要帶長輩 / 朋友來嗎?
+    acceptedAnswer:
+      '@type': Answer
+      text: 不建議。第一次看屋目的是「篩掉不合適的」,人多反而干擾判斷,長輩跟你的需求不一定一致。建議第二次或第三次再帶長輩或設計師。第一次自己看，省時也省壓力。
+  - '@type': Question
+    name: 看屋每次要看幾間?
+    acceptedAnswer:
+      '@type': Answer
+      text: 一天最多 4 間。超過會疲累混淆。我幫客戶安排通常是一天 2-3 間,每間 20-30 分鐘,中間休息 15 分鐘。看完當天寫筆記,不然第二天就忘了。
 ---
 
 最近一位北屯一位客戶問我:

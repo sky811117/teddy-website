@@ -1,37 +1,41 @@
 ---
-title: "FAQ 15:漏水保固到底保多久?簽約前必加的 3 條保護你的條款"
+title: FAQ 15:漏水保固到底保多久?簽約前必加的 3 條保護你的條款
 author: 陳景泰
-pubDatetime: 2026-06-05T11:00:00.000+08:00
+pubDatetime: 2026-06-05 11:00:00+08:00
 slug: faq-15-leak-warranty
 featured: false
 draft: true
-ogImage: /covers/undesirable-checklist.png
+ogImage: /og/faq-15-leak-warranty.jpg
 tags:
-  - faq
-  - 買方教學
-  - 漏水
-  - 契約
-description: "一位客戶交屋後 3 個月發現主臥牆面滲水,跟屋主吵了 4 個月最後走訴訟。問題不是有沒有漏水,是「契約上漏水保固只寫 6 個月、但他主張這是交屋前就有的」。這篇把民法 5 年瑕疵擔保 vs 契約 6 個月保固的差別講清楚。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 漏水
+- 契約
+description: 一位客戶交屋後 3 個月發現主臥牆面滲水,跟屋主吵了 4 個月最後走訴訟。問題不是有沒有漏水,是「契約上漏水保固只寫 6 個月、但他主張這是交屋前就有的」。這篇把民法
+  5 年瑕疵擔保 vs 契約 6 個月保固的差別講清楚。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "房屋漏水保固期多久?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "兩個層次:(1) 民法第 365 條物之瑕疵擔保責任 — 從通知賣方瑕疵起算 6 個月、發現瑕疵起算 5 年內可主張,(2) 買賣契約常見「漏水保固 6 個月」 — 從交屋日起算。實務上建議簽約時加條款延長到 1-2 年並明訂範圍。"
-    - "@type": "Question"
-      name: "交屋後發現漏水怎麼處理?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "(1) 立即拍照錄影存證 +(2) 7 天內寄存證信函通知賣方 +(3) 找第三方檢測公司鑑定漏水原因(費用 1-2 萬)+(4) 若賣方不修,可主張減少價金或解除契約。注意:超過 6 個月通知時效就難主張。"
-    - "@type": "Question"
-      name: "哪些漏水可以主張、哪些不能?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "可主張:結構性漏水(外牆 / 屋頂 / 樓板 / 共用管路)、交屋時已存在但賣方未告知。不可主張:買方裝潢造成的破壞、自然老化(屋齡 30 年的鏽蝕管路)、買方使用不當(廁所漏水自己堵住排水)。"
+  - '@type': Question
+    name: 房屋漏水保固期多久?
+    acceptedAnswer:
+      '@type': Answer
+      text: 兩個層次:(1) 民法第 365 條物之瑕疵擔保責任 — 從通知賣方瑕疵起算 6 個月、發現瑕疵起算 5 年內可主張,(2) 買賣契約常見「漏水保固
+        6 個月」 — 從交屋日起算。實務上建議簽約時加條款延長到 1-2 年並明訂範圍。
+  - '@type': Question
+    name: 交屋後發現漏水怎麼處理?
+    acceptedAnswer:
+      '@type': Answer
+      text: (1) 立即拍照錄影存證 +(2) 7 天內寄存證信函通知賣方 +(3) 找第三方檢測公司鑑定漏水原因(費用 1-2 萬)+(4) 若賣方不修,可主張減少價金或解除契約。注意:超過
+        6 個月通知時效就難主張。
+  - '@type': Question
+    name: 哪些漏水可以主張、哪些不能?
+    acceptedAnswer:
+      '@type': Answer
+      text: 可主張:結構性漏水(外牆 / 屋頂 / 樓板 / 共用管路)、交屋時已存在但賣方未告知。不可主張:買方裝潢造成的破壞、自然老化(屋齡 30
+        年的鏽蝕管路)、買方使用不當(廁所漏水自己堵住排水)。
 ---
 
 最近一位客戶來找我訴苦。

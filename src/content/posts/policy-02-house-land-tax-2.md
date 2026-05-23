@@ -1,18 +1,19 @@
 ---
-title: "房地合一 2.0 怎麼算 — 自住豁免 4 條件，賺 500 萬不用繳半毛稅"
+title: 房地合一 2.0 怎麼算 — 自住豁免 4 條件，賺 500 萬不用繳半毛稅
 author: 陳景泰
-pubDatetime: 2026-05-24T21:00:00.000+08:00
+pubDatetime: 2026-05-24 21:00:00+08:00
 slug: policy-02-house-land-tax-2
 featured: false
 draft: false
-ogImage: /covers/transfer-tax.png
+ogImage: /og/policy-02-house-land-tax-2.jpg
 tags:
-  - 政策解讀
-  - 房地合一
-  - 賣方教學
-  - 節稅
-description: "上個月一位客戶賣房賺 480 萬，被國稅局扣 168 萬稅 — 她以為自己自住沒事。我幫她查發現她漏了 4 個自住豁免條件中的 1 個。這篇把房地合一 2.0 的稅率、自住豁免、實際試算寫完，賣房前一定要看。"
-timezone: "Asia/Taipei"
+- 政策解讀
+- 房地合一
+- 賣方教學
+- 節稅
+description: 上個月一位客戶賣房賺 480 萬，被國稅局扣 168 萬稅 — 她以為自己自住沒事。我幫她查發現她漏了 4 個自住豁免條件中的 1 個。這篇把房地合一
+  2.0 的稅率、自住豁免、實際試算寫完，賣房前一定要看。
+timezone: Asia/Taipei
 ---
 
 假設一個情境 ——

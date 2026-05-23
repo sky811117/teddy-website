@@ -1,36 +1,39 @@
 ---
-title: "FAQ 28:抵押權設定怎麼讀?過戶前不確認這 4 個欄位你會虧"
+title: FAQ 28:抵押權設定怎麼讀?過戶前不確認這 4 個欄位你會虧
 author: 陳景泰
-pubDatetime: 2026-06-18T11:00:00.000+08:00
+pubDatetime: 2026-06-18 11:00:00+08:00
 slug: faq-28-mortgage-reading
 featured: false
 draft: true
-ogImage: /covers/disclosure-document.png
+ogImage: /og/faq-28-mortgage-reading.jpg
 tags:
-  - faq
-  - 買方教學
-  - 謄本
-description: "去年有個客戶問我「景泰我謄本看到屋主有 1200 萬抵押權,可是他開價才 1300 萬,我買得起嗎?」我跟他講「擔保金額不等於貸款餘額,你看到的 1200 萬只是上限」。這篇教你怎麼讀抵押權設定。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 謄本
+description: 去年有個客戶問我「景泰我謄本看到屋主有 1200 萬抵押權,可是他開價才 1300 萬,我買得起嗎?」我跟他講「擔保金額不等於貸款餘額,你看到的
+  1200 萬只是上限」。這篇教你怎麼讀抵押權設定。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "抵押權金額跟貸款餘額一樣嗎?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "不一樣。抵押權「擔保債權總金額」是擔保上限,通常是貸款金額的 1.2 倍。例如貸款 1000 萬,抵押權設定 1200 萬。實際欠多少要跟銀行調「貸款餘額證明」才知道。"
-    - "@type": "Question"
-      name: "抵押權塗銷要多久?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "流程是 1) 賣方還清貸款餘額 2) 銀行開立「抵押權塗銷同意書」(1-3 個工作日) 3) 地政士拿同意書到地政事務所辦塗銷登記(1-7 個工作日)。實務上整個過程約 7-14 天,通常跟過戶同步進行,過戶當天買方撥款給銀行代償。"
-    - "@type": "Question"
-      name: "最高限額抵押權跟一般抵押權差在哪?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "一般抵押權對應一筆特定借款,還清就消滅。最高限額抵押權則是擔保「未來一段期間內」一定範圍內的多筆借款,即使還清也不會自動消滅,屋主可以重複借錢。買房前一定要確認最高限額抵押權的當下餘額為 0,並要求塗銷登記,否則塗銷只是形式。"
+  - '@type': Question
+    name: 抵押權金額跟貸款餘額一樣嗎?
+    acceptedAnswer:
+      '@type': Answer
+      text: 不一樣。抵押權「擔保債權總金額」是擔保上限,通常是貸款金額的 1.2 倍。例如貸款 1000 萬,抵押權設定 1200 萬。實際欠多少要跟銀行調「貸款餘額證明」才知道。
+  - '@type': Question
+    name: 抵押權塗銷要多久?
+    acceptedAnswer:
+      '@type': Answer
+      text: 流程是 1) 賣方還清貸款餘額 2) 銀行開立「抵押權塗銷同意書」(1-3 個工作日) 3) 地政士拿同意書到地政事務所辦塗銷登記(1-7
+        個工作日)。實務上整個過程約 7-14 天,通常跟過戶同步進行,過戶當天買方撥款給銀行代償。
+  - '@type': Question
+    name: 最高限額抵押權跟一般抵押權差在哪?
+    acceptedAnswer:
+      '@type': Answer
+      text: 一般抵押權對應一筆特定借款,還清就消滅。最高限額抵押權則是擔保「未來一段期間內」一定範圍內的多筆借款,即使還清也不會自動消滅,屋主可以重複借錢。買房前一定要確認最高限額抵押權的當下餘額為
+        0,並要求塗銷登記,否則塗銷只是形式。
 ---
 
 去年有個客戶傳謄本問我:

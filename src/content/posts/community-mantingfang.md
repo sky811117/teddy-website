@@ -1,18 +1,18 @@
 ---
-title: "西屯滿庭芳花園實地觀察：42 年老花園社區，戶數多、單坪實在，但你要看懂這 3 件事"
+title: 西屯滿庭芳花園實地觀察：42 年老花園社區，戶數多、單坪實在，但你要看懂這 3 件事
 author: 陳景泰
-pubDatetime: 2026-05-08T09:00:00+08:00
+pubDatetime: 2026-05-08 09:00:00+08:00
 slug: community-mantingfang
 featured: false
 draft: false
-ogImage: /communities/mantingfang.png
+ogImage: /og/community-mantingfang.jpg
 tags:
-  - community-review
-  - 西屯
-  - 滿庭芳花園
-  - 老屋
-description: "滿庭芳花園是西屯老牌花園型社區，屋齡 42 年，單坪比同區新成屋實在很多。但管路、外牆、銀行貸款成數這三件事我都會跟客戶先講清楚。"
-timezone: "Asia/Taipei"
+- community-review
+- 西屯
+- 滿庭芳花園
+- 老屋
+description: 滿庭芳花園是西屯老牌花園型社區，屋齡 42 年，單坪比同區新成屋實在很多。但管路、外牆、銀行貸款成數這三件事我都會跟客戶先講清楚。
+timezone: Asia/Taipei
 ---
 
 上週帶一對小夫妻去看滿庭芳花園。

@@ -1,19 +1,19 @@
 ---
-title: "W23 結構分析｜預售 53.47 萬 vs 成屋 28.88 萬 — 一倍差價合理嗎？"
+title: W23 結構分析｜預售 53.47 萬 vs 成屋 28.88 萬 — 一倍差價合理嗎？
 author: 陳景泰
-pubDatetime: 2026-06-23T09:00:00.000+08:00
+pubDatetime: 2026-06-23 09:00:00+08:00
 slug: 2026-05-W23-presale-vs-existing
 featured: false
 draft: false
-ogImage: /covers/community-architecture.png
+ogImage: /og/2026-05-W23-presale-vs-existing.jpg
 tags:
-  - 結構分析
-  - 預售屋
-  - 成屋
-  - 單坪價差
-  - "2026"
-description: "合泰建經 5 月報告：台中 2 月預售平均單價 53.47 萬/坪 vs 成屋 28.88 萬/坪。差近一倍。差價合理嗎？什麼情況下預售划算？什麼情況下成屋穩當？這篇我幫客戶決策時的框架公開。"
-timezone: "Asia/Taipei"
+- 結構分析
+- 預售屋
+- 成屋
+- 單坪價差
+- '2026'
+description: 合泰建經 5 月報告：台中 2 月預售平均單價 53.47 萬/坪 vs 成屋 28.88 萬/坪。差近一倍。差價合理嗎？什麼情況下預售划算？什麼情況下成屋穩當？這篇我幫客戶決策時的框架公開。
+timezone: Asia/Taipei
 ---
 
 合泰建經 5 月報告打開到「**全市實價登錄分析**」那兩頁，我盯著兩個數字反覆看：

@@ -1,18 +1,18 @@
 ---
-title: "工具：仲介費試算 — 6% 不是天上掉下來的數字，加盟店有議價空間"
+title: 工具：仲介費試算 — 6% 不是天上掉下來的數字，加盟店有議價空間
 author: 陳景泰
-pubDatetime: 2026-05-29T08:00:00.000+08:00
+pubDatetime: 2026-05-29 08:00:00+08:00
 slug: tool-agent-fee
 featured: false
 draft: false
-ogImage: /covers/negotiation-calculator.png
+ogImage: /og/tool-agent-fee.jpg
 tags:
-  - 工具
-  - 仲介費
-  - 買方教學
-  - 賣方教學
-description: "很多人以為仲介費 6% 是固定的「不能談」。錯。法定上限是「賣方 4% 買方 2% 合計不超過 6%」，這是上限不是固定費率。加盟店之間有議價空間，但要看你怎麼談。"
-timezone: "Asia/Taipei"
+- 工具
+- 仲介費
+- 買方教學
+- 賣方教學
+description: 很多人以為仲介費 6% 是固定的「不能談」。錯。法定上限是「賣方 4% 買方 2% 合計不超過 6%」，這是上限不是固定費率。加盟店之間有議價空間，但要看你怎麼談。
+timezone: Asia/Taipei
 ---
 
 「仲介費就是 6% 啊，不能談。」

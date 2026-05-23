@@ -1,38 +1,41 @@
 ---
-title: "FAQ 14:海砂屋 / 輻射屋怎麼測?買屋齡 30 年以上一定要做的 2 件事"
+title: FAQ 14:海砂屋 / 輻射屋怎麼測?買屋齡 30 年以上一定要做的 2 件事
 author: 陳景泰
-pubDatetime: 2026-06-04T11:00:00.000+08:00
+pubDatetime: 2026-06-04 11:00:00+08:00
 slug: faq-14-sea-sand-radiation
 featured: false
 draft: true
-ogImage: /covers/undesirable-warning.png
+ogImage: /og/faq-14-sea-sand-radiation.jpg
 tags:
-  - faq
-  - 買方教學
-  - 老屋
-  - 海砂屋
-  - 輻射屋
-description: "上個月帶客戶看一間屋齡 35 年的房,屋況看起來不錯。我跟她說「下訂前一定要先測海砂、查輻射」— 她以為我在嚇人。結果送驗後氯離子超標,訂金差點賠進去。這篇把怎麼測、多少錢、哪邊查全寫出來。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 老屋
+- 海砂屋
+- 輻射屋
+description: 上個月帶客戶看一間屋齡 35 年的房,屋況看起來不錯。我跟她說「下訂前一定要先測海砂、查輻射」— 她以為我在嚇人。結果送驗後氯離子超標,訂金差點賠進去。這篇把怎麼測、多少錢、哪邊查全寫出來。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "海砂屋怎麼檢測?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "用「混凝土中水溶性氯離子含量檢測」。專業檢測公司鑽取樣本送驗,費用約 5,000-15,000 元(看點數)。2026 年國家標準 CNS 3090 規定鋼筋混凝土水溶性氯離子含量不得超過 0.15 kg/m³。超標就是高度懷疑海砂屋。"
-    - "@type": "Question"
-      name: "輻射屋怎麼查?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "兩個方式:(1) 上「原能會放射性污染建築物資訊網」查名單,所有已知輻射屋公開可查;(2) 請原能會輻射偵測中心免費到場檢測(免費電話 0800-076-789)。1982-1984 年蓋的房子最要注意,當年部分鋼筋遭鈷-60 污染。"
-    - "@type": "Question"
-      name: "哪些年份蓋的房子要特別小心?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "海砂屋集中在民國 75-83 年(1986-1994 年),當年台灣盜採河沙嚴重。輻射屋集中在 1982-1984 年。買屋齡 32-40 年的房子,海砂 + 輻射兩個檢測都建議做。"
+  - '@type': Question
+    name: 海砂屋怎麼檢測?
+    acceptedAnswer:
+      '@type': Answer
+      text: 用「混凝土中水溶性氯離子含量檢測」。專業檢測公司鑽取樣本送驗,費用約 5,000-15,000 元(看點數)。2026 年國家標準 CNS
+        3090 規定鋼筋混凝土水溶性氯離子含量不得超過 0.15 kg/m³。超標就是高度懷疑海砂屋。
+  - '@type': Question
+    name: 輻射屋怎麼查?
+    acceptedAnswer:
+      '@type': Answer
+      text: 兩個方式:(1) 上「原能會放射性污染建築物資訊網」查名單,所有已知輻射屋公開可查;(2) 請原能會輻射偵測中心免費到場檢測(免費電話 0800-076-789)。1982-1984
+        年蓋的房子最要注意,當年部分鋼筋遭鈷-60 污染。
+  - '@type': Question
+    name: 哪些年份蓋的房子要特別小心?
+    acceptedAnswer:
+      '@type': Answer
+      text: 海砂屋集中在民國 75-83 年(1986-1994 年),當年台灣盜採河沙嚴重。輻射屋集中在 1982-1984 年。買屋齡 32-40
+        年的房子,海砂 + 輻射兩個檢測都建議做。
 ---
 
 上個月一位客戶來找我看北屯一帶的老公寓,屋齡 35 年。

@@ -1,18 +1,18 @@
 ---
-title: "皇普莊園（北區）：屋齡 2 年的新成屋 — 我帶看好幾組買家後的觀察"
+title: 皇普莊園（北區）：屋齡 2 年的新成屋 — 我帶看好幾組買家後的觀察
 author: 陳景泰
-pubDatetime: 2026-04-17T09:00:00+08:00
+pubDatetime: 2026-04-17 09:00:00+08:00
 slug: community-huangpu-manor
 featured: false
 draft: false
-ogImage: /communities/huangpu-manor.png
+ogImage: /og/community-huangpu-manor.jpg
 tags:
-  - community-review
-  - 北區
-  - 皇普莊園
-  - 新成屋
-description: "皇普莊園是北區的新成屋社區，皇普建設 2024 年完工。地段熱、屋齡新、公設新穎，但公設比偏高、新成屋議價空間小是要先想清楚的點。"
-timezone: "Asia/Taipei"
+- community-review
+- 北區
+- 皇普莊園
+- 新成屋
+description: 皇普莊園是北區的新成屋社區，皇普建設 2024 年完工。地段熱、屋齡新、公設新穎，但公設比偏高、新成屋議價空間小是要先想清楚的點。
+timezone: Asia/Taipei
 ---
 
 3 月底有對新婚買方來找我。

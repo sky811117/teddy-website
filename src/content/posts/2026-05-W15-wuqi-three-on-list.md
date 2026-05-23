@@ -1,19 +1,20 @@
 ---
-title: "W15 熱門社區｜為什麼梧棲一口氣 3 個社區進台中 TOP 20"
+title: W15 熱門社區｜為什麼梧棲一口氣 3 個社區進台中 TOP 20
 author: 陳景泰
-pubDatetime: 2026-06-11T09:00:00.000+08:00
+pubDatetime: 2026-06-11 09:00:00+08:00
 slug: 2026-05-W15-wuqi-three-on-list
 featured: false
 draft: false
-ogImage: /covers/community-garden.png
+ogImage: /og/2026-05-W15-wuqi-three-on-list.jpg
 tags:
-  - 熱門社區
-  - 梧棲
-  - TOP20
-  - 海線
-  - "2026"
-description: "合泰建經 5 月 TOP 20 榜單裡，梧棲區一口氣 3 個社區進榜：聯悅臻 96 筆（總冠軍）、勝興豐境 47 筆、遠雄幸福成 36 筆，合計 179 筆。為什麼是梧棲？我這個月跑了 2 次梧棲案場給你拆。"
-timezone: "Asia/Taipei"
+- 熱門社區
+- 梧棲
+- TOP20
+- 海線
+- '2026'
+description: 合泰建經 5 月 TOP 20 榜單裡，梧棲區一口氣 3 個社區進榜：聯悅臻 96 筆（總冠軍）、勝興豐境 47 筆、遠雄幸福成 36 筆，合計
+  179 筆。為什麼是梧棲？我這個月跑了 2 次梧棲案場給你拆。
+timezone: Asia/Taipei
 ---
 
 合泰建經 5 月 TOP 20 榜單，我看到第一名「**梧棲聯悅臻 96 筆**」時愣了一下。

@@ -1,18 +1,18 @@
 ---
-title: "遠雄幸福成（梧棲）值不值得買？住過台中港特區後我才敢說的話"
+title: 遠雄幸福成（梧棲）值不值得買？住過台中港特區後我才敢說的話
 author: 陳景泰
-pubDatetime: 2026-04-30T14:00:00+08:00
+pubDatetime: 2026-04-30 14:00:00+08:00
 slug: community-farglory-happiness
 featured: false
 draft: false
-ogImage: /communities/farglory-happiness.png
+ogImage: /og/community-farglory-happiness.jpg
 tags:
-  - community-review
-  - 梧棲區
-  - 遠雄幸福成
-  - 新成屋
-description: "遠雄幸福成是梧棲台中港特區的全新交屋社區，遠雄品牌力強、車位是剛需，但生活機能還在養成。這篇講我看過幾戶之後對首購、投資、自住的真實評估。"
-timezone: "Asia/Taipei"
+- community-review
+- 梧棲區
+- 遠雄幸福成
+- 新成屋
+description: 遠雄幸福成是梧棲台中港特區的全新交屋社區，遠雄品牌力強、車位是剛需，但生活機能還在養成。這篇講我看過幾戶之後對首購、投資、自住的真實評估。
+timezone: Asia/Taipei
 ---
 
 前陣子帶一對小夫妻去看遠雄幸福成。

@@ -1,18 +1,19 @@
 ---
-title: "地價稅完全解讀 — 公告地價 vs 申報地價，11 月開徵前你該懂的 3 件事"
+title: 地價稅完全解讀 — 公告地價 vs 申報地價，11 月開徵前你該懂的 3 件事
 author: 陳景泰
-pubDatetime: 2026-05-29T21:00:00.000+08:00
+pubDatetime: 2026-05-29 21:00:00+08:00
 slug: policy-07-land-value-tax
 featured: false
 draft: false
-ogImage: /covers/transfer-tax.png
+ogImage: /og/policy-07-land-value-tax.jpg
 tags:
-  - 政策解讀
-  - 地價稅
-  - 自住族
-  - 持有稅
-description: "去年 11 月開徵地價稅，有客戶收到稅單 4 萬 8 — 鄰居同社區只繳 1 萬 2。差 4 倍。我幫她查發現她沒申辦自用住宅優惠稅率。這篇我把地價稅怎麼算、公告地價 vs 申報地價差在哪、自用住宅優惠 4 條件寫清楚，11 月前可以救。"
-timezone: "Asia/Taipei"
+- 政策解讀
+- 地價稅
+- 自住族
+- 持有稅
+description: 去年 11 月開徵地價稅，有客戶收到稅單 4 萬 8 — 鄰居同社區只繳 1 萬 2。差 4 倍。我幫她查發現她沒申辦自用住宅優惠稅率。這篇我把地價稅怎麼算、公告地價
+  vs 申報地價差在哪、自用住宅優惠 4 條件寫清楚，11 月前可以救。
+timezone: Asia/Taipei
 ---
 
 想像一個情境 ——

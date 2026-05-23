@@ -1,37 +1,39 @@
 ---
-title: "FAQ 18:土地增值稅怎麼算?自用優惠 10% + 重購退稅實戰教學"
+title: FAQ 18:土地增值稅怎麼算?自用優惠 10% + 重購退稅實戰教學
 author: 陳景泰
-pubDatetime: 2026-06-08T11:00:00.000+08:00
+pubDatetime: 2026-06-08 11:00:00+08:00
 slug: faq-18-land-value-increment-tax
 featured: false
 draft: true
-ogImage: /covers/transfer-tax.png
+ogImage: /og/faq-18-land-value-increment-tax.jpg
 tags:
-  - faq
-  - 買方教學
-  - 稅務
-  - 土地增值稅
-description: "上個月幫一位客戶處理她媽媽繼承的房子賣掉,原本要繳 86 萬增值稅,我幫她申請自用住宅優惠後變 24 萬 — 一條規則差 62 萬。這篇把增值稅算法、自用優惠條件、重購退稅怎麼用,寫成你看得懂的版本。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 稅務
+- 土地增值稅
+description: 上個月幫一位客戶處理她媽媽繼承的房子賣掉,原本要繳 86 萬增值稅,我幫她申請自用住宅優惠後變 24 萬 — 一條規則差 62 萬。這篇把增值稅算法、自用優惠條件、重購退稅怎麼用,寫成你看得懂的版本。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "土地增值稅怎麼算?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "公式:土地漲價總數額 ×(20% / 30% / 40%)三級累進稅率。土地漲價總數額 =(本次移轉公告現值 - 前次移轉公告現值)× 持有期間物價指數調整。一般稅率 20%-40%,自用住宅優惠統一 10%(一生一次)。"
-    - "@type": "Question"
-      name: "自用住宅優惠 10% 怎麼申請?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "條件:(1) 賣方本人 + 配偶 + 未成年子女在該地址設籍 1 年以上 (2) 該房屋自住 1 年內無出租或營業使用 (3) 都市土地面積不超過 1.5 公畝(約 45 坪)/ 非都市不超過 3.5 公畝。一生只能用一次,沒用過的人優先申請。"
-    - "@type": "Question"
-      name: "重購退稅怎麼用?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "賣掉舊房 2 年內(或先買新房 2 年內賣舊房)買新房,且新房總價 ≥ 舊房售價,可申請退還之前繳的增值稅。是「先繳後退」機制 — 賣舊房時要先繳,買新房後再申請退款。重購退稅沒次數限制。"
+  - '@type': Question
+    name: 土地增值稅怎麼算?
+    acceptedAnswer:
+      '@type': Answer
+      text: 公式:土地漲價總數額 ×(20% / 30% / 40%)三級累進稅率。土地漲價總數額 =(本次移轉公告現值 - 前次移轉公告現值)× 持有期間物價指數調整。一般稅率
+        20%-40%,自用住宅優惠統一 10%(一生一次)。
+  - '@type': Question
+    name: 自用住宅優惠 10% 怎麼申請?
+    acceptedAnswer:
+      '@type': Answer
+      text: 條件:(1) 賣方本人 + 配偶 + 未成年子女在該地址設籍 1 年以上 (2) 該房屋自住 1 年內無出租或營業使用 (3) 都市土地面積不超過
+        1.5 公畝(約 45 坪)/ 非都市不超過 3.5 公畝。一生只能用一次,沒用過的人優先申請。
+  - '@type': Question
+    name: 重購退稅怎麼用?
+    acceptedAnswer:
+      '@type': Answer
+      text: 賣掉舊房 2 年內(或先買新房 2 年內賣舊房)買新房,且新房總價 ≥ 舊房售價,可申請退還之前繳的增值稅。是「先繳後退」機制 — 賣舊房時要先繳,買新房後再申請退款。重購退稅沒次數限制。
 ---
 
 上個月幫一位客戶處理她媽媽繼承的房子。

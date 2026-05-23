@@ -3,6 +3,7 @@ title: 北屯重劃區 11-14 期分析：哪一期的新成屋最值得卡位？
 author: 陳景泰
 pubDatetime: 2026-06-18T09:00:00+08:00
 slug: 2026-06-W03-district_focus-district-beitun-redevelopment-analysis
+ogImage: /og/2026-06-W03-district_focus-district-beitun-redevelopment-analysis.jpg
 featured: false
 draft: true
 tags:
@@ -14,7 +15,6 @@ tags:
 description: "北屯第 11、12、13、14 期重劃區，每一期定位、價位、機能、未來性都不同。我用合泰建經數據 + 帶看經驗，幫你拆解哪一期值得卡位。"
 timezone: "Asia/Taipei"
 ---
-
 「景泰，北屯說重劃區，但 11 期、12 期、13 期、14 期到底有什麼差？我應該看哪一期？」
 
 好問題。北屯 4 個重劃期之間差距很大 — 蛋黃 vs 蛋白、機能成熟度、產品定位、價位帶都不同。

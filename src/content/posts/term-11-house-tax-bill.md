@@ -1,17 +1,17 @@
 ---
-title: "房地產名詞 11：房屋稅單怎麼讀 — 那些數字跟市價毫無關係"
+title: 房地產名詞 11：房屋稅單怎麼讀 — 那些數字跟市價毫無關係
 author: 陳景泰
-pubDatetime: 2026-03-23T09:00:00+08:00
+pubDatetime: 2026-03-23 09:00:00+08:00
 slug: term-11-house-tax-bill
 featured: false
 draft: false
-ogImage: /covers/transfer-tax.png
+ogImage: /og/term-11-house-tax-bill.jpg
 tags:
-  - 房地產詞典
-  - 買方教學
-  - 稅務
-description: "每年 5 月你會收到房屋稅單，上面寫『課稅現值 80 萬』— 你的房子市價可能 1500 萬。為什麼差這麼多？這篇教你看懂稅單上每一欄、自住跟出租稅率的差別。"
-timezone: "Asia/Taipei"
+- 房地產詞典
+- 買方教學
+- 稅務
+description: 每年 5 月你會收到房屋稅單，上面寫『課稅現值 80 萬』— 你的房子市價可能 1500 萬。為什麼差這麼多？這篇教你看懂稅單上每一欄、自住跟出租稅率的差別。
+timezone: Asia/Taipei
 ---
 
 ## 一句話定義

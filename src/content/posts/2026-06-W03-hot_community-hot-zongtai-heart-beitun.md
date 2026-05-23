@@ -3,6 +3,7 @@ title: 北屯總太心之所向 — 74 筆成交、屋齡 1 年、總價 700-249
 author: 陳景泰
 pubDatetime: 2026-06-15T09:00:00+08:00
 slug: 2026-06-W03-hot_community-hot-zongtai-heart-beitun
+ogImage: /og/2026-06-W03-hot_community-hot-zongtai-heart-beitun.jpg
 featured: false
 draft: true
 tags:
@@ -14,7 +15,6 @@ tags:
 description: "北屯總太心之所向 — 4 月台中熱門 No.2、近 12 個月 74 筆。21.94-40.53 萬/坪、總價 700-2490 萬、屋齡 1 年。我從買盤、區位、建商品牌解讀為什麼這麼熱。"
 timezone: "Asia/Taipei"
 ---
-
 「景泰，總太心之所向是不是現在北屯最紅的社區？」
 
 是。4 月台中熱門社區報告，**總太心之所向 74 筆成交數，僅次於梧棲聯悅臻、贏過全台中其他所有社區**。

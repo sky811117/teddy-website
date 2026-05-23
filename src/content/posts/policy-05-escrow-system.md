@@ -1,18 +1,19 @@
 ---
-title: "履約保證制度完全解讀 — 你付的 1,500 萬到底躺在哪、什麼時候才會撥給賣方"
+title: 履約保證制度完全解讀 — 你付的 1,500 萬到底躺在哪、什麼時候才會撥給賣方
 author: 陳景泰
-pubDatetime: 2026-05-27T21:00:00.000+08:00
+pubDatetime: 2026-05-27 21:00:00+08:00
 slug: policy-05-escrow-system
 featured: false
 draft: false
-ogImage: /covers/disclosure-stamp.png
+ogImage: /og/policy-05-escrow-system.jpg
 tags:
-  - 政策解讀
-  - 履約保證
-  - 買方教學
-  - 賣方教學
-description: "去年有客戶看到合約寫『履約保證費 0.06%』，覺得貴想省，被我擋下來。3 個月後他朋友買房沒辦履保，賣方拿到頭期款後跑路，1,200 萬要不回來。這篇我把履約保證的運作、3 種版本差異、什麼時候撥款、誰負擔費用寫清楚。"
-timezone: "Asia/Taipei"
+- 政策解讀
+- 履約保證
+- 買方教學
+- 賣方教學
+description: 去年有客戶看到合約寫『履約保證費 0.06%』，覺得貴想省，被我擋下來。3 個月後他朋友買房沒辦履保，賣方拿到頭期款後跑路，1,200 萬要不回來。這篇我把履約保證的運作、3
+  種版本差異、什麼時候撥款、誰負擔費用寫清楚。
+timezone: Asia/Taipei
 ---
 
 想像一個情境 ——

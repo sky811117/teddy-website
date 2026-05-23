@@ -1,19 +1,20 @@
 ---
-title: "工具：多平台曝光 — 591 + 樂屋 + 5168 同步，買家從哪來都接得到"
+title: 工具：多平台曝光 — 591 + 樂屋 + 5168 同步，買家從哪來都接得到
 author: 陳景泰
-pubDatetime: 2026-05-28T08:00:00.000+08:00
+pubDatetime: 2026-05-28 08:00:00+08:00
 slug: tool-multi-platform
 featured: false
 draft: false
-ogImage: /covers/community-livingroom.png
+ogImage: /og/tool-multi-platform.jpg
 tags:
-  - 工具
-  - 賣方教學
-  - "591"
-  - 樂屋
-  - "5168"
-description: "很多屋主只委託「一家」仲介在「一個平台」上。問題是 591 的買家不上樂屋、樂屋的買家不上 5168。你少一個平台就少 1/3 的潛在客。我做的是三平台同步 + IG 短影音覆蓋。"
-timezone: "Asia/Taipei"
+- 工具
+- 賣方教學
+- '591'
+- 樂屋
+- '5168'
+description: 很多屋主只委託「一家」仲介在「一個平台」上。問題是 591 的買家不上樂屋、樂屋的買家不上 5168。你少一個平台就少 1/3 的潛在客。我做的是三平台同步
+  + IG 短影音覆蓋。
+timezone: Asia/Taipei
 ---
 
 賣方最常犯的錯 — **只委託一家仲介、只掛一個平台**。

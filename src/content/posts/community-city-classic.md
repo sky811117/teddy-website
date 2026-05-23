@@ -1,18 +1,18 @@
 ---
-title: "西區城市經典實地觀察：31 年老市區大樓，五權西路精華帶，老屋的優缺都很真實"
+title: 西區城市經典實地觀察：31 年老市區大樓，五權西路精華帶，老屋的優缺都很真實
 author: 陳景泰
-pubDatetime: 2026-05-11T14:00:00+08:00
+pubDatetime: 2026-05-11 14:00:00+08:00
 slug: community-city-classic
 featured: false
 draft: false
-ogImage: /communities/city-classic.png
+ogImage: /og/community-city-classic.jpg
 tags:
-  - community-review
-  - 西區
-  - 城市經典
-  - 老屋
-description: "城市經典位在西區五權西路精華帶，屋齡 31 年，生活機能滿分但老市區的代價也很實在。這篇講管路、外牆、停車、貸款這幾件你買前該想清楚的事。"
-timezone: "Asia/Taipei"
+- community-review
+- 西區
+- 城市經典
+- 老屋
+description: 城市經典位在西區五權西路精華帶，屋齡 31 年，生活機能滿分但老市區的代價也很實在。這篇講管路、外牆、停車、貸款這幾件你買前該想清楚的事。
+timezone: Asia/Taipei
 ---
 
 兩個月前一個客人來找我，是位 50 出頭的單身姐姐。

@@ -1,17 +1,17 @@
 ---
-title: "房地產名詞 12：公告現值 vs 實際成交 — 為什麼差 3-5 倍"
+title: 房地產名詞 12：公告現值 vs 實際成交 — 為什麼差 3-5 倍
 author: 陳景泰
-pubDatetime: 2026-03-25T14:00:00+08:00
+pubDatetime: 2026-03-25 14:00:00+08:00
 slug: term-12-announced-value-vs-actual
 featured: false
 draft: false
-ogImage: /covers/transfer-calculator.png
+ogImage: /og/term-12-announced-value-vs-actual.jpg
 tags:
-  - 房地產詞典
-  - 買方教學
-  - 估價
-description: "政府公告土地現值 18 萬/坪，實際成交 65 萬/坪 — 差 3.6 倍。為什麼？這篇講公告現值的角色（課稅基準）、跟實際成交的差距、跟為什麼這個差距會影響你賣房的土地增值稅。"
-timezone: "Asia/Taipei"
+- 房地產詞典
+- 買方教學
+- 估價
+description: 政府公告土地現值 18 萬/坪，實際成交 65 萬/坪 — 差 3.6 倍。為什麼？這篇講公告現值的角色（課稅基準）、跟實際成交的差距、跟為什麼這個差距會影響你賣房的土地增值稅。
+timezone: Asia/Taipei
 ---
 
 ## 一句話定義

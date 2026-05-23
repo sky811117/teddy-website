@@ -1,37 +1,39 @@
 ---
-title: "FAQ 08:雨遮算坪數嗎? 2018 前後的規定差超大,買錯多付幾十萬"
+title: FAQ 08:雨遮算坪數嗎? 2018 前後的規定差超大,買錯多付幾十萬
 author: 陳景泰
-pubDatetime: 2026-05-29T11:00:00.000+08:00
+pubDatetime: 2026-05-29 11:00:00+08:00
 slug: faq-08-eaves-area
 featured: false
 draft: true
-ogImage: /covers/disclosure-document.png
+ogImage: /og/faq-08-eaves-area.jpg
 tags:
-  - faq
-  - 買方教學
-  - 坪數
-  - 雨遮
-description: "前陣子幫客戶看一間 2017 完工的房,屋主說「30 坪」,結果謄本上主建物只有 26 坪、雨遮卻有 2 坪。差 4 坪、依當時單坪 35 萬算,就是 140 萬的價差。雨遮怎麼算、什麼時候不算錢、買賣怎麼分,這篇講清楚。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 坪數
+- 雨遮
+description: 前陣子幫客戶看一間 2017 完工的房,屋主說「30 坪」,結果謄本上主建物只有 26 坪、雨遮卻有 2 坪。差 4 坪、依當時單坪 35
+  萬算,就是 140 萬的價差。雨遮怎麼算、什麼時候不算錢、買賣怎麼分,這篇講清楚。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "雨遮現在還算坪數嗎?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "看年代。2018-01-01 以後申請建照的新建案,雨遮「不登記、不計價」,完全不算坪數。2018 年以前的建案,雨遮可以登記在「附屬建物」項下,但內政部規定不可單獨計價(被當贈品)。實務上 2018 前舊案常見爭議,要看建物謄本明細決定。"
-    - "@type": "Question"
-      name: "謄本上的「附屬建物」是什麼?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "附屬建物指陽台、雨遮、屋簷、花台等「依附於主建物的構造物」。權狀坪數通常拆三塊:主建物(室內)、附屬建物(陽台/雨遮)、公共設施(梯間/管委會/車道)。三者單坪價值不同,主建物最高、公設最低。"
-    - "@type": "Question"
-      name: "實價登錄會把雨遮算進去嗎?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "2018 後新案的實價登錄完全不含雨遮坪數。2018 前舊案會把雨遮含在「附屬建物」項下登錄,但比較單坪價時要還原扣除,才能跟新案公平比較。實價登錄系統可查到主建物、附屬建物分開的坪數明細。"
+  - '@type': Question
+    name: 雨遮現在還算坪數嗎?
+    acceptedAnswer:
+      '@type': Answer
+      text: 看年代。2018-01-01 以後申請建照的新建案,雨遮「不登記、不計價」,完全不算坪數。2018 年以前的建案,雨遮可以登記在「附屬建物」項下,但內政部規定不可單獨計價(被當贈品)。實務上
+        2018 前舊案常見爭議,要看建物謄本明細決定。
+  - '@type': Question
+    name: 謄本上的「附屬建物」是什麼?
+    acceptedAnswer:
+      '@type': Answer
+      text: 附屬建物指陽台、雨遮、屋簷、花台等「依附於主建物的構造物」。權狀坪數通常拆三塊:主建物(室內)、附屬建物(陽台/雨遮)、公共設施(梯間/管委會/車道)。三者單坪價值不同,主建物最高、公設最低。
+  - '@type': Question
+    name: 實價登錄會把雨遮算進去嗎?
+    acceptedAnswer:
+      '@type': Answer
+      text: 2018 後新案的實價登錄完全不含雨遮坪數。2018 前舊案會把雨遮含在「附屬建物」項下登錄,但比較單坪價時要還原扣除,才能跟新案公平比較。實價登錄系統可查到主建物、附屬建物分開的坪數明細。
 ---
 
 前陣子幫一位客戶看一間 2017 年完工的房子。

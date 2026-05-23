@@ -1,17 +1,17 @@
 ---
-title: "房地產名詞 08：機械車位 — 便宜一半但你能接受的代價"
+title: 房地產名詞 08：機械車位 — 便宜一半但你能接受的代價
 author: 陳景泰
-pubDatetime: 2026-03-14T10:00:00+08:00
+pubDatetime: 2026-03-14 10:00:00+08:00
 slug: term-08-mechanical-parking
 featured: false
 draft: false
-ogImage: /covers/community-architecture.png
+ogImage: /og/term-08-mechanical-parking.jpg
 tags:
-  - 房地產詞典
-  - 買方教學
-  - 車位
-description: "機械車位比平面便宜 40-60%，但要等、機器會壞、車身有限制。這篇講買機械車位前該量的尺寸、該問的問題、跟那個 15-20 年後一定會來的『大筆維修分攤』。"
-timezone: "Asia/Taipei"
+- 房地產詞典
+- 買方教學
+- 車位
+description: 機械車位比平面便宜 40-60%，但要等、機器會壞、車身有限制。這篇講買機械車位前該量的尺寸、該問的問題、跟那個 15-20 年後一定會來的『大筆維修分攤』。
+timezone: Asia/Taipei
 ---
 
 ## 一句話定義

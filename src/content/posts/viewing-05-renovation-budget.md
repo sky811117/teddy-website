@@ -1,19 +1,19 @@
 ---
-title: "看屋實戰 05：中古屋翻新成本 — 3 種裝潢級別預算（30 萬 vs 150 萬 vs 400 萬）"
+title: 看屋實戰 05：中古屋翻新成本 — 3 種裝潢級別預算（30 萬 vs 150 萬 vs 400 萬）
 author: 陳景泰
-pubDatetime: 2026-02-13T20:00:00+08:00
+pubDatetime: 2026-02-13 20:00:00+08:00
 slug: viewing-05-renovation-budget
 featured: false
 draft: false
-ogImage: /covers/viewing-corner.png
+ogImage: /og/viewing-05-renovation-budget.jpg
 tags:
-  - 看屋實戰
-  - 買方教學
-  - 翻新預算
-  - 中古屋
-  - 裝潢
-description: "客戶買了東區一間 30 年老透天，問我「翻新要多少」。我列三級給他比 — 基礎整理 30 萬、中度翻新 150 萬、完整重做 400 萬，差在哪、哪個你會用上、怎麼挑師傅，這篇講清楚。"
-timezone: "Asia/Taipei"
+- 看屋實戰
+- 買方教學
+- 翻新預算
+- 中古屋
+- 裝潢
+description: 客戶買了東區一間 30 年老透天，問我「翻新要多少」。我列三級給他比 — 基礎整理 30 萬、中度翻新 150 萬、完整重做 400 萬，差在哪、哪個你會用上、怎麼挑師傅，這篇講清楚。
+timezone: Asia/Taipei
 ---
 
 去年一位客戶買了東區一間 30 年老透天，建坪 40 坪。

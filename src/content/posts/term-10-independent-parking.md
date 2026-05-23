@@ -1,17 +1,17 @@
 ---
-title: "房地產名詞 10：獨立產權車位 — 為什麼有些車位可以單獨賣"
+title: 房地產名詞 10：獨立產權車位 — 為什麼有些車位可以單獨賣
 author: 陳景泰
-pubDatetime: 2026-03-19T20:00:00+08:00
+pubDatetime: 2026-03-19 20:00:00+08:00
 slug: term-10-independent-parking
 featured: false
 draft: false
-ogImage: /covers/community-architecture.png
+ogImage: /og/term-10-independent-parking.jpg
 tags:
-  - 房地產詞典
-  - 買方教學
-  - 車位
-description: "車位分『獨立產權』跟『共有持分』兩種，差別在能不能單獨買賣、單獨貸款。同樣 100 萬的車位，獨立產權可能比持分多賣 30 萬。這篇講怎麼分辨、為什麼差這麼多。"
-timezone: "Asia/Taipei"
+- 房地產詞典
+- 買方教學
+- 車位
+description: 車位分『獨立產權』跟『共有持分』兩種，差別在能不能單獨買賣、單獨貸款。同樣 100 萬的車位，獨立產權可能比持分多賣 30 萬。這篇講怎麼分辨、為什麼差這麼多。
+timezone: Asia/Taipei
 ---
 
 ## 一句話定義

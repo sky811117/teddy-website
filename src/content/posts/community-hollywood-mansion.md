@@ -1,18 +1,18 @@
 ---
-title: "西區好萊塢大廈實地觀察：42 年老市區大樓，近中華夜市、第六市場，老屋優缺一次說清楚"
+title: 西區好萊塢大廈實地觀察：42 年老市區大樓，近中華夜市、第六市場，老屋優缺一次說清楚
 author: 陳景泰
-pubDatetime: 2026-05-13T20:00:00+08:00
+pubDatetime: 2026-05-13 20:00:00+08:00
 slug: community-hollywood-mansion
 featured: false
 draft: false
-ogImage: /communities/hollywood-mansion.png
+ogImage: /og/community-hollywood-mansion.jpg
 tags:
-  - community-review
-  - 西區
-  - 好萊塢大廈
-  - 老屋
-description: "好萊塢大廈位在西區老市區精華帶，屋齡 42 年。地段、生活機能、總價 CP 值有它的好，但 40 年老屋的管路、結構、貸款條件，我會直接跟你講清楚。"
-timezone: "Asia/Taipei"
+- community-review
+- 西區
+- 好萊塢大廈
+- 老屋
+description: 好萊塢大廈位在西區老市區精華帶，屋齡 42 年。地段、生活機能、總價 CP 值有它的好，但 40 年老屋的管路、結構、貸款條件，我會直接跟你講清楚。
+timezone: Asia/Taipei
 ---
 
 上個月有個年輕媽媽找我看好萊塢大廈。

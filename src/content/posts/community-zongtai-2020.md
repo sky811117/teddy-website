@@ -1,18 +1,18 @@
 ---
-title: "總太 2020 屋齡 5 年了還值得買?北屯中古近新真實評價"
+title: 總太 2020 屋齡 5 年了還值得買?北屯中古近新真實評價
 author: 陳景泰
-pubDatetime: 2026-04-13T09:00:00+08:00
+pubDatetime: 2026-04-13 09:00:00+08:00
 slug: community-zongtai-2020
 featured: false
 draft: false
-ogImage: /communities/zongtai-2020.png
+ogImage: /og/community-zongtai-2020.jpg
 tags:
-  - community-review
-  - 北屯區
-  - 總太2020
-  - 中古
-description: "總太 2020 是北屯區屋齡 5 年的中古近新案，價格比新成屋親民、屋況又不至於太老。但 5 年屋有什麼要注意？這篇用帶看角度聊聊它的優缺點與適合的買家。"
-timezone: "Asia/Taipei"
+- community-review
+- 北屯區
+- 總太2020
+- 中古
+description: 總太 2020 是北屯區屋齡 5 年的中古近新案，價格比新成屋親民、屋況又不至於太老。但 5 年屋有什麼要注意？這篇用帶看角度聊聊它的優缺點與適合的買家。
+timezone: Asia/Taipei
 ---
 
 最近有位客戶找我，預算抓在 1300 萬上下。

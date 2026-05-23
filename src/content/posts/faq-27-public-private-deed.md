@@ -1,36 +1,36 @@
 ---
-title: "FAQ 27:公契 vs 私契差在哪?為什麼買房要簽兩份合約"
+title: FAQ 27:公契 vs 私契差在哪?為什麼買房要簽兩份合約
 author: 陳景泰
-pubDatetime: 2026-06-17T11:00:00.000+08:00
+pubDatetime: 2026-06-17 11:00:00+08:00
 slug: faq-27-public-private-deed
 featured: false
 draft: true
-ogImage: /covers/disclosure-document.png
+ogImage: /og/faq-27-public-private-deed.jpg
 tags:
-  - faq
-  - 買方教學
-  - 簽約
-description: "前陣子有個客戶問我「景泰我簽約時拿到兩份合約是怎樣?其中一份金額比實際價低很多,這樣合法嗎?」我跟他講「合法,但你要知道為什麼分兩份」。這篇講公契私契的差別。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 簽約
+description: 前陣子有個客戶問我「景泰我簽約時拿到兩份合約是怎樣?其中一份金額比實際價低很多,這樣合法嗎?」我跟他講「合法,但你要知道為什麼分兩份」。這篇講公契私契的差別。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "為什麼買房要簽兩份合約?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "兩份合約是公契和私契。公契是報稅用,金額按房屋評定現值+土地公告現值計算(遠低於市價),交給地政事務所辦過戶登記。私契是雙方真實的買賣契約,金額是實際成交價,雙方各自留存。實務上分兩份是節稅考量,完全合法。"
-    - "@type": "Question"
-      name: "公契私契金額不一樣會違法嗎?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "不違法。公契本來就是按政府公告地價計算,跟市價不同是制度設計。但 2022 年起實價登錄要求按實際成交價向地政申報,私契金額會公開揭露在實價登錄系統。所以現在公契私契差異主要影響契稅、印花稅這類按公契金額計算的稅。"
-    - "@type": "Question"
-      name: "公契私契有爭議的話以哪份為準?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "民事買賣糾紛以私契為準,因為私契記載雙方真實合意。稅務爭議以公契為準,因為公契是報稅依據。實價登錄則以實際成交價為準。簡單講不同領域有不同優先順序,但私契永遠要保存好,是你最重要的法律證據。"
+  - '@type': Question
+    name: 為什麼買房要簽兩份合約?
+    acceptedAnswer:
+      '@type': Answer
+      text: 兩份合約是公契和私契。公契是報稅用,金額按房屋評定現值+土地公告現值計算(遠低於市價),交給地政事務所辦過戶登記。私契是雙方真實的買賣契約,金額是實際成交價,雙方各自留存。實務上分兩份是節稅考量,完全合法。
+  - '@type': Question
+    name: 公契私契金額不一樣會違法嗎?
+    acceptedAnswer:
+      '@type': Answer
+      text: 不違法。公契本來就是按政府公告地價計算,跟市價不同是制度設計。但 2022 年起實價登錄要求按實際成交價向地政申報,私契金額會公開揭露在實價登錄系統。所以現在公契私契差異主要影響契稅、印花稅這類按公契金額計算的稅。
+  - '@type': Question
+    name: 公契私契有爭議的話以哪份為準?
+    acceptedAnswer:
+      '@type': Answer
+      text: 民事買賣糾紛以私契為準,因為私契記載雙方真實合意。稅務爭議以公契為準,因為公契是報稅依據。實價登錄則以實際成交價為準。簡單講不同領域有不同優先順序,但私契永遠要保存好,是你最重要的法律證據。
 ---
 
 前陣子陪一位北屯的客戶簽約。簽完後她小聲問我:

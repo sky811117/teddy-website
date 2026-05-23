@@ -1,17 +1,17 @@
 ---
-title: "房地產名詞 05：屋簷 — 透天厝最容易被當作賣點的虛坪"
+title: 房地產名詞 05：屋簷 — 透天厝最容易被當作賣點的虛坪
 author: 陳景泰
-pubDatetime: 2026-03-06T14:00:00+08:00
+pubDatetime: 2026-03-06 14:00:00+08:00
 slug: term-05-eaves
 featured: false
 draft: false
-ogImage: /covers/community-architecture.png
+ogImage: /og/term-05-eaves.jpg
 tags:
-  - 房地產詞典
-  - 買方教學
-  - 屋簷
-description: "你站在透天厝門口被屋簷遮著躲雨，那塊就是『屋簷』。107 年前算坪、要付錢，現在不算。買透天時別把屋簷當實用空間，這篇講為什麼。"
-timezone: "Asia/Taipei"
+- 房地產詞典
+- 買方教學
+- 屋簷
+description: 你站在透天厝門口被屋簷遮著躲雨，那塊就是『屋簷』。107 年前算坪、要付錢，現在不算。買透天時別把屋簷當實用空間，這篇講為什麼。
+timezone: Asia/Taipei
 ---
 
 ## 一句話定義

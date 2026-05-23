@@ -1,19 +1,20 @@
 ---
-title: "W08 政策｜新青安 2.0 6 月底定案前 — 最後 60 天該怎麼跑"
+title: W08 政策｜新青安 2.0 6 月底定案前 — 最後 60 天該怎麼跑
 author: 陳景泰
-pubDatetime: 2026-06-02T09:00:00.000+08:00
+pubDatetime: 2026-06-02 09:00:00+08:00
 slug: 2026-05-W08-new-housing-loan-2
 featured: false
 draft: false
-ogImage: /covers/new-housing-loan-family.png
+ogImage: /og/2026-05-W08-new-housing-loan-2.jpg
 tags:
-  - 政策篇
-  - 新青安
-  - 房貸
-  - 首購
-  - "2026"
-description: "財政部部長 4/29 拍板：新青安 2.0 6 月底前定案。央行主張縮短寬限期、行庫提年齡加年限的雙限制 — 兩個方向都是『條件變嚴』。距離 7/31 補貼到期還剩 60 天，這篇講清楚現在該等還是該動。"
-timezone: "Asia/Taipei"
+- 政策篇
+- 新青安
+- 房貸
+- 首購
+- '2026'
+description: 財政部部長 4/29 拍板：新青安 2.0 6 月底前定案。央行主張縮短寬限期、行庫提年齡加年限的雙限制 — 兩個方向都是『條件變嚴』。距離
+  7/31 補貼到期還剩 60 天，這篇講清楚現在該等還是該動。
+timezone: Asia/Taipei
 ---
 
 4 月 29 日工商時報那則新聞我看完，反覆讀了 3 次。

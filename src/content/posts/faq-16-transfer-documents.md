@@ -1,37 +1,41 @@
 ---
-title: "FAQ 16:過戶要準備什麼文件?買方賣方各 7 樣完整清單"
+title: FAQ 16:過戶要準備什麼文件?買方賣方各 7 樣完整清單
 author: 陳景泰
-pubDatetime: 2026-06-06T11:00:00.000+08:00
+pubDatetime: 2026-06-06 11:00:00+08:00
 slug: faq-16-transfer-documents
 featured: false
 draft: true
-ogImage: /covers/transfer-document.png
+ogImage: /og/faq-16-transfer-documents.jpg
 tags:
-  - faq
-  - 買方教學
-  - 過戶
-  - 文件
-description: "上個月一位客戶過戶前一天才發現印鑑證明過期,差點延期。我幫客戶辦過 50+ 件過戶,把這份清單整理出來 — 賣方備什麼、買方備什麼、地政士幫你跑什麼、整個流程 15-30 天怎麼走。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 過戶
+- 文件
+description: 上個月一位客戶過戶前一天才發現印鑑證明過期,差點延期。我幫客戶辦過 50+ 件過戶,把這份清單整理出來 — 賣方備什麼、買方備什麼、地政士幫你跑什麼、整個流程
+  15-30 天怎麼走。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "賣方過戶要準備什麼文件?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "(1) 身分證正反面影本 (2) 印鑑章 (3) 印鑑證明(3 個月內,戶政事務所開) (4) 戶籍謄本 (5) 土地 / 建物所有權狀正本 (6) 完稅證明 / 增值稅試算單 (7) 若有抵押權需先辦塗銷。"
-    - "@type": "Question"
-      name: "買方過戶要準備什麼文件?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "(1) 身分證正反面影本 (2) 印鑑章 (3) 印鑑證明(3 個月內) (4) 戶籍謄本 (5) 自備款證明(銀行存款證明 / 貸款核貸通知書) (6) 契稅 / 印花稅準備 (7) 若有貸款需設定抵押權給銀行。"
-    - "@type": "Question"
-      name: "過戶完整流程要多久?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "從簽約到交屋通常 30-45 天。其中過戶申請到完成 15-30 天:申報增值稅 / 契稅(7-14 天)→ 完稅 → 送地政事務所過戶(7-14 天)→ 領新權狀。地政士會代跑流程。"
+  - '@type': Question
+    name: 賣方過戶要準備什麼文件?
+    acceptedAnswer:
+      '@type': Answer
+      text: (1) 身分證正反面影本 (2) 印鑑章 (3) 印鑑證明(3 個月內,戶政事務所開) (4) 戶籍謄本 (5) 土地 / 建物所有權狀正本
+        (6) 完稅證明 / 增值稅試算單 (7) 若有抵押權需先辦塗銷。
+  - '@type': Question
+    name: 買方過戶要準備什麼文件?
+    acceptedAnswer:
+      '@type': Answer
+      text: (1) 身分證正反面影本 (2) 印鑑章 (3) 印鑑證明(3 個月內) (4) 戶籍謄本 (5) 自備款證明(銀行存款證明 / 貸款核貸通知書)
+        (6) 契稅 / 印花稅準備 (7) 若有貸款需設定抵押權給銀行。
+  - '@type': Question
+    name: 過戶完整流程要多久?
+    acceptedAnswer:
+      '@type': Answer
+      text: 從簽約到交屋通常 30-45 天。其中過戶申請到完成 15-30 天:申報增值稅 / 契稅(7-14 天)→ 完稅 → 送地政事務所過戶(7-14
+        天)→ 領新權狀。地政士會代跑流程。
 ---
 
 上個月一位客戶過戶當天打電話給我,聲音都急了:

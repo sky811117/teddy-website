@@ -1,36 +1,37 @@
 ---
-title: "FAQ 01：仲介費可以議價嗎？我幫客戶談到的 3 個真實場景"
+title: FAQ 01：仲介費可以議價嗎？我幫客戶談到的 3 個真實場景
 author: 陳景泰
-pubDatetime: 2026-03-27T14:00:00+08:00
+pubDatetime: 2026-03-27 14:00:00+08:00
 slug: faq-01-agent-fee-negotiable
 featured: false
 draft: true
-ogImage: /covers/negotiation-strategy.png
+ogImage: /og/faq-01-agent-fee-negotiable.jpg
 tags:
-  - faq
-  - 買方教學
-  - 仲介費
-description: "一句話：可以,但要選對時機跟方法。法規規定仲介費上限是賣方 4% + 買方 2%(合計 6%),但實務上 90% 房仲都會給議價空間,關鍵是你怎麼開口。這篇把我用過的 3 個壓價方法寫下來。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 仲介費
+description: 一句話：可以,但要選對時機跟方法。法規規定仲介費上限是賣方 4% + 買方 2%(合計 6%),但實務上 90% 房仲都會給議價空間,關鍵是你怎麼開口。這篇把我用過的
+  3 個壓價方法寫下來。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "仲介費可以議價嗎?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "可以。內政部規定仲介費上限是賣方收 4% + 買方收 2%,合計 6%,但實務上多數房仲會給議價空間,常見折扣到買方 1.5% 或 1%。關鍵是議價時機(簽約前比簽約後好談)、議價方法(用具體理由不要硬殺),以及該物件對房仲的價值(高總價、好物件議價空間較大)。"
-    - "@type": "Question"
-      name: "仲介費什麼時候付?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "通常在簽約當天付一半,過戶完成尾款付清。少數房仲會接受全額在交屋日付,但要寫進買賣契約附帶條款。"
-    - "@type": "Question"
-      name: "成交後才提仲介費議價來得及嗎?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "幾乎來不及。簽約那刻房仲就把案子當成回收了,談議價只剩體面退讓的空間,通常壓不下來。仲介費議價的黃金時機是「下斡旋金前」「議價前」,不是「簽約後」。"
+  - '@type': Question
+    name: 仲介費可以議價嗎?
+    acceptedAnswer:
+      '@type': Answer
+      text: 可以。內政部規定仲介費上限是賣方收 4% + 買方收 2%,合計 6%,但實務上多數房仲會給議價空間,常見折扣到買方 1.5% 或 1%。關鍵是議價時機(簽約前比簽約後好談)、議價方法(用具體理由不要硬殺),以及該物件對房仲的價值(高總價、好物件議價空間較大)。
+  - '@type': Question
+    name: 仲介費什麼時候付?
+    acceptedAnswer:
+      '@type': Answer
+      text: 通常在簽約當天付一半,過戶完成尾款付清。少數房仲會接受全額在交屋日付,但要寫進買賣契約附帶條款。
+  - '@type': Question
+    name: 成交後才提仲介費議價來得及嗎?
+    acceptedAnswer:
+      '@type': Answer
+      text: 幾乎來不及。簽約那刻房仲就把案子當成回收了,談議價只剩體面退讓的空間,通常壓不下來。仲介費議價的黃金時機是「下斡旋金前」「議價前」,不是「簽約後」。
 ---
 
 前陣子一位中部一個朋友介紹來的客戶問我:

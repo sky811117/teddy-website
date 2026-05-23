@@ -1,17 +1,18 @@
 ---
-title: "房地產名詞 09：坡道車位 — 看起來像平面其實要看細節"
+title: 房地產名詞 09：坡道車位 — 看起來像平面其實要看細節
 author: 陳景泰
-pubDatetime: 2026-03-17T20:00:00+08:00
+pubDatetime: 2026-03-17 20:00:00+08:00
 slug: term-09-ramp-parking
 featured: false
 draft: false
-ogImage: /covers/community-architecture.png
+ogImage: /og/term-09-ramp-parking.jpg
 tags:
-  - 房地產詞典
-  - 買方教學
-  - 車位
-description: "『坡道車位』四個字看似簡單，但分『坡道平面』跟『坡道機械』兩種，價差可能 60 萬。買前一定要試開一次。這篇講三種坡道車位的差別、SUV 卡底盤的真實案例。"
-timezone: "Asia/Taipei"
+- 房地產詞典
+- 買方教學
+- 車位
+description: 『坡道車位』四個字看似簡單，但分『坡道平面』跟『坡道機械』兩種，價差可能 60 萬。買前一定要試開一次。這篇講三種坡道車位的差別、SUV
+  卡底盤的真實案例。
+timezone: Asia/Taipei
 ---
 
 ## 一句話定義

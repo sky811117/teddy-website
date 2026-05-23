@@ -1,17 +1,17 @@
 ---
-title: "房地產名詞 07：平面車位 — 為什麼大家搶著要、台中市區開到 200 萬"
+title: 房地產名詞 07：平面車位 — 為什麼大家搶著要、台中市區開到 200 萬
 author: 陳景泰
-pubDatetime: 2026-03-12T09:00:00+08:00
+pubDatetime: 2026-03-12 09:00:00+08:00
 slug: term-07-flat-parking
 featured: false
 draft: false
-ogImage: /covers/community-architecture.png
+ogImage: /og/term-07-flat-parking.jpg
 tags:
-  - 房地產詞典
-  - 買方教學
-  - 車位
-description: "平面車位就是『畫線就停』，沒有機械、不用等。台中市區一個 130-200 萬，為什麼這麼貴？這篇講平面車位的算法、議價、跟未來轉售的真實價值。"
-timezone: "Asia/Taipei"
+- 房地產詞典
+- 買方教學
+- 車位
+description: 平面車位就是『畫線就停』，沒有機械、不用等。台中市區一個 130-200 萬，為什麼這麼貴？這篇講平面車位的算法、議價、跟未來轉售的真實價值。
+timezone: Asia/Taipei
 ---
 
 ## 一句話定義

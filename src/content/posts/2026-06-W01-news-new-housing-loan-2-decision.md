@@ -3,6 +3,7 @@ title: 新青安 2.0 將在 6 月底定案 — 台中買方該等？還是現在
 author: 陳景泰
 pubDatetime: 2026-06-01T09:00:00+08:00
 slug: 2026-06-W01-news-new-housing-loan-2-decision
+ogImage: /og/2026-06-W01-news-new-housing-loan-2-decision.jpg
 featured: true
 draft: true
 tags:
@@ -14,7 +15,6 @@ tags:
 description: "新青安 2.0 6 月底定案、7 月底 1.0 補貼到期。我用台中買方視角告訴你：等不等、現在要不要先卡位、月付差多少、台中受理 4775 件背後的真實意義。"
 timezone: "Asia/Taipei"
 ---
-
 「景泰，新青安 2.0 到底會不會延？我要不要等？」
 
 最近最常被客戶問的就是這題。

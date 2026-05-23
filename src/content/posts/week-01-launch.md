@@ -3,6 +3,7 @@ title: Week 01：今晚從 0 把個人網站架起來了
 author: 陳景泰
 pubDatetime: 2026-05-21T23:00:00.000+08:00
 slug: week-01-launch
+ogImage: /og/week-01-launch.jpg
 featured: false
 draft: true
 tags:
@@ -13,7 +14,6 @@ tags:
 description: "從挑模板、本地跑起來、踩到 rm -rf 被擋、改走刪 .git 重來，到最後推上 GitHub 連 Cloudflare Pages 部署成功——今晚一個半小時之內做完的事。"
 timezone: "Asia/Taipei"
 ---
-
 今晚花了大概一個半小時，把這個網站從零架起來、推上 GitHub、連好 Cloudflare Pages，然後就真的活了。
 
 這篇就把過程記下來，主要是給自己留存。但如果你也在考慮弄一個「房仲 × 技術」混搭的個人網站，說不定可以省你一些時間。

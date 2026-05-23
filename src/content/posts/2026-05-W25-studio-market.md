@@ -1,19 +1,20 @@
 ---
-title: "W25 結構分析｜套房市場 — 2 月占比 1.84% 衝近 3 個月新高、為什麼"
+title: W25 結構分析｜套房市場 — 2 月占比 1.84% 衝近 3 個月新高、為什麼
 author: 陳景泰
-pubDatetime: 2026-06-25T09:00:00.000+08:00
+pubDatetime: 2026-06-25 09:00:00+08:00
 slug: 2026-05-W25-studio-market
 featured: false
 draft: false
-ogImage: /covers/negotiation-calculator.png
+ogImage: /og/2026-05-W25-studio-market.jpg
 tags:
-  - 結構分析
-  - 套房
-  - 投資
-  - 出租
-  - "2026"
-description: "合泰建經 5 月：2 月套房揭露占比 1.84%、近 3 個月新高。總銷金額占比更高達 9.46%（小坪數高總價）。各區套房單坪：南屯 32.75、北區 22.05、東區 28.30。投資套房現在還划算嗎？"
-timezone: "Asia/Taipei"
+- 結構分析
+- 套房
+- 投資
+- 出租
+- '2026'
+description: 合泰建經 5 月：2 月套房揭露占比 1.84%、近 3 個月新高。總銷金額占比更高達 9.46%（小坪數高總價）。各區套房單坪：南屯 32.75、北區
+  22.05、東區 28.30。投資套房現在還划算嗎？
+timezone: Asia/Taipei
 ---
 
 合泰建經 5 月報告我注意到一個數字 —

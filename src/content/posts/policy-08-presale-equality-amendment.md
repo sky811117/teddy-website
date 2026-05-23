@@ -1,18 +1,19 @@
 ---
-title: "預售屋平均地權條例完全解讀 — 紅單禁炒、私法人限購、檢舉獎金最高 1,000 萬"
+title: 預售屋平均地權條例完全解讀 — 紅單禁炒、私法人限購、檢舉獎金最高 1,000 萬
 author: 陳景泰
-pubDatetime: 2026-05-30T21:00:00.000+08:00
+pubDatetime: 2026-05-30 21:00:00+08:00
 slug: policy-08-presale-equality-amendment
 featured: false
 draft: false
-ogImage: /covers/disclosure-law.png
+ogImage: /og/policy-08-presale-equality-amendment.jpg
 tags:
-  - 政策解讀
-  - 平均地權條例
-  - 預售屋
-  - 投資族
-description: "2023/7/1 平均地權條例修正上路後，預售屋紅單轉手即違法。本文整理 5 大修法重點、各類罰則、檢舉獎金制度、預售屋例外轉讓情形 — 預售屋買家、賣家、投資族都該看。"
-timezone: "Asia/Taipei"
+- 政策解讀
+- 平均地權條例
+- 預售屋
+- 投資族
+description: 2023/7/1 平均地權條例修正上路後，預售屋紅單轉手即違法。本文整理 5 大修法重點、各類罰則、檢舉獎金制度、預售屋例外轉讓情形 —
+  預售屋買家、賣家、投資族都該看。
+timezone: Asia/Taipei
 ---
 
 想像一個情境：

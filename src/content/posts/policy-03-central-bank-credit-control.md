@@ -1,18 +1,19 @@
 ---
-title: "央行選擇性信用管制完全解讀 — 第二戶 6 成、第三戶 5.5 成是怎麼算出來的"
+title: 央行選擇性信用管制完全解讀 — 第二戶 6 成、第三戶 5.5 成是怎麼算出來的
 author: 陳景泰
-pubDatetime: 2026-05-25T21:00:00.000+08:00
+pubDatetime: 2026-05-25 21:00:00+08:00
 slug: policy-03-central-bank-credit-control
 featured: false
 draft: false
-ogImage: /covers/new-housing-loan-calc.png
+ogImage: /og/policy-03-central-bank-credit-control.jpg
 tags:
-  - 政策解讀
-  - 央行管制
-  - 貸款成數
-  - 投資族
-description: "上個月有個客戶簽約後才發現第二間貸不到 8 成，要多自備 360 萬。她問我：『央行不是說限制第三戶嗎，我第二間為什麼也被卡？』這篇我把央行第七波信用管制的每一條真實影響整理給你 — 含 4 類人怎麼避雷。"
-timezone: "Asia/Taipei"
+- 政策解讀
+- 央行管制
+- 貸款成數
+- 投資族
+description: 上個月有個客戶簽約後才發現第二間貸不到 8 成，要多自備 360 萬。她問我：『央行不是說限制第三戶嗎，我第二間為什麼也被卡？』這篇我把央行第七波信用管制的每一條真實影響整理給你
+  — 含 4 類人怎麼避雷。
+timezone: Asia/Taipei
 ---
 
 3 月有個客戶來找我簽約。

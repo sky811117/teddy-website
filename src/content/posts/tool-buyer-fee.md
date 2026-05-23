@@ -1,18 +1,18 @@
 ---
-title: "工具：買方費用試算 — 一次看清自備款、月付、新青安差距"
+title: 工具：買方費用試算 — 一次看清自備款、月付、新青安差距
 author: 陳景泰
-pubDatetime: 2026-05-19T09:00:00+08:00
+pubDatetime: 2026-05-19 09:00:00+08:00
 slug: tool-buyer-fee
 featured: false
 draft: false
-ogImage: /covers/new-housing-loan-calc.png
+ogImage: /og/tool-buyer-fee.jpg
 tags:
-  - 工具
-  - 買方教學
-  - 房貸
-  - 新青安
-description: "買房不是只有頭期款，還有契稅、印花稅、履約保證、代書費、銀行設定費 — 你看了房子才發現要多掏 20 多萬。這個工具一次幫你算清楚，輸入總價就出來。"
-timezone: "Asia/Taipei"
+- 工具
+- 買方教學
+- 房貸
+- 新青安
+description: 買房不是只有頭期款，還有契稅、印花稅、履約保證、代書費、銀行設定費 — 你看了房子才發現要多掏 20 多萬。這個工具一次幫你算清楚，輸入總價就出來。
+timezone: Asia/Taipei
 ---
 
 很多客戶看了房子才來問我：「景泰，那除了頭期款，我還要準備多少？」

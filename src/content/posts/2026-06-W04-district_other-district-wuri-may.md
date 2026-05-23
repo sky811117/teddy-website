@@ -3,6 +3,7 @@ title: 台中烏日區 5 月實價：高鐵特區 vs 烏日舊市區的「兩個
 author: 陳景泰
 pubDatetime: 2026-06-25T09:00:00+08:00
 slug: 2026-06-W04-district_other-district-wuri-may
+ogImage: /og/2026-06-W04-district_other-district-wuri-may.jpg
 featured: false
 draft: true
 tags:
@@ -13,7 +14,6 @@ tags:
 description: "烏日 5 月實價趨勢：大樓 30.62 萬/坪、透天厝 25.63 萬。烏日「兩個極端」 — 高鐵特區新成屋 vs 烏日舊市區老社區。買哪邊？我給你分析。"
 timezone: "Asia/Taipei"
 ---
-
 「景泰，烏日是不是因為高鐵越來越貴？舊市區還能買嗎？」
 
 烏日是台中「**兩極化**」最明顯的區之一 — 高鐵特區新成屋 30-40 萬/坪 vs 烏日舊市區 15-20 萬/坪。同一個區、不同世界。

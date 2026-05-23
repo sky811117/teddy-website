@@ -1,17 +1,17 @@
 ---
-title: "房地產名詞 13：實價登錄怎麼讀 — 那些數字也會騙人"
+title: 房地產名詞 13：實價登錄怎麼讀 — 那些數字也會騙人
 author: 陳景泰
-pubDatetime: 2026-03-30T20:00:00+08:00
+pubDatetime: 2026-03-30 20:00:00+08:00
 slug: term-13-actual-price-registration
 featured: false
 draft: false
-ogImage: /covers/transfer-calculator.png
+ogImage: /og/term-13-actual-price-registration.jpg
 tags:
-  - 房地產詞典
-  - 買方教學
-  - 實價登錄
-description: "實價登錄是民國 101 年上線的『房市透明化』利器，但你查到『北屯某社區 1500 萬 / 35 坪』就直接拿來議價會被笑。這篇教你看懂背後的車位、樓層、座向、跟那些被刻意美化的細節。"
-timezone: "Asia/Taipei"
+- 房地產詞典
+- 買方教學
+- 實價登錄
+description: 實價登錄是民國 101 年上線的『房市透明化』利器，但你查到『北屯某社區 1500 萬 / 35 坪』就直接拿來議價會被笑。這篇教你看懂背後的車位、樓層、座向、跟那些被刻意美化的細節。
+timezone: Asia/Taipei
 ---
 
 ## 一句話定義

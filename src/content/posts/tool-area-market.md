@@ -1,18 +1,18 @@
 ---
-title: "工具：台中各區行情查詢 — 北屯、西屯、七期到底差多少"
+title: 工具：台中各區行情查詢 — 北屯、西屯、七期到底差多少
 author: 陳景泰
-pubDatetime: 2026-05-25T08:00:00.000+08:00
+pubDatetime: 2026-05-25 08:00:00+08:00
 slug: tool-area-market
 featured: false
 draft: false
-ogImage: /covers/community-streetview.png
+ogImage: /og/tool-area-market.jpg
 tags:
-  - 工具
-  - 買方教學
-  - 實價登錄
-  - 台中
-description: "客戶最常被「整個北屯均價 38 萬/坪」這種數字誤導 — 因為均價蓋掉了你要的那種屋齡跟坪數。這個工具幫你篩出『相近條件』的成交價，不是看大數字。"
-timezone: "Asia/Taipei"
+- 工具
+- 買方教學
+- 實價登錄
+- 台中
+description: 客戶最常被「整個北屯均價 38 萬/坪」這種數字誤導 — 因為均價蓋掉了你要的那種屋齡跟坪數。這個工具幫你篩出『相近條件』的成交價，不是看大數字。
+timezone: Asia/Taipei
 ---
 
 「景泰，北屯一坪多少？」

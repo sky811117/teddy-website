@@ -1,19 +1,20 @@
 ---
-title: "W24 結構分析｜大樓 23.82% vs 透天 7.43% — 為什麼透天還是穩定客群"
+title: W24 結構分析｜大樓 23.82% vs 透天 7.43% — 為什麼透天還是穩定客群
 author: 陳景泰
-pubDatetime: 2026-06-24T09:00:00.000+08:00
+pubDatetime: 2026-06-24 09:00:00+08:00
 slug: 2026-05-W24-apt-vs-townhouse
 featured: false
 draft: false
-ogImage: /covers/community-livingroom.png
+ogImage: /og/2026-05-W24-apt-vs-townhouse.jpg
 tags:
-  - 結構分析
-  - 大樓
-  - 透天厝
-  - 產品結構
-  - "2026"
-description: "合泰建經 5 月：2 月台中產品結構大樓 23.82%、華廈 2.26%、公寓 1.10%、透天 7.43%、套房 1.84%。大樓主流、透天看似少但客戶基本盤穩。我用 12 個月數據+各區透天單價拆給你看。"
-timezone: "Asia/Taipei"
+- 結構分析
+- 大樓
+- 透天厝
+- 產品結構
+- '2026'
+description: 合泰建經 5 月：2 月台中產品結構大樓 23.82%、華廈 2.26%、公寓 1.10%、透天 7.43%、套房 1.84%。大樓主流、透天看似少但客戶基本盤穩。我用
+  12 個月數據+各區透天單價拆給你看。
+timezone: Asia/Taipei
 ---
 
 合泰建經 5 月報告裡的「**揭露件數占比**」表，看完一個結論很清楚 —

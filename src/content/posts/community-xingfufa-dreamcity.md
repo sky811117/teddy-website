@@ -1,18 +1,18 @@
 ---
-title: "興富發夢幻誠（烏日）三年後回頭看 — 高鐵特區值得進嗎"
+title: 興富發夢幻誠（烏日）三年後回頭看 — 高鐵特區值得進嗎
 author: 陳景泰
-pubDatetime: 2026-05-03T10:00:00+08:00
+pubDatetime: 2026-05-03 10:00:00+08:00
 slug: community-xingfufa-dreamcity
 featured: false
 draft: false
-ogImage: /communities/xingfufa-dreamcity.png
+ogImage: /og/community-xingfufa-dreamcity.jpg
 tags:
-  - community-review
-  - 烏日區
-  - 興富發夢幻誠
-  - 新成屋
-description: "興富發夢幻誠位在烏日高鐵特區，屋齡 3 年，興富發大量推案讓同社區流動性偏高。這篇講通勤族雙北市場、進場行情、以及我看過幾戶後對自住與投資的真實評估。"
-timezone: "Asia/Taipei"
+- community-review
+- 烏日區
+- 興富發夢幻誠
+- 新成屋
+description: 興富發夢幻誠位在烏日高鐵特區，屋齡 3 年，興富發大量推案讓同社區流動性偏高。這篇講通勤族雙北市場、進場行情、以及我看過幾戶後對自住與投資的真實評估。
+timezone: Asia/Taipei
 ---
 
 去年底接過一個有趣的客戶。

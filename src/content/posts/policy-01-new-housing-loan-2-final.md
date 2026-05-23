@@ -1,18 +1,19 @@
 ---
-title: "新青安 2.0 完全解讀 — 6 月底定案前，我把所有風聲整理給你"
+title: 新青安 2.0 完全解讀 — 6 月底定案前，我把所有風聲整理給你
 author: 陳景泰
-pubDatetime: 2026-05-24T10:00:00+08:00
+pubDatetime: 2026-05-24 10:00:00+08:00
 slug: policy-01-new-housing-loan-2-final
 featured: false
 draft: false
-ogImage: /covers/new-housing-loan-family.png
+ogImage: /og/policy-01-new-housing-loan-2-final.jpg
 tags:
-  - 政策解讀
-  - 新青安
-  - 買方教學
-  - 房貸
-description: "2026 年 7 月 31 日新青安 1.0 補貼到期，2.0 版本 6 月底前要定案。我把目前所有風聲、官方文件、立委質詢內容整理成一篇 — 你會知道 2.0 可能怎麼變、誰受惠、誰被排除、你該不該等。"
-timezone: "Asia/Taipei"
+- 政策解讀
+- 新青安
+- 買方教學
+- 房貸
+description: 2026 年 7 月 31 日新青安 1.0 補貼到期，2.0 版本 6 月底前要定案。我把目前所有風聲、官方文件、立委質詢內容整理成一篇
+  — 你會知道 2.0 可能怎麼變、誰受惠、誰被排除、你該不該等。
+timezone: Asia/Taipei
 ---
 
 過去 1 個月最多客戶問我的問題不是「景泰，那間房好不好」，而是 —

@@ -1,18 +1,19 @@
 ---
-title: "Week 02：新青安 vs 一般房貸 — 我用 AI 算給你看 30 年差多少"
+title: Week 02：新青安 vs 一般房貸 — 我用 AI 算給你看 30 年差多少
 author: 陳景泰
-pubDatetime: 2026-05-21T22:00:00.000+08:00
+pubDatetime: 2026-05-21 22:00:00+08:00
 slug: week-02-new-housing-loan
 featured: true
 draft: false
-ogImage: /covers/new-housing-loan-family.png
+ogImage: /og/week-02-new-housing-loan.jpg
 tags:
-  - weekly-recap
-  - 買方教學
-  - 新青安
-  - 房貸
-description: "2026 年 7 月 31 日，政府給新青安的 0.375% 補貼就要到期了。最後 2 個月還想用新青安的人問我最多的就是一句話：『跟一般房貸到底差多少？』我用 AI 算給你看 30 年的數字。"
-timezone: "Asia/Taipei"
+- weekly-recap
+- 買方教學
+- 新青安
+- 房貸
+description: 2026 年 7 月 31 日，政府給新青安的 0.375% 補貼就要到期了。最後 2 個月還想用新青安的人問我最多的就是一句話：『跟一般房貸到底差多少？』我用
+  AI 算給你看 30 年的數字。
+timezone: Asia/Taipei
 ---
 
 最近最多客戶問我的問題不是「這間房好不好」，是 —

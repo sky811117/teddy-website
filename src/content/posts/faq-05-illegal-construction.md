@@ -1,36 +1,38 @@
 ---
-title: "FAQ 05:違章建築能買嗎?3 種違建分類 + 銀行貸款全攻略"
+title: FAQ 05:違章建築能買嗎?3 種違建分類 + 銀行貸款全攻略
 author: 陳景泰
-pubDatetime: 2026-05-26T11:00:00.000+08:00
+pubDatetime: 2026-05-26 11:00:00+08:00
 slug: faq-05-illegal-construction
 featured: false
 draft: true
-ogImage: /covers/undesirable-warning.png
+ogImage: /og/faq-05-illegal-construction.jpg
 tags:
-  - faq
-  - 買方教學
-  - 違章建築
-description: "一句話:能買,但要分清楚是哪一種違建。民國 53 年前蓋的「合法存在」、53-83 年「緩拆」、83 年後「即報即拆」。風險不只是被檢舉,還影響銀行貸款成數。這篇把違建類型、查證方法、貸款影響寫清楚。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 違章建築
+description: 一句話:能買,但要分清楚是哪一種違建。民國 53 年前蓋的「合法存在」、53-83 年「緩拆」、83 年後「即報即拆」。風險不只是被檢舉,還影響銀行貸款成數。這篇把違建類型、查證方法、貸款影響寫清楚。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "違章建築可以買嗎?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "可以買,但有風險。違建沒有所有權狀,不能單獨買賣,只能跟主建物一起。風險包括:被檢舉拆除、無法用違建部分申請貸款(銀行只貸合法登記坪數)、違建坪數不計入房屋登記,所以買賣時要看清楚實際合法坪數。"
-    - "@type": "Question"
-      name: "違建有分等級嗎?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "依違建時間分 3 類:民國 53 年(1964)前蓋的「既存違建」,合法存在不會被拆;53 年-83 年(1994)為「程序違建」,列管緩拆;83 年後為「新違建」,即報即拆。台北、新北、台中等地方政府執法強度不同,要看當地違建處理自治條例。"
-    - "@type": "Question"
-      name: "怎麼確認房子有沒有違建?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "3 個方法:(1) 申請「建物測量成果圖」(地政事務所,規費 200 元)比對房屋現況;(2) 看「建照」與「使用執照」確認原始合法範圍;(3) 跟地方政府都市發展局/建管處查詢該地是否有違建紀錄。最常見違建類型:頂樓加蓋、陽台外推、夾層、雨遮外推、室外鐵皮屋頂、雨棚。"
+  - '@type': Question
+    name: 違章建築可以買嗎?
+    acceptedAnswer:
+      '@type': Answer
+      text: 可以買,但有風險。違建沒有所有權狀,不能單獨買賣,只能跟主建物一起。風險包括:被檢舉拆除、無法用違建部分申請貸款(銀行只貸合法登記坪數)、違建坪數不計入房屋登記,所以買賣時要看清楚實際合法坪數。
+  - '@type': Question
+    name: 違建有分等級嗎?
+    acceptedAnswer:
+      '@type': Answer
+      text: 依違建時間分 3 類:民國 53 年(1964)前蓋的「既存違建」,合法存在不會被拆;53 年-83 年(1994)為「程序違建」,列管緩拆;83
+        年後為「新違建」,即報即拆。台北、新北、台中等地方政府執法強度不同,要看當地違建處理自治條例。
+  - '@type': Question
+    name: 怎麼確認房子有沒有違建?
+    acceptedAnswer:
+      '@type': Answer
+      text: 3 個方法:(1) 申請「建物測量成果圖」(地政事務所,規費 200 元)比對房屋現況;(2) 看「建照」與「使用執照」確認原始合法範圍;(3)
+        跟地方政府都市發展局/建管處查詢該地是否有違建紀錄。最常見違建類型:頂樓加蓋、陽台外推、夾層、雨遮外推、室外鐵皮屋頂、雨棚。
 ---
 
 前陣子一位西屯一位客戶看上一間 1380 萬透天:

@@ -1,18 +1,19 @@
 ---
-title: "看屋實戰 01：這個月我看了 12 間，只推 3 間 — 5 月台中物件實戰筆記"
+title: 看屋實戰 01：這個月我看了 12 間，只推 3 間 — 5 月台中物件實戰筆記
 author: 陳景泰
-pubDatetime: 2026-02-01T10:00:00+08:00
+pubDatetime: 2026-02-01 10:00:00+08:00
 slug: viewing-01-monthly-picks
 featured: false
 draft: false
-ogImage: /covers/viewing-corner.png
+ogImage: /og/viewing-01-monthly-picks.jpg
 tags:
-  - 看屋實戰
-  - 買方教學
-  - 物件月報
-  - 台中
-description: "每個月我會幫客戶實地走 10-15 間物件，幫他們過濾掉 7-8 成的雷。這篇是 5 月實際走過的 12 間台中物件 — 3 間我會推、9 間我為什麼不推，全部寫給你看。下個月會更新。"
-timezone: "Asia/Taipei"
+- 看屋實戰
+- 買方教學
+- 物件月報
+- 台中
+description: 每個月我會幫客戶實地走 10-15 間物件，幫他們過濾掉 7-8 成的雷。這篇是 5 月實際走過的 12 間台中物件 — 3 間我會推、9
+  間我為什麼不推，全部寫給你看。下個月會更新。
+timezone: Asia/Taipei
 ---
 
 每個月我會幫客戶實地走 10-15 間台中市區的物件。

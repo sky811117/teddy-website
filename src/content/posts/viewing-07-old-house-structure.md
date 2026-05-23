@@ -1,19 +1,20 @@
 ---
-title: "看屋實戰 07：老屋結構評估 — 5 個警訊 + 結構技師流程（買 40 年透天必看）"
+title: 看屋實戰 07：老屋結構評估 — 5 個警訊 + 結構技師流程（買 40 年透天必看）
 author: 陳景泰
-pubDatetime: 2026-02-22T10:00:00+08:00
+pubDatetime: 2026-02-22 10:00:00+08:00
 slug: viewing-07-old-house-structure
 featured: false
 draft: false
-ogImage: /covers/community-architecture.png
+ogImage: /og/viewing-07-old-house-structure.jpg
 tags:
-  - 看屋實戰
-  - 買方教學
-  - 老屋
-  - 結構評估
-  - 透天
-description: "客戶看上太平一間 35 年透天，外觀整理得很漂亮、價格也好。但我進去看樑柱馬上看到結構警訊 — 推他放棄。後來他買了隔壁巷子一間屋齡接近、價格稍高的，5 年了沒問題。這篇講老屋 5 個結構警訊。"
-timezone: "Asia/Taipei"
+- 看屋實戰
+- 買方教學
+- 老屋
+- 結構評估
+- 透天
+description: 客戶看上太平一間 35 年透天，外觀整理得很漂亮、價格也好。但我進去看樑柱馬上看到結構警訊 — 推他放棄。後來他買了隔壁巷子一間屋齡接近、價格稍高的，5
+  年了沒問題。這篇講老屋 5 個結構警訊。
+timezone: Asia/Taipei
 ---
 
 客戶看上太平一間 35 年透天。

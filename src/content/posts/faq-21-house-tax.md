@@ -1,37 +1,39 @@
 ---
-title: "FAQ 21:房屋稅怎麼算?差別稅率 2.0 上路後自住跟非自住差很多"
+title: FAQ 21:房屋稅怎麼算?差別稅率 2.0 上路後自住跟非自住差很多
 author: 陳景泰
-pubDatetime: 2026-06-11T11:00:00.000+08:00
+pubDatetime: 2026-06-11 11:00:00+08:00
 slug: faq-21-house-tax
 featured: false
 draft: true
-ogImage: /covers/transfer-tax.png
+ogImage: /og/faq-21-house-tax.jpg
 tags:
-  - faq
-  - 買方教學
-  - 稅務
-  - 房屋稅
-description: "差別稅率 2.0 在 2024 年 7 月正式上路,2026 年也穩定運行了。一樣的房子,自住跟非自住、單戶跟多戶,稅可以差到 4 倍以上。這篇把新稅率、自住怎麼設籍、3 個常見誤會一次講清楚。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 稅務
+- 房屋稅
+description: 差別稅率 2.0 在 2024 年 7 月正式上路,2026 年也穩定運行了。一樣的房子,自住跟非自住、單戶跟多戶,稅可以差到 4 倍以上。這篇把新稅率、自住怎麼設籍、3
+  個常見誤會一次講清楚。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "差別稅率 2.0 是什麼?自住房屋稅怎麼算?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "差別稅率 2.0 在 2024 年 7 月上路,2026 年穩定運行。自住單戶設籍 1%;持有 2 戶 1.5%;3 戶以上 2.4%。非自住標準稅率 2.4%-3.6%,囤房戶(持有 4 戶以上)3.6%-4.8%。出租並申報租金 + 設籍可降至 1.5%-2.4%。"
-    - "@type": "Question"
-      name: "房屋稅什麼時候繳?在哪繳?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "房屋稅每年 5 月開徵,5 月底前繳完。可以到便利商店、銀行櫃台、ATM 轉帳、信用卡線上繳費(部分縣市可分期),或郵局窗口繳納。逾期會被加徵滯納金。"
-    - "@type": "Question"
-      name: "怎麼申請自住房屋稅 1% 優惠?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "三個條件:(1) 房屋所有人本人或配偶、直系親屬實際居住、(2) 在該房屋設籍、(3) 沒有出租或營業使用。需向地方稅務局申請,每年 3 月底前提出該年度才生效。一次申請後續年度自動延用,除非條件改變。"
+  - '@type': Question
+    name: 差別稅率 2.0 是什麼?自住房屋稅怎麼算?
+    acceptedAnswer:
+      '@type': Answer
+      text: 差別稅率 2.0 在 2024 年 7 月上路,2026 年穩定運行。自住單戶設籍 1%;持有 2 戶 1.5%;3 戶以上 2.4%。非自住標準稅率
+        2.4%-3.6%,囤房戶(持有 4 戶以上)3.6%-4.8%。出租並申報租金 + 設籍可降至 1.5%-2.4%。
+  - '@type': Question
+    name: 房屋稅什麼時候繳?在哪繳?
+    acceptedAnswer:
+      '@type': Answer
+      text: 房屋稅每年 5 月開徵,5 月底前繳完。可以到便利商店、銀行櫃台、ATM 轉帳、信用卡線上繳費(部分縣市可分期),或郵局窗口繳納。逾期會被加徵滯納金。
+  - '@type': Question
+    name: 怎麼申請自住房屋稅 1% 優惠?
+    acceptedAnswer:
+      '@type': Answer
+      text: 三個條件:(1) 房屋所有人本人或配偶、直系親屬實際居住、(2) 在該房屋設籍、(3) 沒有出租或營業使用。需向地方稅務局申請,每年 3 月底前提出該年度才生效。一次申請後續年度自動延用,除非條件改變。
 ---
 
 上週幫一位剛買第二戶的客戶算房屋稅。

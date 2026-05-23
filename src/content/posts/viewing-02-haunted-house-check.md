@@ -1,18 +1,18 @@
 ---
-title: "看屋實戰 02：凶宅怎麼查 — 4 種免費管道實測（一個下午搞定）"
+title: 看屋實戰 02：凶宅怎麼查 — 4 種免費管道實測（一個下午搞定）
 author: 陳景泰
-pubDatetime: 2026-02-03T20:00:00+08:00
+pubDatetime: 2026-02-03 20:00:00+08:00
 slug: viewing-02-haunted-house-check
 featured: false
 draft: false
-ogImage: /covers/undesirable-warning.png
+ogImage: /og/viewing-02-haunted-house-check.jpg
 tags:
-  - 看屋實戰
-  - 買方教學
-  - 凶宅查詢
-  - 不動產說明書
-description: "去年一位客戶準備下訂西區一間大樓，屋況超好、價格也合理 — 但我第二次帶看就覺得「氣場不對」。後來我用 4 個免費管道交叉查證，確認是凶宅。這篇把我怎麼查、查到什麼、法律上你可以怎麼處理，全部寫下來。"
-timezone: "Asia/Taipei"
+- 看屋實戰
+- 買方教學
+- 凶宅查詢
+- 不動產說明書
+description: 去年一位客戶準備下訂西區一間大樓，屋況超好、價格也合理 — 但我第二次帶看就覺得「氣場不對」。後來我用 4 個免費管道交叉查證，確認是凶宅。這篇把我怎麼查、查到什麼、法律上你可以怎麼處理，全部寫下來。
+timezone: Asia/Taipei
 ---
 
 去年一位客戶準備下訂西區一間大樓。

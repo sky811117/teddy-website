@@ -1,18 +1,18 @@
 ---
-title: "富宇世界花園（南屯）真實住起來 — 文心森林旁這個社區值不值"
+title: 富宇世界花園（南屯）真實住起來 — 文心森林旁這個社區值不值
 author: 陳景泰
-pubDatetime: 2026-05-06T09:00:00+08:00
+pubDatetime: 2026-05-06 09:00:00+08:00
 slug: community-fuyu-world
 featured: false
 draft: false
-ogImage: /communities/fuyu-world.png
+ogImage: /og/community-fuyu-world.jpg
 tags:
-  - community-review
-  - 南屯區
-  - 富宇世界花園
-  - 新成屋
-description: "富宇世界花園在南屯靠文心森林公園腹地，屋齡 1 年的新成屋，富宇是中部在地建商品質穩。這篇講我看過幾戶後對自住、換屋、投資的真實評估，包含缺點和注意點。"
-timezone: "Asia/Taipei"
+- community-review
+- 南屯區
+- 富宇世界花園
+- 新成屋
+description: 富宇世界花園在南屯靠文心森林公園腹地，屋齡 1 年的新成屋，富宇是中部在地建商品質穩。這篇講我看過幾戶後對自住、換屋、投資的真實評估，包含缺點和注意點。
+timezone: Asia/Taipei
 ---
 
 上個月帶一個換屋族來看富宇世界花園。

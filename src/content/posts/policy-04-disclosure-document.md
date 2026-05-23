@@ -1,18 +1,19 @@
 ---
-title: "不動產說明書 30 個欄位 — 賣方漏勾 1 個，可能要賠 200 萬"
+title: 不動產說明書 30 個欄位 — 賣方漏勾 1 個，可能要賠 200 萬
 author: 陳景泰
-pubDatetime: 2026-05-26T21:00:00.000+08:00
+pubDatetime: 2026-05-26 21:00:00+08:00
 slug: policy-04-disclosure-document
 featured: false
 draft: false
-ogImage: /covers/disclosure-document.png
+ogImage: /og/policy-04-disclosure-document.jpg
 tags:
-  - 政策解讀
-  - 不動產說明書
-  - 賣方教學
-  - 揭露責任
-description: "去年有屋主漏勾「曾發生凶宅事件」，買方交屋後 3 個月發現，告上法院，最後判賠 200 萬。問題是屋主以為「事情過 20 年了，應該不算」。這篇我把不動產說明書 30 個欄位的揭露責任、誤勾後果、實務眉角整理給你。"
-timezone: "Asia/Taipei"
+- 政策解讀
+- 不動產說明書
+- 賣方教學
+- 揭露責任
+description: 去年有屋主漏勾「曾發生凶宅事件」，買方交屋後 3 個月發現，告上法院，最後判賠 200 萬。問題是屋主以為「事情過 20 年了，應該不算」。這篇我把不動產說明書
+  30 個欄位的揭露責任、誤勾後果、實務眉角整理給你。
+timezone: Asia/Taipei
 ---
 
 想像一個情境 ——

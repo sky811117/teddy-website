@@ -1,41 +1,45 @@
 ---
-title: "FAQ 30：法拍屋怎麼買？我沒大量處理過但研究過 — 入場前 6 件事"
+title: FAQ 30：法拍屋怎麼買？我沒大量處理過但研究過 — 入場前 6 件事
 author: 陳景泰
-pubDatetime: 2026-06-20T11:00:00.000+08:00
+pubDatetime: 2026-06-20 11:00:00+08:00
 slug: faq-30-foreclosure
 featured: false
 draft: true
-ogImage: /covers/undesirable-warning.png
+ogImage: /og/faq-30-foreclosure.jpg
 tags:
-  - faq
-  - 買方教學
-  - 法拍屋
-description: "一句話：能買但要懂遊戲規則。法拍屋價格通常比市價低 1-3 折，但你不能進屋看、沒有屋況保固、可能遇到海蟑螂賴著不走。我自己沒大量處理過法拍，跟幾個同行借的經驗整理出入場前要看的 6 件事。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 法拍屋
+description: 一句話：能買但要懂遊戲規則。法拍屋價格通常比市價低 1-3 折，但你不能進屋看、沒有屋況保固、可能遇到海蟑螂賴著不走。我自己沒大量處理過法拍，跟幾個同行借的經驗整理出入場前要看的
+  6 件事。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "法拍屋值得買嗎？"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "看物件跟你的風險承受度。法拍屋底價通常是市價的 7-8 折，但搶手物件會被抬到 8-9 折，扣掉「不能進屋看屋況」「可能要打點交官司」「無漏水保固」這 3 個風險折價後，CP 值不見得比一般中古屋好。建議：底價 8 折以下才有真正的入場價值，9 折以上不如直接買一般中古屋。"
-    - "@type": "Question"
-      name: "法拍屋流程怎麼跑？"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "7 步驟：(1) 司法院全國法拍屋公告系統 aomp.judicial.gov.tw 看公告 (2) 現場勘查只能看外觀不能進屋 (3) 投標日當天到法院送投標保證金 20% + 標單 (4) 開標當天最高價得標 (5) 7 日內補足尾款，逾期保證金沒收 (6) 領取權利移轉證書辦過戶 (7) 點交 — 這步最難最久。"
-    - "@type": "Question"
-      name: "法拍屋會有海蟑螂嗎？怎麼處理？"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "會。海蟑螂指原屋主或不明佔住者賴在屋裡不走的人。處理：法院核發「點交命令」後可申請強制執行，由法警 + 鎖匠執行，通常 6-12 個月走完。期間你不能進屋使用，所以買法拍屋前必查「點交 vs 不點交」 — 不點交物件要自己跟佔住者談，難度高很多。"
-    - "@type": "Question"
-      name: "投標保證金沒得標會退嗎？"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "會。沒得標當天就可以憑收據去法院領回投標保證金（20% 標價）。得標但 7 日內沒補足尾款的話保證金沒收，所以資金一定要備齊再投標。"
+  - '@type': Question
+    name: 法拍屋值得買嗎？
+    acceptedAnswer:
+      '@type': Answer
+      text: 看物件跟你的風險承受度。法拍屋底價通常是市價的 7-8 折，但搶手物件會被抬到 8-9 折，扣掉「不能進屋看屋況」「可能要打點交官司」「無漏水保固」這
+        3 個風險折價後，CP 值不見得比一般中古屋好。建議：底價 8 折以下才有真正的入場價值，9 折以上不如直接買一般中古屋。
+  - '@type': Question
+    name: 法拍屋流程怎麼跑？
+    acceptedAnswer:
+      '@type': Answer
+      text: 7 步驟：(1) 司法院全國法拍屋公告系統 aomp.judicial.gov.tw 看公告 (2) 現場勘查只能看外觀不能進屋 (3) 投標日當天到法院送投標保證金
+        20% + 標單 (4) 開標當天最高價得標 (5) 7 日內補足尾款，逾期保證金沒收 (6) 領取權利移轉證書辦過戶 (7) 點交 — 這步最難最久。
+  - '@type': Question
+    name: 法拍屋會有海蟑螂嗎？怎麼處理？
+    acceptedAnswer:
+      '@type': Answer
+      text: 會。海蟑螂指原屋主或不明佔住者賴在屋裡不走的人。處理：法院核發「點交命令」後可申請強制執行，由法警 + 鎖匠執行，通常 6-12 個月走完。期間你不能進屋使用，所以買法拍屋前必查「點交
+        vs 不點交」 — 不點交物件要自己跟佔住者談，難度高很多。
+  - '@type': Question
+    name: 投標保證金沒得標會退嗎？
+    acceptedAnswer:
+      '@type': Answer
+      text: 會。沒得標當天就可以憑收據去法院領回投標保證金（20% 標價）。得標但 7 日內沒補足尾款的話保證金沒收，所以資金一定要備齊再投標。
 ---
 
 上週有客戶問我：

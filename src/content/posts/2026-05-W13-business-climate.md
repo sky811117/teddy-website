@@ -1,19 +1,20 @@
 ---
-title: "W13 數據｜景氣燈號 3 月又掉回黃藍燈 — 跟房市什麼關係"
+title: W13 數據｜景氣燈號 3 月又掉回黃藍燈 — 跟房市什麼關係
 author: 陳景泰
-pubDatetime: 2026-06-09T09:00:00.000+08:00
+pubDatetime: 2026-06-09 09:00:00+08:00
 slug: 2026-05-W13-business-climate
 featured: false
 draft: false
-ogImage: /covers/transfer-tax.png
+ogImage: /og/2026-05-W13-business-climate.jpg
 tags:
-  - 數據篇
-  - 景氣燈號
-  - 房市觀察
-  - 消費者信心
-  - "2026"
-description: "國發會景氣燈號：1 月 39 分（黃藍燈）→ 2 月 41 分（綠燈）→ 3 月 39 分（黃藍燈）。剛轉綠又掉回。消費者信心指數 4 月 62.47 點。這兩個指標跟你買房有關嗎？我用 6 個月觀察拆給你。"
-timezone: "Asia/Taipei"
+- 數據篇
+- 景氣燈號
+- 房市觀察
+- 消費者信心
+- '2026'
+description: 國發會景氣燈號：1 月 39 分（黃藍燈）→ 2 月 41 分（綠燈）→ 3 月 39 分（黃藍燈）。剛轉綠又掉回。消費者信心指數 4 月
+  62.47 點。這兩個指標跟你買房有關嗎？我用 6 個月觀察拆給你。
+timezone: Asia/Taipei
 ---
 
 合泰建經 5 月報告封面後第二頁就放了景氣燈號 — 國發會、中央大學的指標。

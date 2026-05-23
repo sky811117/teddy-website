@@ -1,17 +1,17 @@
 ---
-title: "工具：看屋 checklist — 60 項打勾完，才不會買到後悔的房"
+title: 工具：看屋 checklist — 60 項打勾完，才不會買到後悔的房
 author: 陳景泰
-pubDatetime: 2026-05-26T08:00:00.000+08:00
+pubDatetime: 2026-05-26 08:00:00+08:00
 slug: tool-viewing-checklist
 featured: false
 draft: false
-ogImage: /covers/viewing-checklist.png
+ogImage: /og/tool-viewing-checklist.jpg
 tags:
-  - 工具
-  - 買方教學
-  - 看屋
-description: "看屋當下 5 分鐘你只記得採光跟格局，回家才想起『欸忘記問樓上有沒有漏水』。我整理一份 60+ 項紙本清單，去看屋前印一份帶著，逐項打勾。"
-timezone: "Asia/Taipei"
+- 工具
+- 買方教學
+- 看屋
+description: 看屋當下 5 分鐘你只記得採光跟格局，回家才想起『欸忘記問樓上有沒有漏水』。我整理一份 60+ 項紙本清單，去看屋前印一份帶著，逐項打勾。
+timezone: Asia/Taipei
 ---
 
 我帶客戶看屋，發現一件事：**客人記得的永遠是「採光好不好」「客廳大不大」這兩件**。

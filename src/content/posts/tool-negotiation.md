@@ -1,17 +1,17 @@
 ---
-title: "工具：議價 7 心法 — 客戶在北屯談下 80 萬的真實流程"
+title: 工具：議價 7 心法 — 客戶在北屯談下 80 萬的真實流程
 author: 陳景泰
-pubDatetime: 2026-05-30T08:00:00.000+08:00
+pubDatetime: 2026-05-30 08:00:00+08:00
 slug: tool-negotiation
 featured: false
 draft: false
-ogImage: /covers/negotiation-strategy.png
+ogImage: /og/tool-negotiation.jpg
 tags:
-  - 工具
-  - 買方教學
-  - 議價
-description: "客人最常卡關的就是議價 — 怕殺太低被嫌、不殺又覺得吃虧。這篇把 7 個我實戰用的心法整理成清單，買房前印一份對照著用。"
-timezone: "Asia/Taipei"
+- 工具
+- 買方教學
+- 議價
+description: 客人最常卡關的就是議價 — 怕殺太低被嫌、不殺又覺得吃虧。這篇把 7 個我實戰用的心法整理成清單，買房前印一份對照著用。
+timezone: Asia/Taipei
 ---
 
 「景泰，你覺得我下多少合理？」

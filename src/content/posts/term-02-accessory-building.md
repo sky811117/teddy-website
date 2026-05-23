@@ -1,17 +1,17 @@
 ---
-title: "房地產名詞 02：附屬建物 — 陽台、雨遮、屋簷的灰色地帶"
+title: 房地產名詞 02：附屬建物 — 陽台、雨遮、屋簷的灰色地帶
 author: 陳景泰
-pubDatetime: 2026-02-24T20:00:00+08:00
+pubDatetime: 2026-02-24 20:00:00+08:00
 slug: term-02-accessory-building
 featured: false
 draft: false
-ogImage: /covers/disclosure-document.png
+ogImage: /og/term-02-accessory-building.jpg
 tags:
-  - 房地產詞典
-  - 買方教學
-  - 權狀
-description: "陽台算錢、雨遮算錢、屋簷也算錢 — 但你能用嗎？這篇講『附屬建物』裡哪些是真的有用、哪些是建商賺坪數的歷史遺物，以及民國 107 年那條改變遊戲規則的線。"
-timezone: "Asia/Taipei"
+- 房地產詞典
+- 買方教學
+- 權狀
+description: 陽台算錢、雨遮算錢、屋簷也算錢 — 但你能用嗎？這篇講『附屬建物』裡哪些是真的有用、哪些是建商賺坪數的歷史遺物，以及民國 107 年那條改變遊戲規則的線。
+timezone: Asia/Taipei
 ---
 
 ## 一句話定義

@@ -1,36 +1,37 @@
 ---
-title: "FAQ 25:斡旋金 vs 訂金有什麼差別?我看過買方搞錯虧 50 萬"
+title: FAQ 25:斡旋金 vs 訂金有什麼差別?我看過買方搞錯虧 50 萬
 author: 陳景泰
-pubDatetime: 2026-06-15T11:00:00.000+08:00
+pubDatetime: 2026-06-15 11:00:00+08:00
 slug: faq-25-earnest-vs-deposit
 featured: false
 draft: true
-ogImage: /covers/negotiation-strategy.png
+ogImage: /og/faq-25-earnest-vs-deposit.jpg
 tags:
-  - faq
-  - 買方教學
-  - 簽約
-description: "前陣子有個客戶問我「景泰我下了斡旋,屋主同意了,我可以反悔嗎?」我跟他說「不行,你已經變訂金了,反悔賠光」。他當下臉色發白。這篇講斡旋金跟訂金的差別,還有要約書這個選項。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 簽約
+description: 前陣子有個客戶問我「景泰我下了斡旋,屋主同意了,我可以反悔嗎?」我跟他說「不行,你已經變訂金了,反悔賠光」。他當下臉色發白。這篇講斡旋金跟訂金的差別,還有要約書這個選項。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "斡旋金跟訂金差在哪?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "斡旋金是買方付給仲介、用來保留出價的錢,賣方還沒同意前可以拿回。賣方一旦書面同意,斡旋金立刻轉成訂金,買方反悔就沒收。訂金的法律性質更嚴格,依民法 248 條,任何一方反悔都要受罰。"
-    - "@type": "Question"
-      name: "要約書是什麼?跟斡旋金比哪個好?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "要約書是替代斡旋金的方案,不用付錢、只簽白紙黑字。賣方還沒接受前買方可以撤回。對買方友善但對賣方來說誠意較弱,所以實務上很多仲介比較推斡旋金。法律效力上要約書一旦被承諾也具有契約效力。"
-    - "@type": "Question"
-      name: "訂金金額有上限嗎?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "民法沒明文限制,但實務上訂金通常是總價的 5-10%。建議買方不要付太多,因為一旦違約就會被沒收。同時也要把簽約日、過戶日寫進收據,避免賣方拖延導致買方權益受損。"
+  - '@type': Question
+    name: 斡旋金跟訂金差在哪?
+    acceptedAnswer:
+      '@type': Answer
+      text: 斡旋金是買方付給仲介、用來保留出價的錢,賣方還沒同意前可以拿回。賣方一旦書面同意,斡旋金立刻轉成訂金,買方反悔就沒收。訂金的法律性質更嚴格,依民法
+        248 條,任何一方反悔都要受罰。
+  - '@type': Question
+    name: 要約書是什麼?跟斡旋金比哪個好?
+    acceptedAnswer:
+      '@type': Answer
+      text: 要約書是替代斡旋金的方案,不用付錢、只簽白紙黑字。賣方還沒接受前買方可以撤回。對買方友善但對賣方來說誠意較弱,所以實務上很多仲介比較推斡旋金。法律效力上要約書一旦被承諾也具有契約效力。
+  - '@type': Question
+    name: 訂金金額有上限嗎?
+    acceptedAnswer:
+      '@type': Answer
+      text: 民法沒明文限制,但實務上訂金通常是總價的 5-10%。建議買方不要付太多,因為一旦違約就會被沒收。同時也要把簽約日、過戶日寫進收據,避免賣方拖延導致買方權益受損。
 ---
 
 前陣子有個客戶找我問。

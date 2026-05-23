@@ -1,17 +1,18 @@
 ---
-title: "不動產說明書 5 個含糊欄位 — 一個房仲幫你翻譯"
+title: 不動產說明書 5 個含糊欄位 — 一個房仲幫你翻譯
 author: 陳景泰
-pubDatetime: 2026-05-21T23:30:00.000+08:00
+pubDatetime: 2026-05-21 23:30:00+08:00
 slug: week-05-property-disclosure
 featured: false
 draft: false
-ogImage: /covers/disclosure-document.png
+ogImage: /og/week-05-property-disclosure.jpg
 tags:
-  - 買方教學
-  - 不動產說明書
-  - 看屋
-description: "不動產說明書不是屋主自己寫的、是仲介問完屋主之後整理的。但有些欄位的寫法雖然合法、卻留下灰色地帶 — 含糊不一定有問題，但你要會問。這篇用一個房仲視角幫你翻譯 5 個常見的含糊寫法。"
-timezone: "Asia/Taipei"
+- 買方教學
+- 不動產說明書
+- 看屋
+description: 不動產說明書不是屋主自己寫的、是仲介問完屋主之後整理的。但有些欄位的寫法雖然合法、卻留下灰色地帶 — 含糊不一定有問題，但你要會問。這篇用一個房仲視角幫你翻譯
+  5 個常見的含糊寫法。
+timezone: Asia/Taipei
 ---
 
 不動產說明書這份文件，多數買方簽名前只大概翻過去。

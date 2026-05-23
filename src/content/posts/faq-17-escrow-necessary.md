@@ -1,37 +1,40 @@
 ---
-title: "FAQ 17:履約保證該不該用?5 個情境決策框架(不寫制度是什麼)"
+title: FAQ 17:履約保證該不該用?5 個情境決策框架(不寫制度是什麼)
 author: 陳景泰
-pubDatetime: 2026-06-07T11:00:00.000+08:00
+pubDatetime: 2026-06-07 11:00:00+08:00
 slug: faq-17-escrow-necessary
 featured: false
 draft: true
-ogImage: /covers/disclosure-stamp.png
+ogImage: /og/faq-17-escrow-necessary.jpg
 tags:
-  - faq
-  - 買方教學
-  - 履約保證
-  - 決策
-description: "中部一位朋友的客戶沒用履保,付了 60 萬訂金,結果賣方下週把房子另外抵押給第三人 — 60 萬訂金 + 房子都拿不回來。但同時也有客戶用親友交易省下萬分之 6 的履保費。這篇給你 5 個情境框架判斷自己該不該用。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 履約保證
+- 決策
+description: 中部一位朋友的客戶沒用履保,付了 60 萬訂金,結果賣方下週把房子另外抵押給第三人 — 60 萬訂金 + 房子都拿不回來。但同時也有客戶用親友交易省下萬分之
+  6 的履保費。這篇給你 5 個情境框架判斷自己該不該用。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "履約保證一定要用嗎?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "不一定。看 5 個情境決定:(1) 總價(1000 萬以上強烈建議)、(2) 是否貸款(貸款一定要)、(3) 賣方信用(陌生 / 拍賣公司一定要)、(4) 是否有抵押權待塗銷(有就一定要)、(5) 雙方信任程度。親友交易 + 一次付清 + 屋況穩 + 雙方信任,可以省履保費直接點交。"
-    - "@type": "Question"
-      name: "履約保證費多少錢?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "標準費率是房屋總價的萬分之 6(雙方各付一半,各萬分之 3)。1000 萬房子總共 6,000 元 / 各 3,000 元。是房屋總價的 0.06%,跟動輒幾十萬幾百萬的房價比是非常便宜的保險。"
-    - "@type": "Question"
-      name: "什麼情況最危險、必須用履保?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "(1) 賣方有抵押權尚未塗銷、(2) 賣方有強制執行 / 查封紀錄、(3) 雙方是網路認識 / 拍賣公司、(4) 賣方財務不穩(欠債 / 訴訟)、(5) 跨縣市交易彼此不熟。這 5 種情境履保是必須的,沒用過保 = 你完全暴露在賣方可能違約的風險下。"
+  - '@type': Question
+    name: 履約保證一定要用嗎?
+    acceptedAnswer:
+      '@type': Answer
+      text: 不一定。看 5 個情境決定:(1) 總價(1000 萬以上強烈建議)、(2) 是否貸款(貸款一定要)、(3) 賣方信用(陌生 / 拍賣公司一定要)、(4)
+        是否有抵押權待塗銷(有就一定要)、(5) 雙方信任程度。親友交易 + 一次付清 + 屋況穩 + 雙方信任,可以省履保費直接點交。
+  - '@type': Question
+    name: 履約保證費多少錢?
+    acceptedAnswer:
+      '@type': Answer
+      text: 標準費率是房屋總價的萬分之 6(雙方各付一半,各萬分之 3)。1000 萬房子總共 6,000 元 / 各 3,000 元。是房屋總價的 0.06%,跟動輒幾十萬幾百萬的房價比是非常便宜的保險。
+  - '@type': Question
+    name: 什麼情況最危險、必須用履保?
+    acceptedAnswer:
+      '@type': Answer
+      text: (1) 賣方有抵押權尚未塗銷、(2) 賣方有強制執行 / 查封紀錄、(3) 雙方是網路認識 / 拍賣公司、(4) 賣方財務不穩(欠債 / 訴訟)、(5)
+        跨縣市交易彼此不熟。這 5 種情境履保是必須的,沒用過保 = 你完全暴露在賣方可能違約的風險下。
 ---
 
 中部一位朋友前陣子跟我聊到他的客戶 ——

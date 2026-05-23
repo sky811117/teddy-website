@@ -1,18 +1,18 @@
 ---
-title: "北區麗園道：30 年老屋大樓的真實樣貌 — 適合誰、要小心什麼"
+title: 北區麗園道：30 年老屋大樓的真實樣貌 — 適合誰、要小心什麼
 author: 陳景泰
-pubDatetime: 2026-04-22T20:00:00+08:00
+pubDatetime: 2026-04-22 20:00:00+08:00
 slug: community-liyuandao
 featured: false
 draft: false
-ogImage: /communities/liyuandao.png
+ogImage: /og/community-liyuandao.jpg
 tags:
-  - community-review
-  - 北區
-  - 麗園道
-  - 老屋
-description: "北區麗園道屋齡 30 年，地段好但屋齡是雙面刃。這篇寫我看過好幾戶之後對社區的 honest 評價、適合什麼樣的買方、以及 30 年大樓要注意的管路、外牆、貸款成數問題。"
-timezone: "Asia/Taipei"
+- community-review
+- 北區
+- 麗園道
+- 老屋
+description: 北區麗園道屋齡 30 年，地段好但屋齡是雙面刃。這篇寫我看過好幾戶之後對社區的 honest 評價、適合什麼樣的買方、以及 30 年大樓要注意的管路、外牆、貸款成數問題。
+timezone: Asia/Taipei
 ---
 
 上個月有位太太來找我，想在北區找一間 3 房、預算 1200 萬以下。

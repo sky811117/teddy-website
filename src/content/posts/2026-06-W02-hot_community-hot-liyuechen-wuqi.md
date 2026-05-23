@@ -3,6 +3,7 @@ title: 梧棲聯悅臻成為 4 月台中熱門 No.1 — 96 筆成交、屋齡 0 
 author: 陳景泰
 pubDatetime: 2026-06-12T09:00:00+08:00
 slug: 2026-06-W02-hot_community-hot-liyuechen-wuqi
+ogImage: /og/2026-06-W02-hot_community-hot-liyuechen-wuqi.jpg
 featured: false
 draft: true
 tags:
@@ -14,7 +15,6 @@ tags:
 description: "聯悅臻 4 月台中熱門社區成交 No.1、近 12 個月 96 筆。19.25-32.42 萬/坪、總價 723-1650 萬、屋齡 0 年。我從格局、區位、買盤輪廓解讀為什麼它這麼熱。"
 timezone: "Asia/Taipei"
 ---
-
 「景泰，最近常聽到『梧棲聯悅臻』，這個社區到底是什麼？值得買嗎？」
 
 這個月合泰建經的台中熱門社區報告，**聯悅臻以 96 筆成交數搶下台中市榜首**。對比第二名（北屯總太心之所向 74 筆），優勢明顯。

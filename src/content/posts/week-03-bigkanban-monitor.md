@@ -3,6 +3,7 @@ title: "Week 03：BigKanBan 留言監控 — 4 scraper 跨平台技術細節"
 author: 陳景泰
 pubDatetime: 2026-05-21T22:30:00.000+08:00
 slug: week-03-bigkanban-monitor
+ogImage: /og/week-03-bigkanban-monitor.jpg
 draft: true
 tags:
   - bigkanban
@@ -12,7 +13,6 @@ tags:
 description: "FB 用 /reels + base64 comment_id、TikTok anonymous + headless=False 攔 JSON、IG 強制 /p/{shortcode}/ 處理 collab owner regex —— 上週把房仲業 KOL 留言搬到 Telegram 的 4 個 scraper 全部上線。核心策略「比同行快」。"
 timezone: "Asia/Taipei"
 ---
-
 在台灣房仲圈，有一個叫「房仲大看板」(BigKanBan) 的帳號系列，IG / TikTok / Facebook 都有公開帳號，貼文流量很大。留言區常常出現兩種人：
 
 第一種是**客人**——「請問這間還在嗎」「方便看屋嗎」「想了解一下價格」。

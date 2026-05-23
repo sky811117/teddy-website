@@ -1,17 +1,17 @@
 ---
-title: "房地產名詞 06：露台 — 那個讓你以為佔到便宜其實要看清楚的空間"
+title: 房地產名詞 06：露台 — 那個讓你以為佔到便宜其實要看清楚的空間
 author: 陳景泰
-pubDatetime: 2026-03-10T09:00:00+08:00
+pubDatetime: 2026-03-10 09:00:00+08:00
 slug: term-06-terrace
 featured: false
 draft: false
-ogImage: /covers/community-balcony.png
+ogImage: /og/term-06-terrace.jpg
 tags:
-  - 房地產詞典
-  - 買方教學
-  - 露台
-description: "建商說『送你 8 坪露台』聽起來很划算，但你拿到的是『產權』還是『使用權』？兩者轉售價差可能 200 萬。這篇幫你看清楚這個常被當作賣點的灰色地帶。"
-timezone: "Asia/Taipei"
+- 房地產詞典
+- 買方教學
+- 露台
+description: 建商說『送你 8 坪露台』聽起來很划算，但你拿到的是『產權』還是『使用權』？兩者轉售價差可能 200 萬。這篇幫你看清楚這個常被當作賣點的灰色地帶。
+timezone: Asia/Taipei
 ---
 
 ## 一句話定義

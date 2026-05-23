@@ -3,6 +3,7 @@ title: 全國 vs 台中買賣移轉對比 — 為什麼台中還撐得住？
 author: 陳景泰
 pubDatetime: 2026-06-11T09:00:00+08:00
 slug: 2026-06-W02-city-city-national-vs-taichung
+ogImage: /og/2026-06-W02-city-city-national-vs-taichung.jpg
 featured: false
 draft: true
 tags:
@@ -13,7 +14,6 @@ tags:
 description: "全國 3 月建物移轉 23541 棟、台中 3195 棟、佔 13.6%；全國土地移轉 38067 棟、台中 3839 棟、佔 10.1%。為什麼台中相對其他六都還撐得住？我從 3 個結構因素解讀。"
 timezone: "Asia/Taipei"
 ---
-
 「景泰，新聞說全台都在跌，為什麼我覺得台中還是很熱？」
 
 ---

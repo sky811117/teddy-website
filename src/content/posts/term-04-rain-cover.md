@@ -1,17 +1,17 @@
 ---
-title: "房地產名詞 04：雨遮 — 那塊你買來卻不能站的小遮板"
+title: 房地產名詞 04：雨遮 — 那塊你買來卻不能站的小遮板
 author: 陳景泰
-pubDatetime: 2026-03-04T14:00:00+08:00
+pubDatetime: 2026-03-04 14:00:00+08:00
 slug: term-04-rain-cover
 featured: false
 draft: false
-ogImage: /covers/disclosure-document.png
+ogImage: /og/term-04-rain-cover.jpg
 tags:
-  - 房地產詞典
-  - 買方教學
-  - 雨遮
-description: "民國 107 年以前，雨遮算坪、要付錢，1 坪可能要你 25 萬 — 但你不能站、不能坐、不能曬衣服。107 年後新案不再登記。這篇講為什麼這條法律會改、買舊房怎麼自己扣回去算。"
-timezone: "Asia/Taipei"
+- 房地產詞典
+- 買方教學
+- 雨遮
+description: 民國 107 年以前，雨遮算坪、要付錢，1 坪可能要你 25 萬 — 但你不能站、不能坐、不能曬衣服。107 年後新案不再登記。這篇講為什麼這條法律會改、買舊房怎麼自己扣回去算。
+timezone: Asia/Taipei
 ---
 
 ## 一句話定義

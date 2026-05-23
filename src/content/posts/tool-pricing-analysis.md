@@ -1,18 +1,18 @@
 ---
-title: "工具：定價分析 — 用 AI 看 500 筆實價，比信義房屋鑑價精準"
+title: 工具：定價分析 — 用 AI 看 500 筆實價，比信義房屋鑑價精準
 author: 陳景泰
-pubDatetime: 2026-05-27T08:00:00.000+08:00
+pubDatetime: 2026-05-27 08:00:00+08:00
 slug: tool-pricing-analysis
 featured: false
 draft: false
-ogImage: /covers/transfer-calculator.png
+ogImage: /og/tool-pricing-analysis.jpg
 tags:
-  - 工具
-  - 賣方教學
-  - 定價
-  - AI
-description: "屋主最常踩的坑 — 信義單筆鑑價開出來 980 萬，照開結果掛 6 個月沒人看。問題在於『單筆鑑價』看不到社區動能。AI 跑 500 筆才看得出合理區間。"
-timezone: "Asia/Taipei"
+- 工具
+- 賣方教學
+- 定價
+- AI
+description: 屋主最常踩的坑 — 信義單筆鑑價開出來 980 萬，照開結果掛 6 個月沒人看。問題在於『單筆鑑價』看不到社區動能。AI 跑 500 筆才看得出合理區間。
+timezone: Asia/Taipei
 ---
 
 賣方最大的痛點不是「賣不掉」，是「**不知道該開多少**」。

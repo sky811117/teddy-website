@@ -1,17 +1,17 @@
 ---
-title: "Week 03：買房議價 7 心法 — 我幫客戶在北屯談下 80 萬的真實案例"
+title: Week 03：買房議價 7 心法 — 我幫客戶在北屯談下 80 萬的真實案例
 author: 陳景泰
-pubDatetime: 2026-05-21T22:30:00.000+08:00
+pubDatetime: 2026-05-21 22:30:00+08:00
 slug: week-03-negotiation-7
 featured: false
 draft: false
-ogImage: /covers/negotiation-handshake.png
+ogImage: /og/week-03-negotiation-7.jpg
 tags:
-  - weekly-recap
-  - 買方教學
-  - 議價
-description: "客人最常卡關的就是議價 — 怕殺太低被嫌、不殺又覺得吃虧。我做房仲一年多最常被問的就是「景泰你幫我看，這個價可以下嗎？」這篇把 7 個我實戰用的心法寫下來。"
-timezone: "Asia/Taipei"
+- weekly-recap
+- 買方教學
+- 議價
+description: 客人最常卡關的就是議價 — 怕殺太低被嫌、不殺又覺得吃虧。我做房仲一年多最常被問的就是「景泰你幫我看，這個價可以下嗎？」這篇把 7 個我實戰用的心法寫下來。
+timezone: Asia/Taipei
 ---
 
 上週帶一位客戶看一間北屯的中古屋。

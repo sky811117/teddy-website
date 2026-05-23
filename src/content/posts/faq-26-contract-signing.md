@@ -1,36 +1,38 @@
 ---
-title: "FAQ 26:簽約當天要看什麼?8 大重點清單,漏一條虧一輩子"
+title: FAQ 26:簽約當天要看什麼?8 大重點清單,漏一條虧一輩子
 author: 陳景泰
-pubDatetime: 2026-06-16T11:00:00.000+08:00
+pubDatetime: 2026-06-16 11:00:00+08:00
 slug: faq-26-contract-signing
 featured: false
 draft: true
-ogImage: /covers/disclosure-signing.png
+ogImage: /og/faq-26-contract-signing.jpg
 tags:
-  - faq
-  - 買方教學
-  - 簽約
-description: "上個月陪一位客戶去簽約,簽到一半我發現「點交日」竟然漏寫。我馬上叫地政士補上。買賣 1000 萬的合約少一行字,將來糾紛起來可能扯 50 萬。這篇把簽約當天我會檢查的 8 大重點寫下來。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 簽約
+description: 上個月陪一位客戶去簽約,簽到一半我發現「點交日」竟然漏寫。我馬上叫地政士補上。買賣 1000 萬的合約少一行字,將來糾紛起來可能扯 50
+  萬。這篇把簽約當天我會檢查的 8 大重點寫下來。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "簽約一定要請地政士在場嗎?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "強烈建議要。地政士是專業中立第三方,負責核對合約、辦過戶、檢查抵押權塗銷。費用通常買賣雙方各付一半(各約 1-2 萬)。沒有地政士的合約,將來出問題你連告誰都不知道。"
-    - "@type": "Question"
-      name: "點交日跟過戶日是同一天嗎?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "通常不是。過戶日是地政事務所完成所有權移轉登記的日期,點交日是賣方實際把房子交給買方使用(交鑰匙、清空屋內物品)。實務上點交日多半在過戶後 7-30 天內,合約上一定要寫明日期。"
-    - "@type": "Question"
-      name: "屋況交屋條件要怎麼寫?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "建議在合約附件加一份「點交清單」,逐項列出哪些家具家電留下、哪些賣方搬走、漏水/壁癌等瑕疵的處理方式。最好附現況照片,雙方簽名確認。沒寫清楚的話,賣方可能搬走時連抽油煙機、冷氣都拆,你會大吃一驚。"
+  - '@type': Question
+    name: 簽約一定要請地政士在場嗎?
+    acceptedAnswer:
+      '@type': Answer
+      text: 強烈建議要。地政士是專業中立第三方,負責核對合約、辦過戶、檢查抵押權塗銷。費用通常買賣雙方各付一半(各約 1-2 萬)。沒有地政士的合約,將來出問題你連告誰都不知道。
+  - '@type': Question
+    name: 點交日跟過戶日是同一天嗎?
+    acceptedAnswer:
+      '@type': Answer
+      text: 通常不是。過戶日是地政事務所完成所有權移轉登記的日期,點交日是賣方實際把房子交給買方使用(交鑰匙、清空屋內物品)。實務上點交日多半在過戶後
+        7-30 天內,合約上一定要寫明日期。
+  - '@type': Question
+    name: 屋況交屋條件要怎麼寫?
+    acceptedAnswer:
+      '@type': Answer
+      text: 建議在合約附件加一份「點交清單」,逐項列出哪些家具家電留下、哪些賣方搬走、漏水/壁癌等瑕疵的處理方式。最好附現況照片,雙方簽名確認。沒寫清楚的話,賣方可能搬走時連抽油煙機、冷氣都拆,你會大吃一驚。
 ---
 
 上個月陪一位客戶去簽約。

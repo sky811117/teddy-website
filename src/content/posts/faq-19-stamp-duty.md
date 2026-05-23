@@ -1,36 +1,37 @@
 ---
-title: "FAQ 19:印花稅怎麼算?千分之一聽起來不多但這 3 個地方會踩雷"
+title: FAQ 19:印花稅怎麼算?千分之一聽起來不多但這 3 個地方會踩雷
 author: 陳景泰
-pubDatetime: 2026-06-09T11:00:00.000+08:00
+pubDatetime: 2026-06-09 11:00:00+08:00
 slug: faq-19-stamp-duty
 featured: false
 draft: true
-ogImage: /covers/transfer-stamp.png
+ogImage: /og/faq-19-stamp-duty.jpg
 tags:
-  - faq
-  - 買方教學
-  - 稅務
-description: "印花稅看起來千分之一沒幾錢,結果上週客戶簽約前一天才發現少準備了 4,000 元。這篇把計算公式、誰要繳、3 個容易踩雷的地方一次講清楚。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 稅務
+description: 印花稅看起來千分之一沒幾錢,結果上週客戶簽約前一天才發現少準備了 4,000 元。這篇把計算公式、誰要繳、3 個容易踩雷的地方一次講清楚。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "印花稅怎麼算?稅率多少?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "不動產買賣的印花稅稅率是千分之一(0.1%),但計算基礎不是成交價,而是「公契金額」— 即土地公告現值加上房屋評定現值的總和。一般千萬左右的中古屋公契金額大約 300-800 萬,所以印花稅約 3,000-8,000 元。"
-    - "@type": "Question"
-      name: "印花稅是買方還是賣方繳?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "依印花稅法規定,不動產契約的印花稅由立約人(買方)繳納。實務上多由買方負擔,但契約可以協商共同分攤或由賣方支付,這部分需在簽約時白紙黑字寫清楚。"
-    - "@type": "Question"
-      name: "印花稅什麼時候要繳?在哪裡買?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "印花稅必須在書立公契後、辦理過戶前完成繳納。可以到地政事務所現場購買印花稅票貼在公契上,或到便利商店、郵局、銀行購買。地政事務所辦過戶時會檢查,沒貼足會被退件。"
+  - '@type': Question
+    name: 印花稅怎麼算?稅率多少?
+    acceptedAnswer:
+      '@type': Answer
+      text: 不動產買賣的印花稅稅率是千分之一(0.1%),但計算基礎不是成交價,而是「公契金額」— 即土地公告現值加上房屋評定現值的總和。一般千萬左右的中古屋公契金額大約
+        300-800 萬,所以印花稅約 3,000-8,000 元。
+  - '@type': Question
+    name: 印花稅是買方還是賣方繳?
+    acceptedAnswer:
+      '@type': Answer
+      text: 依印花稅法規定,不動產契約的印花稅由立約人(買方)繳納。實務上多由買方負擔,但契約可以協商共同分攤或由賣方支付,這部分需在簽約時白紙黑字寫清楚。
+  - '@type': Question
+    name: 印花稅什麼時候要繳?在哪裡買?
+    acceptedAnswer:
+      '@type': Answer
+      text: 印花稅必須在書立公契後、辦理過戶前完成繳納。可以到地政事務所現場購買印花稅票貼在公契上,或到便利商店、郵局、銀行購買。地政事務所辦過戶時會檢查,沒貼足會被退件。
 ---
 
 上週幫一位西屯客戶簽約。

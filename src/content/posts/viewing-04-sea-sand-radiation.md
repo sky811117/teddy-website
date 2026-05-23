@@ -1,19 +1,20 @@
 ---
-title: "看屋實戰 04：海砂屋 / 輻射屋怎麼判別 — 年代 + 官方查詢 + 自帶檢測"
+title: 看屋實戰 04：海砂屋 / 輻射屋怎麼判別 — 年代 + 官方查詢 + 自帶檢測
 author: 陳景泰
-pubDatetime: 2026-02-11T14:00:00+08:00
+pubDatetime: 2026-02-11 14:00:00+08:00
 slug: viewing-04-sea-sand-radiation
 featured: false
 draft: false
-ogImage: /covers/undesirable-warning.png
+ogImage: /og/viewing-04-sea-sand-radiation.jpg
 tags:
-  - 看屋實戰
-  - 買方教學
-  - 海砂屋
-  - 輻射屋
-  - 中古屋
-description: "去年帶客戶看南區 1985 年蓋的中古屋，外觀沒明顯問題。但天花板有兩處水泥小剝落 — 我建議放棄。海砂屋跟輻射屋很多人不知道自己住的就是，這篇講年代判別、原能會查詢、自帶檢測儀 3 招。"
-timezone: "Asia/Taipei"
+- 看屋實戰
+- 買方教學
+- 海砂屋
+- 輻射屋
+- 中古屋
+description: 去年帶客戶看南區 1985 年蓋的中古屋，外觀沒明顯問題。但天花板有兩處水泥小剝落 — 我建議放棄。海砂屋跟輻射屋很多人不知道自己住的就是，這篇講年代判別、原能會查詢、自帶檢測儀
+  3 招。
+timezone: Asia/Taipei
 ---
 
 去年我帶一位客戶看南區一間 1985 年蓋的透天。

@@ -1,19 +1,20 @@
 ---
-title: "W07 主柱｜2026 年 5 月台中房市完整觀察 — 19 個切面看清楚這一波"
+title: W07 主柱｜2026 年 5 月台中房市完整觀察 — 19 個切面看清楚這一波
 author: 陳景泰
-pubDatetime: 2026-06-01T08:00:00.000+08:00
+pubDatetime: 2026-06-01 08:00:00+08:00
 slug: 2026-05-taichung-market-pillar
 featured: true
 draft: false
-ogImage: /covers/community-architecture.png
+ogImage: /og/2026-05-taichung-market-pillar.jpg
 tags:
-  - 台中房市
-  - 市場分析
-  - 主柱文
-  - "2026"
-  - 合泰建經
-description: "我把合泰建經 5 月份的 45 頁市場分析報告整個拆開，配上我這個月實際帶看的觀察，寫成 19 篇切面 + 1 篇主柱。看完這篇你會知道：政策還能不能等、台中哪一區真的有量、TOP 20 社區的位階怎麼讀。"
-timezone: "Asia/Taipei"
+- 台中房市
+- 市場分析
+- 主柱文
+- '2026'
+- 合泰建經
+description: 我把合泰建經 5 月份的 45 頁市場分析報告整個拆開，配上我這個月實際帶看的觀察，寫成 19 篇切面 + 1 篇主柱。看完這篇你會知道：政策還能不能等、台中哪一區真的有量、TOP
+  20 社區的位階怎麼讀。
+timezone: Asia/Taipei
 ---
 
 每個月初我都會收到合泰建經的台中市不動產市場分析。45 頁、滿滿的圖表、單坪數字到小數點後第二位。

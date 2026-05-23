@@ -1,36 +1,39 @@
 ---
-title: "FAQ 23:仲介帶看流程怎麼跑?從約看到看後 3 天我會做的 4 階段"
+title: FAQ 23:仲介帶看流程怎麼跑?從約看到看後 3 天我會做的 4 階段
 author: 陳景泰
-pubDatetime: 2026-06-13T11:00:00.000+08:00
+pubDatetime: 2026-06-13 11:00:00+08:00
 slug: faq-23-viewing-process
 featured: false
 draft: true
-ogImage: /covers/viewing-checklist.png
+ogImage: /og/faq-23-viewing-process.jpg
 tags:
-  - faq
-  - 買方教學
-  - 帶看
-description: "上週帶一位中部朋友看了 3 間房,結束後她說「我才知道原來帶看不是去看 30 分鐘就完事」。這篇把我帶看完整流程攤開來給你 — 配對、約看、現場、看後 3 天各做什麼。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 帶看
+description: 上週帶一位中部朋友看了 3 間房,結束後她說「我才知道原來帶看不是去看 30 分鐘就完事」。這篇把我帶看完整流程攤開來給你 — 配對、約看、現場、看後
+  3 天各做什麼。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "仲介帶看的流程有哪幾步?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "完整帶看流程 4 階段:(1) 配對 — 仲介依買方需求挑案、提供物件資料、(2) 約看 — 跟屋主協調時間、(3) 現場 — 仲介帶謄本影本、量尺、嫌惡設施 Google Map、屋況檢查表,陪同看屋並回答問題、(4) 看後 — 3 天內提供市場行情比對 + 議價建議。"
-    - "@type": "Question"
-      name: "看屋一次大概要花多久?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "單間看屋現場約 30-60 分鐘:外觀 + 公設 5-10 分鐘、室內格局走一輪 10-15 分鐘、屋況檢查(水電、漏水、噪音)10-20 分鐘、跟仲介討論 5-10 分鐘。一個下午通常排 2-3 間最理想,排太多會疲勞看不仔細。"
-    - "@type": "Question"
-      name: "看屋要帶什麼?要請誰一起去?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "建議帶:筆 + 筆記本 / 手機(拍照)、量尺或捲尺、手電筒(看天花板水痕)、行動電源、礦泉水。一定要帶長輩或家人一起複看 — 重大決定不要一個人決定,有第二雙眼睛幫你看細節。"
+  - '@type': Question
+    name: 仲介帶看的流程有哪幾步?
+    acceptedAnswer:
+      '@type': Answer
+      text: 完整帶看流程 4 階段:(1) 配對 — 仲介依買方需求挑案、提供物件資料、(2) 約看 — 跟屋主協調時間、(3) 現場 — 仲介帶謄本影本、量尺、嫌惡設施
+        Google Map、屋況檢查表,陪同看屋並回答問題、(4) 看後 — 3 天內提供市場行情比對 + 議價建議。
+  - '@type': Question
+    name: 看屋一次大概要花多久?
+    acceptedAnswer:
+      '@type': Answer
+      text: 單間看屋現場約 30-60 分鐘:外觀 + 公設 5-10 分鐘、室內格局走一輪 10-15 分鐘、屋況檢查(水電、漏水、噪音)10-20
+        分鐘、跟仲介討論 5-10 分鐘。一個下午通常排 2-3 間最理想,排太多會疲勞看不仔細。
+  - '@type': Question
+    name: 看屋要帶什麼?要請誰一起去?
+    acceptedAnswer:
+      '@type': Answer
+      text: 建議帶:筆 + 筆記本 / 手機(拍照)、量尺或捲尺、手電筒(看天花板水痕)、行動電源、礦泉水。一定要帶長輩或家人一起複看 — 重大決定不要一個人決定,有第二雙眼睛幫你看細節。
 ---
 
 上週帶一位中部朋友看了 3 間房子。

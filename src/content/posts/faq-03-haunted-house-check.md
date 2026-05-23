@@ -1,36 +1,38 @@
 ---
-title: "FAQ 03:凶宅怎麼查?4 種免費管道 + 法規定義一次說清"
+title: FAQ 03:凶宅怎麼查?4 種免費管道 + 法規定義一次說清
 author: 陳景泰
-pubDatetime: 2026-05-24T11:00:00.000+08:00
+pubDatetime: 2026-05-24 11:00:00+08:00
 slug: faq-03-haunted-house-check
 featured: false
 draft: true
-ogImage: /covers/undesirable-warning.png
+ogImage: /og/faq-03-haunted-house-check.jpg
 tags:
-  - faq
-  - 買方教學
-  - 凶宅
-description: "一句話:法規上仲介有調查告知義務,但凶宅定義很窄 — 只算「曾發生兇殺、自殺、意外身亡」且在「專有部分」。落水或老死不算。我教你 4 個免費管道自己查,加上 3 個房仲不會主動告訴你的盲點。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 凶宅
+description: 一句話:法規上仲介有調查告知義務,但凶宅定義很窄 — 只算「曾發生兇殺、自殺、意外身亡」且在「專有部分」。落水或老死不算。我教你 4 個免費管道自己查,加上
+  3 個房仲不會主動告訴你的盲點。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "凶宅有法律定義嗎?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "依內政部「不動產交易標的瑕疵揭露作業要點」,凶宅指曾發生兇殺、自殺、一氧化碳中毒,或其他非自然死亡情形,且發生地點在該不動產的「專有部分」內。樓梯間、騎樓、屋頂平台、社區公共區域均屬「共用部分」,不算凶宅。老死、病死、跳樓但落地點在他戶或公共區域,也不算。"
-    - "@type": "Question"
-      name: "凶宅有幾個免費查詢管道?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "4 個:(1) 台灣凶宅網 www.unluckyhouse.com 民間整理;(2) Google 搜尋「地址 + 凶宅 / 命案 / 自殺」;(3) 問鄰居、管理員、里長,實地打聽;(4) 房仲業者依法調查告知，可要求看「不動產說明書」是否有揭露。內政部不動產資訊平台目前不公開凶宅資訊。"
-    - "@type": "Question"
-      name: "如果買了才發現是凶宅可以解約嗎?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "可以主張瑕疵擔保責任要求解約或減價。買賣契約簽訂時，賣方與仲介若有故意隱匿凶宅事實，買方可依民法 359 條請求解約或減少價金，並可請求損害賠償。實務上要保留證據:不動產說明書、看屋筆記、仲介書面回覆,以及凶宅事證(新聞報導、警方紀錄)。"
+  - '@type': Question
+    name: 凶宅有法律定義嗎?
+    acceptedAnswer:
+      '@type': Answer
+      text: 依內政部「不動產交易標的瑕疵揭露作業要點」,凶宅指曾發生兇殺、自殺、一氧化碳中毒,或其他非自然死亡情形,且發生地點在該不動產的「專有部分」內。樓梯間、騎樓、屋頂平台、社區公共區域均屬「共用部分」,不算凶宅。老死、病死、跳樓但落地點在他戶或公共區域,也不算。
+  - '@type': Question
+    name: 凶宅有幾個免費查詢管道?
+    acceptedAnswer:
+      '@type': Answer
+      text: 4 個:(1) 台灣凶宅網 www.unluckyhouse.com 民間整理;(2) Google 搜尋「地址 + 凶宅 / 命案 / 自殺」;(3)
+        問鄰居、管理員、里長,實地打聽;(4) 房仲業者依法調查告知，可要求看「不動產說明書」是否有揭露。內政部不動產資訊平台目前不公開凶宅資訊。
+  - '@type': Question
+    name: 如果買了才發現是凶宅可以解約嗎?
+    acceptedAnswer:
+      '@type': Answer
+      text: 可以主張瑕疵擔保責任要求解約或減價。買賣契約簽訂時，賣方與仲介若有故意隱匿凶宅事實，買方可依民法 359 條請求解約或減少價金，並可請求損害賠償。實務上要保留證據:不動產說明書、看屋筆記、仲介書面回覆,以及凶宅事證(新聞報導、警方紀錄)。
 ---
 
 最近一位客戶半夜傳訊息給我:

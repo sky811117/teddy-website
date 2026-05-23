@@ -1,17 +1,18 @@
 ---
-title: "房地產名詞 15：謄本 — 買房前沒調這張等於賭博"
+title: 房地產名詞 15：謄本 — 買房前沒調這張等於賭博
 author: 陳景泰
-pubDatetime: 2026-04-04T10:00:00+08:00
+pubDatetime: 2026-04-04 10:00:00+08:00
 slug: term-15-transcript
 featured: false
 draft: false
-ogImage: /covers/disclosure-document.png
+ogImage: /og/term-15-transcript.jpg
 tags:
-  - 房地產詞典
-  - 買方教學
-  - 謄本
-description: "屋主給你看權狀寫他名字，你以為穩了 — 但你不知道這房子上個月被法院假扣押。沒調謄本就簽約 = 災難。這篇講謄本怎麼讀、看哪一欄、20 元能救你 1500 萬。"
-timezone: "Asia/Taipei"
+- 房地產詞典
+- 買方教學
+- 謄本
+description: 屋主給你看權狀寫他名字，你以為穩了 — 但你不知道這房子上個月被法院假扣押。沒調謄本就簽約 = 災難。這篇講謄本怎麼讀、看哪一欄、20 元能救你
+  1500 萬。
+timezone: Asia/Taipei
 ---
 
 ## 一句話定義

@@ -1,37 +1,41 @@
 ---
-title: "FAQ 07：屋齡 30 年的房還能買嗎？我看過 3 種人都買得很開心"
+title: FAQ 07：屋齡 30 年的房還能買嗎？我看過 3 種人都買得很開心
 author: 陳景泰
-pubDatetime: 2026-05-28T11:00:00.000+08:00
+pubDatetime: 2026-05-28 11:00:00+08:00
 slug: faq-07-30-year-old-house
 featured: false
 draft: true
-ogImage: /covers/community-architecture.png
+ogImage: /og/faq-07-30-year-old-house.jpg
 tags:
-  - faq
-  - 買方教學
-  - 老屋
-  - 屋齡
-description: "上週一位客戶問我「屋齡 30 年的房能買嗎」— 她看上一間台中北區 32 年的老公寓,單坪比同區新成屋便宜 15 萬。能買,但有 3 種人最適合,還有 4 個地雷要先排掉。這篇我把實戰判斷寫下來。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 老屋
+- 屋齡
+description: 上週一位客戶問我「屋齡 30 年的房能買嗎」— 她看上一間台中北區 32 年的老公寓,單坪比同區新成屋便宜 15 萬。能買,但有 3 種人最適合,還有
+  4 個地雷要先排掉。這篇我把實戰判斷寫下來。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "屋齡 30 年的房子還能買嗎?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "能買。30 年屋最適合三種人:學區族(老屋多在精華學區內)、投資出租族(單坪價低、租金投報率高)、自住改裝族(買老屋翻新比買新成屋總價省 30-40%)。但要避開海砂屋、輻射屋、結構受損、社區管理失能這 4 個地雷。"
-    - "@type": "Question"
-      name: "30 年老屋貸款成數會比較低嗎?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "貸款成數不一定降,但「貸款年限」會被砍。銀行常用公式:屋齡 + 貸款年限 ≤ 50 年。屋齡 30 年的房,貸款年限通常只給 20 年,月付金會比 30 年期高 25-30%。要先算清楚現金流再下訂。"
-    - "@type": "Question"
-      name: "怎麼判斷老屋結構安不安全?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "看四件事:(1) 建照與使用執照(去地政事務所查)、(2) 樑柱有沒有裂縫或鋼筋外露、(3) 海砂屋檢測(氯離子含量)、(4) 921 後是否做過結構補強。RC 構造比 SRC 老化慢,30 年 RC 屋只要結構沒受損,再住 30 年沒問題。"
+  - '@type': Question
+    name: 屋齡 30 年的房子還能買嗎?
+    acceptedAnswer:
+      '@type': Answer
+      text: 能買。30 年屋最適合三種人:學區族(老屋多在精華學區內)、投資出租族(單坪價低、租金投報率高)、自住改裝族(買老屋翻新比買新成屋總價省 30-40%)。但要避開海砂屋、輻射屋、結構受損、社區管理失能這
+        4 個地雷。
+  - '@type': Question
+    name: 30 年老屋貸款成數會比較低嗎?
+    acceptedAnswer:
+      '@type': Answer
+      text: 貸款成數不一定降,但「貸款年限」會被砍。銀行常用公式:屋齡 + 貸款年限 ≤ 50 年。屋齡 30 年的房,貸款年限通常只給 20 年,月付金會比
+        30 年期高 25-30%。要先算清楚現金流再下訂。
+  - '@type': Question
+    name: 怎麼判斷老屋結構安不安全?
+    acceptedAnswer:
+      '@type': Answer
+      text: 看四件事:(1) 建照與使用執照(去地政事務所查)、(2) 樑柱有沒有裂縫或鋼筋外露、(3) 海砂屋檢測(氯離子含量)、(4) 921 後是否做過結構補強。RC
+        構造比 SRC 老化慢,30 年 RC 屋只要結構沒受損,再住 30 年沒問題。
 ---
 
 上週一位客戶傳訊息問我:

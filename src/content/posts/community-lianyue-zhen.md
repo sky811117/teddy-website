@@ -1,18 +1,18 @@
 ---
-title: "梧棲聯悅臻：合泰建經成交第一名的新成屋，到底紅在哪裡"
+title: 梧棲聯悅臻：合泰建經成交第一名的新成屋，到底紅在哪裡
 author: 陳景泰
-pubDatetime: 2026-04-24T20:00:00+08:00
+pubDatetime: 2026-04-24 20:00:00+08:00
 slug: community-lianyue-zhen
 featured: false
 draft: false
-ogImage: /communities/lianyue-zhen.png
+ogImage: /og/community-lianyue-zhen.jpg
 tags:
-  - community-review
-  - 梧棲區
-  - 聯悅臻
-  - 新成屋
-description: "梧棲聯悅臻是聯悅建設在台中港特區的新案，剛交屋進入成屋階段，去年是合泰建經內成交筆數第一名。這篇 honest 講它紅的原因、買進去要注意什麼、適合誰、不適合誰。"
-timezone: "Asia/Taipei"
+- community-review
+- 梧棲區
+- 聯悅臻
+- 新成屋
+description: 梧棲聯悅臻是聯悅建設在台中港特區的新案，剛交屋進入成屋階段，去年是合泰建經內成交筆數第一名。這篇 honest 講它紅的原因、買進去要注意什麼、適合誰、不適合誰。
+timezone: Asia/Taipei
 ---
 
 最近常被同事問：「梧棲那個聯悅臻怎麼會賣這麼好？」

@@ -1,18 +1,18 @@
 ---
-title: "春福興波好住嗎?太平新成屋的真心話評論"
+title: 春福興波好住嗎?太平新成屋的真心話評論
 author: 陳景泰
-pubDatetime: 2026-04-09T14:00:00+08:00
+pubDatetime: 2026-04-09 14:00:00+08:00
 slug: community-chunfu-xingbo
 featured: false
 draft: false
-ogImage: /communities/chunfu-xingbo.png
+ogImage: /og/community-chunfu-xingbo.jpg
 tags:
-  - community-review
-  - 太平區
-  - 春福興波
-  - 新成屋
-description: "春福興波是太平區近期完工的新成屋之一。預算想壓低、又想要新成屋的買家常問我這個社區值不值得買。這篇用帶看角度聊聊它的優缺點、適合哪種買家。"
-timezone: "Asia/Taipei"
+- community-review
+- 太平區
+- 春福興波
+- 新成屋
+description: 春福興波是太平區近期完工的新成屋之一。預算想壓低、又想要新成屋的買家常問我這個社區值不值得買。這篇用帶看角度聊聊它的優缺點、適合哪種買家。
+timezone: Asia/Taipei
 ---
 
 上個月有一對年輕夫妻找我看房。

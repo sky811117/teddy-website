@@ -1,18 +1,18 @@
 ---
-title: "工具：新青安試算 — 30 年差 56 萬，但你符合資格嗎？"
+title: 工具：新青安試算 — 30 年差 56 萬，但你符合資格嗎？
 author: 陳景泰
-pubDatetime: 2026-05-24T08:00:00.000+08:00
+pubDatetime: 2026-05-24 08:00:00+08:00
 slug: tool-new-housing-loan
 featured: false
 draft: false
-ogImage: /covers/new-housing-loan-keys.png
+ogImage: /og/tool-new-housing-loan.jpg
 tags:
-  - 工具
-  - 買方教學
-  - 新青安
-  - 房貸
-description: "2026/7/31 政府補貼到期。最後 2 個月想搶新青安的人問我最多的就是「我符合資格嗎？」「跟一般房貸到底差多少？」這篇工具一次算給你看。"
-timezone: "Asia/Taipei"
+- 工具
+- 買方教學
+- 新青安
+- 房貸
+description: 2026/7/31 政府補貼到期。最後 2 個月想搶新青安的人問我最多的就是「我符合資格嗎？」「跟一般房貸到底差多少？」這篇工具一次算給你看。
+timezone: Asia/Taipei
 ---
 
 最近最多人問我的不是「這間房好不好」，是 —

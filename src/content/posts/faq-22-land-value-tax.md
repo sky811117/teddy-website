@@ -1,37 +1,39 @@
 ---
-title: "FAQ 22:地價稅怎麼算?自住 0.2% 怎麼申請、9/22 死線別錯過"
+title: FAQ 22:地價稅怎麼算?自住 0.2% 怎麼申請、9/22 死線別錯過
 author: 陳景泰
-pubDatetime: 2026-06-12T11:00:00.000+08:00
+pubDatetime: 2026-06-12 11:00:00+08:00
 slug: faq-22-land-value-tax
 featured: false
 draft: true
-ogImage: /covers/transfer-tax.png
+ogImage: /og/faq-22-land-value-tax.jpg
 tags:
-  - faq
-  - 買方教學
-  - 稅務
-  - 地價稅
-description: "地價稅自住優惠 0.2%、一般稅率 1%-5.5% — 5 倍差距。但每年 9 月 22 日前沒申請就用一般稅率算。這篇把計算公式、申請流程、3 個關鍵時間點一次講清楚。"
-timezone: "Asia/Taipei"
+- faq
+- 買方教學
+- 稅務
+- 地價稅
+description: 地價稅自住優惠 0.2%、一般稅率 1%-5.5% — 5 倍差距。但每年 9 月 22 日前沒申請就用一般稅率算。這篇把計算公式、申請流程、3
+  個關鍵時間點一次講清楚。
+timezone: Asia/Taipei
 faqSchema:
-  "@context": "https://schema.org"
-  "@type": "FAQPage"
+  '@context': https://schema.org
+  '@type': FAQPage
   mainEntity:
-    - "@type": "Question"
-      name: "地價稅自住優惠稅率多少?怎麼申請?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "自用住宅用地稅率 0.2%(一般用地 1%-5.5%)。三個條件:本人 / 配偶 / 直系親屬設籍且實際居住、未出租或營業、面積限制都市土地 0.7 公頃以內或非都市 1.5 公頃以內。每年 9 月 22 日前向地政事務所申請,當年度生效。"
-    - "@type": "Question"
-      name: "地價稅什麼時候開徵?在哪繳?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "地價稅每年 8 月開徵,11 月 30 日前繳完。可在便利商店、銀行櫃台、ATM 轉帳、信用卡線上繳費,或郵局窗口繳納。逾期會加徵滯納金。"
-    - "@type": "Question"
-      name: "地價稅跟房屋稅差在哪?"
-      acceptedAnswer:
-        "@type": "Answer"
-        text: "地價稅針對「土地」課徵,每年 11 月繳;房屋稅針對「房屋」課徵,每年 5 月繳。兩種稅都由房地產所有人繳納,但計算基礎、申請優惠、稅率都不同。一棟房子的持有成本=兩種稅加起來。"
+  - '@type': Question
+    name: 地價稅自住優惠稅率多少?怎麼申請?
+    acceptedAnswer:
+      '@type': Answer
+      text: 自用住宅用地稅率 0.2%(一般用地 1%-5.5%)。三個條件:本人 / 配偶 / 直系親屬設籍且實際居住、未出租或營業、面積限制都市土地
+        0.7 公頃以內或非都市 1.5 公頃以內。每年 9 月 22 日前向地政事務所申請,當年度生效。
+  - '@type': Question
+    name: 地價稅什麼時候開徵?在哪繳?
+    acceptedAnswer:
+      '@type': Answer
+      text: 地價稅每年 8 月開徵,11 月 30 日前繳完。可在便利商店、銀行櫃台、ATM 轉帳、信用卡線上繳費,或郵局窗口繳納。逾期會加徵滯納金。
+  - '@type': Question
+    name: 地價稅跟房屋稅差在哪?
+    acceptedAnswer:
+      '@type': Answer
+      text: 地價稅針對「土地」課徵,每年 11 月繳;房屋稅針對「房屋」課徵,每年 5 月繳。兩種稅都由房地產所有人繳納,但計算基礎、申請優惠、稅率都不同。一棟房子的持有成本=兩種稅加起來。
 ---
 
 上禮拜碰到一個讓我心疼的案例。

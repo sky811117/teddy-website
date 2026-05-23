@@ -1,18 +1,18 @@
 ---
-title: "總太心之所向值得買嗎?北屯新成屋的真實樣貌"
+title: 總太心之所向值得買嗎?北屯新成屋的真實樣貌
 author: 陳景泰
-pubDatetime: 2026-04-07T14:00:00+08:00
+pubDatetime: 2026-04-07 14:00:00+08:00
 slug: community-zongtai-heart
 featured: false
 draft: false
-ogImage: /communities/zongtai-heart.png
+ogImage: /og/community-zongtai-heart.jpg
 tags:
-  - community-review
-  - 北屯區
-  - 總太心之所向
-  - 新成屋
-description: "總太心之所向是北屯近期討論度最高的新成屋之一。但它真的適合你嗎？我從帶看角度聊聊這個社區的優點、缺點，以及哪種買家最容易在這裡買得開心。"
-timezone: "Asia/Taipei"
+- community-review
+- 北屯區
+- 總太心之所向
+- 新成屋
+description: 總太心之所向是北屯近期討論度最高的新成屋之一。但它真的適合你嗎？我從帶看角度聊聊這個社區的優點、缺點，以及哪種買家最容易在這裡買得開心。
+timezone: Asia/Taipei
 ---
 
 最近接到一位從北部回台中發展的工程師客戶。

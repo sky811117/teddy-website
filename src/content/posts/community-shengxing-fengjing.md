@@ -1,18 +1,18 @@
 ---
-title: "梧棲勝興豐境：屋齡 1 年的港特區新成屋 — 真的值得買嗎"
+title: 梧棲勝興豐境：屋齡 1 年的港特區新成屋 — 真的值得買嗎
 author: 陳景泰
-pubDatetime: 2026-04-28T14:00:00+08:00
+pubDatetime: 2026-04-28 14:00:00+08:00
 slug: community-shengxing-fengjing
 featured: false
 draft: false
-ogImage: /communities/shengxing-fengjing.png
+ogImage: /og/community-shengxing-fengjing.jpg
 tags:
-  - community-review
-  - 梧棲區
-  - 勝興豐境
-  - 新成屋
-description: "梧棲勝興豐境是勝興建設在台中港特區的新案，屋齡 1 年屬於剛入住的成屋階段。這篇 honest 評估它的位置、適合誰、跟周邊新案比的優劣、以及買進去要算清楚的真實成本。"
-timezone: "Asia/Taipei"
+- community-review
+- 梧棲區
+- 勝興豐境
+- 新成屋
+description: 梧棲勝興豐境是勝興建設在台中港特區的新案，屋齡 1 年屬於剛入住的成屋階段。這篇 honest 評估它的位置、適合誰、跟周邊新案比的優劣、以及買進去要算清楚的真實成本。
+timezone: Asia/Taipei
 ---
 
 前陣子有個年輕夫妻來找我，先生在台中港特區的廠商上班、太太在沙鹿。

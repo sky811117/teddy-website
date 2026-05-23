@@ -1,18 +1,18 @@
 ---
-title: "Week 06：為什麼我的物件照看起來比同行專業 — 修圖背後我用的 AI"
+title: Week 06：為什麼我的物件照看起來比同行專業 — 修圖背後我用的 AI
 author: 陳景泰
-pubDatetime: 2026-05-21T23:00:00.000+08:00
+pubDatetime: 2026-05-21 23:00:00+08:00
 slug: week-06-listing-photos
 featured: false
 draft: false
-ogImage: /covers/viewing-natural-light.png
+ogImage: /og/week-06-listing-photos.jpg
 tags:
-  - weekly-recap
-  - 賣方教學
-  - 物件照
-  - AI修圖
-description: "很多屋主以為『拍清楚就好』。但在 591、樂屋、5168 的搜尋頁，你只有 3 秒讓買家決定要不要點進來。這篇說的是：我用 AI 做了什麼、為什麼這對你賣到好價錢有直接關係。"
-timezone: "Asia/Taipei"
+- weekly-recap
+- 賣方教學
+- 物件照
+- AI修圖
+description: 很多屋主以為『拍清楚就好』。但在 591、樂屋、5168 的搜尋頁，你只有 3 秒讓買家決定要不要點進來。這篇說的是：我用 AI 做了什麼、為什麼這對你賣到好價錢有直接關係。
+timezone: Asia/Taipei
 ---
 
 最近我在幫一位北屯的屋主準備上架。

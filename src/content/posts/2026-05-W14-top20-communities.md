@@ -1,19 +1,20 @@
 ---
-title: "W14 熱門社區｜台中 TOP 20 社區榜單 — 過去 1 年誰最熱、為什麼"
+title: W14 熱門社區｜台中 TOP 20 社區榜單 — 過去 1 年誰最熱、為什麼
 author: 陳景泰
-pubDatetime: 2026-06-10T09:00:00.000+08:00
+pubDatetime: 2026-06-10 09:00:00+08:00
 slug: 2026-05-W14-top20-communities
 featured: false
 draft: false
-ogImage: /covers/community-balcony.png
+ogImage: /og/2026-05-W14-top20-communities.jpg
 tags:
-  - 熱門社區
-  - TOP20
-  - 實價登錄
-  - 台中房市
-  - "2026"
-description: "合泰建經 5 月報告統計：過去 12 個月（114/3-115/2）台中市熱門大樓 TOP 20。第一名梧棲聯悅臻 96 筆、第二名北屯總太心之所向 74 筆。我把完整榜單 + 行政區分布 + 屋齡分布拆給你看。"
-timezone: "Asia/Taipei"
+- 熱門社區
+- TOP20
+- 實價登錄
+- 台中房市
+- '2026'
+description: 合泰建經 5 月報告統計：過去 12 個月（114/3-115/2）台中市熱門大樓 TOP 20。第一名梧棲聯悅臻 96 筆、第二名北屯總太心之所向
+  74 筆。我把完整榜單 + 行政區分布 + 屋齡分布拆給你看。
+timezone: Asia/Taipei
 ---
 
 合泰建經 5 月報告裡有一張我每個月都會盯著看的表 — **台中市熱門社區大樓 TOP 20**。

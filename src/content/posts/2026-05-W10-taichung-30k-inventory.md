@@ -1,19 +1,20 @@
 ---
-title: "W10 政策｜台中待售量超過 3 萬戶居六都之冠 — 是危機還是機會"
+title: W10 政策｜台中待售量超過 3 萬戶居六都之冠 — 是危機還是機會
 author: 陳景泰
-pubDatetime: 2026-06-04T09:00:00.000+08:00
+pubDatetime: 2026-06-04 09:00:00+08:00
 slug: 2026-05-W10-taichung-30k-inventory
 featured: false
 draft: false
-ogImage: /covers/community-streetview.png
+ogImage: /og/2026-05-W10-taichung-30k-inventory.jpg
 tags:
-  - 政策篇
-  - 台中房市
-  - 待售量
-  - 賣壓
-  - "2026"
-description: "591 房屋網最新統計：六都 + 新竹的成屋待售量突破 10 萬戶大關，台中超過 3 萬戶居首。這個數字背後對買方、賣方各有意義。我用我這個月幫 12 組客戶看屋的真實情況拆解。"
-timezone: "Asia/Taipei"
+- 政策篇
+- 台中房市
+- 待售量
+- 賣壓
+- '2026'
+description: 591 房屋網最新統計：六都 + 新竹的成屋待售量突破 10 萬戶大關，台中超過 3 萬戶居首。這個數字背後對買方、賣方各有意義。我用我這個月幫
+  12 組客戶看屋的真實情況拆解。
+timezone: Asia/Taipei
 ---
 
 5 月 24 日經濟日報那則新聞我看到很有感：

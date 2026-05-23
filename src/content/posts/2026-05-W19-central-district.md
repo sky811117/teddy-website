@@ -1,19 +1,20 @@
 ---
-title: "W19 各區行情｜為什麼中區實價登錄上幾乎找不到房 — 一個老市中心的衰退與重生"
+title: W19 各區行情｜為什麼中區實價登錄上幾乎找不到房 — 一個老市中心的衰退與重生
 author: 陳景泰
-pubDatetime: 2026-06-17T09:00:00.000+08:00
+pubDatetime: 2026-06-17 09:00:00+08:00
 slug: 2026-05-W19-central-district
 featured: false
 draft: false
-ogImage: /covers/viewing-flashlight.png
+ogImage: /og/2026-05-W19-central-district.jpg
 tags:
-  - 各區行情
-  - 中區
-  - 都更
-  - 老市中心
-  - "2026"
-description: "合泰建經 5 月報告涵蓋台中 14 個行政區，中區唯一沒有獨立列出。為什麼？因為 2 月份中區整體成交件數可能不到 5 件。這篇講台中中區的衰退故事 + 為什麼它可能是下一波都更熱點。"
-timezone: "Asia/Taipei"
+- 各區行情
+- 中區
+- 都更
+- 老市中心
+- '2026'
+description: 合泰建經 5 月報告涵蓋台中 14 個行政區，中區唯一沒有獨立列出。為什麼？因為 2 月份中區整體成交件數可能不到 5 件。這篇講台中中區的衰退故事
+  + 為什麼它可能是下一波都更熱點。
+timezone: Asia/Taipei
 ---
 
 我把合泰建經 5 月報告翻了 4 次，確認一件事 —

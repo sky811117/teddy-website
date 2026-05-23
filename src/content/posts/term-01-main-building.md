@@ -1,17 +1,17 @@
 ---
-title: "房地產名詞 01：主建物 — 你權狀上最該關心的數字"
+title: 房地產名詞 01：主建物 — 你權狀上最該關心的數字
 author: 陳景泰
-pubDatetime: 2026-02-19T09:00:00+08:00
+pubDatetime: 2026-02-19 09:00:00+08:00
 slug: term-01-main-building
 featured: false
 draft: false
-ogImage: /covers/disclosure-document.png
+ogImage: /og/term-01-main-building.jpg
 tags:
-  - 房地產詞典
-  - 買方教學
-  - 權狀
-description: "你買一間 30 坪的房，可能只有 18 坪是真的能放沙發、放床的空間。剩下的 12 坪去哪？這篇從『主建物』講起，幫你看懂權狀上最該關心的那一欄。"
-timezone: "Asia/Taipei"
+- 房地產詞典
+- 買方教學
+- 權狀
+description: 你買一間 30 坪的房，可能只有 18 坪是真的能放沙發、放床的空間。剩下的 12 坪去哪？這篇從『主建物』講起，幫你看懂權狀上最該關心的那一欄。
+timezone: Asia/Taipei
 ---
 
 ## 一句話定義

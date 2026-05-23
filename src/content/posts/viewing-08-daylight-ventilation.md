@@ -1,19 +1,20 @@
 ---
-title: "看屋實戰 08：採光通風判斷 — 看屋當天 10 分鐘搞定（這比格局更影響你住起來爽不爽）"
+title: 看屋實戰 08：採光通風判斷 — 看屋當天 10 分鐘搞定（這比格局更影響你住起來爽不爽）
 author: 陳景泰
-pubDatetime: 2026-03-02T14:00:00+08:00
+pubDatetime: 2026-03-02 14:00:00+08:00
 slug: viewing-08-daylight-ventilation
 featured: false
 draft: false
-ogImage: /covers/viewing-natural-light.png
+ogImage: /og/viewing-08-daylight-ventilation.jpg
 tags:
-  - 看屋實戰
-  - 買方教學
-  - 採光
-  - 通風
-  - 朝向
-description: "客戶在西屯兩間中間猶豫 — A 棟新建材、B 棟舊但南北通透。我推 B。半年後她回我「Teddy，我每天回家都會深呼吸一下，這房子真的太舒服了」。採光通風比格局更影響你住起來爽不爽。這篇 10 分鐘判斷方法。"
-timezone: "Asia/Taipei"
+- 看屋實戰
+- 買方教學
+- 採光
+- 通風
+- 朝向
+description: 客戶在西屯兩間中間猶豫 — A 棟新建材、B 棟舊但南北通透。我推 B。半年後她回我「Teddy，我每天回家都會深呼吸一下，這房子真的太舒服了」。採光通風比格局更影響你住起來爽不爽。這篇
+  10 分鐘判斷方法。
+timezone: Asia/Taipei
 ---
 
 去年一位客戶在西屯兩間之間猶豫很久。
