@@ -1,10 +1,11 @@
 ---
 title: "FAQ 23:仲介帶看流程怎麼跑?從約看到看後 3 天我會做的 4 階段"
 author: 陳景泰
-pubDatetime: 2026-06-23T11:00:00.000+08:00
+pubDatetime: 2026-06-13T11:00:00.000+08:00
 slug: faq-23-viewing-process
 featured: false
 draft: true
+ogImage: /covers/viewing-checklist.png
 tags:
   - faq
   - 買方教學

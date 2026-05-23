@@ -5,7 +5,7 @@ pubDatetime: 2026-05-21T22:30:00.000+08:00
 slug: week-03-negotiation-7
 featured: false
 draft: false
-ogImage: ../../../assets/images/covers/negotiation-handshake.png
+ogImage: /covers/negotiation-handshake.png
 tags:
   - weekly-recap
   - 買方教學

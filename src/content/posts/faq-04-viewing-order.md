@@ -1,10 +1,11 @@
 ---
 title: "FAQ 04:看屋順序怎麼安排?3 階段 SOP 從線上篩到驗屋"
 author: 陳景泰
-pubDatetime: 2026-06-04T11:00:00.000+08:00
+pubDatetime: 2026-05-25T11:00:00.000+08:00
 slug: faq-04-viewing-order
 featured: false
 draft: true
+ogImage: /covers/viewing-checklist.png
 tags:
   - faq
   - 買方教學

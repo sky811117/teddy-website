@@ -5,6 +5,7 @@ pubDatetime: 2026-05-22T10:25:00.000+08:00
 slug: term-06-terrace
 featured: false
 draft: true
+ogImage: /covers/community-balcony.png
 tags:
   - 房地產詞典
   - 買方教學

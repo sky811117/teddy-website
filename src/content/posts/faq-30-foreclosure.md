@@ -1,10 +1,11 @@
 ---
 title: "FAQ 30：法拍屋怎麼買？我沒大量處理過但研究過 — 入場前 6 件事"
 author: 陳景泰
-pubDatetime: 2026-06-30T11:00:00.000+08:00
+pubDatetime: 2026-06-20T11:00:00.000+08:00
 slug: faq-30-foreclosure
 featured: false
 draft: true
+ogImage: /covers/undesirable-warning.png
 tags:
   - faq
   - 買方教學

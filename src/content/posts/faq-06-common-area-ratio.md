@@ -1,10 +1,11 @@
 ---
 title: "FAQ 06:公設比多少合理?按屋齡分級 + 灌水公設識破法"
 author: 陳景泰
-pubDatetime: 2026-06-06T11:00:00.000+08:00
+pubDatetime: 2026-05-27T11:00:00.000+08:00
 slug: faq-06-common-area-ratio
 featured: false
 draft: true
+ogImage: /covers/disclosure-document.png
 tags:
   - faq
   - 買方教學

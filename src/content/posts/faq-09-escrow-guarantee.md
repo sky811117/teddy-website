@@ -1,10 +1,11 @@
 ---
 title: "FAQ 09:履約保證是什麼? 你的幾百萬怎麼安全送到對方手上"
 author: 陳景泰
-pubDatetime: 2026-06-09T11:00:00.000+08:00
+pubDatetime: 2026-05-30T11:00:00.000+08:00
 slug: faq-09-escrow-guarantee
 featured: false
 draft: true
+ogImage: /covers/disclosure-stamp.png
 tags:
   - faq
   - 買方教學

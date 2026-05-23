@@ -5,7 +5,7 @@ pubDatetime: 2026-06-03T09:00:00.000+08:00
 slug: 2026-05-W09-cbc-second-home
 featured: false
 draft: true
-ogImage: ../../assets/images/covers/new-housing-loan-keys.png
+ogImage: /covers/new-housing-loan-keys.png
 tags:
   - 政策篇
   - 央行

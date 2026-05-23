@@ -1,10 +1,11 @@
 ---
 title: "FAQ 25:斡旋金 vs 訂金有什麼差別?我看過買方搞錯虧 50 萬"
 author: 陳景泰
-pubDatetime: 2026-06-25T11:00:00.000+08:00
+pubDatetime: 2026-06-15T11:00:00.000+08:00
 slug: faq-25-earnest-vs-deposit
 featured: false
 draft: true
+ogImage: /covers/negotiation-strategy.png
 tags:
   - faq
   - 買方教學

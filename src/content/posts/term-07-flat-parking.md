@@ -5,6 +5,7 @@ pubDatetime: 2026-05-22T10:30:00.000+08:00
 slug: term-07-flat-parking
 featured: false
 draft: true
+ogImage: /covers/community-architecture.png
 tags:
   - 房地產詞典
   - 買方教學

@@ -1,10 +1,11 @@
 ---
 title: "FAQ 16:過戶要準備什麼文件?買方賣方各 7 樣完整清單"
 author: 陳景泰
-pubDatetime: 2026-06-16T11:00:00.000+08:00
+pubDatetime: 2026-06-06T11:00:00.000+08:00
 slug: faq-16-transfer-documents
 featured: false
 draft: true
+ogImage: /covers/transfer-document.png
 tags:
   - faq
   - 買方教學

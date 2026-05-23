@@ -1,10 +1,11 @@
 ---
 title: "FAQ 20:契稅是什麼?6% 聽起來很多但其實沒你想的可怕"
 author: 陳景泰
-pubDatetime: 2026-06-20T11:00:00.000+08:00
+pubDatetime: 2026-06-10T11:00:00.000+08:00
 slug: faq-20-deed-tax
 featured: false
 draft: true
+ogImage: /covers/transfer-tax.png
 tags:
   - faq
   - 買方教學

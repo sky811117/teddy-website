@@ -5,6 +5,7 @@ pubDatetime: 2026-05-22T09:40:00.000+08:00
 slug: viewing-05-renovation-budget
 featured: false
 draft: true
+ogImage: /covers/viewing-corner.png
 tags:
   - 看屋實戰
   - 買方教學

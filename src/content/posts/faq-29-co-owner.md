@@ -1,10 +1,11 @@
 ---
 title: "FAQ 29:共有人怎麼處理?買到一半才發現屋主不是唯一所有權人怎辦"
 author: 陳景泰
-pubDatetime: 2026-06-29T11:00:00.000+08:00
+pubDatetime: 2026-06-19T11:00:00.000+08:00
 slug: faq-29-co-owner
 featured: false
 draft: true
+ogImage: /covers/disclosure-law.png
 tags:
   - faq
   - 買方教學

@@ -1,0 +1,94 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import Main from "@/components/Main.astro";
+import ContactForm from "@/components/ContactForm.astro";
+import config from "@/config";
+---
+
+<Layout
+  title={`聯絡景泰 | ${config.site.title}`}
+  description="台中房仲陳景泰 — 找房、賣房、換屋、投資諮詢。LINE / 電話 / 表單三條路、看你方便。30 分鐘內回覆。"
+>
+  <Header />
+
+  <Main
+    pageTitle="聯絡景泰"
+    pageDesc="LINE / 電話 / 表單三條路、看你方便。30 秒到 30 分鐘內回。"
+  >
+    {/* 三個主要聯絡方式 cards */}
+    <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <a
+        href="https://line.me/ti/p/sky811117"
+        target="_blank"
+        rel="noopener"
+        class="border-border bg-card hover:border-accent hover:bg-accent/5 flex flex-col items-center rounded-lg border p-6 text-center no-underline transition-all"
+      >
+        <span class="text-5xl">💬</span>
+        <h3 class="text-foreground mt-3 text-[18px] font-bold">LINE</h3>
+        <p class="text-muted-foreground mt-1 text-[15px]">sky811117</p>
+        <p class="text-muted-foreground mt-3 text-[14px] leading-relaxed">
+          最快、習慣 LINE 的話直接這條
+        </p>
+      </a>
+
+      <a
+        href="tel:+886920118756"
+        class="border-border bg-card hover:border-accent hover:bg-accent/5 flex flex-col items-center rounded-lg border p-6 text-center no-underline transition-all"
+      >
+        <span class="text-5xl">📞</span>
+        <h3 class="text-foreground mt-3 text-[18px] font-bold">電話</h3>
+        <p class="text-muted-foreground mt-1 text-[15px]">0920-118-756</p>
+        <p class="text-muted-foreground mt-3 text-[14px] leading-relaxed">
+          急的話直接撥、平日 09:00-22:00 都接
+        </p>
+      </a>
+
+      <a
+        href="https://instagram.com/nov__817"
+        target="_blank"
+        rel="noopener"
+        class="border-border bg-card hover:border-accent hover:bg-accent/5 flex flex-col items-center rounded-lg border p-6 text-center no-underline transition-all"
+      >
+        <span class="text-5xl">📷</span>
+        <h3 class="text-foreground mt-3 text-[18px] font-bold">Instagram</h3>
+        <p class="text-muted-foreground mt-1 text-[15px]">@nov__817</p>
+        <p class="text-muted-foreground mt-3 text-[14px] leading-relaxed">
+          看日常 + 物件短影音、DM 也接
+        </p>
+      </a>
+    </div>
+
+    {/* 表單入口分隔 */}
+    <div class="mt-12 mb-8 flex items-center gap-4">
+      <div class="border-border flex-1 border-t"></div>
+      <p class="text-muted-foreground text-[15px]">
+        或者、不想加 LINE / 不想電話？用下面表單
+      </p>
+      <div class="border-border flex-1 border-t"></div>
+    </div>
+
+    <ContactForm
+      title="留你的聯絡方式、我回你"
+      subtitle="長輩、企業戶、不愛即時通的人 — 用這條最舒服。Email 收件、30 分鐘內回。"
+    />
+
+    {/* 補充說明 */}
+    <section
+      class="border-border mt-10 rounded-lg border border-dashed p-6 sm:p-8"
+    >
+      <h3 class="text-foreground text-[18px] font-bold">關於回覆時間</h3>
+      <ul
+        class="text-muted-foreground mt-3 space-y-2 text-[15px] leading-relaxed"
+      >
+        <li>・週一到週日 09:00 - 22:00：30 秒到 30 分鐘內回</li>
+        <li>・22:00 後 - 翌日 09:00：隔天早上一起回</li>
+        <li>・帶看 / 開會中：訊息看到會排進當日回覆順序</li>
+        <li>・所有訊息都會回，沒有「回不上」的</li>
+      </ul>
+    </section>
+  </Main>
+
+  <Footer />
+</Layout>

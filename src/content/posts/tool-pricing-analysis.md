@@ -1,10 +1,11 @@
 ---
 title: "工具：定價分析 — 用 AI 看 500 筆實價，比信義房屋鑑價精準"
 author: 陳景泰
-pubDatetime: 2026-05-22T20:50:00.000+08:00
+pubDatetime: 2026-05-27T08:00:00.000+08:00
 slug: tool-pricing-analysis
 featured: false
 draft: true
+ogImage: /covers/transfer-calculator.png
 tags:
   - 工具
   - 賣方教學

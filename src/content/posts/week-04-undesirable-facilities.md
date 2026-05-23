@@ -5,7 +5,7 @@ pubDatetime: 2026-05-21T23:00:00.000+08:00
 slug: week-04-undesirable-facilities
 featured: false
 draft: false
-ogImage: ../../../assets/images/covers/undesirable-overview.png
+ogImage: /covers/undesirable-overview.png
 tags:
   - weekly-recap
   - 買方教學

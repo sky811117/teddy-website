@@ -1,10 +1,11 @@
 ---
 title: "FAQ 21:房屋稅怎麼算?差別稅率 2.0 上路後自住跟非自住差很多"
 author: 陳景泰
-pubDatetime: 2026-06-21T11:00:00.000+08:00
+pubDatetime: 2026-06-11T11:00:00.000+08:00
 slug: faq-21-house-tax
 featured: false
 draft: true
+ogImage: /covers/transfer-tax.png
 tags:
   - faq
   - 買方教學

@@ -1,10 +1,11 @@
 ---
 title: "FAQ 12:中古屋翻新預算怎麼抓? 30 坪老屋實戰報價單"
 author: 陳景泰
-pubDatetime: 2026-06-12T11:00:00.000+08:00
+pubDatetime: 2026-06-02T11:00:00.000+08:00
 slug: faq-12-renovation-budget
 featured: false
 draft: true
+ogImage: /covers/viewing-corner.png
 tags:
   - faq
   - 買方教學

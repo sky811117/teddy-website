@@ -1,10 +1,11 @@
 ---
 title: "工具：AI 修圖 — 為什麼我的物件照看起來比同行專業"
 author: 陳景泰
-pubDatetime: 2026-05-22T21:00:00.000+08:00
+pubDatetime: 2026-05-31T08:00:00.000+08:00
 slug: tool-ai-photo
 featured: false
 draft: true
+ogImage: /covers/viewing-natural-light.png
 tags:
   - 工具
   - 賣方教學

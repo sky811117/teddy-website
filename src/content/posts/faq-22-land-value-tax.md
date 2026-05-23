@@ -1,10 +1,11 @@
 ---
 title: "FAQ 22:地價稅怎麼算?自住 0.2% 怎麼申請、9/22 死線別錯過"
 author: 陳景泰
-pubDatetime: 2026-06-22T11:00:00.000+08:00
+pubDatetime: 2026-06-12T11:00:00.000+08:00
 slug: faq-22-land-value-tax
 featured: false
 draft: true
+ogImage: /covers/transfer-tax.png
 tags:
   - faq
   - 買方教學

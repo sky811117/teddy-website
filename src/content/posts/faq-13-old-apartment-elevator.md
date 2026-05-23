@@ -1,10 +1,11 @@
 ---
 title: "FAQ 13:老公寓加裝電梯可行嗎?我陪客戶跑過 2 案的真實成本"
 author: 陳景泰
-pubDatetime: 2026-06-13T11:00:00.000+08:00
+pubDatetime: 2026-06-03T11:00:00.000+08:00
 slug: faq-13-old-apartment-elevator
 featured: false
 draft: true
+ogImage: /covers/community-architecture.png
 tags:
   - faq
   - 買方教學

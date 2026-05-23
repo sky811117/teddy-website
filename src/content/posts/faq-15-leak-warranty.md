@@ -1,10 +1,11 @@
 ---
 title: "FAQ 15:漏水保固到底保多久?簽約前必加的 3 條保護你的條款"
 author: 陳景泰
-pubDatetime: 2026-06-15T11:00:00.000+08:00
+pubDatetime: 2026-06-05T11:00:00.000+08:00
 slug: faq-15-leak-warranty
 featured: false
 draft: true
+ogImage: /covers/undesirable-checklist.png
 tags:
   - faq
   - 買方教學

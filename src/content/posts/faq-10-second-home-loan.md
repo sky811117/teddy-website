@@ -1,10 +1,11 @@
 ---
 title: "FAQ 10:買第二戶房貸款只給 5 成嗎? 2026 央行管制全解析"
 author: 陳景泰
-pubDatetime: 2026-06-10T11:00:00.000+08:00
+pubDatetime: 2026-05-31T11:00:00.000+08:00
 slug: faq-10-second-home-loan
 featured: false
 draft: true
+ogImage: /covers/new-housing-loan-calc.png
 tags:
   - faq
   - 買方教學

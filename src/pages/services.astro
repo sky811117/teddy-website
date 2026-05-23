@@ -3,6 +3,7 @@ import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Main from "@/components/Main.astro";
+import ContactForm from "@/components/ContactForm.astro";
 import config from "@/config";
 
 const services = [
@@ -159,22 +160,44 @@ const services = [
       }
     </div>
 
-    {/* 底部說明 */}
+    {/* 底部說明 — 不確定屬於哪一類 */}
     <section
-      class="border-border mt-12 rounded-lg border border-dashed p-6 text-center"
+      class="border-border mt-12 rounded-lg border border-dashed p-6 text-center sm:p-8"
     >
-      <p class="text-foreground font-medium">不確定自己屬於哪一類？</p>
-      <p class="text-muted-foreground mt-3 leading-relaxed">
-        買賣房很多情況交叉 — 換屋族同時是買 + 賣、投資族可能要換屋。<br />
-        LINE 我說你的狀況、我直接幫你判斷對應流程。
+      <p class="text-foreground text-[18px] font-medium">
+        不確定自己屬於哪一類？
       </p>
-      <a
-        href="https://line.me/ti/p/sky811117"
-        class="bg-accent text-accent-foreground mt-6 inline-block rounded px-6 py-2 font-medium no-underline"
+      <p
+        class="text-muted-foreground mt-3 text-[16px] leading-relaxed"
       >
-        💬 LINE 私訊景泰 sky811117
-      </a>
+        買賣房很多情況交叉 — 換屋族同時是買 + 賣、投資族可能要換屋。<br />
+        說你的狀況、我直接幫你判斷對應流程。
+      </p>
+      <div
+        class="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row"
+      >
+        <a
+          href="https://line.me/ti/p/sky811117"
+          class="bg-accent text-accent-foreground inline-block rounded-md px-6 py-3 text-[17px] font-medium no-underline"
+        >
+          💬 LINE 私訊
+        </a>
+        <a
+          href="#contact-form-section"
+          class="border-accent text-accent inline-block rounded-md border-2 px-6 py-3 text-[17px] font-medium no-underline"
+        >
+          📝 用表單聯絡 ↓
+        </a>
+      </div>
     </section>
+
+    {/* 表單 — 給不愛 LINE / 長輩 / 企業戶 */}
+    <div id="contact-form-section">
+      <ContactForm
+        title="留你的聯絡方式、我回你"
+        subtitle="不愛即時通、不想加 LINE 的話 — 用這條最舒服。Email 收件、30 分鐘內回。"
+      />
+    </div>
   </Main>
 
   <Footer />

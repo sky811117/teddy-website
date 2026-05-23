@@ -1,10 +1,11 @@
 ---
 title: "FAQ 03:凶宅怎麼查?4 種免費管道 + 法規定義一次說清"
 author: 陳景泰
-pubDatetime: 2026-06-03T11:00:00.000+08:00
+pubDatetime: 2026-05-24T11:00:00.000+08:00
 slug: faq-03-haunted-house-check
 featured: false
 draft: true
+ogImage: /covers/undesirable-warning.png
 tags:
   - faq
   - 買方教學

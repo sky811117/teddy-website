@@ -1,10 +1,11 @@
 ---
 title: "FAQ 17:履約保證該不該用?5 個情境決策框架(不寫制度是什麼)"
 author: 陳景泰
-pubDatetime: 2026-06-17T11:00:00.000+08:00
+pubDatetime: 2026-06-07T11:00:00.000+08:00
 slug: faq-17-escrow-necessary
 featured: false
 draft: true
+ogImage: /covers/disclosure-stamp.png
 tags:
   - faq
   - 買方教學

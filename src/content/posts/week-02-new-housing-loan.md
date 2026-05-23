@@ -5,7 +5,7 @@ pubDatetime: 2026-05-21T22:00:00.000+08:00
 slug: week-02-new-housing-loan
 featured: true
 draft: false
-ogImage: ../../../assets/images/covers/new-housing-loan-family.png
+ogImage: /covers/new-housing-loan-family.png
 tags:
   - weekly-recap
   - 買方教學

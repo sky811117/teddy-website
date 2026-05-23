@@ -1,10 +1,11 @@
 ---
 title: "FAQ 26:簽約當天要看什麼?8 大重點清單,漏一條虧一輩子"
 author: 陳景泰
-pubDatetime: 2026-06-26T11:00:00.000+08:00
+pubDatetime: 2026-06-16T11:00:00.000+08:00
 slug: faq-26-contract-signing
 featured: false
 draft: true
+ogImage: /covers/disclosure-signing.png
 tags:
   - faq
   - 買方教學

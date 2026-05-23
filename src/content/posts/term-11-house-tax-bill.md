@@ -5,6 +5,7 @@ pubDatetime: 2026-05-22T10:50:00.000+08:00
 slug: term-11-house-tax-bill
 featured: false
 draft: true
+ogImage: /covers/transfer-tax.png
 tags:
   - 房地產詞典
   - 買方教學

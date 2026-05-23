@@ -1,10 +1,11 @@
 ---
 title: "工具：台中各區行情查詢 — 北屯、西屯、七期到底差多少"
 author: 陳景泰
-pubDatetime: 2026-05-22T20:40:00.000+08:00
+pubDatetime: 2026-05-25T08:00:00.000+08:00
 slug: tool-area-market
 featured: false
 draft: true
+ogImage: /covers/community-streetview.png
 tags:
   - 工具
   - 買方教學

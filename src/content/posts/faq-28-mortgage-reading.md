@@ -1,10 +1,11 @@
 ---
 title: "FAQ 28:抵押權設定怎麼讀?過戶前不確認這 4 個欄位你會虧"
 author: 陳景泰
-pubDatetime: 2026-06-28T11:00:00.000+08:00
+pubDatetime: 2026-06-18T11:00:00.000+08:00
 slug: faq-28-mortgage-reading
 featured: false
 draft: true
+ogImage: /covers/disclosure-document.png
 tags:
   - faq
   - 買方教學

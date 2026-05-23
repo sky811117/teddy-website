@@ -5,6 +5,7 @@ pubDatetime: 2026-05-22T10:15:00.000+08:00
 slug: term-04-rain-cover
 featured: false
 draft: true
+ogImage: /covers/disclosure-document.png
 tags:
   - 房地產詞典
   - 買方教學

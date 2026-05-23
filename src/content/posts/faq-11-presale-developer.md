@@ -1,10 +1,11 @@
 ---
 title: "FAQ 11:預售屋怎麼挑建商? 5 個指標避開倒閉風險"
 author: 陳景泰
-pubDatetime: 2026-06-11T11:00:00.000+08:00
+pubDatetime: 2026-06-01T11:00:00.000+08:00
 slug: faq-11-presale-developer
 featured: false
 draft: true
+ogImage: /covers/disclosure-review.png
 tags:
   - faq
   - 買方教學

@@ -5,7 +5,7 @@ pubDatetime: 2026-06-25T09:00:00.000+08:00
 slug: 2026-05-W25-studio-market
 featured: false
 draft: true
-ogImage: ../../assets/images/covers/negotiation-calculator.png
+ogImage: /covers/negotiation-calculator.png
 tags:
   - 結構分析
   - 套房

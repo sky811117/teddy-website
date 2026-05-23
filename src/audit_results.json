@@ -1,0 +1,1073 @@
+{
+  "tier1": [
+    {
+      "file": "2026-06-W01-news-new-housing-loan-2-decision.md",
+      "title": "新青安 2.0 將在 6 月底定案 — 台中買方該等？還是現在卡位？",
+      "tags": "",
+      "char_count": 2060,
+      "reasons": [
+        "有 4 個 % 數字（可接受）",
+        "政府公告類: ['新青安', '財政部'] + .gov.tw 連結"
+      ]
+    },
+    {
+      "file": "2026-06-W01-news-two-policies-q2-price-flat.md",
+      "title": "兩大政策撐盤 Q2 房市量縮價平 — 對台中買方是好還壞？",
+      "tags": "",
+      "char_count": 2104,
+      "reasons": [
+        "有 4 個 % 數字（可接受）",
+        "政府公告類: ['新青安', '央行'] + .gov.tw 連結"
+      ]
+    },
+    {
+      "file": "faq-05-illegal-construction.md",
+      "title": "FAQ 05:違章建築能買嗎?3 種違建分類 + 銀行貸款全攻略",
+      "tags": "",
+      "char_count": 4334,
+      "reasons": [
+        "純法規/政策: ['登記', '權狀']"
+      ]
+    },
+    {
+      "file": "faq-08-eaves-area.md",
+      "title": "FAQ 08:雨遮算坪數嗎? 2018 前後的規定差超大,買錯多付幾十萬",
+      "tags": "",
+      "char_count": 3781,
+      "reasons": [
+        "有 4 個 % 數字（可接受）",
+        "政府公告類: ['央行', '內政部', '登記'] + .gov.tw 連結"
+      ]
+    },
+    {
+      "file": "faq-29-co-owner.md",
+      "title": "FAQ 29:共有人怎麼處理?買到一半才發現屋主不是唯一所有權人怎辦",
+      "tags": "",
+      "char_count": 4248,
+      "reasons": [
+        "純法規/政策: ['登記', '謄本']"
+      ]
+    },
+    {
+      "file": "term-04-rain-cover.md",
+      "title": "房地產名詞 04：雨遮 — 那塊你買來卻不能站的小遮板",
+      "tags": "",
+      "char_count": 1653,
+      "reasons": [
+        "純法規/政策: ['內政部', '登記', '權狀']"
+      ]
+    },
+    {
+      "file": "term-05-eaves.md",
+      "title": "房地產名詞 05：屋簷 — 透天厝最容易被當作賣點的虛坪",
+      "tags": "",
+      "char_count": 1481,
+      "reasons": [
+        "純法規/政策: ['登記', '權狀']"
+      ]
+    },
+    {
+      "file": "term-14-deed.md",
+      "title": "房地產名詞 14：權狀 — 你家的身分證，但實體不如你想的重要",
+      "tags": "",
+      "char_count": 1731,
+      "reasons": [
+        "純法規/政策: ['登記', '謄本', '權狀']"
+      ]
+    },
+    {
+      "file": "term-15-transcript.md",
+      "title": "房地產名詞 15：謄本 — 買房前沒調這張等於賭博",
+      "tags": "",
+      "char_count": 2046,
+      "reasons": [
+        "純法規/政策: ['登記', '謄本', '權狀']"
+      ]
+    },
+    {
+      "file": "tool-area-market.md",
+      "title": "工具：台中各區行情查詢 — 北屯、西屯、七期到底差多少",
+      "tags": "",
+      "char_count": 2520,
+      "reasons": [
+        "有 2 個 % 數字（可接受）",
+        "政府公告類: ['內政部'] + .gov.tw 連結"
+      ]
+    },
+    {
+      "file": "tool-negotiation.md",
+      "title": "工具：議價 7 心法 — 客戶在北屯談下 80 萬的真實流程",
+      "tags": "",
+      "char_count": 2338,
+      "reasons": [
+        "有 2 個 % 數字（可接受）",
+        "政府公告類: ['內政部', '經紀業'] + .gov.tw 連結"
+      ]
+    }
+  ],
+  "tier2": [
+    {
+      "file": "2026-05-W08-new-housing-loan-2.md",
+      "title": "W08 政策｜新青安 2.0 6 月底定案前 — 最後 60 天該怎麼跑",
+      "tags": "",
+      "char_count": 3546,
+      "reasons": [
+        "有 3 個 % 數字（可接受）",
+        "一般房市內容"
+      ]
+    },
+    {
+      "file": "2026-05-W09-cbc-second-home.md",
+      "title": "W09 政策｜央行第二戶 6 成上限 — 換屋族 30 年差超過 50 萬",
+      "tags": "",
+      "char_count": 3383,
+      "reasons": [
+        "有 3 個 % 數字（可接受）",
+        "區域/統計: ['趨勢']"
+      ]
+    },
+    {
+      "file": "2026-05-W13-business-climate.md",
+      "title": "W13 數據｜景氣燈號 3 月又掉回黃藍燈 — 跟房市什麼關係",
+      "tags": "",
+      "char_count": 3760,
+      "reasons": [
+        "有 4 個 % 數字（可接受）",
+        "區域/統計: ['移轉', '交易', '成交']"
+      ]
+    },
+    {
+      "file": "2026-05-W15-wuqi-three-on-list.md",
+      "title": "W15 熱門社區｜為什麼梧棲一口氣 3 個社區進台中 TOP 20",
+      "tags": "",
+      "char_count": 3809,
+      "reasons": [
+        "有 4 個 % 數字（可接受）",
+        "區域/統計: ['實價登錄', '成交', '北屯']"
+      ]
+    },
+    {
+      "file": "2026-05-W23-presale-vs-existing.md",
+      "title": "W23 結構分析｜預售 53.47 萬 vs 成屋 28.88 萬 — 一倍差價合理嗎？",
+      "tags": "",
+      "char_count": 4157,
+      "reasons": [
+        "有 3 個 % 數字（可接受）",
+        "區域/統計: ['實價登錄', '北屯', '南屯']"
+      ]
+    },
+    {
+      "file": "2026-06-W01-news-selling-pressure-100k-units.md",
+      "title": "全台逾 10 萬戶成屋壓力 — 「賣壓集中區」對台中買方意味什麼？",
+      "tags": "",
+      "char_count": 2084,
+      "reasons": [
+        "有 5 個 % 數字（可接受）",
+        "區域/統計: ['成交', '區域', '北屯']"
+      ]
+    },
+    {
+      "file": "2026-06-W02-economy-economy-light-swing.md",
+      "title": "景氣燈號搖擺：黃藍 → 綠 → 黃藍 — 台中買方該怎麼讀這個訊號？",
+      "tags": "",
+      "char_count": 2000,
+      "reasons": [
+        "區域/統計: ['趨勢']"
+      ]
+    },
+    {
+      "file": "2026-06-W02-hot_community-hot-liyuechen-wuqi.md",
+      "title": "梧棲聯悅臻成為 4 月台中熱門 No.1 — 96 筆成交、屋齡 0 年、單坪 19.25-32.42 萬",
+      "tags": "",
+      "char_count": 1996,
+      "reasons": [
+        "有 1 個 % 數字（可接受）",
+        "區域/統計: ['實價登錄', '成交', '北屯']"
+      ]
+    },
+    {
+      "file": "2026-06-W02-rate-second-home-down-payment-40.md",
+      "title": "央行第二戶房貸成數打到 4 成 — 我用 5 個情境告訴你影響",
+      "tags": "",
+      "char_count": 1815,
+      "reasons": [
+        "有 4 個 % 數字（可接受）",
+        "區域/統計: ['移轉']"
+      ]
+    },
+    {
+      "file": "2026-06-W03-district_focus-district-beitun-may.md",
+      "title": "台中北屯區 5 月實價趨勢 — 大樓單坪 35.34 萬：捷運綠線通車後的價量結構",
+      "tags": "",
+      "char_count": 3239,
+      "reasons": [
+        "有 2 個 % 數字（可接受）",
+        "區域/統計: ['實價登錄', '成交', '趨勢']"
+      ]
+    },
+    {
+      "file": "2026-06-W03-district_focus-district-xitun-may.md",
+      "title": "台中西屯區 5 月實價趨勢 — 大樓單坪 42.92 萬：七期不再是唯一選項",
+      "tags": "",
+      "char_count": 2915,
+      "reasons": [
+        "有 2 個 % 數字（可接受）",
+        "區域/統計: ['實價登錄', '成交', '趨勢']"
+      ]
+    },
+    {
+      "file": "2026-06-W03-hot_community-hot-huangxiang-zhuangyuan-xitun.md",
+      "title": "西屯皇翔莊園 50 筆成交 — 屋齡 2 年、單坪 22.94-40.40 萬：豪宅 vs 自住的選擇題",
+      "tags": "",
+      "char_count": 2119,
+      "reasons": [
+        "有 1 個 % 數字（可接受）",
+        "區域/統計: ['實價登錄', '成交', '西屯']"
+      ]
+    },
+    {
+      "file": "2026-06-W03-hot_community-hot-zongtai-heart-beitun.md",
+      "title": "北屯總太心之所向 — 74 筆成交、屋齡 1 年、總價 700-2490 萬：為什麼大家搶這間？",
+      "tags": "",
+      "char_count": 2004,
+      "reasons": [
+        "有 2 個 % 數字（可接受）",
+        "區域/統計: ['實價登錄', '成交', '北屯']"
+      ]
+    },
+    {
+      "file": "2026-06-W04-district_focus-district-nantun-may.md",
+      "title": "台中南屯區 5 月實價趨勢 — 文心特區的價格防守線在哪？",
+      "tags": "",
+      "char_count": 2788,
+      "reasons": [
+        "有 2 個 % 數字（可接受）",
+        "區域/統計: ['實價登錄', '成交', '趨勢']"
+      ]
+    },
+    {
+      "file": "2026-06-W04-district_other-district-fengyuan-may.md",
+      "title": "台中豐原區 5 月實價：山城邊緣的「30 分鐘到市區」價值區",
+      "tags": "",
+      "char_count": 1904,
+      "reasons": [
+        "有 5 個 % 數字（可接受）",
+        "區域/統計: ['實價登錄', '趨勢', '北屯']"
+      ]
+    },
+    {
+      "file": "2026-06-W04-district_other-district-taiping-may.md",
+      "title": "台中太平區 5 月實價：兩個熱門社區帶動的「平民區升級」",
+      "tags": "",
+      "char_count": 1853,
+      "reasons": [
+        "區域/統計: ['實價登錄', '北屯', '西屯']"
+      ]
+    },
+    {
+      "file": "2026-06-W04-district_other-district-tanzi-may.md",
+      "title": "台中潭子區 5 月實價：捷運綠線延伸後的「升級重劃區」候選人",
+      "tags": "",
+      "char_count": 1865,
+      "reasons": [
+        "有 4 個 % 數字（可接受）",
+        "區域/統計: ['實價登錄', '成交', '趨勢']"
+      ]
+    },
+    {
+      "file": "2026-06-W04-district_other-district-wuri-may.md",
+      "title": "台中烏日區 5 月實價：高鐵特區 vs 烏日舊市區的「兩個烏日」",
+      "tags": "",
+      "char_count": 1831,
+      "reasons": [
+        "有 3 個 % 數字（可接受）",
+        "區域/統計: ['實價登錄', '趨勢', '區域']"
+      ]
+    },
+    {
+      "file": "faq-03-haunted-house-check.md",
+      "title": "FAQ 03:凶宅怎麼查?4 種免費管道 + 法規定義一次說清",
+      "tags": "",
+      "char_count": 4005,
+      "reasons": [
+        "有 3 個 % 數字（可接受）",
+        "區域/統計: ['交易', '區域', '北屯']"
+      ]
+    },
+    {
+      "file": "faq-04-viewing-order.md",
+      "title": "FAQ 04:看屋順序怎麼安排?3 階段 SOP 從線上篩到驗屋",
+      "tags": "",
+      "char_count": 4362,
+      "reasons": [
+        "有 1 個 % 數字（可接受）",
+        "區域/統計: ['實價登錄', '區域', '北屯']"
+      ]
+    },
+    {
+      "file": "faq-09-escrow-guarantee.md",
+      "title": "FAQ 09:履約保證是什麼? 你的幾百萬怎麼安全送到對方手上",
+      "tags": "",
+      "char_count": 3885,
+      "reasons": [
+        "有 4 個 % 數字（可接受）",
+        "區域/統計: ['交易', '成交']"
+      ]
+    },
+    {
+      "file": "faq-13-old-apartment-elevator.md",
+      "title": "FAQ 13:老公寓加裝電梯可行嗎?我陪客戶跑過 2 案的真實成本",
+      "tags": "",
+      "char_count": 3496,
+      "reasons": [
+        "有 5 個 % 數字（可接受）",
+        "區域/統計: ['建照', '北屯', '南屯']"
+      ]
+    },
+    {
+      "file": "faq-14-sea-sand-radiation.md",
+      "title": "FAQ 14:海砂屋 / 輻射屋怎麼測?買屋齡 30 年以上一定要做的 2 件事",
+      "tags": "",
+      "char_count": 3689,
+      "reasons": [
+        "區域/統計: ['區域', '北屯']"
+      ]
+    },
+    {
+      "file": "faq-15-leak-warranty.md",
+      "title": "FAQ 15:漏水保固到底保多久?簽約前必加的 3 條保護你的條款",
+      "tags": "",
+      "char_count": 4076,
+      "reasons": [
+        "一般房市內容"
+      ]
+    },
+    {
+      "file": "faq-17-escrow-necessary.md",
+      "title": "FAQ 17:履約保證該不該用?5 個情境決策框架(不寫制度是什麼)",
+      "tags": "",
+      "char_count": 4113,
+      "reasons": [
+        "有 2 個 % 數字（可接受）",
+        "區域/統計: ['交易']"
+      ]
+    },
+    {
+      "file": "faq-23-viewing-process.md",
+      "title": "FAQ 23:仲介帶看流程怎麼跑?從約看到看後 3 天我會做的 4 階段",
+      "tags": "",
+      "char_count": 4496,
+      "reasons": [
+        "有 1 個 % 數字（可接受）",
+        "區域/統計: ['實價登錄', '成交', '區域']"
+      ]
+    },
+    {
+      "file": "faq-24-offer-vs-negotiation.md",
+      "title": "FAQ 24:出價跟議價有什麼不同?斡旋金跟要約書又該選哪個",
+      "tags": "",
+      "char_count": 4543,
+      "reasons": [
+        "有 3 個 % 數字（可接受）",
+        "區域/統計: ['實價登錄', '成交', '北屯']"
+      ]
+    },
+    {
+      "file": "faq-25-earnest-vs-deposit.md",
+      "title": "FAQ 25:斡旋金 vs 訂金有什麼差別?我看過買方搞錯虧 50 萬",
+      "tags": "",
+      "char_count": 3310,
+      "reasons": [
+        "有 5 個 % 數字（可接受）",
+        "區域/統計: ['實價登錄', '北屯']"
+      ]
+    },
+    {
+      "file": "faq-27-public-private-deed.md",
+      "title": "FAQ 27:公契 vs 私契差在哪?為什麼買房要簽兩份合約",
+      "tags": "",
+      "char_count": 3627,
+      "reasons": [
+        "有 3 個 % 數字（可接受）",
+        "區域/統計: ['實價登錄', '移轉', '交易']"
+      ]
+    },
+    {
+      "file": "faq-28-mortgage-reading.md",
+      "title": "FAQ 28:抵押權設定怎麼讀?過戶前不確認這 4 個欄位你會虧",
+      "tags": "",
+      "char_count": 4097,
+      "reasons": [
+        "區域/統計: ['移轉']"
+      ]
+    },
+    {
+      "file": "policy-03-central-bank-credit-control.md",
+      "title": "央行選擇性信用管制完全解讀 — 第二戶 6 成、第三戶 5.5 成是怎麼算出來的",
+      "tags": "",
+      "char_count": 5089,
+      "reasons": [
+        "有 3 個 % 數字（可接受）",
+        "一般房市內容"
+      ]
+    },
+    {
+      "file": "policy-04-disclosure-document.md",
+      "title": "不動產說明書 30 個欄位 — 賣方漏勾 1 個，可能要賠 200 萬",
+      "tags": "",
+      "char_count": 5192,
+      "reasons": [
+        "有 2 個 % 數字（可接受）",
+        "區域/統計: ['交易', '成交', '北屯']"
+      ]
+    },
+    {
+      "file": "term-01-main-building.md",
+      "title": "房地產名詞 01：主建物 — 你權狀上最該關心的數字",
+      "tags": "",
+      "char_count": 1468,
+      "reasons": [
+        "有 4 個 % 數字（可接受）",
+        "一般房市內容"
+      ]
+    },
+    {
+      "file": "term-02-accessory-building.md",
+      "title": "房地產名詞 02：附屬建物 — 陽台、雨遮、屋簷的灰色地帶",
+      "tags": "",
+      "char_count": 1629,
+      "reasons": [
+        "有 2 個 % 數字（可接受）",
+        "區域/統計: ['建照', '成交']"
+      ]
+    },
+    {
+      "file": "term-06-terrace.md",
+      "title": "房地產名詞 06：露台 — 那個讓你以為佔到便宜其實要看清楚的空間",
+      "tags": "",
+      "char_count": 1724,
+      "reasons": [
+        "一般房市內容"
+      ]
+    },
+    {
+      "file": "term-07-flat-parking.md",
+      "title": "房地產名詞 07：平面車位 — 為什麼大家搶著要、台中市區開到 200 萬",
+      "tags": "",
+      "char_count": 1567,
+      "reasons": [
+        "區域/統計: ['成交']"
+      ]
+    },
+    {
+      "file": "term-08-mechanical-parking.md",
+      "title": "房地產名詞 08：機械車位 — 便宜一半但你能接受的代價",
+      "tags": "",
+      "char_count": 1614,
+      "reasons": [
+        "有 3 個 % 數字（可接受）",
+        "一般房市內容"
+      ]
+    },
+    {
+      "file": "term-09-ramp-parking.md",
+      "title": "房地產名詞 09：坡道車位 — 看起來像平面其實要看細節",
+      "tags": "",
+      "char_count": 1589,
+      "reasons": [
+        "有 4 個 % 數字（可接受）",
+        "區域/統計: ['北屯']"
+      ]
+    },
+    {
+      "file": "term-10-independent-parking.md",
+      "title": "房地產名詞 10：獨立產權車位 — 為什麼有些車位可以單獨賣",
+      "tags": "",
+      "char_count": 1601,
+      "reasons": [
+        "有 1 個 % 數字（可接受）",
+        "區域/統計: ['成交']"
+      ]
+    },
+    {
+      "file": "term-12-announced-value-vs-actual.md",
+      "title": "房地產名詞 12：公告現值 vs 實際成交 — 為什麼差 3-5 倍",
+      "tags": "",
+      "char_count": 1821,
+      "reasons": [
+        "有 1 個 % 數字（可接受）",
+        "區域/統計: ['實價登錄', '成交', '北屯']"
+      ]
+    },
+    {
+      "file": "term-13-actual-price-registration.md",
+      "title": "房地產名詞 13：實價登錄怎麼讀 — 那些數字也會騙人",
+      "tags": "",
+      "char_count": 1633,
+      "reasons": [
+        "有 4 個 % 數字（可接受）",
+        "區域/統計: ['實價登錄', '交易', '成交']"
+      ]
+    },
+    {
+      "file": "tool-ai-photo.md",
+      "title": "工具：AI 修圖 — 為什麼我的物件照看起來比同行專業",
+      "tags": "",
+      "char_count": 2478,
+      "reasons": [
+        "有 3 個 % 數字（可接受）",
+        "區域/統計: ['成交', '北屯']"
+      ]
+    },
+    {
+      "file": "tool-multi-platform.md",
+      "title": "工具：多平台曝光 — 591 + 樂屋 + 5168 同步，買家從哪來都接得到",
+      "tags": "",
+      "char_count": 2846,
+      "reasons": [
+        "區域/統計: ['實價登錄', '成交', '區域']"
+      ]
+    },
+    {
+      "file": "tool-pricing-analysis.md",
+      "title": "工具：定價分析 — 用 AI 看 500 筆實價，比信義房屋鑑價精準",
+      "tags": "",
+      "char_count": 2593,
+      "reasons": [
+        "有 3 個 % 數字（可接受）",
+        "區域/統計: ['移轉', '成交', '太平']"
+      ]
+    },
+    {
+      "file": "tool-viewing-checklist.md",
+      "title": "工具：看屋 checklist — 60 項打勾完，才不會買到後悔的房",
+      "tags": "",
+      "char_count": 2122,
+      "reasons": [
+        "區域/統計: ['使照', '太平']"
+      ]
+    },
+    {
+      "file": "viewing-01-monthly-picks.md",
+      "title": "看屋實戰 01：這個月我看了 12 間，只推 3 間 — 5 月台中物件實戰筆記",
+      "tags": "",
+      "char_count": 2076,
+      "reasons": [
+        "有 2 個 % 數字（可接受）",
+        "區域/統計: ['北屯', '西屯', '南屯']"
+      ]
+    },
+    {
+      "file": "viewing-02-haunted-house-check.md",
+      "title": "看屋實戰 02：凶宅怎麼查 — 4 種免費管道實測（一個下午搞定）",
+      "tags": "",
+      "char_count": 2335,
+      "reasons": [
+        "有 1 個 % 數字（可接受）",
+        "區域/統計: ['西屯', '西區']"
+      ]
+    },
+    {
+      "file": "viewing-03-leak-test.md",
+      "title": "看屋實戰 03：漏水怎麼測 — 5 個免費招（看屋當天就用得上）",
+      "tags": "",
+      "char_count": 2331,
+      "reasons": [
+        "區域/統計: ['北屯']"
+      ]
+    },
+    {
+      "file": "viewing-04-sea-sand-radiation.md",
+      "title": "看屋實戰 04：海砂屋 / 輻射屋怎麼判別 — 年代 + 官方查詢 + 自帶檢測",
+      "tags": "",
+      "char_count": 2656,
+      "reasons": [
+        "有 1 個 % 數字（可接受）",
+        "區域/統計: ['區域', '南區']"
+      ]
+    },
+    {
+      "file": "viewing-06-presale-checklist.md",
+      "title": "看屋實戰 06：預售屋交屋驗收 25 個 Checkpoint（建商還能幫你修的最後機會）",
+      "tags": "",
+      "char_count": 3163,
+      "reasons": [
+        "區域/統計: ['北屯']"
+      ]
+    },
+    {
+      "file": "viewing-07-old-house-structure.md",
+      "title": "看屋實戰 07：老屋結構評估 — 5 個警訊 + 結構技師流程（買 40 年透天必看）",
+      "tags": "",
+      "char_count": 3021,
+      "reasons": [
+        "有 2 個 % 數字（可接受）",
+        "區域/統計: ['區域', '太平']"
+      ]
+    },
+    {
+      "file": "viewing-08-daylight-ventilation.md",
+      "title": "看屋實戰 08：採光通風判斷 — 看屋當天 10 分鐘搞定（這比格局更影響你住起來爽不爽）",
+      "tags": "",
+      "char_count": 3357,
+      "reasons": [
+        "有 2 個 % 數字（可接受）",
+        "區域/統計: ['西屯']"
+      ]
+    },
+    {
+      "file": "week-01-launch.md",
+      "title": "Week 01：今晚從 0 把個人網站架起來了",
+      "tags": "",
+      "char_count": 2568,
+      "reasons": [
+        "一般房市內容"
+      ]
+    },
+    {
+      "file": "week-02-5168-force-click.md",
+      "title": "Week 02：5168「完成」按鈕灰掉，但後端其實接受",
+      "tags": "",
+      "char_count": 2551,
+      "reasons": [
+        "有 1 個 % 數字（可接受）",
+        "一般房市內容"
+      ]
+    },
+    {
+      "file": "week-03-bigkanban-monitor.md",
+      "title": "Week 03：BigKanBan 留言監控 — 4 scraper 跨平台技術細節",
+      "tags": "",
+      "char_count": 6205,
+      "reasons": [
+        "有 1 個 % 數字（可接受）",
+        "一般房市內容"
+      ]
+    }
+  ],
+  "tier3": [
+    {
+      "file": "2026-05-W07-taichung-market-pillar.md",
+      "title": "W07 主柱｜2026 年 5 月台中房市完整觀察 — 19 個切面看清楚這一波",
+      "tags": "",
+      "char_count": 6117,
+      "reasons": [
+        "具體 % 數字密集 (24 次)，需查證"
+      ]
+    },
+    {
+      "file": "2026-05-W10-taichung-30k-inventory.md",
+      "title": "W10 政策｜台中待售量超過 3 萬戶居六都之冠 — 是危機還是機會",
+      "tags": "",
+      "char_count": 3782,
+      "reasons": [
+        "具體 % 數字密集 (12 次)，需查證"
+      ]
+    },
+    {
+      "file": "2026-05-W11-loan-rate-2306.md",
+      "title": "W11 數據｜五大行庫房貸利率 2.306% — 我幫你算月付實際差多少",
+      "tags": "",
+      "char_count": 4150,
+      "reasons": [
+        "具體 % 數字密集 (37 次)，需查證"
+      ]
+    },
+    {
+      "file": "2026-05-W12-q1-transfer-trend.md",
+      "title": "W12 數據｜台中 Q1 買賣移轉趨勢 — 量回來但沒回到去年",
+      "tags": "",
+      "char_count": 3794,
+      "reasons": [
+        "具體 % 數字密集 (29 次)，需查證"
+      ]
+    },
+    {
+      "file": "2026-05-W14-top20-communities.md",
+      "title": "W14 熱門社區｜台中 TOP 20 社區榜單 — 過去 1 年誰最熱、為什麼",
+      "tags": "",
+      "char_count": 4737,
+      "reasons": [
+        "具體 % 數字密集 (13 次)，需查證"
+      ]
+    },
+    {
+      "file": "2026-05-W16-beitun.md",
+      "title": "W16 各區行情｜北屯 — 預售 72 件冠台中、大樓單坪 35.34 萬",
+      "tags": "",
+      "char_count": 3839,
+      "reasons": [
+        "具體 % 數字密集 (21 次)，需查證"
+      ]
+    },
+    {
+      "file": "2026-05-W17-xitun.md",
+      "title": "W17 各區行情｜西屯 — 全台中大樓單坪最貴 42.92 萬、預售 46 件",
+      "tags": "",
+      "char_count": 3994,
+      "reasons": [
+        "具體 % 數字密集 (25 次)，需查證"
+      ]
+    },
+    {
+      "file": "2026-05-W18-nantun.md",
+      "title": "W18 各區行情｜南屯 — 大樓 33.63 萬 vs 透天 53.23 萬巨大差距",
+      "tags": "",
+      "char_count": 4278,
+      "reasons": [
+        "具體 % 數字密集 (17 次)，需查證"
+      ]
+    },
+    {
+      "file": "2026-05-W19-central-district.md",
+      "title": "W19 各區行情｜為什麼中區實價登錄上幾乎找不到房 — 一個老市中心的衰退與重生",
+      "tags": "",
+      "char_count": 3697,
+      "reasons": [
+        "具體 % 數字密集 (10 次)，需查證"
+      ]
+    },
+    {
+      "file": "2026-05-W20-taiping.md",
+      "title": "W20 各區行情｜太平 — 大樓 30.34 萬、25 件成屋、新興客群移入區",
+      "tags": "",
+      "char_count": 3636,
+      "reasons": [
+        "具體 % 數字密集 (7 次)，需查證"
+      ]
+    },
+    {
+      "file": "2026-05-W21-dali.md",
+      "title": "W21 各區行情｜大里 — 大樓 31.55 萬、成屋 5 件、台中南向必經點",
+      "tags": "",
+      "char_count": 3485,
+      "reasons": [
+        "具體 % 數字密集 (7 次)，需查證"
+      ]
+    },
+    {
+      "file": "2026-05-W22-wuri.md",
+      "title": "W22 各區行情｜烏日 — 預售 16 件、興富發夢幻誠進 TOP 20、高鐵房子的故事",
+      "tags": "",
+      "char_count": 3769,
+      "reasons": [
+        "具體 % 數字密集 (10 次)，需查證"
+      ]
+    },
+    {
+      "file": "2026-05-W24-apt-vs-townhouse.md",
+      "title": "W24 結構分析｜大樓 23.82% vs 透天 7.43% — 為什麼透天還是穩定客群",
+      "tags": "",
+      "char_count": 4175,
+      "reasons": [
+        "具體 % 數字密集 (52 次)，需查證"
+      ]
+    },
+    {
+      "file": "2026-05-W25-studio-market.md",
+      "title": "W25 結構分析｜套房市場 — 2 月占比 1.84% 衝近 3 個月新高、為什麼",
+      "tags": "",
+      "char_count": 3945,
+      "reasons": [
+        "具體 % 數字密集 (21 次)，需查證"
+      ]
+    },
+    {
+      "file": "2026-05-W26-price-bands.md",
+      "title": "W26 結構分析｜總價帶分布 — 台中 2026 主流是 500-1500 萬，但預售集中在 2000-3000",
+      "tags": "",
+      "char_count": 4280,
+      "reasons": [
+        "具體 % 數字密集 (65 次)，需查證"
+      ]
+    },
+    {
+      "file": "2026-06-W01-news-construction-cost-surge.md",
+      "title": "土方之亂 + 中東戰火：建商大喊吃不消 — 台中新成屋會不會漲價？",
+      "tags": "",
+      "char_count": 2004,
+      "reasons": [
+        "具體 % 數字密集 (7 次)，需查證"
+      ]
+    },
+    {
+      "file": "2026-06-W01-rate-rate-microdrop-not-cut.md",
+      "title": "五大行庫房貸利率連 3 個月微降 — 你以為要降息了嗎？",
+      "tags": "",
+      "char_count": 1794,
+      "reasons": [
+        "具體 % 數字密集 (18 次)，需查證"
+      ]
+    },
+    {
+      "file": "2026-06-W02-city-city-national-vs-taichung.md",
+      "title": "全國 vs 台中買賣移轉對比 — 為什麼台中還撐得住？",
+      "tags": "",
+      "char_count": 1979,
+      "reasons": [
+        "具體 % 數字密集 (19 次)，需查證"
+      ]
+    },
+    {
+      "file": "2026-06-W02-city-city-transfer-bounce-back.md",
+      "title": "台中市 3 月買賣移轉反彈 70% — 是真復甦還是過年遞延？",
+      "tags": "",
+      "char_count": 2189,
+      "reasons": [
+        "具體 % 數字密集 (12 次)，需查證"
+      ]
+    },
+    {
+      "file": "2026-06-W03-district_focus-district-beitun-redevelopment-analysis.md",
+      "title": "北屯重劃區 11-14 期分析：哪一期的新成屋最值得卡位？",
+      "tags": "",
+      "char_count": 2799,
+      "reasons": [
+        "具體 % 數字密集 (6 次)，需查證"
+      ]
+    },
+    {
+      "file": "faq-01-agent-fee-negotiable.md",
+      "title": "FAQ 01：仲介費可以議價嗎？我幫客戶談到的 3 個真實場景",
+      "tags": "",
+      "char_count": 3431,
+      "reasons": [
+        "具體 % 數字密集 (34 次)，需查證"
+      ]
+    },
+    {
+      "file": "faq-02-down-payment.md",
+      "title": "FAQ 02:自備款要多少?新青安 vs 一般房貸完整拆解",
+      "tags": "",
+      "char_count": 4000,
+      "reasons": [
+        "具體 % 數字密集 (18 次)，需查證"
+      ]
+    },
+    {
+      "file": "faq-06-common-area-ratio.md",
+      "title": "FAQ 06:公設比多少合理?按屋齡分級 + 灌水公設識破法",
+      "tags": "",
+      "char_count": 4194,
+      "reasons": [
+        "具體 % 數字密集 (35 次)，需查證"
+      ]
+    },
+    {
+      "file": "faq-07-30-year-old-house.md",
+      "title": "FAQ 07：屋齡 30 年的房還能買嗎？我看過 3 種人都買得很開心",
+      "tags": "",
+      "char_count": 3885,
+      "reasons": [
+        "具體 % 數字密集 (6 次)，需查證"
+      ]
+    },
+    {
+      "file": "faq-10-second-home-loan.md",
+      "title": "FAQ 10:買第二戶房貸款只給 5 成嗎? 2026 央行管制全解析",
+      "tags": "",
+      "char_count": 3994,
+      "reasons": [
+        "具體 % 數字密集 (15 次)，需查證"
+      ]
+    },
+    {
+      "file": "faq-11-presale-developer.md",
+      "title": "FAQ 11:預售屋怎麼挑建商? 5 個指標避開倒閉風險",
+      "tags": "",
+      "char_count": 4678,
+      "reasons": [
+        "具體 % 數字密集 (8 次)，需查證"
+      ]
+    },
+    {
+      "file": "faq-12-renovation-budget.md",
+      "title": "FAQ 12:中古屋翻新預算怎麼抓? 30 坪老屋實戰報價單",
+      "tags": "",
+      "char_count": 4972,
+      "reasons": [
+        "具體 % 數字密集 (9 次)，需查證"
+      ]
+    },
+    {
+      "file": "faq-16-transfer-documents.md",
+      "title": "FAQ 16:過戶要準備什麼文件?買方賣方各 7 樣完整清單",
+      "tags": "",
+      "char_count": 4097,
+      "reasons": [
+        "具體 % 數字密集 (13 次)，需查證"
+      ]
+    },
+    {
+      "file": "faq-18-land-value-increment-tax.md",
+      "title": "FAQ 18:土地增值稅怎麼算?自用優惠 10% + 重購退稅實戰教學",
+      "tags": "",
+      "char_count": 4162,
+      "reasons": [
+        "具體 % 數字密集 (22 次)，需查證"
+      ]
+    },
+    {
+      "file": "faq-19-stamp-duty.md",
+      "title": "FAQ 19:印花稅怎麼算?千分之一聽起來不多但這 3 個地方會踩雷",
+      "tags": "",
+      "char_count": 2999,
+      "reasons": [
+        "具體 % 數字密集 (7 次)，需查證"
+      ]
+    },
+    {
+      "file": "faq-20-deed-tax.md",
+      "title": "FAQ 20:契稅是什麼?6% 聽起來很多但其實沒你想的可怕",
+      "tags": "",
+      "char_count": 3181,
+      "reasons": [
+        "具體 % 數字密集 (27 次)，需查證"
+      ]
+    },
+    {
+      "file": "faq-21-house-tax.md",
+      "title": "FAQ 21:房屋稅怎麼算?差別稅率 2.0 上路後自住跟非自住差很多",
+      "tags": "",
+      "char_count": 3923,
+      "reasons": [
+        "具體 % 數字密集 (39 次)，需查證"
+      ]
+    },
+    {
+      "file": "faq-22-land-value-tax.md",
+      "title": "FAQ 22:地價稅怎麼算?自住 0.2% 怎麼申請、9/22 死線別錯過",
+      "tags": "",
+      "char_count": 4162,
+      "reasons": [
+        "具體 % 數字密集 (33 次)，需查證"
+      ]
+    },
+    {
+      "file": "faq-26-contract-signing.md",
+      "title": "FAQ 26:簽約當天要看什麼?8 大重點清單,漏一條虧一輩子",
+      "tags": "",
+      "char_count": 4013,
+      "reasons": [
+        "具體 % 數字密集 (10 次)，需查證"
+      ]
+    },
+    {
+      "file": "faq-30-foreclosure.md",
+      "title": "FAQ 30：法拍屋怎麼買？我沒大量處理過但研究過 — 入場前 6 件事",
+      "tags": "",
+      "char_count": 4219,
+      "reasons": [
+        "具體 % 數字密集 (7 次)，需查證"
+      ]
+    },
+    {
+      "file": "policy-01-new-housing-loan-2-final.md",
+      "title": "新青安 2.0 完全解讀 — 6 月底定案前，我把所有風聲整理給你",
+      "tags": "",
+      "char_count": 4172,
+      "reasons": [
+        "具體 % 數字密集 (10 次)，需查證"
+      ]
+    },
+    {
+      "file": "policy-02-house-land-tax-2.md",
+      "title": "房地合一 2.0 怎麼算 — 自住豁免 4 條件，賺 500 萬不用繳半毛稅",
+      "tags": "",
+      "char_count": 4542,
+      "reasons": [
+        "具體 % 數字密集 (22 次)，需查證"
+      ]
+    },
+    {
+      "file": "policy-05-escrow-system.md",
+      "title": "履約保證制度完全解讀 — 你付的 1,500 萬到底躺在哪、什麼時候才會撥給賣方",
+      "tags": "",
+      "char_count": 4389,
+      "reasons": [
+        "具體 % 數字密集 (14 次)，需查證"
+      ]
+    },
+    {
+      "file": "policy-06-house-tax-2.md",
+      "title": "房屋稅 2.0 / 囤房稅完全解讀 — 全國歸戶後，3 間房稅金可能漲 2.5 倍",
+      "tags": "",
+      "char_count": 4755,
+      "reasons": [
+        "具體 % 數字密集 (49 次)，需查證"
+      ]
+    },
+    {
+      "file": "policy-07-land-value-tax.md",
+      "title": "地價稅完全解讀 — 公告地價 vs 申報地價，11 月開徵前你該懂的 3 件事",
+      "tags": "",
+      "char_count": 4691,
+      "reasons": [
+        "具體 % 數字密集 (38 次)，需查證"
+      ]
+    },
+    {
+      "file": "policy-08-presale-equality-amendment.md",
+      "title": "預售屋平均地權條例完全解讀 — 紅單禁炒、私法人限購、檢舉獎金最高 1,000 萬",
+      "tags": "",
+      "char_count": 4337,
+      "reasons": [
+        "具體 % 數字密集 (10 次)，需查證"
+      ]
+    },
+    {
+      "file": "term-03-public-facilities.md",
+      "title": "房地產名詞 03：公設 — 你買了卻不能進去的那塊地",
+      "tags": "",
+      "char_count": 1610,
+      "reasons": [
+        "具體 % 數字密集 (12 次)，需查證"
+      ]
+    },
+    {
+      "file": "term-11-house-tax-bill.md",
+      "title": "房地產名詞 11：房屋稅單怎麼讀 — 那些數字跟市價毫無關係",
+      "tags": "",
+      "char_count": 1851,
+      "reasons": [
+        "具體 % 數字密集 (10 次)，需查證"
+      ]
+    },
+    {
+      "file": "tool-agent-fee.md",
+      "title": "工具：仲介費試算 — 6% 不是天上掉下來的數字，加盟店有議價空間",
+      "tags": "",
+      "char_count": 2672,
+      "reasons": [
+        "具體 % 數字密集 (22 次)，需查證"
+      ]
+    },
+    {
+      "file": "tool-buyer-fee.md",
+      "title": "工具：買方費用試算 — 一次看清自備款、月付、新青安差距",
+      "tags": "",
+      "char_count": 2369,
+      "reasons": [
+        "具體 % 數字密集 (21 次)，需查證"
+      ]
+    },
+    {
+      "file": "tool-new-housing-loan.md",
+      "title": "工具：新青安試算 — 30 年差 56 萬，但你符合資格嗎？",
+      "tags": "",
+      "char_count": 2684,
+      "reasons": [
+        "具體 % 數字密集 (12 次)，需查證"
+      ]
+    },
+    {
+      "file": "viewing-05-renovation-budget.md",
+      "title": "看屋實戰 05：中古屋翻新成本 — 3 種裝潢級別預算（30 萬 vs 150 萬 vs 400 萬）",
+      "tags": "",
+      "char_count": 3106,
+      "reasons": [
+        "具體 % 數字密集 (16 次)，需查證"
+      ]
+    }
+  ]
+}

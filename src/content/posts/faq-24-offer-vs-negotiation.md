@@ -1,10 +1,11 @@
 ---
 title: "FAQ 24:出價跟議價有什麼不同?斡旋金跟要約書又該選哪個"
 author: 陳景泰
-pubDatetime: 2026-06-24T11:00:00.000+08:00
+pubDatetime: 2026-06-14T11:00:00.000+08:00
 slug: faq-24-offer-vs-negotiation
 featured: false
 draft: true
+ogImage: /covers/negotiation-talk.png
 tags:
   - faq
   - 買方教學

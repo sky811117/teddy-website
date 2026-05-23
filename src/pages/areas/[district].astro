@@ -1,0 +1,436 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import Main from "@/components/Main.astro";
+import config from "@/config";
+import { areas, type Area } from "@/data/areas";
+
+export async function getStaticPaths() {
+  return areas.map(area => ({
+    params: { district: area.slug },
+    props: { area },
+  }));
+}
+
+interface Props {
+  area: Area;
+}
+
+const { area } = Astro.props;
+
+// 取該區在售物件（最多 6 件）
+const allProperties = await getCollection(
+  "properties",
+  ({ data }) =>
+    data.status === "active" && area.districtMatch.includes(data.district)
+);
+const previewProperties = allProperties
+  .sort((a, b) => {
+    if (a.data.featured && !b.data.featured) return -1;
+    if (!a.data.featured && b.data.featured) return 1;
+    return b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime();
+  })
+  .slice(0, 6);
+
+// 取該區 community post (有 postSlug 的) — 並讀 post 的 title/description
+const allPosts = await getCollection(
+  "posts",
+  ({ data }) => !data.draft && data.tags?.includes("community-review")
+);
+const communityPostMap = new Map(allPosts.map(p => [p.id, p]));
+
+const hotCommunitiesWithLink = area.hotCommunities.map(c => {
+  if (!c.postSlug) return { ...c, post: null };
+  const post = communityPostMap.get(c.postSlug);
+  return { ...c, post };
+});
+
+const formatPrice = (price: number) => {
+  if (price >= 10000) return `${(price / 10000).toFixed(2)} 億`;
+  return `${price.toLocaleString()} 萬`;
+};
+
+// SEO + JSON-LD
+const pageTitle = `${area.name}買房指南 — 2026 Q1 行情、熱門社區、適合誰買`;
+const pageDescription = `${area.name} ${area.headline}。${area.summary} 含 2026 Q1 關鍵數據、熱門社區、常見問題 — 景泰實戰整理。`;
+const canonicalURL = new URL(`/areas/${area.slug}`, Astro.site).href;
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "首頁",
+      item: new URL("/", Astro.site).href,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "台中各區",
+      item: new URL("/areas", Astro.site).href,
+    },
+    {
+      "@type": "ListItem",
+      position: 3,
+      name: area.shortName,
+      item: canonicalURL,
+    },
+  ],
+};
+
+const areaServedSchema = {
+  "@context": "https://schema.org",
+  "@type": "RealEstateAgent",
+  name: "陳景泰",
+  alternateName: ["Teddy Chen", "泰迪", "景泰"],
+  url: canonicalURL,
+  telephone: "+886-920-118-756",
+  areaServed: {
+    "@type": "AdministrativeArea",
+    name: area.shortName,
+    containedInPlace: {
+      "@type": "City",
+      name: "台中市",
+    },
+  },
+  knowsAbout: [
+    `${area.shortName}買房`,
+    `${area.shortName}賣房`,
+    `${area.shortName}房價`,
+    `${area.shortName}行情`,
+    ...area.hotCommunities.map(c => c.name),
+  ],
+  hasCredential: [
+    "經紀人 黃永隆 113彰縣字324",
+    "營業員 陳景泰 114登字488296",
+  ],
+};
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: area.faqs.map(item => ({
+    "@type": "Question",
+    name: item.q,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: item.a,
+    },
+  })),
+};
+
+// 其他 6 區（同頁底部互連，分散 SEO 權重）
+const otherAreas = areas.filter(a => a.slug !== area.slug);
+---
+
+<Layout
+  title={`${pageTitle} | ${config.site.title}`}
+  description={pageDescription}
+  canonicalURL={canonicalURL}
+>
+  <Fragment slot="head">
+    <script
+      type="application/ld+json"
+      is:inline
+      set:html={JSON.stringify(breadcrumbSchema)}
+    />
+    <script
+      type="application/ld+json"
+      is:inline
+      set:html={JSON.stringify(areaServedSchema)}
+    />
+    <script
+      type="application/ld+json"
+      is:inline
+      set:html={JSON.stringify(faqSchema)}
+    />
+  </Fragment>
+
+  <Header />
+
+  <Main pageTitle={`${area.emoji} ${area.name}買房指南`} pageDesc={area.headline}>
+    {/* Breadcrumb */}
+    <nav class="text-muted-foreground mt-2 mb-6 text-sm" aria-label="breadcrumb">
+      <ol class="flex flex-wrap gap-2">
+        <li>
+          <a href="/" class="hover:text-accent">首頁</a>
+          <span class="mx-1">›</span>
+        </li>
+        <li>
+          <a href="/areas" class="hover:text-accent">台中各區</a>
+          <span class="mx-1">›</span>
+        </li>
+        <li class="text-foreground" aria-current="page">{area.shortName}</li>
+      </ol>
+    </nav>
+
+    {/* Hero summary */}
+    <section
+      class="border-border bg-card rounded-lg border p-6 sm:p-8"
+    >
+      <p class="text-foreground text-lg leading-relaxed">{area.summary}</p>
+    </section>
+
+    {/* 2026 Q1 數據表 */}
+    <section class="mt-10">
+      <h2 class="text-foreground text-xl font-bold sm:text-2xl">
+        📊 2026 Q1 關鍵數據
+      </h2>
+      <div class="border-border bg-card mt-4 overflow-hidden rounded-lg border">
+        <table class="w-full text-sm sm:text-base">
+          <tbody>
+            {
+              area.stats.map((s, i) => (
+                <tr
+                  class:list={[
+                    "border-border",
+                    i !== area.stats.length - 1 ? "border-b" : "",
+                  ]}
+                >
+                  <th
+                    scope="row"
+                    class="text-muted-foreground bg-muted/40 px-4 py-3 text-left font-medium"
+                  >
+                    {s.label}
+                  </th>
+                  <td class="text-foreground px-4 py-3 font-semibold">
+                    {s.value}
+                  </td>
+                  <td class="text-muted-foreground px-4 py-3 text-sm">
+                    {s.trend ?? ""}
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="text-muted-foreground mt-3 text-xs">
+        資料來源：合泰建經 2026 Q1 台中市不動產市場分析、實價登錄。數字僅供參考、實際成交以個案為準。
+      </p>
+    </section>
+
+    {/* 熱門社區 */}
+    <section class="mt-10">
+      <h2 class="text-foreground text-xl font-bold sm:text-2xl">
+        🏘️ {area.shortName}熱門社區
+      </h2>
+      <p class="text-muted-foreground mt-2 text-sm">
+        我帶看過、寫過深度文的社區（點進去看完整評估）
+      </p>
+      <ul class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {
+          hotCommunitiesWithLink.map(c => (
+            <li class="border-border bg-card rounded-lg border p-4">
+              {c.post ? (
+                <a
+                  href={`/posts/${c.post.id}`}
+                  class="block no-underline"
+                >
+                  <div class="text-foreground font-bold">🔺 {c.name}</div>
+                  <div class="text-muted-foreground mt-1 line-clamp-2 text-sm">
+                    {c.post.data.description}
+                  </div>
+                  <div class="text-accent mt-2 text-xs">看深度文 →</div>
+                </a>
+              ) : (
+                <div>
+                  <div class="text-foreground font-bold">🔺 {c.name}</div>
+                  <div class="text-muted-foreground mt-1 text-sm">
+                    深度文整理中、想聊這個社區先 LINE 我
+                  </div>
+                </div>
+              )}
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    {/* 適合 / 不建議 */}
+    <section class="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2">
+      <div class="border-border bg-card rounded-lg border p-6">
+        <h2 class="text-foreground text-lg font-bold">
+          ✅ 適合誰買{area.shortName}
+        </h2>
+        <ul class="text-foreground mt-3 space-y-2 leading-relaxed">
+          {area.suitableFor.map(s => <li>・{s}</li>)}
+        </ul>
+      </div>
+      <div class="border-border bg-card rounded-lg border p-6">
+        <h2 class="text-foreground text-lg font-bold">
+          ⚠️ 哪種人不建議買{area.shortName}
+        </h2>
+        <ul class="text-foreground mt-3 space-y-2 leading-relaxed">
+          {area.avoidIf.map(s => <li>・{s}</li>)}
+        </ul>
+      </div>
+    </section>
+
+    {/* FAQ */}
+    <section class="mt-10">
+      <h2 class="text-foreground text-xl font-bold sm:text-2xl">
+        💬 {area.shortName}常見問題
+      </h2>
+      <div class="mt-4 space-y-3">
+        {
+          area.faqs.map(item => (
+            <details
+              class="border-border bg-card group rounded-lg border p-4"
+            >
+              <summary class="text-foreground cursor-pointer text-base font-bold sm:text-lg">
+                {item.q}
+              </summary>
+              <p class="text-foreground mt-3 leading-relaxed">{item.a}</p>
+            </details>
+          ))
+        }
+      </div>
+      <p class="text-muted-foreground mt-4 text-sm">
+        更多買賣房通用問題 →{" "}
+        <a href="/faq" class="text-accent underline">
+          常見問題 30 題
+        </a>
+      </p>
+    </section>
+
+    {/* 該區在售物件 */}
+    {
+      previewProperties.length > 0 && (
+        <section class="mt-10">
+          <h2 class="text-foreground text-xl font-bold sm:text-2xl">
+            🏠 {area.shortName}在售物件 ({allProperties.length} 筆)
+          </h2>
+          <p class="text-muted-foreground mt-2 text-sm">
+            目前公開的 {area.shortName}案件（含同事聯賣）
+          </p>
+          <ul class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {previewProperties.map(property => (
+              <li class="border-border bg-card overflow-hidden rounded-lg border transition-shadow hover:shadow-lg">
+                <a
+                  href={`/properties/${property.id}`}
+                  class="block no-underline"
+                >
+                  {property.data.coverImage ? (
+                    <div class="bg-muted aspect-[4/3] w-full overflow-hidden">
+                      <img
+                        src={
+                          typeof property.data.coverImage === "string"
+                            ? property.data.coverImage
+                            : property.data.coverImage.src
+                        }
+                        alt={property.data.title}
+                        class="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                  ) : (
+                    <div class="bg-muted text-muted-foreground flex aspect-[4/3] w-full items-center justify-center">
+                      <span>📷 照片整理中</span>
+                    </div>
+                  )}
+                  <div class="p-4">
+                    <h3 class="text-foreground line-clamp-2 text-base font-bold">
+                      {property.data.title}
+                    </h3>
+                    <p class="text-muted-foreground mt-1 text-sm">
+                      📍 {property.data.district}
+                      {property.data.streetArea
+                        ? `・${property.data.streetArea}`
+                        : ""}
+                    </p>
+                    <div class="text-accent mt-2 text-xl font-bold">
+                      {formatPrice(property.data.totalPrice)}
+                    </div>
+                    <div class="text-muted-foreground mt-1 text-sm">
+                      {property.data.layout} ・ {property.data.area} 坪
+                    </div>
+                  </div>
+                </a>
+              </li>
+            ))}
+          </ul>
+          {allProperties.length > 6 && (
+            <p class="mt-4 text-center">
+              <a
+                href={`/properties?district=${encodeURIComponent(area.shortName)}`}
+                class="text-accent underline"
+              >
+                看完整 {allProperties.length} 筆 {area.shortName}物件 →
+              </a>
+            </p>
+          )}
+        </section>
+      )
+    }
+
+    {/* 同區其他資源 */}
+    {
+      area.relatedTag && (
+        <section class="mt-10">
+          <h2 class="text-foreground text-xl font-bold sm:text-2xl">
+            📚 {area.shortName}相關文章
+          </h2>
+          <p class="text-muted-foreground mt-2 text-sm">
+            <a
+              href={`/tags/${encodeURIComponent(area.relatedTag)}`}
+              class="text-accent underline"
+            >
+              看所有 #{area.relatedTag} 文章 →
+            </a>
+          </p>
+        </section>
+      )
+    }
+
+    {/* 其他區互連 (SEO 內部連結 + 讓讀者跨區比較) */}
+    <section class="mt-12">
+      <h2 class="text-foreground text-xl font-bold sm:text-2xl">
+        看其他區
+      </h2>
+      <ul class="mt-4 flex flex-wrap gap-2">
+        {
+          otherAreas.map(a => (
+            <li>
+              <a
+                href={`/areas/${a.slug}`}
+                class="border-border bg-card hover:border-accent inline-block rounded-full border px-4 py-2 text-sm no-underline transition-colors"
+              >
+                {a.emoji} {a.name}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    {/* CTA */}
+    <section
+      class="border-border mt-12 rounded-lg border border-dashed p-6 text-center"
+    >
+      <p class="text-foreground font-medium">
+        想問{area.shortName}的物件、或想要這區的成交實價清單？
+      </p>
+      <p class="text-muted-foreground mt-3 leading-relaxed">
+        我整理了{area.shortName}近 6 個月實價登錄 + 我手上未公開的物件名單，<br />
+        LINE 我「{area.shortName}」就傳給你。
+      </p>
+      <a
+        href="https://line.me/ti/p/sky811117"
+        class="bg-accent text-accent-foreground mt-6 inline-block rounded px-6 py-2 font-medium no-underline"
+      >
+        💬 LINE 私訊景泰 sky811117
+      </a>
+      <p class="text-muted-foreground mt-4 text-xs">
+        一品不動產 有巢氏房屋 台中世界之心加盟店<br />
+        經紀人 黃永隆 113彰縣字324 ・ 營業員 陳景泰 114登字488296
+      </p>
+    </section>
+  </Main>
+
+  <Footer />
+</Layout>

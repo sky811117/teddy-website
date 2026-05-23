@@ -1,10 +1,11 @@
 ---
 title: "FAQ 05:違章建築能買嗎?3 種違建分類 + 銀行貸款全攻略"
 author: 陳景泰
-pubDatetime: 2026-06-05T11:00:00.000+08:00
+pubDatetime: 2026-05-26T11:00:00.000+08:00
 slug: faq-05-illegal-construction
 featured: false
 draft: true
+ogImage: /covers/undesirable-warning.png
 tags:
   - faq
   - 買方教學

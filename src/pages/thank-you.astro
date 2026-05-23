@@ -1,0 +1,192 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import config from "@/config";
+
+// 從 URL 帶入 intent，給不同意圖客戶不同的「等我回前先做」建議
+const intent = Astro.url.searchParams.get("intent") ?? "";
+
+type Intent = "找房" | "賣房" | "換屋" | "投資諮詢" | "一般諮詢";
+
+const intentTips: Record<Intent, { title: string; tips: string[] }> = {
+  找房: {
+    title: "等我回覆前、你可以做這 3 件事",
+    tips: [
+      "看在售物件、把感興趣的 2-3 戶截圖丟給我，我直接約看屋",
+      "想清楚自備款大概多少 — 我可以提早幫你算貸款方案",
+      "如果有指定區段，把區段名先寫好（北屯機捷？七期？太平？）",
+    ],
+  },
+  賣房: {
+    title: "等我回覆前、先想清楚 3 件事",
+    tips: [
+      "什麼時候想拿到錢 —— 1 個月內、3 個月內、半年內？",
+      "心中目標價 —— 不一定要對外講、但要有底",
+      "目前住誰 —— 空屋？自住？租客？影響帶看時間",
+    ],
+  },
+  換屋: {
+    title: "等我回覆前、先想清楚 2 件事",
+    tips: [
+      "「先賣再買」還是「先買再賣」？這決定整個流程跟資金壓力",
+      "舊屋大概想拿多少錢 → 新屋預算大概多少",
+    ],
+  },
+  投資諮詢: {
+    title: "等我回覆前、先準備 3 個數字",
+    tips: [
+      "自備款大概多少（決定能進場的物件區間）",
+      "想多久看到 ROI（短線轉手 vs 長期收租策略不同）",
+      "純收租、賺價差、還是兩個都要",
+    ],
+  },
+  一般諮詢: {
+    title: "等我回覆前、可以先看這些",
+    tips: [
+      "常見問題 30 題 —— 涵蓋簽約、貸款、過戶、稅務",
+      "台中各區房市分析 —— 7 大重點區段月度動態",
+      "AI 工具集 —— 試算房貸、坪數、議價空間",
+    ],
+  },
+};
+
+const isIntent = (s: string): s is Intent =>
+  ["找房", "賣房", "換屋", "投資諮詢", "一般諮詢"].includes(s);
+
+const tipData = isIntent(intent) ? intentTips[intent] : intentTips["一般諮詢"];
+---
+
+<Layout
+  title={`收到了 | ${config.site.title}`}
+  description="景泰已收到你的訊息，30 秒到 30 分鐘內會回覆。"
+>
+  <Header />
+
+  <main id="main-content" class="app-layout max-w-app py-12">
+    {/* 主訊息 */}
+    <div class="text-center">
+      <div
+        class="bg-accent text-accent-foreground mx-auto flex h-20 w-20 items-center justify-center rounded-full text-4xl"
+      >
+        ✓
+      </div>
+
+      <h1 class="text-foreground mt-6 text-3xl font-bold sm:text-4xl">
+        收到了
+      </h1>
+
+      <p
+        class="text-muted-foreground mx-auto mt-4 max-w-2xl text-[18px] leading-relaxed"
+      >
+        景泰會在 <span class="text-accent font-semibold">30 秒到 30 分鐘</span>
+        內回你，看你的需求多複雜。
+        <br />
+        簡單問題秒回、複雜需求要查資料、最久不會超過 30 分鐘。
+      </p>
+
+      {
+        intent && (
+          <p class="text-muted-foreground mt-3 text-[16px]">
+            （已標記為「{intent}」需求）
+          </p>
+        )
+      }
+    </div>
+
+    {/* 急的話 — LINE / 電話 */}
+    <section
+      class="border-border bg-card mt-10 rounded-lg border p-6 sm:p-8"
+    >
+      <h2 class="text-foreground text-xl font-bold sm:text-2xl">
+        如果你急、用這兩條最快
+      </h2>
+      <p class="text-muted-foreground mt-2 text-[16px]">
+        Email + TG 通知已經送到、但如果你 30 分鐘內要動 —
+      </p>
+
+      <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <a
+          href="https://line.me/ti/p/sky811117"
+          target="_blank"
+          rel="noopener"
+          class="bg-accent text-accent-foreground hover:bg-accent/90 flex items-center justify-center gap-2 rounded-md px-6 py-4 text-[18px] font-medium no-underline"
+        >
+          <span class="text-2xl">💬</span>
+          LINE sky811117
+        </a>
+        <a
+          href="tel:+886920118756"
+          class="border-accent text-accent hover:bg-accent/10 flex items-center justify-center gap-2 rounded-md border-2 px-6 py-4 text-[18px] font-medium no-underline"
+        >
+          <span class="text-2xl">📞</span>
+          0920-118-756
+        </a>
+      </div>
+    </section>
+
+    {/* 等回覆前先做這幾件事（資源型 CTA） */}
+    <section class="mt-10">
+      <h2 class="text-foreground text-xl font-bold sm:text-2xl">
+        {tipData.title}
+      </h2>
+      <ul class="mt-4 space-y-3">
+        {
+          tipData.tips.map((tip, i) => (
+            <li class="border-border bg-card flex gap-4 rounded-lg border p-4">
+              <span class="bg-accent text-accent-foreground flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[15px] font-bold">
+                {i + 1}
+              </span>
+              <p class="text-foreground text-[17px] leading-relaxed">
+                {tip}
+              </p>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    {/* 站內導覽 */}
+    <section
+      class="border-border mt-10 rounded-lg border border-dashed p-6 sm:p-8"
+    >
+      <h3 class="text-foreground text-lg font-bold">站內可以先翻翻</h3>
+      <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <a
+          href="/properties"
+          class="text-foreground hover:text-accent hover:bg-card rounded-md p-3 text-center text-[16px] no-underline transition-colors"
+        >
+          🏠 在售物件
+        </a>
+        <a
+          href="/areas"
+          class="text-foreground hover:text-accent hover:bg-card rounded-md p-3 text-center text-[16px] no-underline transition-colors"
+        >
+          📊 台中各區
+        </a>
+        <a
+          href="/faq"
+          class="text-foreground hover:text-accent hover:bg-card rounded-md p-3 text-center text-[16px] no-underline transition-colors"
+        >
+          ❓ 常見問題
+        </a>
+        <a
+          href="/tools"
+          class="text-foreground hover:text-accent hover:bg-card rounded-md p-3 text-center text-[16px] no-underline transition-colors"
+        >
+          🛠️ 工具集
+        </a>
+      </div>
+    </section>
+
+    {/* 法規揭露 */}
+    <p
+      class="text-muted-foreground mt-10 text-center text-[13px] leading-relaxed"
+    >
+      一品不動產 有巢氏房屋 台中世界之心加盟店<br />
+      經紀人 黃永隆 113彰縣字324 ・ 營業員 陳景泰 114登字488296
+    </p>
+  </main>
+
+  <Footer />
+</Layout>

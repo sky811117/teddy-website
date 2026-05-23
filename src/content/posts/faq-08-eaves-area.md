@@ -1,10 +1,11 @@
 ---
 title: "FAQ 08:雨遮算坪數嗎? 2018 前後的規定差超大,買錯多付幾十萬"
 author: 陳景泰
-pubDatetime: 2026-06-08T11:00:00.000+08:00
+pubDatetime: 2026-05-29T11:00:00.000+08:00
 slug: faq-08-eaves-area
 featured: false
 draft: true
+ogImage: /covers/disclosure-document.png
 tags:
   - faq
   - 買方教學

@@ -1,10 +1,11 @@
 ---
 title: "工具：買方費用試算 — 一次看清自備款、月付、新青安差距"
 author: 陳景泰
-pubDatetime: 2026-05-22T20:00:00.000+08:00
+pubDatetime: 2026-05-23T08:00:00.000+08:00
 slug: tool-buyer-fee
 featured: false
 draft: true
+ogImage: /covers/new-housing-loan-calc.png
 tags:
   - 工具
   - 買方教學

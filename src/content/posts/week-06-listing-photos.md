@@ -5,7 +5,7 @@ pubDatetime: 2026-05-21T23:00:00.000+08:00
 slug: week-06-listing-photos
 featured: false
 draft: false
-ogImage: ../../../assets/images/covers/viewing-natural-light.png
+ogImage: /covers/viewing-natural-light.png
 tags:
   - weekly-recap
   - 賣方教學

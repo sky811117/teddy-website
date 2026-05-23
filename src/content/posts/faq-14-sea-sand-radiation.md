@@ -1,10 +1,11 @@
 ---
 title: "FAQ 14:海砂屋 / 輻射屋怎麼測?買屋齡 30 年以上一定要做的 2 件事"
 author: 陳景泰
-pubDatetime: 2026-06-14T11:00:00.000+08:00
+pubDatetime: 2026-06-04T11:00:00.000+08:00
 slug: faq-14-sea-sand-radiation
 featured: false
 draft: true
+ogImage: /covers/undesirable-warning.png
 tags:
   - faq
   - 買方教學

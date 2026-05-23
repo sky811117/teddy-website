@@ -1,10 +1,11 @@
 ---
 title: "工具：議價 7 心法 — 客戶在北屯談下 80 萬的真實流程"
 author: 陳景泰
-pubDatetime: 2026-05-22T20:20:00.000+08:00
+pubDatetime: 2026-05-30T08:00:00.000+08:00
 slug: tool-negotiation
 featured: false
 draft: true
+ogImage: /covers/negotiation-strategy.png
 tags:
   - 工具
   - 買方教學

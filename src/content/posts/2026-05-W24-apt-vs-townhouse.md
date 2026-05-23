@@ -5,7 +5,7 @@ pubDatetime: 2026-06-24T09:00:00.000+08:00
 slug: 2026-05-W24-apt-vs-townhouse
 featured: false
 draft: true
-ogImage: ../../assets/images/covers/community-livingroom.png
+ogImage: /covers/community-livingroom.png
 tags:
   - 結構分析
   - 大樓

@@ -1,10 +1,11 @@
 ---
 title: "FAQ 19:印花稅怎麼算?千分之一聽起來不多但這 3 個地方會踩雷"
 author: 陳景泰
-pubDatetime: 2026-06-19T11:00:00.000+08:00
+pubDatetime: 2026-06-09T11:00:00.000+08:00
 slug: faq-19-stamp-duty
 featured: false
 draft: true
+ogImage: /covers/transfer-stamp.png
 tags:
   - faq
   - 買方教學

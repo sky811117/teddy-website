@@ -5,6 +5,7 @@ pubDatetime: 2026-05-22T10:45:00.000+08:00
 slug: term-10-independent-parking
 featured: false
 draft: true
+ogImage: /covers/community-architecture.png
 tags:
   - 房地產詞典
   - 買方教學

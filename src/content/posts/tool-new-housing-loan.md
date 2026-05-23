@@ -1,10 +1,11 @@
 ---
 title: "工具：新青安試算 — 30 年差 56 萬，但你符合資格嗎？"
 author: 陳景泰
-pubDatetime: 2026-05-22T20:30:00.000+08:00
+pubDatetime: 2026-05-24T08:00:00.000+08:00
 slug: tool-new-housing-loan
 featured: false
 draft: true
+ogImage: /covers/new-housing-loan-keys.png
 tags:
   - 工具
   - 買方教學

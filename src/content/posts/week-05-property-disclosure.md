@@ -5,7 +5,7 @@ pubDatetime: 2026-05-21T23:30:00.000+08:00
 slug: week-05-property-disclosure
 featured: false
 draft: false
-ogImage: ../../../assets/images/covers/disclosure-document.png
+ogImage: /covers/disclosure-document.png
 tags:
   - 買方教學
   - 不動產說明書

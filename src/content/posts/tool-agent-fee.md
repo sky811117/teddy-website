@@ -1,10 +1,11 @@
 ---
 title: "工具：仲介費試算 — 6% 不是天上掉下來的數字，加盟店有議價空間"
 author: 陳景泰
-pubDatetime: 2026-05-22T21:20:00.000+08:00
+pubDatetime: 2026-05-29T08:00:00.000+08:00
 slug: tool-agent-fee
 featured: false
 draft: true
+ogImage: /covers/negotiation-calculator.png
 tags:
   - 工具
   - 仲介費

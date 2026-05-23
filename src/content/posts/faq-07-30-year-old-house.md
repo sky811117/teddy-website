@@ -1,10 +1,11 @@
 ---
 title: "FAQ 07：屋齡 30 年的房還能買嗎？我看過 3 種人都買得很開心"
 author: 陳景泰
-pubDatetime: 2026-06-07T11:00:00.000+08:00
+pubDatetime: 2026-05-28T11:00:00.000+08:00
 slug: faq-07-30-year-old-house
 featured: false
 draft: true
+ogImage: /covers/community-architecture.png
 tags:
   - faq
   - 買方教學

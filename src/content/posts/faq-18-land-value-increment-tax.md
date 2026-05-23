@@ -1,10 +1,11 @@
 ---
 title: "FAQ 18:土地增值稅怎麼算?自用優惠 10% + 重購退稅實戰教學"
 author: 陳景泰
-pubDatetime: 2026-06-18T11:00:00.000+08:00
+pubDatetime: 2026-06-08T11:00:00.000+08:00
 slug: faq-18-land-value-increment-tax
 featured: false
 draft: true
+ogImage: /covers/transfer-tax.png
 tags:
   - faq
   - 買方教學

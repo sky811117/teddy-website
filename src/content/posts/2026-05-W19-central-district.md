@@ -5,7 +5,7 @@ pubDatetime: 2026-06-17T09:00:00.000+08:00
 slug: 2026-05-W19-central-district
 featured: false
 draft: true
-ogImage: ../../assets/images/covers/viewing-flashlight.png
+ogImage: /covers/viewing-flashlight.png
 tags:
   - 各區行情
   - 中區
