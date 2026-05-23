@@ -1,0 +1,105 @@
+---
+import { PUBLIC_GA4_MEASUREMENT_ID } from "astro:env/client";
+const gtagId = PUBLIC_GA4_MEASUREMENT_ID;
+---
+
+{gtagId && (
+  <script is:inline define:vars={{ gtagId }}>
+    // ── 1. GA4 boilerplate + Consent Mode v2 ──────────────────────────────
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+
+    // Consent default：全部 denied，等使用者選擇（GA4 Consent Mode v2）
+    gtag('consent', 'default', {
+      analytics_storage: 'denied',
+      ad_storage: 'denied',
+      ad_user_data: 'denied',
+      ad_personalization: 'denied',
+      wait_for_update: 500,
+    });
+
+    // 動態載 gtag.js（帶 measurement ID）
+    (function () {
+      var s = document.createElement('script');
+      s.async = true;
+      s.src = 'https://www.googletagmanager.com/gtag/js?id=' + gtagId;
+      document.head.appendChild(s);
+    })();
+
+    gtag('js', new Date());
+    // send_page_view:false — 等 consent granted 後才手動送
+    gtag('config', gtagId, { send_page_view: false });
+
+    // ── 2. Consent helper（供 PostLayout dwell script 訂閱）────────────────
+    function _gaApplyGranted() {
+      gtag('consent', 'update', { analytics_storage: 'granted' });
+      gtag('config', gtagId, { page_path: location.pathname });
+      // 通知文章頁等待 consent 的 listener
+      window.dispatchEvent(new Event('ga:consented'));
+    }
+
+    // ── 3. Cookie consent banner ──────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function () {
+      var stored = localStorage.getItem('ga_consent');
+      if (stored === 'granted') { _gaApplyGranted(); return; }
+      if (stored === 'denied') return;
+
+      // 動態建立 banner（放在 body，避免放進 <head> 非法）
+      var banner = document.createElement('div');
+      banner.style.cssText = [
+        'position:fixed;bottom:0;left:0;right:0;z-index:9999',
+        'display:flex;flex-wrap:wrap;align-items:center;gap:12px',
+        'padding:12px 20px',
+        'background:var(--background,#fff)',
+        'border-top:1px solid var(--border,#e5e7eb)',
+        'box-shadow:0 -2px 12px rgba(0,0,0,.08)',
+        'font-size:0.875rem',
+      ].join(';');
+      banner.innerHTML =
+        '<span style="flex:1;min-width:200px;color:var(--foreground,#111);">' +
+          '本站使用 Google Analytics 分析流量，協助改善內容品質。' +
+        '</span>' +
+        '<div style="display:flex;gap:8px;">' +
+          '<button id="ga-accept" style="padding:6px 16px;background:var(--accent);color:var(--accent-foreground,#fff);border:none;border-radius:6px;cursor:pointer;font-weight:500;">接受</button>' +
+          '<button id="ga-decline" style="padding:6px 14px;background:transparent;color:var(--muted-foreground);border:1px solid var(--border,#e5e7eb);border-radius:6px;cursor:pointer;">拒絕</button>' +
+        '</div>';
+      document.body.appendChild(banner);
+
+      document.getElementById('ga-accept').addEventListener('click', function () {
+        localStorage.setItem('ga_consent', 'granted');
+        banner.remove();
+        _gaApplyGranted();
+      });
+      document.getElementById('ga-decline').addEventListener('click', function () {
+        localStorage.setItem('ga_consent', 'denied');
+        banner.remove();
+      });
+    });
+
+    // ── 4. Event delegation ───────────────────────────────────────────────
+    function _gaOk() { return localStorage.getItem('ga_consent') === 'granted'; }
+
+    // LINE 點擊：抓頁面所有 line.me 連結（FloatingCTA / Footer / 文章內 / 物件頁）
+    document.addEventListener('click', function (e) {
+      if (!_gaOk() || !window.gtag) return;
+      var a = e.target.closest('a[href*="line.me"]');
+      if (a) gtag('event', 'click_line', {
+        link_url: a.href,
+        link_text: (a.textContent || '').trim().slice(0, 80),
+        page_path: location.pathname,
+      });
+    }, { capture: true, passive: true });
+
+    // Properties 卡片點擊：抓 data-track="property" 元素
+    document.addEventListener('click', function (e) {
+      if (!_gaOk() || !window.gtag) return;
+      var a = e.target.closest('[data-track="property"]');
+      if (a) gtag('event', 'click_property', {
+        property_id: a.dataset.propertyId || '',
+        property_title: a.dataset.propertyTitle || '',
+        property_price: Number(a.dataset.propertyPrice) || 0,
+        property_district: a.dataset.propertyDistrict || '',
+      });
+    }, { capture: true, passive: true });
+  </script>
+)}

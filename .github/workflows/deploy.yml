@@ -35,6 +35,9 @@ jobs:
 
       - name: Build site
         run: pnpm exec astro build
+        env:
+          PUBLIC_GA4_MEASUREMENT_ID: G-WMQCYK4L88
+          PUBLIC_GOOGLE_SITE_VERIFICATION: lPDHY5HIn0TAj0hw4A5WRqk_6FUu9hSuqazn9YcjxCY
 
       - name: Build search index (Pagefind)
         run: pnpm exec pagefind --site dist

@@ -39,23 +39,16 @@ function getType(p: (typeof allProperties)[number]): string {
   return "其他";
 }
 
-// 總價分段
-function getPriceBucket(price: number): string {
-  if (price < 500) return "500萬以下";
-  if (price < 1000) return "500-1000萬";
-  if (price < 2000) return "1000-2000萬";
-  if (price < 3000) return "2000-3000萬";
-  if (price < 5000) return "3000-5000萬";
-  return "5000萬以上";
+// 從 layout 抽房數（例「3房2廳2衛」→ 3）
+function getRoomBucket(layout: string | undefined): string {
+  if (!layout) return "";
+  const m = layout.match(/(\d+)\s*房/);
+  if (!m) return "";
+  const n = parseInt(m[1], 10);
+  if (n >= 5) return "5房+";
+  return `${n}房`;
 }
-const PRICE_BUCKETS = [
-  "500萬以下",
-  "500-1000萬",
-  "1000-2000萬",
-  "2000-3000萬",
-  "3000-5000萬",
-  "5000萬以上",
-];
+const ROOM_ORDER = ["1房", "2房", "3房", "4房", "5房+"];
 
 // 精選優先，再依發佈時間倒序
 const sortedProperties = allProperties.sort((a, b) => {
@@ -81,22 +74,22 @@ function priceDropPct(p: (typeof allProperties)[number]): number | null {
 // 統計 chip 選項 + 數量
 const districtCount: Record<string, number> = {};
 const typeCount: Record<string, number> = {};
-const priceCount: Record<string, number> = {};
+const roomCount: Record<string, number> = {};
 let newCount = 0;
 let dropCount = 0;
 
 const propertyMeta = sortedProperties.map(p => {
   const district = p.data.district || "未分類";
   const type = getType(p);
-  const priceBucket = getPriceBucket(p.data.totalPrice);
+  const rooms = getRoomBucket(p.data.layout);
   const newListing = isNewListing(p);
   const dropPct = priceDropPct(p);
   districtCount[district] = (districtCount[district] || 0) + 1;
   typeCount[type] = (typeCount[type] || 0) + 1;
-  priceCount[priceBucket] = (priceCount[priceBucket] || 0) + 1;
+  if (rooms) roomCount[rooms] = (roomCount[rooms] || 0) + 1;
   if (newListing) newCount++;
   if (dropPct) dropCount++;
-  return { p, district, type, priceBucket, newListing, dropPct };
+  return { p, district, type, rooms, newListing, dropPct };
 });
 
 // district → county mapping
@@ -253,7 +246,9 @@ const counties = COUNTY_ORDER.filter(c => districtsByCounty[c]);
 
 const types = Object.entries(typeCount).sort((a, b) => b[1] - a[1]);
 
-const priceBuckets = PRICE_BUCKETS.filter(b => priceCount[b]);
+const rooms = ROOM_ORDER.filter(r => roomCount[r]).map(
+  r => [r, roomCount[r]] as [string, number]
+);
 
 const formatPrice = (price: number) => {
   if (price >= 10000) return `${(price / 10000).toFixed(2)} 億`;
@@ -361,24 +356,172 @@ const formatPrice = (price: number) => {
         </div>
       </div>
 
-      <!-- 總價 -->
+      <!-- 房型（幾房） -->
+      {
+        rooms.length > 0 && (
+          <div>
+            <div class="text-muted-foreground mb-2 text-xs font-medium">
+              🛏️ 房型
+            </div>
+            <div class="flex flex-wrap gap-2" data-filter-group="rooms">
+              <button
+                type="button"
+                data-filter-value=""
+                class="filter-chip filter-chip-active"
+              >
+                全部
+              </button>
+              {rooms.map(([r, n]) => (
+                <button type="button" data-filter-value={r} class="filter-chip">
+                  {r} ({n})
+                </button>
+              ))}
+            </div>
+          </div>
+        )
+      }
+
+      <!-- 總價 range -->
       <div>
         <div class="text-muted-foreground mb-2 text-xs font-medium">💰 總價</div>
-        <div class="flex flex-wrap gap-2" data-filter-group="price">
+        <div class="flex flex-wrap items-center gap-2">
+          <input
+            type="number"
+            inputmode="numeric"
+            min="0"
+            step="50"
+            placeholder="不限"
+            aria-label="總價下限（萬）"
+            class="filter-range-input"
+            data-filter-range="priceMin"
+          />
+          <span class="text-muted-foreground text-sm">~</span>
+          <input
+            type="number"
+            inputmode="numeric"
+            min="0"
+            step="50"
+            placeholder="不限"
+            aria-label="總價上限（萬）"
+            class="filter-range-input"
+            data-filter-range="priceMax"
+          />
+          <span class="text-muted-foreground text-sm">萬</span>
+        </div>
+        <div class="mt-2 flex flex-wrap gap-2" data-filter-quick="price">
           <button
             type="button"
-            data-filter-value=""
-            class="filter-chip filter-chip-active"
+            data-quick-min=""
+            data-quick-max="500"
+            class="filter-chip"
           >
-            全部
+            500 萬以下
           </button>
-          {
-            priceBuckets.map(b => (
-              <button type="button" data-filter-value={b} class="filter-chip">
-                {b} ({priceCount[b]})
-              </button>
-            ))
-          }
+          <button
+            type="button"
+            data-quick-min="500"
+            data-quick-max="1000"
+            class="filter-chip"
+          >
+            500–1000 萬
+          </button>
+          <button
+            type="button"
+            data-quick-min="1000"
+            data-quick-max="2000"
+            class="filter-chip"
+          >
+            1000–2000 萬
+          </button>
+          <button
+            type="button"
+            data-quick-min="2000"
+            data-quick-max="3000"
+            class="filter-chip"
+          >
+            2000–3000 萬
+          </button>
+          <button
+            type="button"
+            data-quick-min="3000"
+            data-quick-max="5000"
+            class="filter-chip"
+          >
+            3000–5000 萬
+          </button>
+          <button
+            type="button"
+            data-quick-min="5000"
+            data-quick-max=""
+            class="filter-chip"
+          >
+            5000 萬以上
+          </button>
+        </div>
+      </div>
+
+      <!-- 屋齡 range -->
+      <div>
+        <div class="text-muted-foreground mb-2 text-xs font-medium">
+          🏗️ 屋齡
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <input
+            type="number"
+            inputmode="numeric"
+            min="0"
+            step="1"
+            placeholder="不限"
+            aria-label="屋齡下限（年）"
+            class="filter-range-input"
+            data-filter-range="ageMin"
+          />
+          <span class="text-muted-foreground text-sm">~</span>
+          <input
+            type="number"
+            inputmode="numeric"
+            min="0"
+            step="1"
+            placeholder="不限"
+            aria-label="屋齡上限（年）"
+            class="filter-range-input"
+            data-filter-range="ageMax"
+          />
+          <span class="text-muted-foreground text-sm">年</span>
+        </div>
+        <div class="mt-2 flex flex-wrap gap-2" data-filter-quick="age">
+          <button
+            type="button"
+            data-quick-min=""
+            data-quick-max="5"
+            class="filter-chip"
+          >
+            新成屋（≤5 年）
+          </button>
+          <button
+            type="button"
+            data-quick-min=""
+            data-quick-max="15"
+            class="filter-chip"
+          >
+            15 年內
+          </button>
+          <button
+            type="button"
+            data-quick-min="15"
+            data-quick-max="30"
+            class="filter-chip"
+          >
+            15–30 年
+          </button>
+          <button
+            type="button"
+            data-quick-min="30"
+            data-quick-max=""
+            class="filter-chip"
+          >
+            30 年以上
+          </button>
         </div>
       </div>
 
@@ -405,17 +548,24 @@ const formatPrice = (price: number) => {
           class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
           data-property-list
         >
-          {propertyMeta.map(({ p: property, district, type, priceBucket, newListing, dropPct }, idx) => (
+          {propertyMeta.map(({ p: property, district, type, rooms, newListing, dropPct }, idx) => (
             <li
               class="border-border bg-card overflow-hidden rounded-lg border transition-shadow hover:shadow-lg"
               data-district={district}
               data-type={type}
-              data-price={priceBucket}
+              data-rooms={rooms}
+              data-price={property.data.totalPrice}
+              data-age={property.data.age ?? ""}
               data-quick={[newListing ? "new" : "", dropPct ? "drop" : ""].filter(Boolean).join(" ")}
             >
               <a
                 href={`/properties/${property.id}`}
                 class="block no-underline"
+                data-track="property"
+                data-property-id={property.id}
+                data-property-title={property.data.title}
+                data-property-price={String(property.data.totalPrice)}
+                data-property-district={district}
               >
                 {property.data.coverImage ? (
                   <div class="bg-muted aspect-[4/3] w-full overflow-hidden">
@@ -543,7 +693,10 @@ const formatPrice = (price: number) => {
     color: var(--foreground);
     padding: 0.25rem 0.75rem;
     font-size: 0.875rem;
-    transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+    transition:
+      border-color 0.15s,
+      background-color 0.15s,
+      color 0.15s;
   }
   .filter-chip:hover {
     border-color: var(--accent);
@@ -555,71 +708,197 @@ const formatPrice = (price: number) => {
     background: var(--accent);
     color: var(--background);
   }
+  .filter-range-input {
+    width: 5.5rem;
+    border-radius: 0.375rem;
+    border: 1px solid var(--border);
+    background: var(--background);
+    color: var(--foreground);
+    padding: 0.25rem 0.5rem;
+    font-size: 1rem;
+    text-align: center;
+    transition: border-color 0.15s;
+  }
+  .filter-range-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .filter-range-input::-webkit-outer-spin-button,
+  .filter-range-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .filter-range-input[type="number"] {
+    -moz-appearance: textfield;
+  }
 </style>
 
 <script is:inline>
   (function () {
     const groups = document.querySelectorAll("[data-filter-group]");
+    const quickRanges = document.querySelectorAll("[data-filter-quick]");
+    const rangeInputs = document.querySelectorAll("[data-filter-range]");
     const list = document.querySelector("[data-property-list]");
     if (!list) return;
     const items = Array.from(list.children);
     const countEl = document.querySelector("[data-filter-count]");
     const emptyEl = document.querySelector("[data-filter-empty]");
 
-    const state = { district: "", type: "", price: "", quick: "" };
-    const KEYS = ["district", "type", "price", "quick"];
+    const state = {
+      district: "",
+      type: "",
+      rooms: "",
+      quick: "",
+      priceMin: "",
+      priceMax: "",
+      ageMin: "",
+      ageMax: "",
+    };
+    const CHIP_KEYS = ["district", "type", "rooms", "quick"];
+    const RANGE_KEYS = ["priceMin", "priceMax", "ageMin", "ageMax"];
+    const ALL_KEYS = CHIP_KEYS.concat(RANGE_KEYS);
+
+    function num(v) {
+      if (v === "" || v === null || v === undefined) return null;
+      const n = parseFloat(v);
+      return isNaN(n) ? null : n;
+    }
 
     function apply() {
+      const pMin = num(state.priceMin);
+      const pMax = num(state.priceMax);
+      const aMin = num(state.ageMin);
+      const aMax = num(state.ageMax);
+      const ageActive = aMin !== null || aMax !== null;
       let visible = 0;
       for (const li of items) {
         const okD = !state.district || li.dataset.district === state.district;
         const okT = !state.type || li.dataset.type === state.type;
-        const okP = !state.price || li.dataset.price === state.price;
+        const okR = !state.rooms || li.dataset.rooms === state.rooms;
+
+        const priceNum = num(li.dataset.price);
+        const okP =
+          priceNum !== null &&
+          (pMin === null || priceNum >= pMin) &&
+          (pMax === null || priceNum <= pMax);
+
+        let okA = true;
+        if (ageActive) {
+          const ageNum = num(li.dataset.age);
+          if (ageNum === null) {
+            okA = false; // 啟用屋齡 filter 但物件沒填 → 藏掉
+          } else {
+            okA =
+              (aMin === null || ageNum >= aMin) &&
+              (aMax === null || ageNum <= aMax);
+          }
+        }
+
         // quick 是空白分隔多值，contains check
-        const quickTokens = (li.dataset.quick || "").split(/\s+/).filter(Boolean);
+        const quickTokens = (li.dataset.quick || "")
+          .split(/\s+/)
+          .filter(Boolean);
         const okQ = !state.quick || quickTokens.includes(state.quick);
-        const show = okD && okT && okP && okQ;
+
+        const show = okD && okT && okR && okP && okA && okQ;
         li.style.display = show ? "" : "none";
         if (show) visible++;
       }
       if (countEl) countEl.textContent = String(visible);
       if (emptyEl) emptyEl.classList.toggle("hidden", visible !== 0);
       list.classList.toggle("hidden", visible === 0);
-      // URL sync
+      syncQuickRangeActive();
+      syncUrl();
+    }
+
+    function syncUrl() {
       const url = new URL(location.href);
-      KEYS.forEach(k => {
+      ALL_KEYS.forEach(k => {
         if (state[k]) url.searchParams.set(k, state[k]);
         else url.searchParams.delete(k);
       });
       history.replaceState(null, "", url.toString());
     }
 
-    function setActive(group, value) {
-      const btns = group.querySelectorAll(".filter-chip");
-      btns.forEach(b => {
+    function setChipActive(group, value) {
+      group.querySelectorAll(".filter-chip").forEach(b => {
         const match = (b.dataset.filterValue || "") === value;
         b.classList.toggle("filter-chip-active", match);
       });
     }
 
+    // quick-range chip 的 active 狀態：min/max 完全等於 state 才 active
+    function syncQuickRangeActive() {
+      quickRanges.forEach(group => {
+        const prefix = group.dataset.filterQuick; // "price" or "age"
+        const minKey = prefix + "Min";
+        const maxKey = prefix + "Max";
+        group.querySelectorAll(".filter-chip").forEach(b => {
+          const match =
+            (b.dataset.quickMin || "") === (state[minKey] || "") &&
+            (b.dataset.quickMax || "") === (state[maxKey] || "");
+          b.classList.toggle("filter-chip-active", match);
+        });
+      });
+    }
+
+    function syncRangeInputs() {
+      rangeInputs.forEach(inp => {
+        const key = inp.dataset.filterRange;
+        inp.value = state[key] || "";
+      });
+    }
+
     // 初始 URL state
     const params = new URLSearchParams(location.search);
-    KEYS.forEach(k => {
+    ALL_KEYS.forEach(k => {
       const v = params.get(k);
       if (v) state[k] = v;
     });
+    syncRangeInputs();
+
+    // chip group：district / type / rooms / quick
     groups.forEach(g => {
       const key = g.dataset.filterGroup;
-      setActive(g, state[key] || "");
+      setChipActive(g, state[key] || "");
       g.addEventListener("click", e => {
         const btn = e.target.closest(".filter-chip");
         if (!btn) return;
         const v = btn.dataset.filterValue || "";
         state[key] = v;
-        setActive(g, v);
+        setChipActive(g, v);
         apply();
       });
     });
+
+    // quick-range chip：price / age 快選
+    quickRanges.forEach(g => {
+      const prefix = g.dataset.filterQuick;
+      const minKey = prefix + "Min";
+      const maxKey = prefix + "Max";
+      g.addEventListener("click", e => {
+        const btn = e.target.closest(".filter-chip");
+        if (!btn) return;
+        const min = btn.dataset.quickMin || "";
+        const max = btn.dataset.quickMax || "";
+        // 點到已 active 的 chip → 清空（toggle off）
+        const alreadyActive = btn.classList.contains("filter-chip-active");
+        state[minKey] = alreadyActive ? "" : min;
+        state[maxKey] = alreadyActive ? "" : max;
+        syncRangeInputs();
+        apply();
+      });
+    });
+
+    // range input：min / max number 輸入
+    rangeInputs.forEach(inp => {
+      const key = inp.dataset.filterRange;
+      inp.addEventListener("input", () => {
+        state[key] = inp.value.trim();
+        apply();
+      });
+    });
+
     apply();
   })();
 </script>

@@ -24,6 +24,13 @@ const {
   tags = [],
 } = Astro.props;
 
+// GA4 post tracking props
+const postSlug = canonicalURL
+  ? new URL(canonicalURL).pathname.replace(/\/$/, "").split("/").pop() ?? ""
+  : Astro.url.pathname.replace(/\/$/, "").split("/").pop() ?? "";
+const postTitle = title ?? "";
+const postTags = tags.join(",");
+
 // 強化 BlogPosting schema — 加 publisher / mainEntityOfPage / keywords / articleSection
 const articleURL = canonicalURL ?? new URL(Astro.url.pathname, site.url).href;
 const blogPosting = {
@@ -116,6 +123,38 @@ const structuredData = {
       is:inline
       set:html={JSON.stringify(structuredData)}
     />
+
+    <!-- GA4: 文章閱讀 + 停留時間追蹤 -->
+    <script is:inline define:vars={{ postSlug, postTitle, postTags }}>
+      function _gaConsented() {
+        return localStorage.getItem("ga_consent") === "granted";
+      }
+      function _sendIfConsented(fn) {
+        if (_gaConsented()) { fn(); }
+        else { window.addEventListener("ga:consented", fn, { once: true }); }
+      }
+
+      // read_post：進入文章頁即記錄
+      _sendIfConsented(function () {
+        if (window.gtag) gtag("event", "read_post", {
+          post_slug: postSlug,
+          post_title: postTitle,
+          post_tags: postTags,
+        });
+      });
+
+      // dwell timers：30s / 60s / 120s，Page Visibility API 確認使用者在看
+      [30, 60, 120].forEach(function (sec) {
+        setTimeout(function () {
+          if (document.visibilityState !== "visible") return;
+          _sendIfConsented(function () {
+            if (window.gtag) gtag("event", "dwell_" + sec, {
+              post_slug: postSlug,
+            });
+          });
+        }, sec * 1000);
+      });
+    </script>
   </Fragment>
 
   <slot />
