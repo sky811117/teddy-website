@@ -1,7 +1,7 @@
 ---
 title: "皇普莊園（北區）：屋齡 2 年的新成屋 — 我帶看好幾組買家後的觀察"
 author: 陳景泰
-pubDatetime: 2026-05-22T18:04:00.000+08:00
+pubDatetime: 2026-04-17T09:00:00+08:00
 slug: community-huangpu-manor
 featured: false
 draft: false

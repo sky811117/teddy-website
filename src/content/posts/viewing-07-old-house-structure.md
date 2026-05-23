@@ -1,7 +1,7 @@
 ---
 title: "看屋實戰 07：老屋結構評估 — 5 個警訊 + 結構技師流程（買 40 年透天必看）"
 author: 陳景泰
-pubDatetime: 2026-05-22T10:00:00.000+08:00
+pubDatetime: 2026-02-22T10:00:00+08:00
 slug: viewing-07-old-house-structure
 featured: false
 draft: false

@@ -14,6 +14,7 @@ import BackButton from "./_components/BackButton.astro";
 import BackToTopButton from "./_components/BackToTopButton.astro";
 import AdjacentPostNav from "./_components/AdjacentPostNav.astro";
 import RelatedPosts from "@/components/RelatedPosts.astro";
+import Cusdis from "@/components/Cusdis.astro";
 import config from "@/config";
 
 export async function getStaticPaths() {
@@ -160,6 +161,8 @@ const ogImage = ogImageUrl
     <RelatedPosts {post} />
 
     <AdjacentPostNav {prevPost} {nextPost} />
+
+    <Cusdis title={title} pageId={post.id} pageUrl={Astro.url.href} />
   </main>
   <Footer />
 </PostLayout>

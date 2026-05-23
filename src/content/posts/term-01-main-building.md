@@ -1,7 +1,7 @@
 ---
 title: "房地產名詞 01：主建物 — 你權狀上最該關心的數字"
 author: 陳景泰
-pubDatetime: 2026-05-22T10:00:00.000+08:00
+pubDatetime: 2026-02-19T09:00:00+08:00
 slug: term-01-main-building
 featured: false
 draft: false

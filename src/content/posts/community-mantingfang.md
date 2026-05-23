@@ -1,7 +1,7 @@
 ---
 title: "西屯滿庭芳花園實地觀察：42 年老花園社區，戶數多、單坪實在，但你要看懂這 3 件事"
 author: 陳景泰
-pubDatetime: 2026-05-22T18:12:00.000+08:00
+pubDatetime: 2026-05-08T09:00:00+08:00
 slug: community-mantingfang
 featured: false
 draft: false

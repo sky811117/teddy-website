@@ -1,7 +1,7 @@
 ---
 title: "西區城市經典實地觀察：31 年老市區大樓，五權西路精華帶，老屋的優缺都很真實"
 author: 陳景泰
-pubDatetime: 2026-05-22T18:13:00.000+08:00
+pubDatetime: 2026-05-11T14:00:00+08:00
 slug: community-city-classic
 featured: false
 draft: false

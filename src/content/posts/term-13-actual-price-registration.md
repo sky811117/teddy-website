@@ -1,7 +1,7 @@
 ---
 title: "房地產名詞 13：實價登錄怎麼讀 — 那些數字也會騙人"
 author: 陳景泰
-pubDatetime: 2026-05-22T11:00:00.000+08:00
+pubDatetime: 2026-03-30T20:00:00+08:00
 slug: term-13-actual-price-registration
 featured: false
 draft: false

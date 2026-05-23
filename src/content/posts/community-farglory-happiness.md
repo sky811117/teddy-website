@@ -1,7 +1,7 @@
 ---
 title: "遠雄幸福成（梧棲）值不值得買？住過台中港特區後我才敢說的話"
 author: 陳景泰
-pubDatetime: 2026-05-22T18:09:00.000+08:00
+pubDatetime: 2026-04-30T14:00:00+08:00
 slug: community-farglory-happiness
 featured: false
 draft: false

@@ -1,7 +1,7 @@
 ---
 title: "新青安 7/31 到期，財政部評估中 — 沒承諾延續、也沒承諾新版本"
 author: 陳景泰
-pubDatetime: 2026-05-23T08:00:00.000+08:00
+pubDatetime: 2026-05-15T20:00:00+08:00
 slug: new-housing-loan-expiry-2026
 featured: true
 draft: false

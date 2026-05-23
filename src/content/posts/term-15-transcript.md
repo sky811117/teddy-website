@@ -1,7 +1,7 @@
 ---
 title: "房地產名詞 15：謄本 — 買房前沒調這張等於賭博"
 author: 陳景泰
-pubDatetime: 2026-05-22T11:10:00.000+08:00
+pubDatetime: 2026-04-04T10:00:00+08:00
 slug: term-15-transcript
 featured: false
 draft: false

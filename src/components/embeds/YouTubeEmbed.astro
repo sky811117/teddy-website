@@ -1,0 +1,59 @@
+---
+// YouTubeEmbed.astro
+// Wrapper for @astro-community/astro-embed-youtube
+// Usage in .mdx posts:
+//   import YouTubeEmbed from "@/components/embeds/YouTubeEmbed.astro";
+//   <YouTubeEmbed id="dQw4w9WgXcQ" />
+//   <YouTubeEmbed id="dQw4w9WgXcQ" ratio="16:9" />        // 橫片 (預設)
+//   <YouTubeEmbed id="dQw4w9WgXcQ" ratio="9:16" />        // Shorts 直幅
+//   <YouTubeEmbed id="dQw4w9WgXcQ" title="影片標題" />
+
+import { YouTube } from "@astro-community/astro-embed-youtube";
+
+interface Props {
+  /** YouTube video ID（例：dQw4w9WgXcQ），不是完整 URL */
+  id: string;
+  /** aspect ratio：16:9 (橫片，預設) / 9:16 (Shorts 直幅) */
+  ratio?: "16:9" | "9:16";
+  /** 無障礙 / SEO title */
+  title?: string;
+  /** 縮圖載入失敗時的播放器顯示語系 */
+  poster?: "hqdefault" | "mqdefault" | "sddefault" | "maxresdefault";
+}
+
+const { id, ratio = "16:9", title, poster = "hqdefault" } = Astro.props;
+
+// 簡單驗證：YouTube ID 通常 11 個字元 [A-Za-z0-9_-]
+const isValidId = typeof id === "string" && /^[A-Za-z0-9_-]{6,32}$/.test(id);
+
+// 9:16 容器收窄一點才好看（Shorts 直幅）
+const containerClass =
+  ratio === "9:16"
+    ? "embed-yt embed-yt--vertical mx-auto my-6 w-full max-w-xs"
+    : "embed-yt embed-yt--horizontal mx-auto my-6 w-full max-w-2xl";
+---
+
+{
+  isValidId ? (
+    <div class={containerClass} data-ratio={ratio}>
+      <YouTube id={id} title={title} poster={poster} />
+    </div>
+  ) : (
+    <div class="my-4 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+      [YouTubeEmbed] invalid id: {String(id)}
+    </div>
+  )
+}
+
+<style>
+  /* astro-embed-youtube 內部已處理 16:9，這裡只針對 9:16 強制重排比例 */
+  .embed-yt--vertical :global(lite-youtube) {
+    aspect-ratio: 9 / 16;
+    width: 100%;
+    max-width: 100%;
+  }
+  .embed-yt :global(lite-youtube) {
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+</style>

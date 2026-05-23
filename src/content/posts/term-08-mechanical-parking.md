@@ -1,7 +1,7 @@
 ---
 title: "房地產名詞 08：機械車位 — 便宜一半但你能接受的代價"
 author: 陳景泰
-pubDatetime: 2026-05-22T10:35:00.000+08:00
+pubDatetime: 2026-03-14T10:00:00+08:00
 slug: term-08-mechanical-parking
 featured: false
 draft: false

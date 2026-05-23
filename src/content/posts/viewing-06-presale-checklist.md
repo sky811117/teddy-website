@@ -1,7 +1,7 @@
 ---
 title: "看屋實戰 06：預售屋交屋驗收 25 個 Checkpoint（建商還能幫你修的最後機會）"
 author: 陳景泰
-pubDatetime: 2026-05-22T09:50:00.000+08:00
+pubDatetime: 2026-02-17T09:00:00+08:00
 slug: viewing-06-presale-checklist
 featured: false
 draft: false

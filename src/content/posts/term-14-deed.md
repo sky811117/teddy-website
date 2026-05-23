@@ -1,7 +1,7 @@
 ---
 title: "房地產名詞 14：權狀 — 你家的身分證，但實體不如你想的重要"
 author: 陳景泰
-pubDatetime: 2026-05-22T11:05:00.000+08:00
+pubDatetime: 2026-04-01T20:00:00+08:00
 slug: term-14-deed
 featured: false
 draft: false

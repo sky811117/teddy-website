@@ -1,7 +1,7 @@
 ---
 title: "房地產名詞 02：附屬建物 — 陽台、雨遮、屋簷的灰色地帶"
 author: 陳景泰
-pubDatetime: 2026-05-22T10:05:00.000+08:00
+pubDatetime: 2026-02-24T20:00:00+08:00
 slug: term-02-accessory-building
 featured: false
 draft: false

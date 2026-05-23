@@ -1,7 +1,7 @@
 ---
 title: "梧棲勝興豐境：屋齡 1 年的港特區新成屋 — 真的值得買嗎"
 author: 陳景泰
-pubDatetime: 2026-05-22T18:08:00.000+08:00
+pubDatetime: 2026-04-28T14:00:00+08:00
 slug: community-shengxing-fengjing
 featured: false
 draft: false

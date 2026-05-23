@@ -1,0 +1,78 @@
+---
+/**
+ * Cusdis 留言系統 component
+ *
+ * 為什麼選 Cusdis：景泰主要讀者是房仲買賣方客戶（非工程師），
+ * Giscus 需要 GitHub 帳號會擋掉 99% 客戶。Cusdis 訪客可匿名留言、
+ * 後台可審核，較適合面對一般客戶的部落格。
+ *
+ * 環境變數（在 Cloudflare Pages → Settings → Env Vars 設定）：
+ *   PUBLIC_CUSDIS_APP_ID  ← 註冊 cusdis.com 後拿到的 App ID
+ *   PUBLIC_CUSDIS_HOST    ← 預設 https://cusdis.com，自架可改
+ *
+ * Graceful：APP_ID 未設定時整個 component 不渲染，不會出現破圖或錯誤。
+ */
+type Props = {
+  title: string;
+  pageId: string;
+  pageUrl: string;
+};
+
+const { title, pageId, pageUrl } = Astro.props;
+
+const APP_ID = import.meta.env.PUBLIC_CUSDIS_APP_ID;
+const HOST = import.meta.env.PUBLIC_CUSDIS_HOST ?? "https://cusdis.com";
+---
+
+{
+  APP_ID && (
+    <section class="mt-12 mb-8" aria-label="留言區">
+      <h2 class="mb-4 text-lg font-semibold">留言</h2>
+      <div
+        id="cusdis_thread"
+        data-host={HOST}
+        data-app-id={APP_ID}
+        data-page-id={pageId}
+        data-page-url={pageUrl}
+        data-page-title={title}
+        data-theme="light"
+      />
+      <script is:inline src={`${HOST}/js/cusdis.es.js`} async />
+
+      <script is:inline>
+        (function () {
+          // 把 Cusdis iframe 主題同步到 astro-paper 的 data-theme
+          // astro-paper 透過 document.documentElement[data-theme="light"|"dark"] 切換
+          const root = document.documentElement;
+          const thread = document.getElementById("cusdis_thread");
+          if (!thread) return;
+
+          function getTheme() {
+            return root.getAttribute("data-theme") === "dark" ? "dark" : "light";
+          }
+
+          function applyTheme() {
+            const theme = getTheme();
+            thread.setAttribute("data-theme", theme);
+            // 已載入後改用官方 setTheme API 動態切換 iframe 內主題
+            if (window.CUSDIS && typeof window.CUSDIS.setTheme === "function") {
+              window.CUSDIS.setTheme(theme);
+            }
+          }
+
+          applyTheme();
+
+          // 觀察 <html data-theme> 變動同步給 Cusdis
+          const observer = new MutationObserver(applyTheme);
+          observer.observe(root, {
+            attributes: true,
+            attributeFilter: ["data-theme"],
+          });
+
+          // View Transitions 之後 thread DOM 會被換掉，重跑一次
+          document.addEventListener("astro:after-swap", applyTheme);
+        })();
+      </script>
+    </section>
+  )
+}

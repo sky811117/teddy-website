@@ -1,7 +1,7 @@
 ---
 title: "梧棲聯悅臻：合泰建經成交第一名的新成屋，到底紅在哪裡"
 author: 陳景泰
-pubDatetime: 2026-05-22T18:07:00.000+08:00
+pubDatetime: 2026-04-24T20:00:00+08:00
 slug: community-lianyue-zhen
 featured: false
 draft: false

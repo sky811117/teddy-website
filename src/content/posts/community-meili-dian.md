@@ -1,7 +1,7 @@
 ---
 title: "美麗殿（北區）：31 年老社區的真相 — 我看過好幾戶後的 honest 評估"
 author: 陳景泰
-pubDatetime: 2026-05-22T18:03:00.000+08:00
+pubDatetime: 2026-04-15T09:00:00+08:00
 slug: community-meili-dian
 featured: false
 draft: false

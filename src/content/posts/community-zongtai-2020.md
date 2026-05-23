@@ -1,7 +1,7 @@
 ---
 title: "總太 2020 屋齡 5 年了還值得買?北屯中古近新真實評價"
 author: 陳景泰
-pubDatetime: 2026-05-22T18:02:00.000+08:00
+pubDatetime: 2026-04-13T09:00:00+08:00
 slug: community-zongtai-2020
 featured: false
 draft: false

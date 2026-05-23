@@ -1,7 +1,7 @@
 ---
 title: "房地產名詞 07：平面車位 — 為什麼大家搶著要、台中市區開到 200 萬"
 author: 陳景泰
-pubDatetime: 2026-05-22T10:30:00.000+08:00
+pubDatetime: 2026-03-12T09:00:00+08:00
 slug: term-07-flat-parking
 featured: false
 draft: false

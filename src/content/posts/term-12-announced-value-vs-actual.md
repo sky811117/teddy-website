@@ -1,7 +1,7 @@
 ---
 title: "房地產名詞 12：公告現值 vs 實際成交 — 為什麼差 3-5 倍"
 author: 陳景泰
-pubDatetime: 2026-05-22T10:55:00.000+08:00
+pubDatetime: 2026-03-25T14:00:00+08:00
 slug: term-12-announced-value-vs-actual
 featured: false
 draft: false

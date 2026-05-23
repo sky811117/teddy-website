@@ -1,7 +1,7 @@
 ---
 title: "房地產名詞 05：屋簷 — 透天厝最容易被當作賣點的虛坪"
 author: 陳景泰
-pubDatetime: 2026-05-22T10:20:00.000+08:00
+pubDatetime: 2026-03-06T14:00:00+08:00
 slug: term-05-eaves
 featured: false
 draft: false

@@ -1,7 +1,7 @@
 ---
 title: "房地產名詞 11：房屋稅單怎麼讀 — 那些數字跟市價毫無關係"
 author: 陳景泰
-pubDatetime: 2026-05-22T10:50:00.000+08:00
+pubDatetime: 2026-03-23T09:00:00+08:00
 slug: term-11-house-tax-bill
 featured: false
 draft: false

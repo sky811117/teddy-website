@@ -1,7 +1,7 @@
 ---
 title: "春福興波好住嗎?太平新成屋的真心話評論"
 author: 陳景泰
-pubDatetime: 2026-05-22T18:01:00.000+08:00
+pubDatetime: 2026-04-09T14:00:00+08:00
 slug: community-chunfu-xingbo
 featured: false
 draft: false

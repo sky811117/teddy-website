@@ -1,7 +1,7 @@
 ---
 title: "房地產名詞 03：公設 — 你買了卻不能進去的那塊地"
 author: 陳景泰
-pubDatetime: 2026-05-22T10:10:00.000+08:00
+pubDatetime: 2026-02-26T20:00:00+08:00
 slug: term-03-public-facilities
 featured: false
 draft: false

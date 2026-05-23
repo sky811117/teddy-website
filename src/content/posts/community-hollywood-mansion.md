@@ -1,7 +1,7 @@
 ---
 title: "西區好萊塢大廈實地觀察：42 年老市區大樓，近中華夜市、第六市場，老屋優缺一次說清楚"
 author: 陳景泰
-pubDatetime: 2026-05-22T18:14:00.000+08:00
+pubDatetime: 2026-05-13T20:00:00+08:00
 slug: community-hollywood-mansion
 featured: false
 draft: false

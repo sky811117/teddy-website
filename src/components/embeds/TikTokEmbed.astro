@@ -1,0 +1,100 @@
+---
+// TikTokEmbed.astro
+// TikTok 官方公開 embed iframe（不需 API token）
+// 端點：https://www.tiktok.com/embed/v2/{videoId}
+// 注意：被嵌的影片必須是公開帳號的公開影片，私人/已刪會顯示空白
+//
+// Usage in .mdx posts:
+//   import TikTokEmbed from "@/components/embeds/TikTokEmbed.astro";
+//   <TikTokEmbed videoId="7234567890123456789" />
+//   <TikTokEmbed url="https://www.tiktok.com/@user/video/7234567890123456789" />
+
+interface Props {
+  /** TikTok video ID（純數字 ID）*/
+  videoId?: string;
+  /** 或直接給完整 URL（會自動 parse videoId）*/
+  url?: string;
+  /** aspect ratio — TT 預設 9:16，不太建議改 */
+  ratio?: "9:16" | "1:1";
+  /** 顯示音樂資訊 / caption（TT embed 預設都有） */
+  hideMusic?: boolean;
+}
+
+const {
+  videoId: rawVideoId,
+  url,
+  ratio = "9:16",
+  hideMusic = false,
+} = Astro.props;
+
+let videoId = rawVideoId ?? "";
+if (url && !rawVideoId) {
+  // match /@user/video/{id}/ 或 /v/{id}
+  const m = url.match(/tiktok\.com\/(?:@[^/]+\/video|v)\/(\d+)/);
+  if (m) videoId = m[1];
+}
+
+// TikTok video ID 是 18-19 位純數字
+const isValid = /^\d{15,25}$/.test(videoId);
+
+// TikTok embed v2 端點
+// query string: music_info=0 隱藏音樂列、description=0 隱藏描述
+const queryParts: string[] = [];
+if (hideMusic) {
+  queryParts.push("music_info=0");
+  queryParts.push("description=0");
+}
+const queryString = queryParts.length ? `?${queryParts.join("&")}` : "";
+
+const embedUrl = isValid
+  ? `https://www.tiktok.com/embed/v2/${videoId}${queryString}`
+  : "";
+
+const containerClass = {
+  "9:16": "max-w-xs",
+  "1:1": "max-w-md",
+}[ratio];
+---
+
+{
+  isValid ? (
+    <div
+      class={`embed-tt mx-auto my-6 w-full ${containerClass}`}
+      data-ratio={ratio}
+    >
+      <iframe
+        src={embedUrl}
+        loading="lazy"
+        allow="encrypted-media; picture-in-picture; web-share"
+        allowfullscreen
+        title={`TikTok video ${videoId}`}
+      />
+    </div>
+  ) : (
+    <div class="my-4 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+      [TikTokEmbed] invalid videoId / url: {String(url ?? rawVideoId)}
+    </div>
+  )
+}
+
+<style>
+  .embed-tt {
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+  .embed-tt iframe {
+    display: block;
+    width: 100%;
+    border: 0;
+    background: #000;
+  }
+  /* 9:16 — TT 預設直幅，iframe 高度需 ~720px 才完整顯示音樂列 */
+  .embed-tt[data-ratio="9:16"] iframe {
+    aspect-ratio: 9 / 16;
+    min-height: 720px;
+  }
+  .embed-tt[data-ratio="1:1"] iframe {
+    aspect-ratio: 1 / 1;
+    min-height: 600px;
+  }
+</style>

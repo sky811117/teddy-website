@@ -1,7 +1,7 @@
 ---
 title: "佳茂世界之心社區深度報導 — 西屯文心路三段，17 年屋齡 546 戶大社區，誰適合住"
 author: 陳景泰
-pubDatetime: 2026-05-22T09:30:00.000+08:00
+pubDatetime: 2026-02-09T14:00:00+08:00
 slug: community-16-shijie-zhixin
 featured: true
 draft: false

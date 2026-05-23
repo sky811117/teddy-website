@@ -1,7 +1,7 @@
 ---
 title: "看屋實戰 08：採光通風判斷 — 看屋當天 10 分鐘搞定（這比格局更影響你住起來爽不爽）"
 author: 陳景泰
-pubDatetime: 2026-05-22T10:10:00.000+08:00
+pubDatetime: 2026-03-02T14:00:00+08:00
 slug: viewing-08-daylight-ventilation
 featured: false
 draft: false

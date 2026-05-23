@@ -1,0 +1,112 @@
+---
+// InstagramEmbed.astro
+// IG 官方公開 embed iframe（不需 API token、不需 OAuth）
+// 端點：https://www.instagram.com/p/{shortcode}/embed/
+//      https://www.instagram.com/reel/{shortcode}/embed/
+//      https://www.instagram.com/tv/{shortcode}/embed/
+// 注意：被嵌的 post 必須是公開帳號的公開貼文，私人帳號或已刪除的會顯示空白
+//
+// Usage in .mdx posts:
+//   import InstagramEmbed from "@/components/embeds/InstagramEmbed.astro";
+//   <InstagramEmbed url="https://www.instagram.com/p/C1234ABCD/" />
+//   <InstagramEmbed url="https://www.instagram.com/reel/C1234ABCD/" ratio="9:16" />
+//   <InstagramEmbed shortcode="C1234ABCD" />
+
+interface Props {
+  /** IG 完整 permalink（會自動 parse shortcode + type）*/
+  url?: string;
+  /** 或直接給 shortcode（11 字元、不含完整 URL）*/
+  shortcode?: string;
+  /** post type — 不傳的話會從 url 推斷，否則預設 p */
+  type?: "p" | "reel" | "tv";
+  /** aspect ratio：9:16 (Reels 直幅，預設) / 1:1 (一般貼文) / 4:5 (IG 標準) */
+  ratio?: "9:16" | "1:1" | "4:5";
+  /** 顯示 caption 文字（IG embed 預設有，可關掉縮短） */
+  hideCaption?: boolean;
+}
+
+const {
+  url,
+  shortcode: rawShortcode,
+  type: rawType,
+  ratio = "9:16",
+  hideCaption = false,
+} = Astro.props;
+
+// 從 URL 解析 shortcode + type
+let shortcode = rawShortcode ?? "";
+let type: "p" | "reel" | "tv" = rawType ?? "p";
+
+if (url && !rawShortcode) {
+  // match /p/{code}/、/reel/{code}/、/tv/{code}/
+  const m = url.match(/instagram\.com\/(p|reel|tv|reels)\/([A-Za-z0-9_-]+)/);
+  if (m) {
+    const urlType = m[1] === "reels" ? "reel" : (m[1] as "p" | "reel" | "tv");
+    type = rawType ?? urlType;
+    shortcode = m[2];
+  }
+}
+
+const isValid = /^[A-Za-z0-9_-]{6,20}$/.test(shortcode);
+
+// IG embed 端點：?cr=1 = clean rendering, captioned=0 = 隱藏文字 caption
+const embedUrl = isValid
+  ? `https://www.instagram.com/${type}/${shortcode}/embed/${hideCaption ? "?captioned=0" : ""}`
+  : "";
+
+// 不同 ratio 對應的容器寬度（IG embed 寬度跟 ratio 緊耦合）
+const containerClass = {
+  "9:16": "max-w-xs",
+  "1:1": "max-w-md",
+  "4:5": "max-w-sm",
+}[ratio];
+---
+
+{
+  isValid ? (
+    <div
+      class={`embed-ig mx-auto my-6 w-full ${containerClass}`}
+      data-ratio={ratio}
+    >
+      <iframe
+        src={embedUrl}
+        loading="lazy"
+        allowtransparency
+        allowfullscreen
+        title={`Instagram ${type} ${shortcode}`}
+      />
+    </div>
+  ) : (
+    <div class="my-4 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+      [InstagramEmbed] invalid url / shortcode: {String(url ?? rawShortcode)}
+    </div>
+  )
+}
+
+<style>
+  .embed-ig {
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+  .embed-ig iframe {
+    display: block;
+    width: 100%;
+    border: 0;
+    background: #fff;
+  }
+  /* 9:16 — IG Reel iframe 約需 height 比寬度大 1.78 倍 */
+  .embed-ig[data-ratio="9:16"] iframe {
+    aspect-ratio: 9 / 16;
+    min-height: 540px;
+  }
+  /* 1:1 */
+  .embed-ig[data-ratio="1:1"] iframe {
+    aspect-ratio: 1 / 1;
+    min-height: 480px;
+  }
+  /* 4:5 IG 標準 — 加 80px 給 caption / IG 頂部 bar */
+  .embed-ig[data-ratio="4:5"] iframe {
+    aspect-ratio: 4 / 5;
+    min-height: 600px;
+  }
+</style>

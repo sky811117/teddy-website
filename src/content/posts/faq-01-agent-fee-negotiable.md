@@ -1,7 +1,7 @@
 ---
 title: "FAQ 01：仲介費可以議價嗎？我幫客戶談到的 3 個真實場景"
 author: 陳景泰
-pubDatetime: 2026-05-22T11:00:00.000+08:00
+pubDatetime: 2026-03-27T14:00:00+08:00
 slug: faq-01-agent-fee-negotiable
 featured: false
 draft: true

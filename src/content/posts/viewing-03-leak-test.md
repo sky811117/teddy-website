@@ -1,7 +1,7 @@
 ---
 title: "看屋實戰 03：漏水怎麼測 — 5 個免費招（看屋當天就用得上）"
 author: 陳景泰
-pubDatetime: 2026-05-22T09:20:00.000+08:00
+pubDatetime: 2026-02-06T09:00:00+08:00
 slug: viewing-03-leak-test
 featured: false
 draft: false

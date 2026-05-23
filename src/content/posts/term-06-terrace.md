@@ -1,7 +1,7 @@
 ---
 title: "房地產名詞 06：露台 — 那個讓你以為佔到便宜其實要看清楚的空間"
 author: 陳景泰
-pubDatetime: 2026-05-22T10:25:00.000+08:00
+pubDatetime: 2026-03-10T09:00:00+08:00
 slug: term-06-terrace
 featured: false
 draft: false

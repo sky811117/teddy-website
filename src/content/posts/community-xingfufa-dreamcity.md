@@ -1,7 +1,7 @@
 ---
 title: "興富發夢幻誠（烏日）三年後回頭看 — 高鐵特區值得進嗎"
 author: 陳景泰
-pubDatetime: 2026-05-22T18:10:00.000+08:00
+pubDatetime: 2026-05-03T10:00:00+08:00
 slug: community-xingfufa-dreamcity
 featured: false
 draft: false

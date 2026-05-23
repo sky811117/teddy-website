@@ -1,7 +1,7 @@
 ---
 title: "看屋實戰 05：中古屋翻新成本 — 3 種裝潢級別預算（30 萬 vs 150 萬 vs 400 萬）"
 author: 陳景泰
-pubDatetime: 2026-05-22T09:40:00.000+08:00
+pubDatetime: 2026-02-13T20:00:00+08:00
 slug: viewing-05-renovation-budget
 featured: false
 draft: false

@@ -1,7 +1,7 @@
 ---
 title: "看屋實戰 02：凶宅怎麼查 — 4 種免費管道實測（一個下午搞定）"
 author: 陳景泰
-pubDatetime: 2026-05-22T09:10:00.000+08:00
+pubDatetime: 2026-02-03T20:00:00+08:00
 slug: viewing-02-haunted-house-check
 featured: false
 draft: false

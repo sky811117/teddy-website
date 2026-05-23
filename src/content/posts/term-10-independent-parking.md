@@ -1,7 +1,7 @@
 ---
 title: "房地產名詞 10：獨立產權車位 — 為什麼有些車位可以單獨賣"
 author: 陳景泰
-pubDatetime: 2026-05-22T10:45:00.000+08:00
+pubDatetime: 2026-03-19T20:00:00+08:00
 slug: term-10-independent-parking
 featured: false
 draft: false

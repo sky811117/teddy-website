@@ -1,7 +1,7 @@
 ---
 title: "總太心之所向值得買嗎?北屯新成屋的真實樣貌"
 author: 陳景泰
-pubDatetime: 2026-05-22T18:00:00.000+08:00
+pubDatetime: 2026-04-07T14:00:00+08:00
 slug: community-zongtai-heart
 featured: false
 draft: false

@@ -1,7 +1,7 @@
 ---
 title: "房地產名詞 04：雨遮 — 那塊你買來卻不能站的小遮板"
 author: 陳景泰
-pubDatetime: 2026-05-22T10:15:00.000+08:00
+pubDatetime: 2026-03-04T14:00:00+08:00
 slug: term-04-rain-cover
 featured: false
 draft: false

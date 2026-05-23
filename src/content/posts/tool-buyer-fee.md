@@ -1,7 +1,7 @@
 ---
 title: "工具：買方費用試算 — 一次看清自備款、月付、新青安差距"
 author: 陳景泰
-pubDatetime: 2026-05-23T08:00:00.000+08:00
+pubDatetime: 2026-05-19T09:00:00+08:00
 slug: tool-buyer-fee
 featured: false
 draft: false

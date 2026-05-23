@@ -1,7 +1,7 @@
 ---
 title: "看屋實戰 04：海砂屋 / 輻射屋怎麼判別 — 年代 + 官方查詢 + 自帶檢測"
 author: 陳景泰
-pubDatetime: 2026-05-22T09:30:00.000+08:00
+pubDatetime: 2026-02-11T14:00:00+08:00
 slug: viewing-04-sea-sand-radiation
 featured: false
 draft: false

@@ -1,7 +1,7 @@
 ---
 title: "FAQ 02:自備款要多少?新青安 vs 一般房貸完整拆解"
 author: 陳景泰
-pubDatetime: 2026-05-23T11:00:00.000+08:00
+pubDatetime: 2026-05-21T14:00:00+08:00
 slug: faq-02-down-payment
 featured: false
 draft: true
