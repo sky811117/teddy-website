@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-29T21:00:00.000+08:00
 slug: policy-07-land-value-tax
 featured: false
-draft: true
+draft: false
 ogImage: /covers/transfer-tax.png
 tags:
   - 政策解讀

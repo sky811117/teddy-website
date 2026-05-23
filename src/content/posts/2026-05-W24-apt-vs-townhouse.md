@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-06-24T09:00:00.000+08:00
 slug: 2026-05-W24-apt-vs-townhouse
 featured: false
-draft: true
+draft: false
 ogImage: /covers/community-livingroom.png
 tags:
   - 結構分析

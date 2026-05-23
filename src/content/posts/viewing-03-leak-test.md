@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-22T09:20:00.000+08:00
 slug: viewing-03-leak-test
 featured: false
-draft: true
+draft: false
 ogImage: /covers/undesirable-checklist.png
 tags:
   - 看屋實戰

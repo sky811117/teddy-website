@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-06-03T09:00:00.000+08:00
 slug: 2026-05-W09-cbc-second-home
 featured: false
-draft: true
+draft: false
 ogImage: /covers/new-housing-loan-keys.png
 tags:
   - 政策篇

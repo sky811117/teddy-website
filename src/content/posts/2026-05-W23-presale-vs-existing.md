@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-06-23T09:00:00.000+08:00
 slug: 2026-05-W23-presale-vs-existing
 featured: false
-draft: true
+draft: false
 ogImage: /covers/community-architecture.png
 tags:
   - 結構分析

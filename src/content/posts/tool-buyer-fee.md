@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-23T08:00:00.000+08:00
 slug: tool-buyer-fee
 featured: false
-draft: true
+draft: false
 ogImage: /covers/new-housing-loan-calc.png
 tags:
   - 工具

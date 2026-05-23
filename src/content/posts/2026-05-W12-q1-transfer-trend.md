@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-06-08T09:00:00.000+08:00
 slug: 2026-05-W12-q1-transfer-trend
 featured: false
-draft: true
+draft: false
 ogImage: /covers/transfer-process.png
 tags:
   - 數據篇

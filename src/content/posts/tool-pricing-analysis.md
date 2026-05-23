@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-27T08:00:00.000+08:00
 slug: tool-pricing-analysis
 featured: false
-draft: true
+draft: false
 ogImage: /covers/transfer-calculator.png
 tags:
   - 工具

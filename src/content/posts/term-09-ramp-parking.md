@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-22T10:40:00.000+08:00
 slug: term-09-ramp-parking
 featured: false
-draft: true
+draft: false
 ogImage: /covers/community-architecture.png
 tags:
   - 房地產詞典

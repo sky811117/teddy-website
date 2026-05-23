@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-30T21:00:00.000+08:00
 slug: policy-08-presale-equality-amendment
 featured: false
-draft: true
+draft: false
 ogImage: /covers/disclosure-law.png
 tags:
   - 政策解讀

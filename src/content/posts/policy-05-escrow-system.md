@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-27T21:00:00.000+08:00
 slug: policy-05-escrow-system
 featured: false
-draft: true
+draft: false
 ogImage: /covers/disclosure-stamp.png
 tags:
   - 政策解讀

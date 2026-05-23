@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-26T08:00:00.000+08:00
 slug: tool-viewing-checklist
 featured: false
-draft: true
+draft: false
 ogImage: /covers/viewing-checklist.png
 tags:
   - 工具

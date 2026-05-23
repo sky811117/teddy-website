@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-22T09:10:00.000+08:00
 slug: viewing-02-haunted-house-check
 featured: false
-draft: true
+draft: false
 ogImage: /covers/undesirable-warning.png
 tags:
   - 看屋實戰

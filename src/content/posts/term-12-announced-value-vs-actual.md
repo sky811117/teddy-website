@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-22T10:55:00.000+08:00
 slug: term-12-announced-value-vs-actual
 featured: false
-draft: true
+draft: false
 ogImage: /covers/transfer-calculator.png
 tags:
   - 房地產詞典

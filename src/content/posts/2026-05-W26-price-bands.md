@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-06-26T09:00:00.000+08:00
 slug: 2026-05-W26-price-bands
 featured: false
-draft: true
+draft: false
 ogImage: /covers/transfer-calculator.png
 tags:
   - 結構分析
