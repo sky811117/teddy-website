@@ -6,6 +6,7 @@ import Breadcrumb from "@/components/Breadcrumb.astro";
 import Main from "@/components/Main.astro";
 import Footer from "@/components/Footer.astro";
 import config from "@/config";
+import { safeJsonLd } from "@/utils/safeJsonLd";
 
 const about = await getEntry("pages", "about");
 
@@ -16,14 +17,66 @@ if (!about) {
 }
 
 const { Content } = await render(about);
+
+// ProfilePage schema (Google rich result for personal profile pages)
+const siteOrigin = new URL("/", Astro.site).href;
+const aboutURL = new URL("/about", Astro.site).href;
+
+const profileSchema = {
+  "@context": "https://schema.org",
+  "@type": "ProfilePage",
+  "@id": `${aboutURL}#profilepage`,
+  url: aboutURL,
+  name: about.data.title,
+  description: about.data.description,
+  mainEntity: {
+    "@id": `${siteOrigin}#realestateagent`, // 連到全站 RealEstateAgent (景泰 Person)
+  },
+  breadcrumb: {
+    "@id": `${aboutURL}#breadcrumb`,
+  },
+};
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "@id": `${aboutURL}#breadcrumb`,
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "首頁",
+      item: siteOrigin,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: about.data.title,
+      item: aboutURL,
+    },
+  ],
+};
 ---
 
 <Layout
   title={`${about.data.title} | ${config.site.title}`}
   description={about.data.description}
   ogImage={about.data.ogImage}
-  canonicalURL={about.data.canonicalURL}
+  canonicalURL={about.data.canonicalURL ?? aboutURL}
 >
+  <Fragment slot="head">
+    <script
+      type="application/ld+json"
+      is:inline
+      set:html={safeJsonLd(profileSchema)}
+    />
+    <script
+      type="application/ld+json"
+      is:inline
+      set:html={safeJsonLd(breadcrumbSchema)}
+    />
+  </Fragment>
+
   <Header />
 
   <Breadcrumb />
