@@ -1,0 +1,445 @@
+---
+/**
+ * SellForm — 賣房專用詢價表單
+ *
+ * 路徑：/contact?type=sell 時顯示。
+ * 後端：Cloudflare Pages Functions `/api/contact-sell`
+ *   - 寫入 Notion DB「賣房客戶名單」
+ *   - 推 TG 通知到「泰迪的小聲音」
+ *
+ * 跟 ContactForm 分離的理由：賣房欄位差異大（地址 / 坪數 / 期望總價），
+ * 共用表單會讓買方客戶看到不必要欄位。
+ */
+
+type Props = {
+  title?: string;
+  subtitle?: string;
+};
+
+const {
+  title = "想賣房？留 3 分鐘給景泰",
+  subtitle = "把屋況基本資訊留下、24 小時內回你估價區間。",
+} = Astro.props;
+---
+
+<section
+  class="border-border bg-card my-8 rounded-lg border p-6 sm:p-8"
+  data-sell-form-section
+>
+  <header>
+    <h2 class="text-foreground text-2xl font-bold sm:text-3xl">
+      {title}
+    </h2>
+    <p class="text-muted-foreground mt-2 text-[17px] leading-relaxed">
+      {subtitle}
+    </p>
+  </header>
+
+  <form
+    data-sell-form
+    method="POST"
+    novalidate
+    class="mt-6 space-y-5"
+  >
+    {/* honeypot — bot 才會填、人類看不到 */}
+    <input
+      type="text"
+      name="_gotcha"
+      tabindex="-1"
+      autocomplete="off"
+      class="absolute -left-[9999px] h-0 w-0 opacity-0"
+      aria-hidden="true"
+    />
+    <input type="hidden" name="_loaded_at" data-loaded-at />
+    <input type="hidden" name="來源頁" data-source-page />
+
+    {/* === 姓名 === */}
+    <div>
+      <label
+        for="sf-name"
+        class="text-foreground block text-[17px] font-medium"
+      >
+        姓名 <span class="text-red-500">*</span>
+      </label>
+      <input
+        id="sf-name"
+        type="text"
+        name="姓名"
+        required
+        autocomplete="name"
+        placeholder="陳先生 / 王小姐"
+        class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 mt-2 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2"
+      />
+      <p data-error-for="姓名" class="mt-1 hidden text-[14px] text-red-500"></p>
+    </div>
+
+    {/* === 電話 + Email === */}
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+      <div>
+        <label
+          for="sf-phone"
+          class="text-foreground block text-[17px] font-medium"
+        >
+          電話 <span class="text-red-500">*</span>
+        </label>
+        <input
+          id="sf-phone"
+          type="tel"
+          name="電話"
+          required
+          autocomplete="tel"
+          inputmode="tel"
+          placeholder="0912-345-678"
+          pattern="[\d\s\-\+]{8,}"
+          class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 mt-2 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2"
+        />
+        <p data-error-for="電話" class="mt-1 hidden text-[14px] text-red-500"></p>
+      </div>
+
+      <div>
+        <label
+          for="sf-email"
+          class="text-foreground block text-[17px] font-medium"
+        >
+          Email
+          <span class="text-muted-foreground text-[13px] font-normal">
+            （選填）
+          </span>
+        </label>
+        <input
+          id="sf-email"
+          type="email"
+          name="Email"
+          autocomplete="email"
+          inputmode="email"
+          placeholder="you@example.com"
+          class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 mt-2 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2"
+        />
+        <p data-error-for="Email" class="mt-1 hidden text-[14px] text-red-500"></p>
+      </div>
+    </div>
+
+    {/* === 物件地址 === */}
+    <div>
+      <label
+        for="sf-address"
+        class="text-foreground block text-[17px] font-medium"
+      >
+        物件地址 <span class="text-red-500">*</span>
+        <span class="text-muted-foreground text-[13px] font-normal">
+          （區 + 路段就好、巷弄門牌可暫時不寫）
+        </span>
+      </label>
+      <input
+        id="sf-address"
+        type="text"
+        name="物件地址"
+        required
+        placeholder="北屯區 / 文心路四段 附近"
+        class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 mt-2 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2"
+      />
+      <p data-error-for="物件地址" class="mt-1 hidden text-[14px] text-red-500"></p>
+    </div>
+
+    {/* === 坪數 + 期望總價 === */}
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+      <div>
+        <label
+          for="sf-ping"
+          class="text-foreground block text-[17px] font-medium"
+        >
+          坪數 <span class="text-red-500">*</span>
+          <span class="text-muted-foreground text-[13px] font-normal">
+            （權狀坪數）
+          </span>
+        </label>
+        <input
+          id="sf-ping"
+          type="number"
+          name="坪數"
+          required
+          inputmode="decimal"
+          step="0.01"
+          min="1"
+          max="999"
+          placeholder="32.5"
+          class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 mt-2 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2"
+        />
+        <p data-error-for="坪數" class="mt-1 hidden text-[14px] text-red-500"></p>
+      </div>
+
+      <div>
+        <label
+          for="sf-price"
+          class="text-foreground block text-[17px] font-medium"
+        >
+          期望總價 <span class="text-red-500">*</span>
+          <span class="text-muted-foreground text-[13px] font-normal">
+            （萬元）
+          </span>
+        </label>
+        <input
+          id="sf-price"
+          type="number"
+          name="期望總價(萬)"
+          required
+          inputmode="numeric"
+          step="1"
+          min="1"
+          max="999999"
+          placeholder="1280"
+          class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 mt-2 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2"
+        />
+        <p data-error-for="期望總價(萬)" class="mt-1 hidden text-[14px] text-red-500"></p>
+      </div>
+    </div>
+
+    {/* === 備註 === */}
+    <div>
+      <label
+        for="sf-note"
+        class="text-foreground block text-[17px] font-medium"
+      >
+        備註
+        <span class="text-muted-foreground text-[13px] font-normal">
+          （選填 — 屋齡 / 樓層 / 格局 / 想賣時程 / 現況自住or租客）
+        </span>
+      </label>
+      <textarea
+        id="sf-note"
+        name="備註"
+        rows="4"
+        placeholder="例：屋齡 8 年 / 3房 2衛 / 12 樓 / 目前自住、6 個月內想賣"
+        class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 mt-2 block w-full rounded-md border px-4 py-3 text-[17px] leading-relaxed outline-none focus:ring-2"
+      ></textarea>
+    </div>
+
+    {/* === 送出 === */}
+    <div class="border-border border-t pt-5">
+      <button
+        type="submit"
+        data-submit-btn
+        class="bg-accent text-accent-foreground hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60 w-full rounded-md px-6 py-4 text-[18px] font-medium transition-all sm:w-auto sm:min-w-[200px]"
+      >
+        送出 → 24 小時內回你
+      </button>
+
+      <p
+        data-form-error
+        class="mt-4 hidden text-[15px] text-red-500"
+        role="alert"
+      ></p>
+
+      <p class="text-muted-foreground mt-4 text-[14px] leading-relaxed">
+        資料只進景泰個人 CRM、不會給第三方。
+        如果你急 — LINE
+        <a
+          href="https://line.me/ti/p/sky811117"
+          class="text-accent font-medium hover:underline"
+          target="_blank"
+          rel="noopener"
+        >
+          sky811117
+        </a>
+        或撥
+        <a
+          href="tel:+886920118756"
+          class="text-accent font-medium hover:underline"
+        >
+          0920-118-756
+        </a>
+        最快。
+      </p>
+    </div>
+  </form>
+</section>
+
+<script>
+  function initSellForm() {
+    const formRaw = document.querySelector<HTMLFormElement>("[data-sell-form]");
+    if (!formRaw || formRaw.dataset.initialized === "true") return;
+    formRaw.dataset.initialized = "true";
+    const form: HTMLFormElement = formRaw;
+
+    const submitBtn = form.querySelector<HTMLButtonElement>("[data-submit-btn]");
+    const formError = form.querySelector<HTMLElement>("[data-form-error]");
+    const loadedAtInput = form.querySelector<HTMLInputElement>("[data-loaded-at]");
+    const sourceInput = form.querySelector<HTMLInputElement>("[data-source-page]");
+
+    const loadedAt = Date.now();
+    if (loadedAtInput) loadedAtInput.value = String(loadedAt);
+    if (sourceInput) sourceInput.value = window.location.pathname + window.location.search;
+
+    function showError(field: string, msg: string) {
+      const el = form.querySelector<HTMLElement>(`[data-error-for="${field}"]`);
+      if (el) {
+        el.textContent = msg;
+        el.classList.remove("hidden");
+      }
+    }
+    function clearError(field: string) {
+      const el = form.querySelector<HTMLElement>(`[data-error-for="${field}"]`);
+      if (el) {
+        el.textContent = "";
+        el.classList.add("hidden");
+      }
+    }
+    function showFormError(msg: string) {
+      if (!formError) return;
+      formError.textContent = msg;
+      formError.classList.remove("hidden");
+    }
+    function clearFormError() {
+      if (!formError) return;
+      formError.textContent = "";
+      formError.classList.add("hidden");
+    }
+
+    function getValue(name: string): string {
+      return (
+        form.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+          `[name='${name}']`
+        )?.value || ""
+      ).trim();
+    }
+
+    function validatePhone(): boolean {
+      const phone = getValue("電話");
+      if (!phone) {
+        showError("電話", "電話是必填的");
+        return false;
+      }
+      const phoneClean = phone.replace(/[\s\-+]/g, "");
+      if (!/^\d{8,12}$/.test(phoneClean)) {
+        showError("電話", "電話號碼格式怪怪的、幫我看一下");
+        return false;
+      }
+      clearError("電話");
+      return true;
+    }
+
+    function validateEmail(): boolean {
+      const email = getValue("Email");
+      if (!email) {
+        clearError("Email");
+        return true;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showError("Email", "Email 格式怪怪的、幫我看一下");
+        return false;
+      }
+      clearError("Email");
+      return true;
+    }
+
+    function validateNumber(name: string, min: number, max: number, label: string): boolean {
+      const raw = getValue(name);
+      if (!raw) {
+        showError(name, `${label}是必填的`);
+        return false;
+      }
+      const n = parseFloat(raw);
+      if (isNaN(n) || n < min || n > max) {
+        showError(name, `${label}範圍：${min} ~ ${max}`);
+        return false;
+      }
+      clearError(name);
+      return true;
+    }
+
+    form
+      .querySelector<HTMLInputElement>("[name='姓名']")
+      ?.addEventListener("blur", () => {
+        if (!getValue("姓名")) showError("姓名", "姓名是必填的");
+        else clearError("姓名");
+      });
+    form.querySelector<HTMLInputElement>("[name='電話']")?.addEventListener("blur", validatePhone);
+    form.querySelector<HTMLInputElement>("[name='Email']")?.addEventListener("blur", validateEmail);
+    form
+      .querySelector<HTMLInputElement>("[name='物件地址']")
+      ?.addEventListener("blur", () => {
+        if (!getValue("物件地址")) showError("物件地址", "物件地址是必填的");
+        else clearError("物件地址");
+      });
+
+    function validateAll(): boolean {
+      let ok = true;
+      if (!getValue("姓名")) {
+        showError("姓名", "姓名是必填的");
+        ok = false;
+      } else clearError("姓名");
+      if (!validatePhone()) ok = false;
+      if (!validateEmail()) ok = false;
+      if (!getValue("物件地址")) {
+        showError("物件地址", "物件地址是必填的");
+        ok = false;
+      } else clearError("物件地址");
+      if (!validateNumber("坪數", 1, 999, "坪數")) ok = false;
+      if (!validateNumber("期望總價(萬)", 1, 999999, "期望總價")) ok = false;
+      return ok;
+    }
+
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      clearFormError();
+
+      // 防雙擊 race：button 已 disabled → early return
+      if (submitBtn?.disabled) return;
+
+      // honeypot
+      const honeypot =
+        form.querySelector<HTMLInputElement>("[name='_gotcha']")?.value || "";
+      if (honeypot) {
+        window.location.href = "/thank-you?intent=" + encodeURIComponent("賣房");
+        return;
+      }
+
+      if (Date.now() - loadedAt < 3000) {
+        showFormError("送太快了、確認一下訊息再送");
+        return;
+      }
+
+      if (!validateAll()) {
+        showFormError("有幾個欄位需要補一下");
+        return;
+      }
+
+      const fd = new FormData(form);
+      const payload: Record<string, string> = {};
+      fd.forEach((v, k) => {
+        payload[k] = String(v);
+      });
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "送出中...";
+      }
+
+      try {
+        const res = await fetch("/api/contact-sell", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
+        }
+        window.location.href = "/thank-you?intent=" + encodeURIComponent("賣房");
+      } catch (err) {
+        console.error("Sell form submit failed:", err);
+        showFormError(
+          "送出失敗了、再試一次。或直接 LINE sky811117 / 撥 0920-118-756"
+        );
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "送出 → 24 小時內回你";
+        }
+      }
+    });
+  }
+
+  initSellForm();
+  document.addEventListener("astro:after-swap", initSellForm);
+  document.addEventListener("astro:page-load", initSellForm);
+</script>
