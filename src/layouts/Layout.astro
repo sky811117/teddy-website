@@ -155,7 +155,7 @@ const rssHref = getRelativeLocaleUrl(
             priceRange: "$$$",
           },
           {
-            "@type": "Organization",
+            "@type": "RealEstateAgent",
             "@id": `${site.url}#organization`,
             name: "一品不動產 有巢氏房屋 台中世界之心加盟店",
             alternateName: "有巢氏房屋 世界之心店",
@@ -168,9 +168,36 @@ const rssHref = getRelativeLocaleUrl(
               addressRegion: "Taichung",
               addressCountry: "TW",
             },
+            // 標準營業時間：週一到週日 09:00-21:00 (房仲業典型)
+            openingHoursSpecification: [
+              {
+                "@type": "OpeningHoursSpecification",
+                dayOfWeek: [
+                  "Monday",
+                  "Tuesday",
+                  "Wednesday",
+                  "Thursday",
+                  "Friday",
+                  "Saturday",
+                  "Sunday",
+                ],
+                opens: "09:00",
+                closes: "21:00",
+              },
+            ],
+            areaServed: [
+              { "@type": "City", name: "台中市" },
+              { "@type": "AdministrativeArea", name: "南投縣" },
+              { "@type": "AdministrativeArea", name: "彰化縣" },
+              { "@type": "AdministrativeArea", name: "苗栗縣" },
+            ],
+            employee: {
+              "@id": `${site.url}#realestateagent`,
+            },
             parentOrganization: {
               "@type": "Organization",
               name: "有巢氏房屋",
+              url: "https://www.yungching.com.tw/",
             },
           },
           {

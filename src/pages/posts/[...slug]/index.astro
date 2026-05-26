@@ -93,6 +93,20 @@ if (!ogImageUrl && config.features.dynamicOgImage) {
 const ogImage = ogImageUrl
   ? new URL(ogImageUrl, Astro.url.origin).href
   : undefined;
+
+// 計算文章字數 + 預估閱讀時間
+// 中文：每字 1 char，1 分鐘 ~ 350 字 (一般中文閱讀速度)
+// markdown 語法略去（粗略，純估算）
+const rawBody = (post.body ?? "")
+  .replace(/```[\s\S]*?```/g, "")        // code block
+  .replace(/!\[[^\]]*\]\([^)]*\)/g, "")  // image
+  .replace(/\[[^\]]*\]\([^)]*\)/g, "")   // link
+  .replace(/[#>*_`~|-]/g, "")            // markdown 符號
+  .replace(/\s+/g, "");                  // 空白
+const wordCount = rawBody.length;
+const timeRequiredMin = Math.max(1, Math.round(wordCount / 350));
+// ISO 8601 duration: PT5M
+const timeRequired = `PT${timeRequiredMin}M`;
 ---
 
 <PostLayout
@@ -102,6 +116,9 @@ const ogImage = ogImageUrl
   canonicalURL={canonicalURL}
   pubDatetime={pubDatetime}
   modDatetime={modDatetime}
+  tags={tags}
+  wordCount={wordCount}
+  timeRequired={timeRequired}
 >
   <Header />
 

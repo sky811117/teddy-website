@@ -11,6 +11,8 @@ type Props = {
   pubDatetime?: Date;
   modDatetime?: Date | null;
   tags?: string[];
+  wordCount?: number;
+  timeRequired?: string; // ISO 8601 duration (e.g. PT5M)
 };
 
 const { site } = config;
@@ -23,6 +25,8 @@ const {
   pubDatetime,
   modDatetime,
   tags = [],
+  wordCount,
+  timeRequired,
 } = Astro.props;
 
 // GA4 post tracking props
@@ -64,6 +68,8 @@ const blogPosting = {
   inLanguage: "zh-TW",
   ...(tags.length > 0 && { keywords: tags.join(", ") }),
   articleSection: "房地產",
+  ...(wordCount && { wordCount }),
+  ...(timeRequired && { timeRequired }),
 };
 
 // BreadcrumbList — Home > Posts > 文章標題
