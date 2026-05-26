@@ -325,7 +325,7 @@ const breadcrumbSchema = {
       <!-- 快選（降價 / 新上架） -->
       <div>
         <div class="text-muted-foreground mb-2 text-xs font-medium">⚡ 快選</div>
-        <div class="flex flex-wrap gap-2" data-filter-group="quick">
+        <div class="flex flex-wrap gap-2" data-filter-group="quick" role="group" aria-label="快選篩選">
           <button
             type="button"
             data-filter-value=""
@@ -361,7 +361,7 @@ const breadcrumbSchema = {
       <!-- 區域（按縣市分組） -->
       <div>
         <div class="text-muted-foreground mb-2 text-xs font-medium">📍 區域</div>
-        <div class="space-y-2" data-filter-group="district">
+        <div class="space-y-2" data-filter-group="district" role="group" aria-label="區域篩選">
           <div class="flex flex-wrap gap-2">
             <button
               type="button"
@@ -395,7 +395,7 @@ const breadcrumbSchema = {
       <!-- 類型 -->
       <div>
         <div class="text-muted-foreground mb-2 text-xs font-medium">🏠 類型</div>
-        <div class="flex flex-wrap gap-2" data-filter-group="type">
+        <div class="flex flex-wrap gap-2" data-filter-group="type" role="group" aria-label="物件類型篩選">
           <button
             type="button"
             data-filter-value=""
@@ -420,7 +420,7 @@ const breadcrumbSchema = {
             <div class="text-muted-foreground mb-2 text-xs font-medium">
               🛏️ 房型
             </div>
-            <div class="flex flex-wrap gap-2" data-filter-group="rooms">
+            <div class="flex flex-wrap gap-2" data-filter-group="rooms" role="group" aria-label="房型篩選">
               <button
                 type="button"
                 data-filter-value=""
@@ -909,6 +909,7 @@ const breadcrumbSchema = {
       group.querySelectorAll(".filter-chip").forEach(b => {
         const match = (b.dataset.filterValue || "") === value;
         b.classList.toggle("filter-chip-active", match);
+        b.setAttribute("aria-pressed", match ? "true" : "false");
       });
     }
 
@@ -923,6 +924,7 @@ const breadcrumbSchema = {
             (b.dataset.quickMin || "") === (state[minKey] || "") &&
             (b.dataset.quickMax || "") === (state[maxKey] || "");
           b.classList.toggle("filter-chip-active", match);
+          b.setAttribute("aria-pressed", match ? "true" : "false");
         });
       });
     }
