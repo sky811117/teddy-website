@@ -35,11 +35,20 @@ const { page, tagName } = Astro.props;
 
 const locale = Astro.currentLocale ?? config.site.lang;
 const t = useTranslations(locale);
+
+const prevURL = page.url.prev
+  ? new URL(page.url.prev, Astro.site).href
+  : undefined;
+const nextURL = page.url.next
+  ? new URL(page.url.next, Astro.site).href
+  : undefined;
 ---
 
 <Layout
   title={`${t.pages.tagTitle}: ${tagName} | ${config.site.title}`}
   description={`#${tagName} 主題下景泰房市筆記文章列表 — 共 ${page.data.length} 篇 (第 ${page.currentPage}/${page.lastPage} 頁)。`}
+  prevURL={prevURL}
+  nextURL={nextURL}
 >
   <Header />
 

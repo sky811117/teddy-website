@@ -21,11 +21,22 @@ const { page } = Astro.props;
 
 const locale = Astro.currentLocale ?? config.site.lang;
 const t = useTranslations(locale);
+
+// rel="prev" / "next" 給 SEO 認得分頁關係
+const postsBase = new URL("/posts", Astro.site).href;
+const prevURL = page.url.prev
+  ? new URL(page.url.prev, Astro.site).href
+  : undefined;
+const nextURL = page.url.next
+  ? new URL(page.url.next, Astro.site).href
+  : undefined;
 ---
 
 <Layout
   title={`${t.pages.postsTitle} | ${config.site.title}`}
   description={`景泰房市筆記 — 100+ 篇台中買房賣房實戰文章。新青安、議價、嫌惡設施、政策、社區評估、區域指南。(第 ${page.currentPage}/${page.lastPage} 頁)`}
+  prevURL={prevURL}
+  nextURL={nextURL}
 >
   <Header />
 

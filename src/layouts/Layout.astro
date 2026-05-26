@@ -14,6 +14,9 @@ type Props = {
   description?: string;
   ogImage?: string;
   canonicalURL?: string;
+  noindex?: boolean;
+  prevURL?: string;
+  nextURL?: string;
 };
 
 const { site } = config;
@@ -23,6 +26,9 @@ const {
   description = site.description,
   ogImage = resolveDefaultOgImagePath(config),
   canonicalURL = new URL(Astro.url.pathname, Astro.site).href,
+  noindex = false,
+  prevURL,
+  nextURL,
 } = Astro.props;
 
 const socialImageURL = new URL(ogImage, Astro.site ?? Astro.url);
@@ -46,6 +52,9 @@ const rssHref = getRelativeLocaleUrl(
     <link rel="apple-touch-icon" href={getAssetPath("favicon.svg")} />
     <link rel="manifest" href={getAssetPath("manifest.json")} />
     <link rel="canonical" href={canonicalURL} />
+    {prevURL && <link rel="prev" href={prevURL} />}
+    {nextURL && <link rel="next" href={nextURL} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
     <meta name="generator" content={Astro.generator} />
     <meta name="format-detection" content="telephone=no" />
     <meta name="apple-mobile-web-app-capable" content="yes" />

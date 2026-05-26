@@ -31,6 +31,7 @@ const t = useTranslations(locale);
   title={`${t.pages.searchTitle} | ${config.site.title}`}
   description="搜尋景泰房市筆記 — 100+ 篇關於台中買房賣房、新青安、議價、嫌惡設施、稅務、政策的實戰文章。"
   canonicalURL={new URL("/search", Astro.site).href}
+  noindex={true}
 >
   <Header />
 
