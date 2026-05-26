@@ -61,6 +61,7 @@ const tipData = isIntent(intent) ? intentTips[intent] : intentTips["一般諮詢
   title={`收到了 | ${config.site.title}`}
   description="景泰已收到你的訊息，30 秒到 30 分鐘內會回覆。"
   canonicalURL={new URL("/thank-you", Astro.site).href}
+  noindex={true}
 >
   <Header />
 
