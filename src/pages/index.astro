@@ -5,6 +5,7 @@ import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import { getSortedPosts } from "@/utils/getSortedPosts";
+import { safeJsonLd } from "@/utils/safeJsonLd";
 import config from "@/config";
 
 const locale = Astro.currentLocale ?? config.site.lang;
@@ -64,6 +65,48 @@ const personalAccounts = [
   },
 ];
 
+// 首頁 WebPage + SiteNavigationElement schema
+const siteOrigin = new URL("/", Astro.site).href;
+const homePageSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "@id": `${siteOrigin}#webpage`,
+  url: siteOrigin,
+  name: config.site.title,
+  description: config.site.description,
+  isPartOf: { "@id": `${siteOrigin}#website` },
+  about: { "@id": `${siteOrigin}#realestateagent` },
+  inLanguage: "zh-TW",
+  significantLink: [
+    `${siteOrigin}properties`,
+    `${siteOrigin}posts`,
+    `${siteOrigin}faq`,
+    `${siteOrigin}services`,
+    `${siteOrigin}tools`,
+    `${siteOrigin}areas`,
+    `${siteOrigin}contact`,
+    `${siteOrigin}about`,
+  ],
+};
+
+// SiteNavigationElement — 給 Google 認得主導航結構，可能進 sitelinks
+const navSchema = {
+  "@context": "https://schema.org",
+  "@type": "SiteNavigationElement",
+  name: "主導航",
+  hasPart: [
+    { "@type": "WebPage", name: "在售物件", url: `${siteOrigin}properties` },
+    { "@type": "WebPage", name: "房市筆記", url: `${siteOrigin}posts` },
+    { "@type": "WebPage", name: "客戶工具", url: `${siteOrigin}tools` },
+    { "@type": "WebPage", name: "常見問題", url: `${siteOrigin}faq` },
+    { "@type": "WebPage", name: "台中各區", url: `${siteOrigin}areas` },
+    { "@type": "WebPage", name: "服務項目", url: `${siteOrigin}services` },
+    { "@type": "WebPage", name: "找景泰", url: `${siteOrigin}media` },
+    { "@type": "WebPage", name: "關於景泰", url: `${siteOrigin}about` },
+    { "@type": "WebPage", name: "聯絡景泰", url: `${siteOrigin}contact` },
+  ],
+};
+
 const bigKanBanAccounts = [
   {
     platform: "Instagram",
@@ -97,6 +140,19 @@ const bigKanBanAccounts = [
 ---
 
 <Layout>
+  <Fragment slot="head">
+    <script
+      type="application/ld+json"
+      is:inline
+      set:html={safeJsonLd(homePageSchema)}
+    />
+    <script
+      type="application/ld+json"
+      is:inline
+      set:html={safeJsonLd(navSchema)}
+    />
+  </Fragment>
+
   <Header />
 
   <main id="main-content" class="app-layout">
