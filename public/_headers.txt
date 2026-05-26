@@ -1,0 +1,75 @@
+# Cloudflare Pages _headers — 靜態資源快取策略
+#
+# 設計原則：
+# - 圖片 / 字型 / built CSS-JS：immutable (1 年)、Cloudflare hash 在 filename 已天然 cache-busting
+# - HTML：no-cache (每次 revalidate、新 deploy 立刻生效)
+# - OG 圖 / 物件照：1 個月 (頻繁更新但不會 hash bust)
+# - robots / sitemap：1 天
+#
+# 注意：本檔 build 後會由 scripts/postbuild-headers.mjs rename 為 dist/_headers
+# (Vite/Rollup 對 public/_headers 無副檔名會試 parse JS 報錯，故用 .txt 規避)
+
+# OG images (1 個月)
+/og/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+
+# 物件照 (1 個月)
+/properties/*/*.jpg
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+
+/properties/*/*.png
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+
+/properties/*/*.webp
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+
+# 圖卡 / 社群素材 (1 個月)
+/cards/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+
+/communities/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+
+/covers/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+
+/photos/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+
+# Logo / favicon (1 個月)
+/logos/*
+  Cache-Control: public, max-age=2592000
+
+/favicon.svg
+  Cache-Control: public, max-age=2592000
+
+/favicon.ico
+  Cache-Control: public, max-age=2592000
+
+/default-og.jpg
+  Cache-Control: public, max-age=2592000
+
+# Astro built assets (hashed filename → 1 年 immutable)
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Pagefind 搜尋 index (1 天，新文章 deploy 後客戶端需更新)
+/pagefind/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=3600
+
+# sitemap / robots (1 天)
+/sitemap-*.xml
+  Cache-Control: public, max-age=86400
+
+/robots.txt
+  Cache-Control: public, max-age=86400
+
+/rss.xml
+  Cache-Control: public, max-age=3600
+
+# Security headers — 全站
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
