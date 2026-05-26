@@ -22,8 +22,36 @@ export default defineConfig({
   integrations: [
     mdx(),
     sitemap({
-      filter: page =>
-        config.features?.showArchives !== false || !page.endsWith("/archives/"),
+      filter: page => {
+        // 排除 thank-you / search (noindex 頁不該進 sitemap)
+        if (page.includes("/thank-you")) return false;
+        if (page.includes("/search")) return false;
+        if (page.endsWith("/manifest.json/")) return false;
+        if (page.endsWith("/robots.txt/")) return false;
+        if (page.endsWith("/rss.xml/")) return false;
+        if (config.features?.showArchives === false && page.endsWith("/archives/")) return false;
+        return true;
+      },
+      // 物件頁、文章頁優先級高、列表頁次之
+      serialize(item) {
+        if (item.url.includes("/properties/") && !item.url.endsWith("/properties/")) {
+          item.priority = 0.9; // 物件詳細頁
+          item.changefreq = "weekly" as never;
+        } else if (item.url.includes("/posts/") && !item.url.endsWith("/posts/")) {
+          item.priority = 0.8; // 文章
+          item.changefreq = "monthly" as never;
+        } else if (item.url === config.site.url || item.url === `${config.site.url}/`) {
+          item.priority = 1.0; // 首頁
+          item.changefreq = "daily" as never;
+        } else if (item.url.includes("/properties") || item.url.includes("/posts") || item.url.includes("/areas")) {
+          item.priority = 0.8; // 列表頁
+          item.changefreq = "daily" as never;
+        } else {
+          item.priority = 0.6;
+          item.changefreq = "weekly" as never;
+        }
+        return item;
+      },
     }),
   ],
   i18n: {
