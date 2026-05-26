@@ -5,6 +5,7 @@ import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Main from "@/components/Main.astro";
 import config from "@/config";
+import { safeJsonLd } from "@/utils/safeJsonLd";
 
 // 只取 active 的，沒被屋主撤回 / 售出 / 暫停的不顯示
 const allProperties = await getCollection(
@@ -304,12 +305,12 @@ const breadcrumbSchema = {
     <script
       type="application/ld+json"
       is:inline
-      set:html={JSON.stringify(itemListSchema)}
+      set:html={safeJsonLd(itemListSchema)}
     />
     <script
       type="application/ld+json"
       is:inline
-      set:html={JSON.stringify(breadcrumbSchema)}
+      set:html={safeJsonLd(breadcrumbSchema)}
     />
   </Fragment>
 

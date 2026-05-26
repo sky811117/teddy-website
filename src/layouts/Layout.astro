@@ -3,6 +3,7 @@ import { Font } from "astro:assets";
 import { getRelativeLocaleUrl } from "astro:i18n";
 import { resolveDefaultOgImagePath } from "@/utils/resolveDefaultOgImagePath";
 import { getAssetPath } from "@/utils/withBase";
+import { safeJsonLd } from "@/utils/safeJsonLd";
 import FloatingCTA from "@/components/FloatingCTA.astro";
 import Analytics from "@/components/Analytics.astro";
 import config from "@/config";
@@ -88,7 +89,7 @@ const rssHref = getRelativeLocaleUrl(
     <script
       type="application/ld+json"
       is:inline
-      set:html={JSON.stringify({
+      set:html={safeJsonLd({
         "@context": "https://schema.org",
         "@graph": [
           {

@@ -6,6 +6,7 @@ import Footer from "@/components/Footer.astro";
 import Main from "@/components/Main.astro";
 import config from "@/config";
 import { areas, type Area } from "@/data/areas";
+import { safeJsonLd } from "@/utils/safeJsonLd";
 
 export async function getStaticPaths() {
   return areas.map(area => ({
@@ -136,17 +137,17 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
     <script
       type="application/ld+json"
       is:inline
-      set:html={JSON.stringify(breadcrumbSchema)}
+      set:html={safeJsonLd(breadcrumbSchema)}
     />
     <script
       type="application/ld+json"
       is:inline
-      set:html={JSON.stringify(areaServedSchema)}
+      set:html={safeJsonLd(areaServedSchema)}
     />
     <script
       type="application/ld+json"
       is:inline
-      set:html={JSON.stringify(faqSchema)}
+      set:html={safeJsonLd(faqSchema)}
     />
   </Fragment>
 

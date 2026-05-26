@@ -4,6 +4,7 @@ import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Main from "@/components/Main.astro";
 import config from "@/config";
+import { safeJsonLd } from "@/utils/safeJsonLd";
 
 // 30 題長尾 FAQ — 每題對應 1 個 Google 搜尋關鍵字
 // 對應分流 D 的深度文（之後文章寫好可加 link）
@@ -177,7 +178,7 @@ const faqSchema = {
     <script
       type="application/ld+json"
       is:inline
-      set:html={JSON.stringify(faqSchema)}
+      set:html={safeJsonLd(faqSchema)}
     />
   </Fragment>
 

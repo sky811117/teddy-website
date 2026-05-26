@@ -5,6 +5,7 @@ import Footer from "@/components/Footer.astro";
 import Main from "@/components/Main.astro";
 import config from "@/config";
 import { areas } from "@/data/areas";
+import { safeJsonLd } from "@/utils/safeJsonLd";
 
 // JSON-LD: 7 區總覽頁的 ItemList
 const itemListSchema = {
@@ -28,7 +29,7 @@ const itemListSchema = {
     <script
       type="application/ld+json"
       is:inline
-      set:html={JSON.stringify(itemListSchema)}
+      set:html={safeJsonLd(itemListSchema)}
     />
   </Fragment>
 

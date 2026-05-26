@@ -1,6 +1,7 @@
 ---
 import Layout from "./Layout.astro";
 import config from "@/config";
+import { safeJsonLd } from "@/utils/safeJsonLd";
 
 type Props = {
   title?: string;
@@ -121,7 +122,7 @@ const structuredData = {
     <script
       type="application/ld+json"
       is:inline
-      set:html={JSON.stringify(structuredData)}
+      set:html={safeJsonLd(structuredData)}
     />
 
     <!-- GA4: 文章閱讀 + 停留時間追蹤 -->

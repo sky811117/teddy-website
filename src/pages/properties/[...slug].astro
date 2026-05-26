@@ -5,6 +5,8 @@ import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import ContactForm from "@/components/ContactForm.astro";
 import config from "@/config";
+import { safeJsonLd } from "@/utils/safeJsonLd";
+import { resolveDefaultOgImagePath } from "@/utils/resolveDefaultOgImagePath";
 
 // 縣市對照（與 index.astro 同步）
 const TAICHUNG = new Set([
@@ -75,11 +77,35 @@ const sameCounty = properties
 const canonicalURL = new URL(`/properties/${property.id}`, Astro.site).href;
 
 // description: 優先 frontmatter description，沒有則組合基本資訊
+// smartTruncate: 在 max chars 內找最後一個中文句末標點 (。！？) 切斷，避免斷句中間
+function smartTruncate(s: string, max: number): string {
+  if (s.length <= max) return s;
+  const head = s.slice(0, max);
+  // 嘗試在 max 範圍找最後一個句末標點
+  const cutPoints = [...head.matchAll(/[。！？\?\!\.]/g)];
+  if (cutPoints.length > 0) {
+    const last = cutPoints[cutPoints.length - 1];
+    // 句末標點位置 >= max*0.6 才採用，否則太短
+    if (last.index !== undefined && last.index >= max * 0.6) {
+      return head.slice(0, last.index + 1);
+    }
+  }
+  // fallback: 找逗號 / 全形空白 / 換行
+  const softCut = [...head.matchAll(/[，、,;\s]/g)];
+  if (softCut.length > 0) {
+    const last = softCut[softCut.length - 1];
+    if (last.index !== undefined && last.index >= max * 0.7) {
+      return head.slice(0, last.index) + "…";
+    }
+  }
+  return head + "…";
+}
+
 const seoDescription = property.data.description
-  ? property.data.description.slice(0, 160)
+  ? smartTruncate(property.data.description, 160)
   : `${property.data.district} ${property.data.layout} ${property.data.area}坪，總價 ${formatPrice(property.data.totalPrice)}。台中房仲景泰實價整理。`;
 
-// ogImage: 用物件首圖（絕對路徑）
+// ogImage: 用物件首圖（絕對路徑），fallback 到全站 default OG
 const coverImageSrc = property.data.coverImage
   ? typeof property.data.coverImage === "string"
     ? property.data.coverImage
@@ -87,7 +113,7 @@ const coverImageSrc = property.data.coverImage
   : property.data.photos[0] ?? null;
 const ogImagePath = coverImageSrc
   ? new URL(coverImageSrc, Astro.site).href
-  : undefined;
+  : new URL(resolveDefaultOgImagePath(config), Astro.site).href;
 
 // 從 layout 抓房數（給 numberOfRooms）
 const roomsMatch = property.data.layout?.match(/(\d+)\s*房/);
@@ -96,8 +122,14 @@ const numberOfRooms = roomsMatch ? parseInt(roomsMatch[1], 10) : undefined;
 // 把「萬」轉成「元」(Google offers 用 TWD 標準幣別單位)
 const priceInNTD = property.data.totalPrice * 10000;
 
+// priceValidUntil: 預設廣告 90 天後 (跟物件刊登週期對齊)
+const priceValidUntil = new Date(
+  Date.now() + 90 * 24 * 60 * 60 * 1000
+).toISOString().slice(0, 10);
+
 // 物件類型 → schema.org type 對應
 function getSchemaType(p: typeof property): string {
+  // 對中文 .toLowerCase() 無作用，但對混合英文標題仍有用
   const t = (p.data.title + " " + (p.data.layout || "")).toLowerCase();
   if (t.includes("透天") || t.includes("別墅")) return "SingleFamilyResidence";
   if (t.includes("公寓")) return "Apartment";
@@ -111,17 +143,26 @@ function getSchemaType(p: typeof property): string {
 }
 const schemaType = getSchemaType(property);
 
+// 證號前綴防雙重 (frontmatter 若已含 "經紀人 X" / "營業員 X" 就不加)
+function withPrefix(prefix: string, value: string): string {
+  return value.startsWith(prefix) ? value : `${prefix}${value}`;
+}
+
+// 圖片 array: 至多 6 張避免 JSON-LD payload 過大
+const MAX_SCHEMA_IMAGES = 6;
+const schemaImages = property.data.photos.length > 0
+  ? property.data.photos
+      .slice(0, MAX_SCHEMA_IMAGES)
+      .map(p => new URL(p, Astro.site).href)
+  : [ogImagePath];
+
 // 主 schema: RealEstateListing 風格（用 schema.org 標準 Place + Product/Offer 雙標）
 const propertySchema = {
   "@context": "https://schema.org",
   "@type": "Product",
   name: property.data.title,
   description: seoDescription,
-  image: property.data.photos.length > 0
-    ? property.data.photos.map(p => new URL(p, Astro.site).href)
-    : ogImagePath
-    ? [ogImagePath]
-    : undefined,
+  image: schemaImages,
   category: "Real Estate",
   brand: {
     "@type": "Organization",
@@ -136,14 +177,15 @@ const propertySchema = {
         ? "https://schema.org/InStock"
         : "https://schema.org/OutOfStock",
     url: canonicalURL,
+    priceValidUntil,
     seller: {
       "@type": "RealEstateAgent",
       name: "陳景泰",
       telephone: "+886-920-118-756",
       email: "a0920118756@gmail.com",
       hasCredential: [
-        `經紀人 ${property.data.brokerLicense}`,
-        `營業員 ${property.data.agentLicense}`,
+        withPrefix("經紀人 ", property.data.brokerLicense),
+        withPrefix("營業員 ", property.data.agentLicense),
       ],
     },
   },
@@ -175,6 +217,7 @@ const propertySchema = {
 };
 
 // 第二層：Place schema 標地址（給 Google Maps + Local Search）
+// addressRegion 只在 county 為已知縣市時輸出 (避免出現 "其他" 怪詞)
 const placeSchema = {
   "@context": "https://schema.org",
   "@type": schemaType,
@@ -182,7 +225,7 @@ const placeSchema = {
   address: {
     "@type": "PostalAddress",
     addressLocality: property.data.district,
-    addressRegion: thisCounty,
+    ...(thisCounty !== "其他" ? { addressRegion: thisCounty } : {}),
     addressCountry: "TW",
     ...(property.data.streetArea ? { streetAddress: property.data.streetArea } : {}),
   },
@@ -196,11 +239,7 @@ const placeSchema = {
       }
     : {}),
   ...(numberOfRooms ? { numberOfRooms } : {}),
-  ...(property.data.age !== undefined
-    ? {
-        yearBuilt: new Date().getFullYear() - property.data.age,
-      }
-    : {}),
+  // yearBuilt 故意不輸出 — age 是 build-time 快照、跨年會 stale；schema 沒設 yearBuilt 比 stale 好
 };
 
 // Breadcrumb
@@ -240,17 +279,17 @@ const breadcrumbSchema = {
     <script
       type="application/ld+json"
       is:inline
-      set:html={JSON.stringify(propertySchema)}
+      set:html={safeJsonLd(propertySchema)}
     />
     <script
       type="application/ld+json"
       is:inline
-      set:html={JSON.stringify(placeSchema)}
+      set:html={safeJsonLd(placeSchema)}
     />
     <script
       type="application/ld+json"
       is:inline
-      set:html={JSON.stringify(breadcrumbSchema)}
+      set:html={safeJsonLd(breadcrumbSchema)}
     />
   </Fragment>
 
