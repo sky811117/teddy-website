@@ -133,21 +133,101 @@ const bigKanBanAccounts = [
         讓你的物件多平台曝光、看屋資料整齊、決策有 AI 算過。
       </p>
 
+      {/* 快速搜尋 bar — 跳 /properties 帶 query string */}
       <div
-        class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4"
+        class="border-border bg-card/60 mx-auto mt-8 max-w-3xl rounded-lg border p-4 text-left sm:p-5"
       >
-        <a
-          href="https://line.me/ti/p/sky811117"
-          class="bg-accent text-accent-foreground rounded-lg px-6 py-3 font-medium no-underline shadow hover:shadow-lg"
-        >
-          🏠 我要找房（LINE 諮詢）
-        </a>
-        <a
-          href="https://line.me/ti/p/sky811117"
-          class="border-accent text-accent rounded-lg border-2 px-6 py-3 font-medium no-underline hover:bg-accent hover:text-accent-foreground"
-        >
-          💰 我要賣房（LINE 諮詢）
-        </a>
+        <div class="text-muted-foreground mb-3 text-xs font-medium">
+          🔍 快速找物件
+        </div>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-stretch sm:gap-3">
+          <label class="sr-only" for="hero-district">區域</label>
+          <select
+            id="hero-district"
+            data-hero-district
+            class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2 sm:flex-1"
+          >
+            <option value="">區域（不限）</option>
+            <option value="北屯區">北屯區</option>
+            <option value="西屯區">西屯區</option>
+            <option value="南屯區">南屯區</option>
+            <option value="北區">北區</option>
+            <option value="南區">南區</option>
+            <option value="東區">東區</option>
+            <option value="西區">西區</option>
+            <option value="中區">中區</option>
+            <option value="太平區">太平區</option>
+            <option value="大里區">大里區</option>
+            <option value="霧峰區">霧峰區</option>
+          </select>
+
+          <label class="sr-only" for="hero-price-max">總價上限</label>
+          <input
+            id="hero-price-max"
+            type="number"
+            inputmode="numeric"
+            min="0"
+            step="100"
+            placeholder="總價上限（萬）"
+            data-hero-price-max
+            class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2 sm:flex-1"
+          />
+
+          <label class="sr-only" for="hero-rooms">房型</label>
+          <select
+            id="hero-rooms"
+            data-hero-rooms
+            class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2 sm:flex-1"
+          >
+            <option value="">房型（不限）</option>
+            <option value="1房">1 房</option>
+            <option value="2房">2 房</option>
+            <option value="3房">3 房</option>
+            <option value="4房">4 房</option>
+            <option value="5房+">5 房以上</option>
+          </select>
+
+          <button
+            type="button"
+            data-hero-search
+            class="bg-accent text-accent-foreground rounded-md px-6 py-3 font-medium shadow hover:shadow-lg sm:w-auto sm:shrink-0"
+          >
+            🔍 搜尋
+          </button>
+        </div>
+      </div>
+
+      <div
+        class="mt-6 flex flex-col items-center justify-center gap-6 sm:flex-row sm:items-start sm:gap-6"
+      >
+        <div class="flex flex-col items-center gap-2">
+          <a
+            href="https://line.me/ti/p/sky811117"
+            class="bg-accent text-accent-foreground rounded-lg px-6 py-3 font-medium no-underline shadow hover:shadow-lg"
+          >
+            🏠 我要找房（LINE 諮詢）
+          </a>
+          <a
+            href="/contact?type=buy"
+            class="text-muted-foreground hover:text-accent text-[14px] underline-offset-2 hover:underline"
+          >
+            或填表單留資料 →
+          </a>
+        </div>
+        <div class="flex flex-col items-center gap-2">
+          <a
+            href="/contact?type=sell"
+            class="border-accent text-accent rounded-lg border-2 px-6 py-3 font-medium no-underline hover:bg-accent hover:text-accent-foreground"
+          >
+            💰 我要賣房（填委託表單）
+          </a>
+          <a
+            href="https://line.me/ti/p/sky811117"
+            class="text-muted-foreground hover:text-accent text-[14px] underline-offset-2 hover:underline"
+          >
+            或 LINE 先聊聊 →
+          </a>
+        </div>
       </div>
 
       {/* 信任 badge — 有巢氏品牌 */}
@@ -409,6 +489,11 @@ const bigKanBanAccounts = [
                 <a
                   href={`/properties/${p.id}`}
                   class="block no-underline"
+                  data-track="property"
+                  data-property-id={p.id}
+                  data-property-title={p.data.title}
+                  data-property-price={p.data.totalPrice}
+                  data-property-district={p.data.district}
                 >
                   <div class="bg-muted text-muted-foreground flex aspect-[4/3] items-center justify-center">
                     {p.data.coverImage ? (
@@ -622,3 +707,33 @@ const bigKanBanAccounts = [
 
   <Footer />
 </Layout>
+
+<script is:inline>
+  (function () {
+    const btn = document.querySelector("[data-hero-search]");
+    if (!btn) return;
+    function go() {
+      const district =
+        document.querySelector("[data-hero-district]")?.value || "";
+      const priceMax =
+        document.querySelector("[data-hero-price-max]")?.value || "";
+      const rooms = document.querySelector("[data-hero-rooms]")?.value || "";
+      const params = new URLSearchParams();
+      if (district) params.set("district", district);
+      if (priceMax) params.set("priceMax", priceMax);
+      if (rooms) params.set("rooms", rooms);
+      const qs = params.toString();
+      location.href = "/properties" + (qs ? "?" + qs : "");
+    }
+    btn.addEventListener("click", go);
+    // Enter 鍵在 input 內也觸發
+    document
+      .querySelector("[data-hero-price-max]")
+      ?.addEventListener("keydown", e => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          go();
+        }
+      });
+  })();
+</script>

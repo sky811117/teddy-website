@@ -543,7 +543,15 @@ const breadcrumbSchema = {
             <ul class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
               {sameCounty.map(p => (
                 <li class="border-border bg-card overflow-hidden rounded-lg border transition-shadow hover:shadow-md">
-                  <a href={`/properties/${p.id}`} class="block no-underline">
+                  <a
+                    href={`/properties/${p.id}`}
+                    class="block no-underline"
+                    data-track="property"
+                    data-property-id={p.id}
+                    data-property-title={p.data.title}
+                    data-property-price={p.data.totalPrice}
+                    data-property-district={p.data.district}
+                  >
                     {p.data.coverImage ? (
                       <div class="bg-muted aspect-[4/3] w-full overflow-hidden">
                         <img
