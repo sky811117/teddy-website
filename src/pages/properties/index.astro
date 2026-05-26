@@ -710,16 +710,44 @@ const breadcrumbSchema = {
       )
     }
 
-    <p
-      class="text-muted-foreground hidden py-12 text-center"
+    <div
+      class="border-border bg-card hidden rounded-lg border py-10 px-6 text-center sm:py-12 sm:px-8"
       data-filter-empty
     >
-      沒有符合條件的物件，試試放寬篩選或
-      <a href="https://line.me/ti/p/sky811117" class="text-accent underline">
-        LINE 私訊
-      </a>
-      告訴我需求。
-    </p>
+      <div class="text-5xl">🔍</div>
+      <h3 class="text-foreground mt-4 text-xl font-bold sm:text-2xl">
+        沒有完全符合條件的物件
+      </h3>
+      <p class="text-muted-foreground mt-3 text-[15px] leading-relaxed">
+        試試放寬條件 — 我手上常有未公開物件、跟你的條件可能對得上。
+      </p>
+
+      <ul class="text-foreground mx-auto mt-5 max-w-md space-y-2 text-left text-[15px] leading-relaxed">
+        <li>✓ 試試 <strong>清空所有條件</strong> 看完整 list</li>
+        <li>✓ 把<strong>總價上限</strong>加 100-200 萬看更多選擇</li>
+        <li>✓ 試試<strong>相鄰行政區</strong>（例 北屯 → 太平 / 西屯 → 北區）</li>
+      </ul>
+
+      <div class="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+        <button
+          type="button"
+          data-filter-reset
+          class="border-accent text-accent rounded-md border-2 px-5 py-2.5 text-[15px] font-medium no-underline hover:bg-accent hover:text-accent-foreground transition-colors"
+        >
+          🧹 清空篩選
+        </button>
+        <a
+          href="https://line.me/ti/p/sky811117"
+          class="bg-accent text-accent-foreground rounded-md px-5 py-2.5 text-[15px] font-medium no-underline hover:opacity-90"
+        >
+          💬 LINE 告訴我需求
+        </a>
+      </div>
+
+      <p class="text-muted-foreground mt-5 text-[13px]">
+        景泰會聯絡有相似物件的同事、24 小時內回覆。
+      </p>
+    </div>
 
     <div class="border-border mt-12 rounded-lg border border-dashed p-6 text-center">
       <p class="text-muted-foreground mb-3 text-sm">
@@ -953,6 +981,23 @@ const breadcrumbSchema = {
       inp.addEventListener("input", () => {
         state[key] = inp.value.trim();
         apply();
+      });
+    });
+
+    // 清空篩選按鈕（空狀態 UI 內）
+    document.querySelectorAll("[data-filter-reset]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        ALL_KEYS.forEach(k => {
+          state[k] = "";
+        });
+        // 同步 UI：所有 chip group reset 到 "" (全部)
+        groups.forEach(g => setChipActive(g, ""));
+        syncQuickRangeActive();
+        syncRangeInputs();
+        apply();
+        // scroll 回篩選列頂部讓用戶看到 reset 結果
+        const filterBar = document.querySelector("[data-filter-group='district']");
+        if (filterBar) filterBar.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     });
 
