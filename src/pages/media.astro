@@ -4,6 +4,7 @@ import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Main from "@/components/Main.astro";
 import config from "@/config";
+import { safeJsonLd } from "@/utils/safeJsonLd";
 
 const personalAccounts = [
   {
@@ -102,7 +103,7 @@ const accounts = [
     <script
       type="application/ld+json"
       is:inline
-      set:html={JSON.stringify({
+      set:html={safeJsonLd({
         "@context": "https://schema.org",
         "@type": "CollectionPage",
         "@id": `${new URL("/media", Astro.site).href}#collectionpage`,
@@ -114,7 +115,7 @@ const accounts = [
     <script
       type="application/ld+json"
       is:inline
-      set:html={JSON.stringify({
+      set:html={safeJsonLd({
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",
         itemListElement: [
