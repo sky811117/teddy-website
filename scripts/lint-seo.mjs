@@ -9,7 +9,10 @@
  * 4. pubDatetime 必填 (posts)
  * 5. ogImage 有設或 dynamic OG 開啟 (warn only)
  * 6. 重複 title (警告)
- * 7. description 開頭不應為標點 / 中文「。」結尾
+ * 7. description 開頭不應為標點
+ * 8. description / title 含廣告誇大形容詞 (警告)
+ * 9. description 重複 (兩篇 description 內容完全相同、警告)
+ * 10. tags 含「2026」這類年份標籤 (警告) — 之後 dated 會顯示老舊
  *
  * usage:
  *   node scripts/lint-seo.mjs
@@ -122,7 +125,17 @@ function main() {
     const errors = [];
     const warnings = [];
     const titleMap = new Map();
+    const descMap = new Map();
     let scanned = 0;
+
+    // 廣告誇大形容詞 (跟 audit-properties 共用清單)
+    const EXAGGERATED_TERMS = [
+      "絕版", "最強", "全市場最低", "全市最低",
+      "保證漲", "必漲", "穩賺",
+      "頂級豪宅", "完美無缺",
+      "千載難逢", "百年難得", "空前絕後", "前無古人",
+      "無敵", "無可挑剔",
+    ];
 
     for (const f of files) {
       const text = await readFile(new URL(f, POSTS_DIR), "utf-8");
@@ -172,6 +185,26 @@ function main() {
         const firstChar = meta.description[0];
         if (/[、。，！？!?,\.;:]/.test(firstChar)) {
           warnings.push({ file: f, msg: `description 開頭是標點 "${firstChar}"` });
+        }
+        // description 重複檢測
+        if (descMap.has(meta.description)) {
+          warnings.push({
+            file: f,
+            msg: `description 重複：與 ${descMap.get(meta.description)} 相同`,
+          });
+        } else {
+          descMap.set(meta.description, f);
+        }
+      }
+
+      // 8. 廣告誇大形容詞 (title + description 都檢)
+      const combinedText = `${meta.title || ""} ${meta.description || ""}`;
+      for (const term of EXAGGERATED_TERMS) {
+        if (combinedText.includes(term)) {
+          warnings.push({
+            file: f,
+            msg: `廣告誇大: 含「${term}」(房仲業違反公平交易法 21 條風險)`,
+          });
         }
       }
 
