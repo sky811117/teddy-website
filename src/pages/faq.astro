@@ -173,6 +173,7 @@ const faqSchema = {
 <Layout
   title={`常見問題 30 題 | ${config.site.title}`}
   description="台中買房 / 賣房 30 個最常問的問題 — 仲介費議價、新青安、凶宅查詢、議價、嫌惡設施、稅務、車位產權，景泰一次回答完。"
+  canonicalURL={new URL("/faq", Astro.site).href}
 >
   <Fragment slot="head">
     <script

@@ -4,20 +4,32 @@ import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Main from "@/components/Main.astro";
 import ContactForm from "@/components/ContactForm.astro";
+import SellForm from "@/components/SellForm.astro";
 import config from "@/config";
+
+// 讀 ?type= 決定要呈現「賣房表單」還是「通用詢價表單」
+const type = Astro.url.searchParams.get("type") ?? "";
+const isSell = type === "sell";
+
+const pageTitle = isSell ? "賣房諮詢" : "聯絡景泰";
+const pageDesc = isSell
+  ? "留下屋況基本資訊 + 期望總價、24 小時內回你估價區間。也可以 LINE / 電話直接問。"
+  : "LINE / 電話 / 表單三條路、看你方便。30 秒到 30 分鐘內回。";
+
+const metaTitle = `${pageTitle} | ${config.site.title}`;
+const metaDesc = isSell
+  ? "台中房仲陳景泰 — 賣房委託諮詢。留下屋況 + 期望總價，24 小時內回估價區間。"
+  : "台中房仲陳景泰 — 找房、賣房、換屋、投資諮詢。LINE / 電話 / 表單三條路、看你方便。30 分鐘內回覆。";
+
+// canonicalURL 不帶 query string (?type=sell / ?type=buy 都指向同一頁，避免重複 indexing)
+const canonicalURL = new URL("/contact", Astro.site).href;
 ---
 
-<Layout
-  title={`聯絡景泰 | ${config.site.title}`}
-  description="台中房仲陳景泰 — 找房、賣房、換屋、投資諮詢。LINE / 電話 / 表單三條路、看你方便。30 分鐘內回覆。"
->
+<Layout title={metaTitle} description={metaDesc} canonicalURL={canonicalURL}>
   <Header />
 
-  <Main
-    pageTitle="聯絡景泰"
-    pageDesc="LINE / 電話 / 表單三條路、看你方便。30 秒到 30 分鐘內回。"
-  >
-    {/* 三個主要聯絡方式 cards */}
+  <Main pageTitle={pageTitle} pageDesc={pageDesc}>
+    {/* 三個主要聯絡方式 cards — 不分 type 都保留（賣房客戶也可能想直接 LINE） */}
     <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
       <a
         href="https://line.me/ti/p/sky811117"
@@ -29,7 +41,7 @@ import config from "@/config";
         <h3 class="text-foreground mt-3 text-[18px] font-bold">LINE</h3>
         <p class="text-muted-foreground mt-1 text-[15px]">sky811117</p>
         <p class="text-muted-foreground mt-3 text-[14px] leading-relaxed">
-          最快、習慣 LINE 的話直接這條
+          {isSell ? "想先聊聊再填表？這條最快" : "最快、習慣 LINE 的話直接這條"}
         </p>
       </a>
 
@@ -64,29 +76,53 @@ import config from "@/config";
     <div class="mt-12 mb-8 flex items-center gap-4">
       <div class="border-border flex-1 border-t"></div>
       <p class="text-muted-foreground text-[15px]">
-        或者、不想加 LINE / 不想電話？用下面表單
+        {
+          isSell
+            ? "或者、用下面表單給我屋況資料、24 小時內回估價"
+            : "或者、不想加 LINE / 不想電話？用下面表單"
+        }
       </p>
       <div class="border-border flex-1 border-t"></div>
     </div>
 
-    <ContactForm
-      title="留你的聯絡方式、我回你"
-      subtitle="長輩、企業戶、不愛即時通的人 — 用這條最舒服。Email 收件、30 分鐘內回。"
-    />
+    {
+      isSell ? (
+        <SellForm
+          title="想賣房？留 3 分鐘給景泰"
+          subtitle="把屋況基本資訊 + 期望總價留下、24 小時內回你估價區間。資料只進景泰個人 CRM、不會給第三方。"
+        />
+      ) : (
+        <ContactForm
+          title="留你的聯絡方式、我回你"
+          subtitle="長輩、企業戶、不愛即時通的人 — 用這條最舒服。Email 收件、30 分鐘內回。"
+        />
+      )
+    }
 
     {/* 補充說明 */}
     <section
       class="border-border mt-10 rounded-lg border border-dashed p-6 sm:p-8"
     >
-      <h3 class="text-foreground text-[18px] font-bold">關於回覆時間</h3>
-      <ul
-        class="text-muted-foreground mt-3 space-y-2 text-[15px] leading-relaxed"
-      >
-        <li>・週一到週日 09:00 - 22:00：30 秒到 30 分鐘內回</li>
-        <li>・22:00 後 - 翌日 09:00：隔天早上一起回</li>
-        <li>・帶看 / 開會中：訊息看到會排進當日回覆順序</li>
-        <li>・所有訊息都會回，沒有「回不上」的</li>
-      </ul>
+      <h3 class="text-foreground text-[18px] font-bold">
+        {isSell ? "關於估價時程" : "關於回覆時間"}
+      </h3>
+      {
+        isSell ? (
+          <ul class="text-muted-foreground mt-3 space-y-2 text-[15px] leading-relaxed">
+            <li>・收到表單後 24 小時內，給你估價區間（不是單一價、是合理區間）</li>
+            <li>・估價依據：實價登錄成交 + 同社區在售 + 屋況加減項</li>
+            <li>・想看完整估價報告：景泰會約一次 30 分鐘的免費通話 / 視訊</li>
+            <li>・委託 vs 自售都可以聊、沒委託壓力</li>
+          </ul>
+        ) : (
+          <ul class="text-muted-foreground mt-3 space-y-2 text-[15px] leading-relaxed">
+            <li>・週一到週日 09:00 - 22:00：30 秒到 30 分鐘內回</li>
+            <li>・22:00 後 - 翌日 09:00：隔天早上一起回</li>
+            <li>・帶看 / 開會中：訊息看到會排進當日回覆順序</li>
+            <li>・所有訊息都會回，沒有「回不上」的</li>
+          </ul>
+        )
+      }
     </section>
   </Main>
 

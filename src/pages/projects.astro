@@ -7,8 +7,9 @@ import config from "@/config";
 ---
 
 <Layout
-  title={`整理中 | ${config.site.title}`}
-  description="作品集軟性版本整理中。"
+  title={`作品集 | ${config.site.title}`}
+  description="景泰用 Claude Code 做過的房仲業專案 — 客戶管理 / 物件追蹤 / 三平台上架自動化 / 個人網站。AI 加持的房仲工作站。"
+  canonicalURL={new URL("/projects", Astro.site).href}
 >
   <Header />
 

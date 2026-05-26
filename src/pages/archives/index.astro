@@ -27,7 +27,11 @@ const filteredPosts = posts.filter(postFilter);
 const monthFormatter = new Intl.DateTimeFormat(locale, { month: "long" });
 ---
 
-<Layout title={`${t.pages.archivesTitle} | ${config.site.title}`}>
+<Layout
+  title={`${t.pages.archivesTitle} | ${config.site.title}`}
+  description="景泰房市筆記時間線歸檔 — 按年月排序的所有文章，涵蓋台中房市政策、社區評估、新青安、議價、稅務等 100+ 篇。"
+  canonicalURL={new URL("/archives", Astro.site).href}
+>
   <Header />
 
   <Breadcrumb />

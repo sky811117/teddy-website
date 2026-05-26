@@ -11,17 +11,57 @@ const locale = Astro.currentLocale ?? config.site.lang;
 const t = useTranslations(locale);
 ---
 
-<Layout title={`${t.notFound.title} | ${config.site.title}`}>
+<Layout
+  title={`${t.notFound.title} | ${config.site.title}`}
+  description="找不到頁面 — 試試首頁、在售物件、房市筆記、客戶工具，或直接 LINE 景泰問。"
+>
   <Header />
 
   <main
     id="main-content"
     class="app-layout flex flex-1 items-center justify-center"
   >
-    <div class="mb-14 flex flex-col items-center justify-center">
+    <div class="mb-14 flex flex-col items-center justify-center max-w-md">
       <h1 class="text-accent text-9xl font-bold">404</h1>
       <span aria-hidden="true"> ¯\_(ツ)_/¯ </span>
       <p class="mt-4 text-2xl sm:text-3xl">{t.notFound.message}</p>
+
+      <p class="text-muted-foreground mt-6 text-center text-[15px] leading-relaxed">
+        這頁不存在了 — 可能被搬走或拼錯網址。試試這些：
+      </p>
+      <ul class="mt-4 grid grid-cols-2 gap-3 w-full">
+        <li>
+          <a href="/" class="border-border bg-card hover:border-accent block rounded-lg border p-3 text-center text-sm no-underline transition-colors">
+            🏠 首頁
+          </a>
+        </li>
+        <li>
+          <a href="/properties" class="border-border bg-card hover:border-accent block rounded-lg border p-3 text-center text-sm no-underline transition-colors">
+            🏘️ 在售物件
+          </a>
+        </li>
+        <li>
+          <a href="/posts" class="border-border bg-card hover:border-accent block rounded-lg border p-3 text-center text-sm no-underline transition-colors">
+            📝 房市筆記
+          </a>
+        </li>
+        <li>
+          <a href="/search" class="border-border bg-card hover:border-accent block rounded-lg border p-3 text-center text-sm no-underline transition-colors">
+            🔍 搜尋
+          </a>
+        </li>
+        <li>
+          <a href="/faq" class="border-border bg-card hover:border-accent block rounded-lg border p-3 text-center text-sm no-underline transition-colors">
+            ❓ 常見問題
+          </a>
+        </li>
+        <li>
+          <a href="https://line.me/ti/p/sky811117" class="bg-accent text-accent-foreground hover:opacity-90 block rounded-lg p-3 text-center text-sm no-underline">
+            💬 LINE 景泰
+          </a>
+        </li>
+      </ul>
+
       <LinkButton
         href={getRelativeLocaleUrl(locale, "")}
         class="my-6 text-lg underline decoration-dashed underline-offset-8"

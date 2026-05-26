@@ -23,7 +23,10 @@ const locale = Astro.currentLocale ?? config.site.lang;
 const t = useTranslations(locale);
 ---
 
-<Layout title={`${t.pages.postsTitle} | ${config.site.title}`}>
+<Layout
+  title={`${t.pages.postsTitle} | ${config.site.title}`}
+  description={`景泰房市筆記 — 100+ 篇台中買房賣房實戰文章。新青安、議價、嫌惡設施、政策、社區評估、區域指南。(第 ${page.currentPage}/${page.lastPage} 頁)`}
+>
   <Header />
 
   <Breadcrumb />

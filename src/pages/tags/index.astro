@@ -17,7 +17,11 @@ const locale = Astro.currentLocale ?? config.site.lang;
 const t = useTranslations(locale);
 ---
 
-<Layout title={`${t.pages.tagsTitle} | ${config.site.title}`}>
+<Layout
+  title={`${t.pages.tagsTitle} | ${config.site.title}`}
+  description={`景泰房市筆記所有標籤 — ${tags.length} 個主題（新青安 / 議價 / 嫌惡設施 / 七期 / 北屯 / 政策 ...），按主題找你要的文章。`}
+  canonicalURL={new URL("/tags", Astro.site).href}
+>
   <Header />
 
   <Breadcrumb />
