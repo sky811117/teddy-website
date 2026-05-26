@@ -43,8 +43,13 @@ const rssHref = getRelativeLocaleUrl(
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href={getAssetPath("favicon.svg")} />
     <link rel="icon" href={getAssetPath("favicon.ico")} />
+    <link rel="apple-touch-icon" href={getAssetPath("favicon.svg")} />
+    <link rel="manifest" href={getAssetPath("manifest.json")} />
     <link rel="canonical" href={canonicalURL} />
     <meta name="generator" content={Astro.generator} />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="景泰房仲" />
 
     <!-- Preconnect / DNS-prefetch 第三方資源（GA / fonts） -->
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
