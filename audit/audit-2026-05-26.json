@@ -1,0 +1,303 @@
+{
+  "scanned": 338,
+  "findings": [
+    {
+      "file": "0049919.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "第一",
+      "snippet": "、網銀國際…至少四座頂級商辦群誕生、台中第一間凱悅集團旗下奢華飯店品牌「安達\"\r\n "
+    },
+    {
+      "file": "0068892.md",
+      "severity": "MEDIUM",
+      "rule": "預售敏感詞",
+      "field": "body",
+      "matched": "預售",
+      "snippet": "房套房設計 三代同堂首選\"\r\n  - \"預售完工電梯透天 前院停車 太陽能加值\"\r\n"
+    },
+    {
+      "file": "0071851.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "第一",
+      "snippet": "\"1.水湳經貿園區核心｜中央公園＋綠美圖第一排\"\r\n  - \"位處文商段精華地段，正"
+    },
+    {
+      "file": "0071851.md",
+      "severity": "MEDIUM",
+      "rule": "預售敏感詞",
+      "field": "body",
+      "matched": "預售",
+      "snippet": "5.屋主賠售釋出｜價格可談、錯過不再\r\n預售屋稀有釋出，含車位總價 3,798 萬，"
+    },
+    {
+      "file": "0071855.md",
+      "severity": "MEDIUM",
+      "rule": "預售敏感詞",
+      "field": "body",
+      "matched": "預售",
+      "snippet": " \"北屯機捷特區熱門地段\"\r\n  - \"預售轉約稀有釋出\"\r\n  - \"近捷運綠線、"
+    },
+    {
+      "file": "0133794.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "獨家",
+      "snippet": "於正塗城商圈道路用地\"\r\n  - \"專任獨家買賣好單純\"\r\n  - \"大里塗城市場旁"
+    },
+    {
+      "file": "0146662.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "唯一",
+      "snippet": "title: \"東海藝術街住三建地｜全區唯一釋出\"\r\ndistrict: \"龍井區\""
+    },
+    {
+      "file": "0238997.md",
+      "severity": "MEDIUM",
+      "rule": "預售敏感詞",
+      "field": "body",
+      "matched": "即將完工",
+      "snippet": "地段：正臨60米環中路，緊鄰洲際棒球場、即將完工的漢神百貨與太子商場。擁雙巨蛋百億商圈，"
+    },
+    {
+      "file": "0240900.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "第一",
+      "snippet": "，發展可期\"\r\n  - \"正40米環河路第一排，地形方正、面寬佳，稀有釋出具高度規劃"
+    },
+    {
+      "file": "0240901.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "第一",
+      "snippet": "動區域增值\"\r\n  - \"正40米環河路第一排，臨路條件佳，稀有釋出\"\r\n  - \""
+    },
+    {
+      "file": "0387227.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "獨家",
+      "snippet": "---\r\ntitle: \"獨家專任大竹商圈旁|金雞母大面寬8套房透天\""
+    },
+    {
+      "file": "0387247.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "獨家",
+      "snippet": "---\r\ntitle: \"獨家透天｜霧峰交流道｜臨12米路｜車庫停車\""
+    },
+    {
+      "file": "0387250.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "唯一",
+      "snippet": "ghlights:\r\n  - \"🔥市場唯一｜露臺套房 💰 低總價入手 🚀 稀有"
+    },
+    {
+      "file": "1004610.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "無敵",
+      "snippet": "械車位\"\r\n  - \"室內空間寬闊，高樓無敵視野，有茶水間，男女廁所，附烘手機，間間"
+    },
+    {
+      "file": "1070673.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "無敵",
+      "snippet": "械車位\"\r\n  - \"室內空間寬闊，高樓無敵視野，有茶水間，男女廁所，附烘手機，間間"
+    },
+    {
+      "file": "1139943.md",
+      "severity": "HIGH",
+      "rule": "隱私: 手機號碼",
+      "field": "body",
+      "matched": "0963-170192",
+      "snippet": "ghts:\r\n  - \"經紀人：柯百聲 0963-170192\"\r\n  - \"A戶1房/2廳/1衛/1"
+    },
+    {
+      "file": "1139966.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "唯一",
+      "snippet": "s:\r\n  - \"南區西區南屯交界，周遭唯一釋出，震後透天\"\r\n  - \"屋主長期持"
+    },
+    {
+      "file": "1153122.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "第一",
+      "snippet": "ghlights:\r\n  - \"麗園公園第一排，享受無限視野與永久棟距，適合小資家庭"
+    },
+    {
+      "file": "1153159.md",
+      "severity": "MEDIUM",
+      "rule": "預售敏感詞",
+      "field": "body",
+      "matched": "新建案",
+      "snippet": "南來北往交通超便捷\"\r\n  - \"5. 新建案林立增值快，自住收租保值抗跌\"\r\ndes"
+    },
+    {
+      "file": "1171984.md",
+      "severity": "HIGH",
+      "rule": "隱私: 手機號碼",
+      "field": "body",
+      "matched": "0970-130907",
+      "snippet": "陳景泰 0920-118756 戴咏秝 0970-130907\"\r\n  - \"地段優勢｜位於西屯核心，"
+    },
+    {
+      "file": "1172051.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "唯一",
+      "snippet": "--\r\ntitle: \"幸福成全社區三房唯一裝潢戶\"\r\ndistrict: \"梧棲區"
+    },
+    {
+      "file": "1187634.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "唯一",
+      "snippet": "與高端客群指標社區\"\r\n  - \"全青埔唯一挑高樓中樓，社區僅兩戶，住宅區可商業登記"
+    },
+    {
+      "file": "1187634.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "第一",
+      "snippet": "竹交流道\"\r\n  - \"榮獲優良社區評選第一名，企業主與高端客群指標社區\"\r\n  -"
+    },
+    {
+      "file": "1187634.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "無敵",
+      "snippet": "- \"奢華景觀戶，4 廳 3 陽台＋超大無敵露台\"\r\n  - \"飯店式管理，健身房、"
+    },
+    {
+      "file": "1187640.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "第一",
+      "snippet": "ights:\r\n  - \"預計2025年第一季交屋公設比：33%總戶數：360戶、1"
+    },
+    {
+      "file": "1187657.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "唯一",
+      "snippet": "地段增值可期\"\r\n  - \"🌈 重劃區唯一擁有最美海景＋千坪森林中庭泳池俱樂部\"\r"
+    },
+    {
+      "file": "1187659.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "唯一",
+      "snippet": "式感與享受感。\"\r\n  - \"本戶為社區唯一釋出的景觀宅，面七期方向視野，白天可遠眺"
+    },
+    {
+      "file": "1195645.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "無敵",
+      "snippet": " \"B1連號雙大平車，休旅車也好停。地段無敵，步行即達東山完全中學\"\r\n  - \"近"
+    },
+    {
+      "file": "1195717.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "獨家",
+      "snippet": "-\r\ntitle: \"達麗世紀雙星｜品牌獨家｜二房平車捷運宅\"\r\ndistrict:"
+    },
+    {
+      "file": "1195720.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "無敵",
+      "snippet": ": \"「潤隆VVS1」2房大平車｜雙捷運無敵視野裝潢戶\"\r\ndistrict: \"西"
+    },
+    {
+      "file": "UG1172008.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "獨家",
+      "snippet": "tle: \"社區最低價雲世紀3房雙車品牌獨家 溫馨成家即刻入主\"\r\ndistrict"
+    },
+    {
+      "file": "UG1172042.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "第一",
+      "snippet": "**：南簡公園\r\n**鄰近市場**：梧棲第一市場、臺中三井OUTLET\r\n\r\n---"
+    },
+    {
+      "file": "UG1172054.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "絕版",
+      "snippet": "---\r\ntitle: \"獨立森林西屯絕版雙車電梯別墅住店兩用秒殺\"\r\ndistr"
+    }
+  ],
+  "missingCredentials": [
+    {
+      "file": "0212850.md",
+      "broker": false,
+      "agent": false
+    },
+    {
+      "file": "0387214.md",
+      "broker": false,
+      "agent": false
+    },
+    {
+      "file": "1187665.md",
+      "broker": false,
+      "agent": false
+    },
+    {
+      "file": "1195688.md",
+      "broker": false,
+      "agent": false
+    }
+  ],
+  "summary": {
+    "bySeverity": {
+      "HIGH": 2,
+      "MEDIUM": 31
+    },
+    "byRule": {
+      "廣告誇大": 26,
+      "預售敏感詞": 5,
+      "隱私: 手機號碼": 2
+    },
+    "missingCredentialsCount": 4
+  }
+}
