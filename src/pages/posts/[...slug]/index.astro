@@ -136,8 +136,20 @@ const timeRequired = `PT${timeRequiredMin}M`;
       {title}
     </h1>
 
-    <div class="my-2 flex items-center gap-2">
+    <div class="my-2 flex flex-wrap items-center gap-x-2 gap-y-1">
       <Datetime {pubDatetime} {modDatetime} {timezone} size="lg" />
+      <span
+        aria-hidden="true"
+        class="text-muted-foreground hidden sm:inline"
+      >
+        ·
+      </span>
+      <span class="text-muted-foreground text-[14px] sm:text-[15px]">
+        ⏱ {timeRequiredMin} 分鐘閱讀
+      </span>
+      <span class="text-muted-foreground text-[14px] sm:text-[15px]">
+        · {wordCount.toLocaleString()} 字
+      </span>
       <span
         aria-hidden="true"
         class:list={[
