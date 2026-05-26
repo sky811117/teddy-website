@@ -46,5 +46,21 @@ jobs:
       - name: "📝 Checking code format"
         run: pnpm run format:check
 
+      - name: "🏠 物件法規合規 audit (warn only — 不擋 build)"
+        run: node scripts/audit-properties.mjs || true
+        continue-on-error: true
+
+      - name: "📊 SEO meta lint (擋 build 如有 ERROR)"
+        run: node scripts/lint-seo.mjs
+
       - name: "🚀 Build the project"
         run: pnpm run build
+
+      - name: "📦 Upload audit report"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-report
+          path: audit/
+          retention-days: 30
+          if-no-files-found: ignore
