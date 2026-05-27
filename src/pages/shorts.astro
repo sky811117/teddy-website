@@ -1,0 +1,474 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import Main from "@/components/Main.astro";
+import config from "@/config";
+import { safeJsonLd } from "@/utils/safeJsonLd";
+import {
+  videos,
+  platformInfo,
+  categoryInfo,
+  categories,
+  getVideoCover,
+  type VideoCategory,
+} from "@/data/videos";
+
+// 排序：featured 優先、再按 pubDate 倒序
+const sortedVideos = [...videos].sort((a, b) => {
+  if (a.featured && !b.featured) return -1;
+  if (!a.featured && b.featured) return 1;
+  return b.pubDate.getTime() - a.pubDate.getTime();
+});
+
+// 統計每個分類有幾支影片（給 filter chip 顯示）
+const categoryCount: Record<VideoCategory, number> = {
+  看屋開箱: 0,
+  政策快訊: 0,
+  議價心法: 0,
+  客戶見證: 0,
+  "AI 工作流": 0,
+  其他: 0,
+};
+sortedVideos.forEach(v => {
+  categoryCount[v.category] = (categoryCount[v.category] ?? 0) + 1;
+});
+
+const hasVideos = sortedVideos.length > 0;
+
+const siteOrigin = new URL("/", Astro.site).href;
+const canonicalURL = new URL("/shorts", Astro.site).href;
+const realEstateAgentId = `${siteOrigin}#realestateagent`;
+
+// CollectionPage schema
+const collectionSchema = {
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "@id": `${canonicalURL}#collectionpage`,
+  url: canonicalURL,
+  name: "景泰的房仲短影音",
+  description:
+    "景泰跨 YouTube / TikTok / Instagram 三平台的房仲短影音作品集 — 看屋開箱、政策快訊、議價心法、客戶見證、AI 工作流。",
+  mainEntity: { "@id": realEstateAgentId },
+  inLanguage: "zh-TW",
+};
+
+// 每個影片獨立 VideoObject schema（Google rich result）
+const videoSchemas = sortedVideos.map(v => ({
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  "@id": `${canonicalURL}#video-${v.id}`,
+  name: v.title,
+  description: v.description ?? v.title,
+  thumbnailUrl: getVideoCover(v) ?? `${siteOrigin}default-og.jpg`,
+  uploadDate: v.pubDate.toISOString(),
+  ...(v.durationIso && { duration: v.durationIso }),
+  contentUrl: v.url,
+  embedUrl:
+    v.platform === "youtube" && v.videoId
+      ? `https://www.youtube.com/embed/${v.videoId}`
+      : v.url,
+  publisher: {
+    "@id": `${siteOrigin}#organization`,
+  },
+  creator: { "@id": realEstateAgentId },
+}));
+
+// BreadcrumbList
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "首頁",
+      item: siteOrigin,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "短影音",
+      item: canonicalURL,
+    },
+  ],
+};
+
+// 格式化發布日期 (yyyy/mm/dd)
+function formatDate(d: Date): string {
+  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
+}
+---
+
+<Layout
+  title={`短影音作品集 | ${config.site.title}`}
+  description="景泰跨 YouTube / TikTok / Instagram 三平台房仲短影音 — 看屋開箱、政策快訊、議價心法、客戶見證、AI 工作流。台中買賣房，看影片比讀文章快。"
+  canonicalURL={canonicalURL}
+>
+  <Fragment slot="head">
+    <script
+      type="application/ld+json"
+      is:inline
+      set:html={safeJsonLd(collectionSchema)}
+    />
+    <script
+      type="application/ld+json"
+      is:inline
+      set:html={safeJsonLd(breadcrumbSchema)}
+    />
+    {videoSchemas.map(s => (
+      <script
+        type="application/ld+json"
+        is:inline
+        set:html={safeJsonLd(s)}
+      />
+    ))}
+  </Fragment>
+
+  <Header />
+
+  <Main
+    pageTitle="景泰的房仲短影音"
+    pageDesc="YouTube / TikTok / Instagram 三平台。看屋開箱、政策快訊、議價心法 — 看影片比讀文章快。"
+  >
+    {/* ====== 3 個平台大卡片 — 直接連主頁看 latest ====== */}
+    <section class="mt-8">
+      <h2 class="text-foreground border-accent border-b-2 pb-2 text-xl font-bold sm:text-2xl">
+        📺 跟著景泰看影片
+      </h2>
+      <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
+        三個平台、三種節奏。挑你習慣的平台訂閱、最新影片自動推到你眼前。
+      </p>
+      <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {(["youtube", "tiktok", "instagram"] as const).map(p => {
+          const info = platformInfo[p];
+          return (
+            <a
+              href={info.url}
+              target="_blank"
+              rel="noopener"
+              class:list={[
+                "border-border bg-card hover:border-accent group block rounded-lg border p-5 no-underline transition-colors",
+                `bg-gradient-to-br ${info.color}`,
+              ]}
+            >
+              <div class="text-5xl">{info.icon}</div>
+              <h3 class="text-foreground mt-3 text-lg font-bold">
+                {info.name}
+              </h3>
+              <p class="text-accent mt-1 text-sm font-medium">{info.handle}</p>
+              <p class="text-muted-foreground mt-3 text-xs leading-relaxed">
+                {p === "youtube" &&
+                  "比較完整的看屋影片、議價解析 — 5-10 分鐘那種。適合認真挑房子的人。"}
+                {p === "tiktok" &&
+                  "30 秒看完一間房。一鏡到底、快剪、現場氛圍。台中房市快訊也在這。"}
+                {p === "instagram" &&
+                  "日常 + Reels。最新物件、看屋現場、房仲生活。DM 也接。"}
+              </p>
+              <p class="text-accent mt-4 text-sm font-medium group-hover:underline">
+                → 看最新影片
+              </p>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+
+    {/* ====== 影片分類介紹 — 即使沒影片資料也有 substance ====== */}
+    <section class="mt-12">
+      <h2 class="text-foreground border-accent border-b-2 pb-2 text-xl font-bold sm:text-2xl">
+        🎯 我會拍哪些主題
+      </h2>
+      <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
+        房仲業務的影音內容、我盡量做到「客人想知道的、我才拍」— 不是純粹炫物件。
+      </p>
+      <ul class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {categories.map(c => {
+          const info = categoryInfo[c];
+          const count = categoryCount[c];
+          return (
+            <li class="border-border bg-card rounded-lg border p-5">
+              <div class="flex items-start gap-3">
+                <span class="text-3xl">{info.icon}</span>
+                <div class="flex-1">
+                  <h3 class="text-foreground flex flex-wrap items-baseline gap-2 text-lg font-bold">
+                    {c}
+                    {count > 0 && (
+                      <span class="text-accent text-xs font-normal">
+                        ({count} 支)
+                      </span>
+                    )}
+                  </h3>
+                  <p class="text-muted-foreground mt-2 text-sm leading-relaxed">
+                    {info.tagline}
+                  </p>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+
+    {/* ====== 影片 grid — 有資料才顯示 ====== */}
+    {
+      hasVideos ? (
+        <section class="mt-12">
+          <h2 class="text-foreground border-accent border-b-2 pb-2 text-xl font-bold sm:text-2xl">
+            🎬 精選影片 ({sortedVideos.length} 支)
+          </h2>
+
+          {/* category filter chips */}
+          <div
+            class="mt-4 flex flex-wrap gap-2"
+            data-filter-group="category"
+            role="group"
+            aria-label="分類篩選"
+          >
+            <button
+              type="button"
+              data-filter-value=""
+              class="filter-chip filter-chip-active"
+            >
+              全部 ({sortedVideos.length})
+            </button>
+            {categories
+              .filter(c => categoryCount[c] > 0)
+              .map(c => (
+                <button type="button" data-filter-value={c} class="filter-chip">
+                  {categoryInfo[c].icon} {c} ({categoryCount[c]})
+                </button>
+              ))}
+          </div>
+
+          <ul
+            class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
+            data-video-list
+          >
+            {sortedVideos.map(v => {
+              const cover = getVideoCover(v);
+              const platform = platformInfo[v.platform];
+              return (
+                <li
+                  class="border-border bg-card group overflow-hidden rounded-lg border transition-shadow hover:shadow-lg"
+                  data-category={v.category}
+                >
+                  <a
+                    href={v.url}
+                    target="_blank"
+                    rel="noopener"
+                    class="block no-underline"
+                    data-track="video"
+                    data-video-id={v.id}
+                    data-video-platform={v.platform}
+                    data-video-category={v.category}
+                  >
+                    <div class="bg-muted relative aspect-video w-full overflow-hidden">
+                      {cover ? (
+                        <img
+                          src={cover}
+                          alt={v.title}
+                          width="480"
+                          height="270"
+                          class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <div class="text-muted-foreground flex h-full w-full items-center justify-center text-5xl">
+                          {platform.icon}
+                        </div>
+                      )}
+                      {/* play button overlay */}
+                      <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="bg-accent/90 text-accent-foreground flex h-14 w-14 items-center justify-center rounded-full text-2xl opacity-0 transition-opacity group-hover:opacity-100">
+                          ▶
+                        </span>
+                      </div>
+                      {/* duration badge */}
+                      {v.duration && (
+                        <span class="absolute right-2 bottom-2 rounded bg-black/70 px-2 py-0.5 font-mono text-xs text-white">
+                          {v.duration}
+                        </span>
+                      )}
+                      {/* platform badge */}
+                      <span
+                        class:list={[
+                          "absolute top-2 left-2 rounded px-2 py-1 text-xs font-medium",
+                          v.platform === "youtube" && "bg-red-600 text-white",
+                          v.platform === "tiktok" && "bg-black text-white",
+                          v.platform === "instagram" &&
+                            "bg-gradient-to-r from-pink-500 to-amber-500 text-white",
+                        ]}
+                      >
+                        {platform.icon} {platform.name}
+                      </span>
+                    </div>
+                    <div class="p-4">
+                      <div class="text-muted-foreground flex flex-wrap items-center gap-x-2 text-xs">
+                        <span>{categoryInfo[v.category].icon} {v.category}</span>
+                        <span aria-hidden="true">·</span>
+                        <span>{formatDate(v.pubDate)}</span>
+                        {v.featured && (
+                          <span class="bg-accent text-accent-foreground rounded px-1.5 py-0.5 text-[10px] font-medium">
+                            🔥 精選
+                          </span>
+                        )}
+                      </div>
+                      <h3 class="text-foreground mt-2 line-clamp-2 text-base font-bold">
+                        {v.title}
+                      </h3>
+                      {v.description && (
+                        <p class="text-muted-foreground mt-2 line-clamp-2 text-sm leading-relaxed">
+                          {v.description}
+                        </p>
+                      )}
+                      {(v.district || v.community) && (
+                        <p class="text-muted-foreground mt-2 text-xs">
+                          📍 {v.district ?? ""}
+                          {v.district && v.community ? "・" : ""}
+                          {v.community ?? ""}
+                        </p>
+                      )}
+                    </div>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* empty filter state */}
+          <div
+            class="border-border bg-card mt-6 hidden rounded-lg border py-8 text-center"
+            data-filter-empty
+          >
+            <div class="text-3xl">🔍</div>
+            <p class="text-foreground mt-3 font-medium">這個分類目前還沒影片</p>
+            <p class="text-muted-foreground mt-2 text-sm">
+              切回「全部」看其他主題的影片
+            </p>
+          </div>
+        </section>
+      ) : (
+        <section
+          class="border-border bg-card mt-12 rounded-lg border border-dashed p-8 text-center"
+        >
+          <div class="text-5xl">📼</div>
+          <h2 class="text-foreground mt-4 text-xl font-bold sm:text-2xl">
+            影片清單整理中
+          </h2>
+          <p class="text-muted-foreground mx-auto mt-3 max-w-xl leading-relaxed">
+            景泰每週都會更新影片、但網站影片清單我還在整理中。
+            <br />
+            想看最新內容、點上面 YouTube / TikTok / IG 主頁、最快。
+          </p>
+          <a
+            href={platformInfo.instagram.url}
+            target="_blank"
+            rel="noopener"
+            class="bg-accent text-accent-foreground mt-6 inline-block rounded px-6 py-2 font-medium no-underline"
+          >
+            📷 先去看 @nov__817
+          </a>
+        </section>
+      )
+    }
+
+    {/* ====== 底部 CTA ====== */}
+    <section
+      class="border-border mt-12 rounded-lg border border-dashed p-6 text-center sm:p-8"
+    >
+      <p class="text-foreground text-[18px] font-medium">
+        影片看完想直接聊？
+      </p>
+      <p class="text-muted-foreground mt-3 leading-relaxed">
+        想看某社區的開箱、某個政策的解析、議價的實戰 —<br />
+        LINE 我說一聲、我直接拍給你看。
+      </p>
+      <div class="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <a
+          href="https://line.me/ti/p/sky811117"
+          class="bg-accent text-accent-foreground inline-block rounded px-6 py-2 font-medium no-underline"
+        >
+          💬 LINE 私訊 sky811117
+        </a>
+        <a
+          href="/contact"
+          class="border-accent text-accent inline-block rounded border-2 px-6 py-2 font-medium no-underline hover:bg-accent hover:text-accent-foreground transition-colors"
+        >
+          📝 用表單留聯絡方式 →
+        </a>
+      </div>
+      <p class="text-muted-foreground mt-4 text-xs">
+        一品不動產 有巢氏房屋 台中世界之心加盟店<br />
+        經紀人 黃永隆 113彰縣字324 ・ 營業員 陳景泰 114登字488296
+      </p>
+    </section>
+  </Main>
+
+  <Footer />
+</Layout>
+
+<style>
+  .filter-chip {
+    cursor: pointer;
+    border-radius: 9999px;
+    border: 1px solid var(--border);
+    background: var(--background);
+    color: var(--foreground);
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+    transition:
+      border-color 0.15s,
+      background-color 0.15s,
+      color 0.15s;
+  }
+  .filter-chip:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .filter-chip-active,
+  .filter-chip-active:hover {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--background);
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    const group = document.querySelector("[data-filter-group='category']");
+    if (!group) return;
+    const list = document.querySelector("[data-video-list]");
+    if (!list) return;
+    const items = Array.from(list.children);
+    const emptyEl = document.querySelector("[data-filter-empty]");
+
+    function setActive(value) {
+      group.querySelectorAll(".filter-chip").forEach(b => {
+        const match = (b.dataset.filterValue || "") === value;
+        b.classList.toggle("filter-chip-active", match);
+        b.setAttribute("aria-pressed", match ? "true" : "false");
+      });
+    }
+
+    function apply(value) {
+      let visible = 0;
+      items.forEach(li => {
+        const ok = !value || li.dataset.category === value;
+        li.style.display = ok ? "" : "none";
+        if (ok) visible++;
+      });
+      if (emptyEl) emptyEl.classList.toggle("hidden", visible !== 0);
+      list.classList.toggle("hidden", visible === 0);
+    }
+
+    group.addEventListener("click", e => {
+      const btn = e.target.closest(".filter-chip");
+      if (!btn) return;
+      const v = btn.dataset.filterValue || "";
+      setActive(v);
+      apply(v);
+    });
+  })();
+</script>
