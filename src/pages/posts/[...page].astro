@@ -43,6 +43,26 @@ const nextURL = page.url.next
   <Breadcrumb />
 
   <Main pageTitle={t.pages.postsTitle} pageDesc={t.pages.postsDesc}>
+    {page.currentPage === 1 && (
+      <div class="mb-8 grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {[
+          { emoji: "❓", label: "常見問題 30 題", href: "/faq/" },
+          { emoji: "🏘", label: "社區深度評測", href: "/tags/community-review/" },
+          { emoji: "📜", label: "政策解析", href: "/tags/政策解析/" },
+          { emoji: "🔧", label: "買房工具", href: "/tools/" },
+          { emoji: "📖", label: "房地產詞典", href: "/tags/房地產詞典/" },
+          { emoji: "🗺", label: "台中各區行情", href: "/areas/" },
+        ].map(({ emoji, label, href }) => (
+          <a
+            href={href}
+            class="flex items-center gap-2 rounded-lg border border-skin-line bg-skin-fill px-4 py-3 text-sm font-medium text-skin-base transition-colors hover:bg-skin-accent hover:text-skin-inverted no-underline"
+          >
+            <span class="text-lg">{emoji}</span>
+            <span>{label}</span>
+          </a>
+        ))}
+      </div>
+    )}
     <ul>
       {page.data.map((data, idx) => <Card {...data} priority={idx === 0 && page.currentPage === 1} />)}
     </ul>
