@@ -192,34 +192,35 @@ const accounts = [
       <div class="mt-6 grid grid-cols-1 gap-6">
         {
           accounts.map(acc => (
-          <a
-            href={acc.url}
-            target="_blank"
-            rel="noopener"
-            class:list={[
-              "border-border bg-card hover:border-accent block rounded-lg border p-6 no-underline transition-colors",
-              `bg-gradient-to-br ${acc.color}`,
-            ]}
-          >
-            <div class="flex items-start gap-4">
-              <div class="text-5xl">{acc.icon}</div>
-              <div class="flex-1">
-                <div class="flex flex-wrap items-baseline gap-2">
-                  <h2 class="text-foreground text-xl font-bold sm:text-2xl">
-                    {acc.platform}
-                  </h2>
-                  <span class="text-accent text-lg">{acc.handle}</span>
-                  <span class="bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs">
-                    {acc.role}
-                  </span>
+            <a
+              href={acc.url}
+              target="_blank"
+              rel="noopener"
+              class:list={[
+                "border-border bg-card hover:border-accent block rounded-lg border p-6 no-underline transition-colors",
+                `bg-gradient-to-br ${acc.color}`,
+              ]}
+            >
+              <div class="flex items-start gap-4">
+                <div class="text-5xl">{acc.icon}</div>
+                <div class="flex-1">
+                  <div class="flex flex-wrap items-baseline gap-2">
+                    <h2 class="text-foreground text-xl font-bold sm:text-2xl">
+                      {acc.platform}
+                    </h2>
+                    <span class="text-accent text-lg">{acc.handle}</span>
+                    <span class="bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs">
+                      {acc.role}
+                    </span>
+                  </div>
+                  <p class="text-foreground mt-3 leading-relaxed">{acc.desc}</p>
+                  <p class="text-accent mt-3 font-medium">→ 開啟 / 追蹤</p>
                 </div>
-                <p class="text-foreground mt-3 leading-relaxed">{acc.desc}</p>
-                <p class="text-accent mt-3 font-medium">→ 開啟 / 追蹤</p>
               </div>
-            </div>
-          </a>
-        ))
-      }
+            </a>
+          ))
+        }
+      </div>
     </section>
 
     <section

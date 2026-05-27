@@ -23,9 +23,10 @@ export default defineConfig({
     mdx(),
     sitemap({
       filter: page => {
-        // 排除 thank-you / search (noindex 頁不該進 sitemap)
+        // 排除 thank-you / search / projects（內容空 / noindex 頁不該進 sitemap）
         if (page.includes("/thank-you")) return false;
         if (page.includes("/search")) return false;
+        if (page.includes("/projects")) return false;
         if (page.endsWith("/manifest.json/")) return false;
         if (page.endsWith("/robots.txt/")) return false;
         if (page.endsWith("/rss.xml/")) return false;
@@ -86,6 +87,17 @@ export default defineConfig({
       fallbacks: ["monospace"],
       weights: [300, 400, 500, 600, 700],
       styles: ["normal", "italic"],
+      formats: ["woff", "ttf"],
+    },
+    {
+      // 中文字體 — 給動態 OG 圖渲染 zh-TW 標題用
+      // 沒這個，satori 渲染中文 = 豆腐方塊（社群分享預覽爛掉）
+      name: "Noto Sans TC",
+      cssVariable: "--font-noto-sans-tc",
+      provider: fontProviders.google(),
+      fallbacks: ["sans-serif"],
+      weights: [400, 700],
+      styles: ["normal"],
       formats: ["woff", "ttf"],
     },
   ],

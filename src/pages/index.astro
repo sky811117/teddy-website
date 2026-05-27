@@ -10,9 +10,16 @@ import config from "@/config";
 
 const locale = Astro.currentLocale ?? config.site.lang;
 
-// 最新文章 3 篇（給首頁房市筆記 section）
+// 首頁房市筆記 section：featured 優先，不夠 3 篇補最新
 const posts = await getCollection("posts", ({ data }) => !data.draft);
-const recentPosts = getSortedPosts(posts).slice(0, 3);
+const sortedPosts = getSortedPosts(posts);
+const featuredPosts = sortedPosts.filter(p => p.data.featured);
+const recentPosts = [
+  ...featuredPosts.slice(0, 3),
+  ...sortedPosts
+    .filter(p => !p.data.featured)
+    .slice(0, Math.max(0, 3 - featuredPosts.length)),
+].slice(0, 3);
 
 // 在售精選 3 筆（空 collection 時不顯示）
 const allProperties = await getCollection(

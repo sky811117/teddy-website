@@ -27,12 +27,13 @@ export const GET: APIRoute = async ({ props, url }) => {
     return new Response(null, { status: 404, statusText: "Not found" });
   }
 
-  const fonts = fontData["--font-google-sans-code"];
-  const regularFontPath = getFontPathByWeight(fonts, 400);
-  const boldFontPath = getFontPathByWeight(fonts, 700);
+  // 用 Noto Sans TC 渲染中文標題（Google Sans Code 不支援中文 → 豆腐方塊）
+  const ntcFonts = fontData["--font-noto-sans-tc"];
+  const regularFontPath = getFontPathByWeight(ntcFonts, 400);
+  const boldFontPath = getFontPathByWeight(ntcFonts, 700);
 
   if (regularFontPath === undefined || boldFontPath === undefined) {
-    throw new Error("Cannot find the font path.");
+    throw new Error("Cannot find the Noto Sans TC font path.");
   }
 
   const [regularData, boldData] = await Promise.all([
@@ -173,13 +174,13 @@ export const GET: APIRoute = async ({ props, url }) => {
       embedFont: true,
       fonts: [
         {
-          name: "Google Sans Code",
+          name: "Noto Sans TC",
           data: regularData,
           weight: 400,
           style: "normal",
         },
         {
-          name: "Google Sans Code",
+          name: "Noto Sans TC",
           data: boldData,
           weight: 700,
           style: "normal",
