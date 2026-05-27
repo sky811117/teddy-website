@@ -3,6 +3,7 @@ import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Main from "@/components/Main.astro";
+import ContactForm from "@/components/ContactForm.astro";
 import config from "@/config";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 
@@ -260,7 +261,7 @@ const breadcrumbSchema = {
       }
     </div>
 
-    {/* 底部 CTA */}
+    {/* 底部 CTA — LINE 為主 */}
     <section
       class="border-border mt-12 rounded-lg border border-dashed p-6 text-center"
     >
@@ -278,6 +279,12 @@ const breadcrumbSchema = {
         💬 LINE 私訊景泰 sky811117
       </a>
     </section>
+
+    {/* 不愛即時通的表單入口（給長輩 / 企業戶 / 不想加 LINE 的人） */}
+    <ContactForm
+      title="不想加 LINE？用表單留聯絡方式"
+      subtitle="Email 收件、30 分鐘內回。長輩、企業戶、習慣 email 的人 — 這條最舒服。"
+    />
   </Main>
 
   <Footer />

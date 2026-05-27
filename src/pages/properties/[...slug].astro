@@ -295,7 +295,44 @@ const breadcrumbSchema = {
 
   <Header />
 
-  <main id="main-content" class="app-layout max-w-app py-8">
+  {/* 桌面版 sticky CTA bar — 滾動超過 600px 才出現，常駐在視窗底部直到看完 */}
+  <div
+    data-property-sticky
+    class="border-border bg-card/95 fixed inset-x-0 bottom-0 z-30 hidden translate-y-full border-t shadow-lg backdrop-blur transition-transform duration-300 sm:block"
+    aria-hidden="true"
+  >
+    <div class="app-layout max-w-app flex flex-wrap items-center justify-between gap-4 py-3">
+      <div class="min-w-0 flex-1">
+        <p class="text-foreground line-clamp-1 text-sm font-semibold">
+          {property.data.title}
+        </p>
+        <p class="text-muted-foreground line-clamp-1 text-xs">
+          📍 {property.data.district}
+          {property.data.streetArea ? `・${property.data.streetArea}` : ""}
+          ・{property.data.layout} ・{property.data.area} 坪
+        </p>
+      </div>
+      <div class="text-accent shrink-0 text-xl font-bold sm:text-2xl">
+        {formatPrice(property.data.totalPrice)}
+      </div>
+      <div class="flex shrink-0 items-center gap-2">
+        <a
+          href="#contact-form-section"
+          class="border-accent text-accent hover:bg-accent hover:text-accent-foreground rounded-md border-2 px-4 py-2 text-sm font-medium no-underline transition-colors"
+        >
+          📝 詢問
+        </a>
+        <a
+          href="https://line.me/ti/p/sky811117"
+          class="bg-accent text-accent-foreground hover:opacity-90 rounded-md px-4 py-2 text-sm font-medium no-underline"
+        >
+          💬 LINE 景泰
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <main id="main-content" class="app-layout max-w-app py-8 sm:pb-24">
     <a
       href="/properties"
       class="text-muted-foreground hover:text-accent mb-4 inline-block text-sm no-underline"
@@ -597,14 +634,16 @@ const breadcrumbSchema = {
 
       <hr class="my-8 border-dashed" />
 
-      {/* 主表單 — 預填物件編號 + 標題 */}
-      <ContactForm
-        propertyId={property.data.listingCode}
-        propertyTitle={property.data.title}
-        defaultIntent="buy"
-        title="想看這戶？留你的聯絡方式"
-        subtitle="物件編號已幫你預填、補完聯絡方式就送出。30 分鐘內回。"
-      />
+      {/* 主表單 — 預填物件編號 + 標題（id 給 sticky CTA 錨點用） */}
+      <div id="contact-form-section" class="scroll-mt-20">
+        <ContactForm
+          propertyId={property.data.listingCode}
+          propertyTitle={property.data.title}
+          defaultIntent="buy"
+          title="想看這戶？留你的聯絡方式"
+          subtitle="物件編號已幫你預填、補完聯絡方式就送出。30 分鐘內回。"
+        />
+      </div>
 
       {/* 快速 LINE / 電話通道 — 給急的人 */}
       <div
@@ -753,5 +792,35 @@ const breadcrumbSchema = {
         setIndex(current + 1);
       }
     });
+  })();
+</script>
+
+<script is:inline>
+  // 桌面版 sticky CTA bar 滑入/滑出：滾過 600px 出現、靠近 ContactForm 時收回
+  (function () {
+    const sticky = document.querySelector("[data-property-sticky]");
+    if (!sticky) return;
+    const form = document.getElementById("contact-form-section");
+
+    let raf = null;
+    function update() {
+      raf = null;
+      const scrolled = window.scrollY > 600;
+      let nearForm = false;
+      if (form) {
+        const rect = form.getBoundingClientRect();
+        // ContactForm 進到視窗 60% 以上 → 隱藏 sticky（已經看到表單就不用 CTA bar）
+        nearForm = rect.top < window.innerHeight * 0.6;
+      }
+      const show = scrolled && !nearForm;
+      sticky.classList.toggle("translate-y-full", !show);
+      sticky.setAttribute("aria-hidden", show ? "false" : "true");
+    }
+    function onScroll() {
+      if (raf === null) raf = requestAnimationFrame(update);
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    update();
   })();
 </script>
