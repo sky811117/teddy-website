@@ -45,6 +45,11 @@ const properties = defineCollection({
   loader: glob({
     pattern: "**/[^_]*.{md,mdx}",
     base: "./src/content/properties",
+    // 保留檔名原始大小寫當作頁面 id。委編 UG/UA 全大寫，預設 generateId 會
+    // slugify 成小寫 → 大寫委編網址 /properties/UG1187667 變 404，分享到
+    // LINE/FB 抓到的是 404 頁的 default-og.jpg（而非物件首圖）。保留大小寫
+    // 讓網址與委編、public/ 圖片目錄、coverImage、listingCode 全系統一致。
+    generateId: ({ entry }) => entry.replace(/\.mdx?$/, ""),
   }),
   schema: ({ image }) =>
     z.object({
