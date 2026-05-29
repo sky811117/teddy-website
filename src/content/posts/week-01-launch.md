@@ -5,7 +5,7 @@ pubDatetime: 2026-05-21T23:00:00.000+08:00
 slug: week-01-launch
 ogImage: /og/week-01-launch.jpg
 featured: false
-draft: true
+draft: false
 tags:
   - weekly-recap
   - Astro

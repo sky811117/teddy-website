@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-06-12 11:00:00+08:00
 slug: faq-22-land-value-tax
 featured: false
-draft: true
+draft: false
 ogImage: /og/faq-22-land-value-tax.jpg
 tags:
 - faq

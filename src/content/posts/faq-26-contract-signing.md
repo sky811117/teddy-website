@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-06-16 11:00:00+08:00
 slug: faq-26-contract-signing
 featured: false
-draft: true
+draft: false
 ogImage: /og/faq-26-contract-signing.jpg
 tags:
 - faq

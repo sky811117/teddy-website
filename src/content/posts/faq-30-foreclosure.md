@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-06-20 11:00:00+08:00
 slug: faq-30-foreclosure
 featured: false
-draft: true
+draft: false
 ogImage: /og/faq-30-foreclosure.jpg
 tags:
 - faq

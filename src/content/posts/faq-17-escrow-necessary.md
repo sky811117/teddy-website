@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-06-07 11:00:00+08:00
 slug: faq-17-escrow-necessary
 featured: false
-draft: true
+draft: false
 ogImage: /og/faq-17-escrow-necessary.jpg
 tags:
 - faq

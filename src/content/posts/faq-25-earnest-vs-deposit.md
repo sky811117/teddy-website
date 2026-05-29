@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-06-15 11:00:00+08:00
 slug: faq-25-earnest-vs-deposit
 featured: false
-draft: true
+draft: false
 ogImage: /og/faq-25-earnest-vs-deposit.jpg
 tags:
 - faq

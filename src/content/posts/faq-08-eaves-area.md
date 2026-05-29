@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-29 11:00:00+08:00
 slug: faq-08-eaves-area
 featured: false
-draft: true
+draft: false
 ogImage: /og/faq-08-eaves-area.jpg
 tags:
 - faq

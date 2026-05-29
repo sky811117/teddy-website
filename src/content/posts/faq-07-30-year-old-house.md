@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-28 11:00:00+08:00
 slug: faq-07-30-year-old-house
 featured: false
-draft: true
+draft: false
 ogImage: /og/faq-07-30-year-old-house.jpg
 tags:
 - faq

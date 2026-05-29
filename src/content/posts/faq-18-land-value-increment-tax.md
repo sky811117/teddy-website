@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-06-08 11:00:00+08:00
 slug: faq-18-land-value-increment-tax
 featured: false
-draft: true
+draft: false
 ogImage: /og/faq-18-land-value-increment-tax.jpg
 tags:
 - faq

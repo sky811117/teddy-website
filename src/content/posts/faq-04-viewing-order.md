@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-25 11:00:00+08:00
 slug: faq-04-viewing-order
 featured: false
-draft: true
+draft: false
 ogImage: /og/faq-04-viewing-order.jpg
 tags:
 - faq

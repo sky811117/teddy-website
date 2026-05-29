@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-06-02 11:00:00+08:00
 slug: faq-12-renovation-budget
 featured: false
-draft: true
+draft: false
 ogImage: /og/faq-12-renovation-budget.jpg
 tags:
 - faq

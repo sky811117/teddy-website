@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-30 11:00:00+08:00
 slug: faq-09-escrow-guarantee
 featured: false
-draft: true
+draft: false
 ogImage: /og/faq-09-escrow-guarantee.jpg
 tags:
 - faq
