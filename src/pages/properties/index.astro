@@ -642,8 +642,21 @@ const breadcrumbSchema = {
                     />
                   </div>
                 ) : (
-                  <div class="bg-muted text-muted-foreground flex aspect-[4/3] w-full items-center justify-center">
-                    <span>📷 照片整理中</span>
+                  <div class="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-gradient-to-br from-amber-50 to-orange-100 dark:from-slate-800 dark:to-slate-900">
+                    <svg
+                      class="text-accent/30 absolute inset-0 m-auto h-32 w-32"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    >
+                      <path d="M3 12L12 3l9 9M5 10v10h14V10" stroke-linecap="round" stroke-linejoin="round" />
+                      <path d="M10 20v-6h4v6" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <div class="text-foreground/80 relative z-10 px-3 text-center">
+                      <p class="text-sm font-bold">📷 照片整理中</p>
+                      <p class="mt-1 text-xs">想看實照？LINE 問景泰</p>
+                    </div>
                   </div>
                 )}
 

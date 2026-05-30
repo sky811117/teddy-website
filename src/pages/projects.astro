@@ -7,16 +7,16 @@ import config from "@/config";
 ---
 
 <Layout
-  title={`作品集 | ${config.site.title}`}
-  description="景泰用 Claude Code 做過的房仲業專案 — 客戶管理 / 物件追蹤 / 三平台上架自動化 / 個人網站。AI 加持的房仲工作站。"
+  title={`作品與工具 | ${config.site.title}`}
+  description="景泰的房仲作品與工具 — 客戶工具、房市筆記、在售物件、短影音。"
   canonicalURL={new URL("/projects", Astro.site).href}
   noindex={true}
 >
   <Header />
 
   <Main
-    pageTitle="整理中…"
-    pageDesc="原本這頁列了一堆內部工具 — 後來想想，把 know-how 全部攤開不是好主意。正在改寫成「對你有用的版本」。"
+    pageTitle="作品與工具"
+    pageDesc="我做的東西，按類型分好了。"
   >
     <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
       <a
@@ -24,11 +24,11 @@ import config from "@/config";
         class="border-border bg-card hover:border-accent block rounded-lg border p-6 no-underline transition-colors"
       >
         <div class="text-4xl">🧮</div>
-        <h2 class="text-foreground mt-3 text-xl font-bold">給客戶的工具</h2>
+        <h2 class="text-foreground mt-3 text-xl font-bold">客戶工具</h2>
         <p class="text-muted-foreground mt-2 leading-relaxed">
-          買方費用試算、看屋 checklist、議價心法、台中各區行情、政府/民間公開資源整合。
+          買方費用試算、看屋筆記本、各區行情速查。買房前先算清楚。
         </p>
-        <p class="text-accent mt-3 font-medium">→ /tools</p>
+        <p class="text-accent mt-3 font-medium">前往 →</p>
       </a>
 
       <a
@@ -38,9 +38,33 @@ import config from "@/config";
         <div class="text-4xl">📝</div>
         <h2 class="text-foreground mt-3 text-xl font-bold">房市筆記</h2>
         <p class="text-muted-foreground mt-2 leading-relaxed">
-          我幫客戶踩過的雷、算過的數字 — 議價、新青安、嫌惡設施、不動產說明書。
+          幫客戶踩過的雷、算過的數字 — 議價、新青安、嫌惡設施。
         </p>
-        <p class="text-accent mt-3 font-medium">→ /posts</p>
+        <p class="text-accent mt-3 font-medium">前往 →</p>
+      </a>
+
+      <a
+        href="/properties"
+        class="border-border bg-card hover:border-accent block rounded-lg border p-6 no-underline transition-colors"
+      >
+        <div class="text-4xl">🏠</div>
+        <h2 class="text-foreground mt-3 text-xl font-bold">在售物件</h2>
+        <p class="text-muted-foreground mt-2 leading-relaxed">
+          目前手上的委售物件，台中各區都有。
+        </p>
+        <p class="text-accent mt-3 font-medium">前往 →</p>
+      </a>
+
+      <a
+        href="/shorts"
+        class="border-border bg-card hover:border-accent block rounded-lg border p-6 no-underline transition-colors"
+      >
+        <div class="text-4xl">🎬</div>
+        <h2 class="text-foreground mt-3 text-xl font-bold">短影音</h2>
+        <p class="text-muted-foreground mt-2 leading-relaxed">
+          社區實拍、看屋紀錄、台中生活日常。
+        </p>
+        <p class="text-accent mt-3 font-medium">前往 →</p>
       </a>
     </div>
 

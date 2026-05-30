@@ -350,26 +350,63 @@ function formatDate(d: Date): string {
           </div>
         </section>
       ) : (
-        <section
-          class="border-border bg-card mt-12 rounded-lg border border-dashed p-8 text-center"
-        >
-          <div class="text-5xl">📼</div>
-          <h2 class="text-foreground mt-4 text-xl font-bold sm:text-2xl">
-            影片清單整理中
+        <section class="mt-12">
+          <h2 class="text-foreground border-accent border-b-2 pb-2 text-xl font-bold sm:text-2xl">
+            🎬 影片都在這三個平台
           </h2>
-          <p class="text-muted-foreground mx-auto mt-3 max-w-xl leading-relaxed">
-            景泰每週都會更新影片、但網站影片清單我還在整理中。
-            <br />
-            想看最新內容、點上面 YouTube / TikTok / IG 主頁、最快。
+          <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
+            景泰的影片直接發在各平台，點進去就能看最新內容、訂閱不漏接。
           </p>
-          <a
-            href={platformInfo.instagram.url}
-            target="_blank"
-            rel="noopener"
-            class="bg-accent text-accent-foreground mt-6 inline-block rounded px-6 py-2 font-medium no-underline"
-          >
-            📷 先去看 @nov__817
-          </a>
+          <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-3">
+            <a
+              href={platformInfo.youtube.url}
+              target="_blank"
+              rel="noopener"
+              class="border-border bg-card hover:border-accent group block rounded-lg border p-6 no-underline transition-colors"
+            >
+              <div class="text-5xl">🎥</div>
+              <h3 class="text-foreground mt-3 text-lg font-bold">YouTube</h3>
+              <p class="text-accent mt-1 text-sm font-medium">@泰迪001</p>
+              <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
+                完整看屋影片、議價解析、社區介紹。5-10 分鐘帶你走進物件現場。
+              </p>
+              <p class="text-accent mt-4 text-sm font-medium group-hover:underline">
+                → 前往 YouTube 頻道
+              </p>
+            </a>
+            <a
+              href={platformInfo.tiktok.url}
+              target="_blank"
+              rel="noopener"
+              class="border-border bg-card hover:border-accent group block rounded-lg border p-6 no-underline transition-colors"
+            >
+              <div class="text-5xl">🎵</div>
+              <h3 class="text-foreground mt-3 text-lg font-bold">TikTok</h3>
+              <p class="text-accent mt-1 text-sm font-medium">@sky811117</p>
+              <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
+                30 秒看完一間房。一鏡到底、快剪節奏、台中房市快訊。
+              </p>
+              <p class="text-accent mt-4 text-sm font-medium group-hover:underline">
+                → 前往 TikTok 主頁
+              </p>
+            </a>
+            <a
+              href={platformInfo.instagram.url}
+              target="_blank"
+              rel="noopener"
+              class="border-border bg-card hover:border-accent group block rounded-lg border p-6 no-underline transition-colors"
+            >
+              <div class="text-5xl">📸</div>
+              <h3 class="text-foreground mt-3 text-lg font-bold">Instagram Reels</h3>
+              <p class="text-accent mt-1 text-sm font-medium">@nov__817</p>
+              <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
+                日常 Reels、最新物件、看屋現場。DM 也接、有問題直接私訊。
+              </p>
+              <p class="text-accent mt-4 text-sm font-medium group-hover:underline">
+                → 前往 Instagram 主頁
+              </p>
+            </a>
+          </div>
         </section>
       )
     }
@@ -379,7 +416,7 @@ function formatDate(d: Date): string {
       class="border-border mt-12 rounded-lg border border-dashed p-6 text-center sm:p-8"
     >
       <p class="text-foreground text-[18px] font-medium">
-        影片看完想直接聊？
+        想看特定物件的影片？LINE 問景泰
       </p>
       <p class="text-muted-foreground mt-3 leading-relaxed">
         想看某社區的開箱、某個政策的解析、議價的實戰 —<br />

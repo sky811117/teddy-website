@@ -18,53 +18,53 @@ const buyerTools = [
   {
     icon: "📋",
     name: "看屋 checklist",
-    desc: "60+ 項屋況/嫌惡/凶宅檢查項目，去看屋前印一份帶著",
+    desc: "60+ 項屋況、嫌惡設施、凶宅檢查清單。去看屋前印一份帶著，現場逐條打勾不漏看。",
     url: null,
     external: false,
-    status: "整理中",
+    status: "即將推出",
   },
   {
     icon: "🗺️",
-    name: "嫌惡設施 Google Map 揪查",
-    desc: "10 大嫌惡設施（殯儀館 / 高壓電塔 / 垃圾掩埋場 / 宮廟）一鍵在 Google Map 圈出社區周邊",
+    name: "嫌惡設施地圖檢查",
+    desc: "輸入社區地址，自動圈出半徑 500 公尺內的殯儀館、高壓電塔、垃圾場、宮廟等 10 大嫌惡設施。",
     url: null,
     external: false,
-    status: "規劃中",
+    status: "即將推出",
   },
   {
     icon: "📊",
-    name: "台中各區行情查詢",
-    desc: "北屯 / 西屯 / 南屯 / 七期 / 中區 / 太平實價登錄整合",
+    name: "台中各區行情速查",
+    desc: "北屯、西屯、南屯、七期、太平等主要行政區，整合實價登錄資料，查社區均價與近期成交趨勢。",
     url: null,
     external: false,
-    status: "規劃中",
+    status: "即將推出",
   },
 ];
 
 const sellerTools = [
   {
     icon: "🏷️",
-    name: "屋況自評（10 個問題）",
-    desc: "屋齡 / 格局 / 樓層 / 採光 / 學區 — 自己先打分，再讓我看一次",
+    name: "屋況自評表",
+    desc: "10 個問題快速評估你的房子條件：屋齡、格局、樓層、採光、學區。自己先打分，再讓我專業判斷一次。",
     url: null,
     external: false,
-    status: "規劃中",
+    status: "即將推出",
   },
   {
     icon: "💵",
-    name: "定價分析（AI 看 500 筆實價）",
-    desc: "你社區附近 500 筆成交，AI 整合實價登錄找合理區間，幫你抓對價、避免委託期內賣不掉",
+    name: "AI 定價分析",
+    desc: "抓取你社區周邊 500 筆實價登錄成交紀錄，AI 分析合理售價區間，避免開太高賣不掉、開太低吃虧。",
     url: null,
     external: false,
-    status: "規劃中",
+    status: "即將推出",
   },
   {
     icon: "📑",
     name: "賣屋流程懶人包",
-    desc: "委託 → 估價 → 上架 → 帶看 → 議價 → 簽約 → 用印 → 完稅 → 交屋",
+    desc: "從委託到交屋完整 9 步驟圖解：委託、估價、上架、帶看、議價、簽約、用印、完稅、交屋，每一步該準備什麼一次看完。",
     url: null,
     external: false,
-    status: "規劃中",
+    status: "即將推出",
   },
 ];
 
@@ -180,37 +180,54 @@ const externalResources = [
       </h2>
       <ul class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {
-          buyerTools.map(t => (
-            <li class="border-border bg-card rounded-lg border p-5">
-              <div class="flex items-start justify-between gap-3">
-                <div class="text-3xl">{t.icon}</div>
-                <span
+          buyerTools.map(t => {
+            const isLive = t.status === "上線";
+            return (
+              <li
+                class:list={[
+                  "rounded-lg border p-5",
+                  isLive
+                    ? "border-border bg-card"
+                    : "border-border/50 bg-card/50 opacity-75",
+                ]}
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class:list={["text-3xl", !isLive && "grayscale-[40%]"]}>{t.icon}</div>
+                  <span
+                    class:list={[
+                      "rounded px-2 py-0.5 text-xs whitespace-nowrap",
+                      isLive
+                        ? "bg-accent text-accent-foreground"
+                        : "border border-border text-muted-foreground",
+                    ]}
+                  >
+                    {t.status}
+                  </span>
+                </div>
+                <h3
                   class:list={[
-                    "rounded px-2 py-0.5 text-xs whitespace-nowrap",
-                    t.status === "上線"
-                      ? "bg-accent text-accent-foreground"
-                      : "bg-muted text-muted-foreground",
+                    "mt-3 text-lg font-bold",
+                    isLive ? "text-foreground" : "text-muted-foreground",
                   ]}
                 >
-                  {t.status}
-                </span>
-              </div>
-              <h3 class="text-foreground mt-3 text-lg font-bold">{t.name}</h3>
-              <p class="text-muted-foreground mt-2 leading-relaxed">
-                {t.desc}
-              </p>
-              {t.url && (
-                <a
-                  href={t.url}
-                  target={t.external ? "_blank" : undefined}
-                  rel={t.external ? "noopener" : undefined}
-                  class="text-accent mt-3 inline-block font-medium hover:underline"
-                >
-                  → 打開工具
-                </a>
-              )}
-            </li>
-          ))
+                  {t.name}
+                </h3>
+                <p class="text-muted-foreground mt-2 leading-relaxed">
+                  {t.desc}
+                </p>
+                {t.url && (
+                  <a
+                    href={t.url}
+                    target={t.external ? "_blank" : undefined}
+                    rel={t.external ? "noopener" : undefined}
+                    class="text-accent mt-3 inline-block font-medium hover:underline"
+                  >
+                    → 打開工具
+                  </a>
+                )}
+              </li>
+            );
+          })
         }
       </ul>
     </section>
@@ -222,23 +239,65 @@ const externalResources = [
       </h2>
       <ul class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {
-          sellerTools.map(t => (
-            <li class="border-border bg-card rounded-lg border p-5">
-              <div class="flex items-start justify-between gap-3">
-                <div class="text-3xl">{t.icon}</div>
-                <span class="bg-muted text-muted-foreground rounded px-2 py-0.5 text-xs whitespace-nowrap">
-                  {t.status}
-                </span>
-              </div>
-              <h3 class="text-foreground mt-3 text-lg font-bold">{t.name}</h3>
-              <p class="text-muted-foreground mt-2 leading-relaxed">
-                {t.desc}
-              </p>
-            </li>
-          ))
+          sellerTools.map(t => {
+            const isLive = t.status === "上線";
+            return (
+              <li
+                class:list={[
+                  "rounded-lg border p-5",
+                  isLive
+                    ? "border-border bg-card"
+                    : "border-border/50 bg-card/50 opacity-75",
+                ]}
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class:list={["text-3xl", !isLive && "grayscale-[40%]"]}>{t.icon}</div>
+                  <span
+                    class:list={[
+                      "rounded px-2 py-0.5 text-xs whitespace-nowrap",
+                      isLive
+                        ? "bg-accent text-accent-foreground"
+                        : "border border-border text-muted-foreground",
+                    ]}
+                  >
+                    {t.status}
+                  </span>
+                </div>
+                <h3
+                  class:list={[
+                    "mt-3 text-lg font-bold",
+                    isLive ? "text-foreground" : "text-muted-foreground",
+                  ]}
+                >
+                  {t.name}
+                </h3>
+                <p class="text-muted-foreground mt-2 leading-relaxed">
+                  {t.desc}
+                </p>
+                {t.url && (
+                  <a
+                    href={t.url}
+                    target={t.external ? "_blank" : undefined}
+                    rel={t.external ? "noopener" : undefined}
+                    class="text-accent mt-3 inline-block font-medium hover:underline"
+                  >
+                    → 打開工具
+                  </a>
+                )}
+              </li>
+            );
+          })
         }
       </ul>
     </section>
+
+    {/* ===== 即將推出 CTA ===== */}
+    <div class="text-muted-foreground mt-6 text-center text-sm">
+      以上「即將推出」的工具正在製作中。想先試用？<a
+        href="https://line.me/ti/p/sky811117"
+        class="text-accent font-medium hover:underline"
+      >LINE 問景泰：sky811117</a>
+    </div>
 
     {/* ===== 政府 / 民間公開資源 ===== */}
     <section class="mt-12">
