@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-06-03 11:00:00+08:00
 slug: faq-13-old-apartment-elevator
 featured: false
-draft: true
+draft: false
 ogImage: /og/faq-13-old-apartment-elevator.jpg
 tags:
 - faq
