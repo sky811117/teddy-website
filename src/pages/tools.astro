@@ -18,26 +18,26 @@ const buyerTools = [
   {
     icon: "📋",
     name: "看屋 checklist",
-    desc: "60+ 項屋況、嫌惡設施、凶宅檢查清單。去看屋前印一份帶著，現場逐條打勾不漏看。",
-    url: null,
-    external: false,
-    status: "即將推出",
+    desc: "60+ 項屋況、嫌惡設施、凶宅檢查清單。去看屋前印一份帶著，現場逐條打勾不漏看，進度自動存。",
+    url: "https://teddy-share-app.vercel.app/viewing-checklist/index.html",
+    external: true,
+    status: "上線",
   },
   {
     icon: "🗺️",
     name: "嫌惡設施地圖檢查",
-    desc: "輸入社區地址，自動圈出半徑 500 公尺內的殯儀館、高壓電塔、垃圾場、宮廟等 10 大嫌惡設施。",
-    url: null,
-    external: false,
-    status: "即將推出",
+    desc: "輸入地址，地圖自動圈出半徑 500 公尺內的宮廟、加油站、高壓電塔、墓地、垃圾場等鄰避設施（OSM 公開圖資，輔助參考）。",
+    url: "https://teddy-share-app.vercel.app/nuisance-map/index.html",
+    external: true,
+    status: "上線",
   },
   {
     icon: "📊",
     name: "台中各區行情速查",
-    desc: "北屯、西屯、南屯、七期、太平等主要行政區，整合實價登錄資料，查社區均價與近期成交趨勢。",
-    url: null,
-    external: false,
-    status: "即將推出",
+    desc: "整合內政部實價登錄，查台中 28 個行政區的中位單價、成交區間、屋齡與近一年歷史變化。",
+    url: "https://teddy-share-app.vercel.app/market-price/index.html",
+    external: true,
+    status: "上線",
   },
 ];
 
@@ -46,29 +46,29 @@ const sellerTools = [
     icon: "🏷️",
     name: "屋況自評表",
     desc: "10 個問題快速評估你的房子條件：屋齡、格局、樓層、採光、學區。自己先打分，再讓我專業判斷一次。",
-    url: null,
-    external: false,
-    status: "即將推出",
+    url: "https://teddy-share-app.vercel.app/seller-self-check/index.html",
+    external: true,
+    status: "上線",
   },
   {
     icon: "💵",
-    name: "AI 定價分析",
-    desc: "抓取你社區周邊 500 筆實價登錄成交紀錄，AI 分析合理售價區間，避免開太高賣不掉、開太低吃虧。",
-    url: null,
-    external: false,
-    status: "即將推出",
+    name: "定價參考分析",
+    desc: "輸入區域、建物型態、坪數，查周邊實價成交區間當開價的參考錨點。精準定價仍建議找我免費專業評估。",
+    url: "https://teddy-share-app.vercel.app/pricing-analysis/index.html",
+    external: true,
+    status: "上線",
   },
   {
     icon: "📑",
     name: "賣屋流程懶人包",
     desc: "從委託到交屋完整 9 步驟圖解：委託、估價、上架、帶看、議價、簽約、用印、完稅、交屋，每一步該準備什麼一次看完。",
-    url: null,
-    external: false,
-    status: "即將推出",
+    url: "https://teddy-share-app.vercel.app/selling-guide/index.html",
+    external: true,
+    status: "上線",
   },
 ];
 
-// SoftwareApplication schema for 已上線買方試算 (Google rich result)
+// SoftwareApplication schema（Google rich result）— 買方試算 + 其餘上線工具
 const softwareSchemas = [
   {
     "@context": "https://schema.org",
@@ -86,6 +86,20 @@ const softwareSchemas = [
     creator: { "@id": new URL("/", Astro.site).href + "#realestateagent" },
     inLanguage: "zh-TW",
   },
+  ...[...buyerTools, ...sellerTools]
+    .filter(t => t.status === "上線" && t.url && !t.url.includes("buyer-fee"))
+    .map(t => ({
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      name: t.name,
+      description: t.desc,
+      url: t.url,
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Any (Web)",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "TWD" },
+      creator: { "@id": new URL("/", Astro.site).href + "#realestateagent" },
+      inLanguage: "zh-TW",
+    })),
 ];
 
 // BreadcrumbList for /tools
@@ -291,9 +305,9 @@ const externalResources = [
       </ul>
     </section>
 
-    {/* ===== 即將推出 CTA ===== */}
+    {/* ===== 工具說明 CTA ===== */}
     <div class="text-muted-foreground mt-6 text-center text-sm">
-      以上「即將推出」的工具正在製作中。想先試用？<a
+      以上工具都是我做給客戶免費用的，不用登入、手機就能開。用起來有問題、或想要其他工具，隨時 <a
         href="https://line.me/ti/p/sky811117"
         class="text-accent font-medium hover:underline"
       >LINE 問景泰：sky811117</a>
