@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-06-02 09:00:00+08:00
 slug: 2026-05-W08-new-housing-loan-2
 featured: false
-draft: false
+draft: true
 ogImage: /og/2026-05-W08-new-housing-loan-2.jpg
 tags:
 - 政策篇

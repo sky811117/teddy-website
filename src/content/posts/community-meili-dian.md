@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-04-15 09:00:00+08:00
 slug: community-meili-dian
 featured: false
-draft: false
+draft: true
 ogImage: /og/community-meili-dian.jpg
 tags:
 - community-review

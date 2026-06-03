@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-21 22:00:00+08:00
 slug: week-02-new-housing-loan
 featured: true
-draft: false
+draft: true
 ogImage: /og/week-02-new-housing-loan.jpg
 tags:
 - weekly-recap

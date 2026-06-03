@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-02-17 09:00:00+08:00
 slug: viewing-06-presale-checklist
 featured: false
-draft: false
+draft: true
 ogImage: /og/viewing-06-presale-checklist.jpg
 tags:
 - 看屋實戰

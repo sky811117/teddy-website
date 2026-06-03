@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-06-13 11:00:00+08:00
 slug: faq-23-viewing-process
 featured: false
-draft: false
+draft: true
 ogImage: /og/faq-23-viewing-process.jpg
 tags:
 - faq

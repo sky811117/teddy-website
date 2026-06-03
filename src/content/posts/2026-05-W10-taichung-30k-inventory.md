@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-06-04 09:00:00+08:00
 slug: 2026-05-W10-taichung-30k-inventory
 featured: false
-draft: false
+draft: true
 ogImage: /og/2026-05-W10-taichung-30k-inventory.jpg
 tags:
 - 政策篇

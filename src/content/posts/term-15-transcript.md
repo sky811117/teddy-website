@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-04-04 10:00:00+08:00
 slug: term-15-transcript
 featured: false
-draft: false
+draft: true
 ogImage: /og/term-15-transcript.jpg
 tags:
 - 房地產詞典

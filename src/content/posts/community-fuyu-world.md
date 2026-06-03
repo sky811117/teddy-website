@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-06 09:00:00+08:00
 slug: community-fuyu-world
 featured: false
-draft: false
+draft: true
 ogImage: /og/community-fuyu-world.jpg
 tags:
 - community-review

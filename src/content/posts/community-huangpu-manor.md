@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-04-17 09:00:00+08:00
 slug: community-huangpu-manor
 featured: false
-draft: false
+draft: true
 ogImage: /og/community-huangpu-manor.jpg
 tags:
 - community-review

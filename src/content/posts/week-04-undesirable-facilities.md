@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-21 23:00:00+08:00
 slug: week-04-undesirable-facilities
 featured: false
-draft: false
+draft: true
 ogImage: /og/week-04-undesirable-facilities.jpg
 tags:
 - weekly-recap

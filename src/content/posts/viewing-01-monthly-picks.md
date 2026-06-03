@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-02-01 10:00:00+08:00
 slug: viewing-01-monthly-picks
 featured: false
-draft: false
+draft: true
 ogImage: /og/viewing-01-monthly-picks.jpg
 tags:
 - 看屋實戰

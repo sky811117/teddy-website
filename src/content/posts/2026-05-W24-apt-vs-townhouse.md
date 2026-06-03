@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-06-24 09:00:00+08:00
 slug: 2026-05-W24-apt-vs-townhouse
 featured: false
-draft: false
+draft: true
 ogImage: /og/2026-05-W24-apt-vs-townhouse.jpg
 tags:
 - 結構分析

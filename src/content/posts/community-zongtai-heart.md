@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-04-07 14:00:00+08:00
 slug: community-zongtai-heart
 featured: false
-draft: false
+draft: true
 ogImage: /og/community-zongtai-heart.jpg
 tags:
 - community-review

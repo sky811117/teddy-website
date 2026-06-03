@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-03-02 14:00:00+08:00
 slug: viewing-08-daylight-ventilation
 featured: false
-draft: false
+draft: true
 ogImage: /og/viewing-08-daylight-ventilation.jpg
 tags:
 - 看屋實戰

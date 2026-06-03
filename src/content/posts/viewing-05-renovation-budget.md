@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-02-13 20:00:00+08:00
 slug: viewing-05-renovation-budget
 featured: false
-draft: false
+draft: true
 ogImage: /og/viewing-05-renovation-budget.jpg
 tags:
 - 看屋實戰

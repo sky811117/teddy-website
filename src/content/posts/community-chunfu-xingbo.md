@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-04-09 14:00:00+08:00
 slug: community-chunfu-xingbo
 featured: false
-draft: false
+draft: true
 ogImage: /og/community-chunfu-xingbo.jpg
 tags:
 - community-review

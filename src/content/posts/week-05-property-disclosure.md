@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-21 23:30:00+08:00
 slug: week-05-property-disclosure
 featured: false
-draft: false
+draft: true
 ogImage: /og/week-05-property-disclosure.jpg
 tags:
 - 買方教學

@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-24 11:00:00+08:00
 slug: faq-03-haunted-house-check
 featured: false
-draft: false
+draft: true
 ogImage: /og/faq-03-haunted-house-check.jpg
 tags:
 - faq

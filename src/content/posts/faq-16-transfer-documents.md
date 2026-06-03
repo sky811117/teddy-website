@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-06-06 11:00:00+08:00
 slug: faq-16-transfer-documents
 featured: false
-draft: false
+draft: true
 ogImage: /og/faq-16-transfer-documents.jpg
 tags:
 - faq

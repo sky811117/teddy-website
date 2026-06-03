@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-21 22:30:00+08:00
 slug: week-03-negotiation-7
 featured: false
-draft: false
+draft: true
 ogImage: /og/week-03-negotiation-7.jpg
 tags:
 - weekly-recap

@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-30 08:00:00+08:00
 slug: tool-negotiation
 featured: false
-draft: false
+draft: true
 ogImage: /og/tool-negotiation.jpg
 tags:
 - 工具

@@ -5,7 +5,7 @@ pubDatetime: 2026-06-25T09:00:00+08:00
 slug: 2026-06-W04-district_other-district-wuri-may
 ogImage: /og/2026-06-W04-district_other-district-wuri-may.jpg
 featured: false
-draft: false
+draft: true
 tags:
   - monthly-market
   - 烏日

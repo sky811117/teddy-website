@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-21 14:00:00+08:00
 slug: faq-02-down-payment
 featured: false
-draft: false
+draft: true
 ogImage: /og/faq-02-down-payment.jpg
 tags:
 - faq

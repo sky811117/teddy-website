@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-02-22 10:00:00+08:00
 slug: viewing-07-old-house-structure
 featured: false
-draft: false
+draft: true
 ogImage: /og/viewing-07-old-house-structure.jpg
 tags:
 - 看屋實戰

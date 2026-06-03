@@ -4,7 +4,7 @@ author: 陳景泰
 pubDatetime: 2026-05-27 21:00:00+08:00
 slug: policy-05-escrow-system
 featured: false
-draft: false
+draft: true
 ogImage: /og/policy-05-escrow-system.jpg
 tags:
 - 政策解讀
