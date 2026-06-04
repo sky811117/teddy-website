@@ -14,6 +14,21 @@
 
 const UPSTREAM = "https://sky811117.github.io/teddy-shares/";
 const GA4_ID = "G-WMQCYK4L88";
+const SITE = "https://teddy-website-blog.pages.dev";
+
+// 「回官網」區塊 — proxy 層注入，讓每個分享頁（新舊全部）底部都能逛回官網。
+// 自帶 inline style，不依賴頁面既有 CSS；guard 認標題字串避免重複注入。
+const BACK_TO_SITE = `
+<div style="max-width:1100px;margin:32px auto 48px;padding:0 16px;font-family:-apple-system,'PingFang TC','Microsoft JhengHei',sans-serif;">
+  <div style="background:#fff;border:1px solid rgba(212,185,150,.5);border-radius:16px;padding:26px 20px;text-align:center;box-shadow:0 2px 12px rgba(60,45,20,.08);">
+    <div style="font-size:18px;font-weight:700;color:#6b5b3a;margin-bottom:16px;line-height:1.6;">🏡 想看更多好屋？歡迎逛逛我的房仲官網</div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;">
+      <a href="${SITE}/properties" target="_blank" rel="noopener" style="display:inline-block;padding:13px 26px;border-radius:24px;font-size:16px;font-weight:700;background:#6B8E23;color:#fff;text-decoration:none;">在售物件</a>
+      <a href="${SITE}/about" target="_blank" rel="noopener" style="display:inline-block;padding:13px 26px;border-radius:24px;font-size:16px;font-weight:700;background:#fff;color:#6B8E23;border:1.5px solid #6B8E23;text-decoration:none;">認識景泰</a>
+      <a href="${SITE}/" target="_blank" rel="noopener" style="display:inline-block;padding:13px 26px;border-radius:24px;font-size:16px;font-weight:700;background:#fff;color:#6B8E23;border:1.5px solid #6B8E23;text-decoration:none;">房仲官網</a>
+    </div>
+  </div>
+</div>`;
 
 type EventContext = {
   params: { path?: string | string[] };
@@ -75,6 +90,12 @@ export const onRequest = async ({
       `<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}` +
       `gtag('js',new Date());gtag('config','${GA4_ID}');</script>`;
     html = html.replace("</head>", ga + "</head>");
+  }
+
+  // 注入「回官網」區塊 — 新舊頁面只要走 proxy 都會有底部引流區塊。
+  // guard：頁面已含此區塊（後端新版也會 bake）就不重複注入。
+  if (!html.includes("想看更多好屋") && html.includes("</body>")) {
+    html = html.replace("</body>", BACK_TO_SITE + "</body>");
   }
 
   return new Response(html, {
