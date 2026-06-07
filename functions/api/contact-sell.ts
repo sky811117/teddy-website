@@ -13,9 +13,11 @@
  *  - CONTACT_TG_TOKEN     Telegram bot token（reuse contact-tg）
  *  - CONTACT_TG_CHAT      Telegram chat_id
  *
- * 任一環境變數缺失時：對應 side effect 跳過、不擋表單成功回應。
- *  - Notion 失敗：回 500（這是主要儲存、不能掉資料）
- *  - TG 失敗：log + 繼續（次要通知、不擋）
+ * 容錯收件策略（避免賣方 lead 遺失）：
+ *  - Notion + TG 是兩條獨立送達管道，不論 Notion 成敗都會試 TG。
+ *  - 只要任一條成功 → 回 200 { ok:true, stored, notified }。
+ *  - 兩條都失敗 → 回 200 { ok:false, degraded:true }，前端引導客戶改 LINE / 電話。
+ *  - 永遠不回 500（500 會讓前端把客戶擋在外面、lead 直接掉）。
  */
 
 interface Env {
@@ -124,7 +126,7 @@ async function pushTG(
   token: string,
   chatId: string,
   timeoutMs = 3000
-): Promise<void> {
+): Promise<boolean> {
   const name = (payload["姓名"] || "").trim();
   const phone = (payload["電話"] || "").trim();
   const email = (payload["Email"] || "").trim();
@@ -183,10 +185,13 @@ async function pushTG(
     if (!res.ok) {
       const errText = await res.text();
       console.error("[contact-sell] TG send failed:", res.status, errText);
+      return false;
     }
+    return true;
   } catch (err) {
     clearTimeout(timeoutId);
     console.error("[contact-sell] TG fetch error:", err);
+    return false;
   }
 }
 
@@ -230,41 +235,46 @@ export const onRequestPost = async ({
     );
   }
 
-  // Notion 必設
+  // === 容錯收件：Notion + TG 兩條送達管道，只要一條成功就算收到 lead ===
+  // 設計目標：缺 NOTION env 或 Notion 失敗時，絕不能在 TG 推播前 return，
+  // 否則賣方整筆 lead 遺失。所以不論 Notion 成敗都試 TG。
+
+  // 1. 先試 Notion（僅在有 NOTION_API_KEY + NOTION_SELL_DB_ID 才試）
   const notionKey = env.NOTION_API_KEY;
   const notionDb = env.NOTION_SELL_DB_ID;
-  if (!notionKey || !notionDb) {
+  let notionAttempted = false;
+  let notionOk = false;
+  if (notionKey && notionDb) {
+    notionAttempted = true;
+    const notionResult = await writeToNotion(payload, notionKey, notionDb);
+    notionOk = notionResult.ok;
+  } else {
     console.error("[contact-sell] NOTION_API_KEY / NOTION_SELL_DB_ID 未設定");
-    return jsonResponse(
-      { ok: false, error: "Backend not configured" },
-      500
-    );
   }
 
-  const notionResult = await writeToNotion(payload, notionKey, notionDb);
-  if (!notionResult.ok) {
-    return jsonResponse(
-      {
-        ok: false,
-        error: "Notion write failed",
-        status: notionResult.status,
-      },
-      500
-    );
-  }
-
-  // TG 推播：失敗不影響主流程
+  // 2. 不論 Notion 成敗都試 TG（僅在有 CONTACT_TG_TOKEN + CONTACT_TG_CHAT 才推）
   const tgToken = env.CONTACT_TG_TOKEN;
   const tgChat = env.CONTACT_TG_CHAT;
+  let tgOk = false;
   if (tgToken && tgChat) {
-    await pushTG(payload, tgToken, tgChat);
+    tgOk = await pushTG(payload, tgToken, tgChat);
   } else {
     console.warn(
       "[contact-sell] CONTACT_TG_TOKEN / CONTACT_TG_CHAT 未設定、跳過 TG 通知"
     );
   }
 
-  return jsonResponse({ ok: true });
+  // 3. 任一管道成功就算收到 lead
+  if (notionOk || tgOk) {
+    return jsonResponse({ ok: true, stored: notionOk, notified: tgOk });
+  }
+
+  // 4. 兩條都失敗：回 200 + degraded，讓前端引導客戶改 LINE / 電話（不漏 lead）
+  return jsonResponse({
+    ok: false,
+    degraded: true,
+    error: notionAttempted ? "delivery_failed" : "backend_not_configured",
+  });
 };
 
 // 非 POST 方法 fallback (POST 走 onRequestPost — Cloudflare Pages Functions 規範)

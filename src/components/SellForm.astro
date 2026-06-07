@@ -421,11 +421,38 @@ const {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
+
+        // 容錯解析後端 JSON（解析失敗不要炸、走下方 !res.ok 分支）
+        let data: { ok?: boolean; degraded?: boolean } = {};
+        try {
+          data = await res.clone().json();
+        } catch {}
+
+        // 成功（Notion 或 TG 任一條收到）→ 導 thank-you
+        if (data.ok) {
+          window.location.href =
+            "/thank-you?intent=" + encodeURIComponent("賣房");
+          return;
+        }
+
+        // 系統暫時收不到件（兩條管道都失敗）→ 引導客戶改 LINE / 電話、不漏 lead
+        if (data.degraded) {
+          showFormError(
+            "系統暫時無法收件、為了不漏掉你的訊息、請直接 LINE sky811117 或撥 0920-118-756、景泰會立刻處理"
+          );
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "送出 → 24 小時內回你";
+          }
+          return;
+        }
+
+        // 其餘非 2xx（驗證失敗 / 伺服器錯誤）→ 落到 catch 顯示通用錯誤
         if (!res.ok) {
           const text = await res.text();
           throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
         }
-        window.location.href = "/thank-you?intent=" + encodeURIComponent("賣房");
+        throw new Error("Unexpected response");
       } catch (err) {
         console.error("Sell form submit failed:", err);
         showFormError(

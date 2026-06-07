@@ -1,0 +1,269 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import ContactForm from "@/components/ContactForm.astro";
+import config from "@/config";
+import { safeJsonLd } from "@/utils/safeJsonLd";
+
+const canonicalURL = new URL("/buy", Astro.site).href;
+const siteOrigin = new URL("/", Astro.site).href;
+const realEstateAgentId = `${siteOrigin}#realestateagent`;
+
+const metaTitle = `台中買房 — 找房流程 + 議價協助 | ${config.site.title}`;
+const metaDesc =
+  "台中買房太多眉角：行情、議價、貸款、屋況。景泰用工具幫你過濾物件、抓合理區間、跑銀行比較，從客需訪談到交屋全程陪同。LINE：sky811117。";
+
+// 買房 4 步流程
+const steps = [
+  {
+    emoji: "💬",
+    title: "1. 客需訪談",
+    desc: "先搞清楚你的預算、自備款、想住哪、家裡幾個人、上下班路線。條件愈清楚，後面省愈多時間。",
+  },
+  {
+    emoji: "🔍",
+    title: "2. 過濾推薦",
+    desc: "從 30+ 間裡幫你刷掉不合的，留 5-8 間值得看的。把不用跑的物件先刪掉，週末才不會白跑。",
+  },
+  {
+    emoji: "🤝",
+    title: "3. 陪看 + 議價",
+    desc: "現場一起看屋況、查嫌惡設施。出價前先抓同社區近 12 個月實價登錄的合理區間，用數據談、不是用喊的。",
+  },
+  {
+    emoji: "📝",
+    title: "4. 簽約交屋",
+    desc: "簽約逐條對地號建號持分、付款條件、違約條款；貸款、過戶、點交全程陪同，履約保證跟漏水保固也幫你顧。",
+  },
+];
+
+// 語料複用 services.astro 的 buy.whatYouGet
+const whatYouGet = [
+  "客需訪談 → 過濾 30+ 物件 → 推薦 5-8 間",
+  "陪看 + 議價（用真實案例 + 數據）",
+  "貸款規劃（新青安 vs 一般、跑 2-3 家銀行比較）",
+  "簽約 / 過戶 / 點交全程陪同",
+  "履約保證 + 漏水保固條款協助",
+];
+
+// 語料複用 services.astro 的 buy.targetUsers
+const targetUsers = [
+  "首購族（新青安資格 + 自備款不夠）",
+  "換屋族（要先賣 + 同步找新家）",
+  "投資族（看 NPV 不看感覺）",
+  "外地買家（給預算我幫你過濾）",
+];
+
+// 工具導引 4 卡
+const toolLinks = [
+  {
+    href: "/tools",
+    emoji: "🧮",
+    title: "買方試算工具",
+    desc: "一次性費用、月付金、新青安 vs 一般房貸怎麼選",
+  },
+  {
+    href: "/faq",
+    emoji: "❓",
+    title: "常見問題 30 題",
+    desc: "仲介費、新青安、凶宅、過戶 — 短答一次看完",
+  },
+  {
+    href: "/areas",
+    emoji: "📍",
+    title: "台中各區買房指南",
+    desc: "北屯 / 七期 / 南屯 / 太平 7 區行情與生活機能",
+  },
+  {
+    href: "/properties",
+    emoji: "🏠",
+    title: "在售物件",
+    desc: "北屯 / 西屯 / 南屯 / 七期 — 直接看有什麼在賣",
+  },
+];
+
+const serviceSchema = {
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "@id": `${canonicalURL}#service`,
+  name: "台中買房協助",
+  description: "從客需訪談、過濾推薦、陪看議價到簽約交屋的全程買房協助。",
+  serviceType: "買房諮詢",
+  provider: { "@id": realEstateAgentId },
+  areaServed: {
+    "@type": "City",
+    name: "台中市",
+  },
+  audience: {
+    "@type": "PeopleAudience",
+    suggestedAudience: targetUsers,
+  },
+  hasOfferCatalog: {
+    "@type": "OfferCatalog",
+    name: "買房協助內容",
+    itemListElement: whatYouGet.map((item, idx) => ({
+      "@type": "Offer",
+      position: idx + 1,
+      itemOffered: {
+        "@type": "Service",
+        name: item,
+      },
+    })),
+  },
+};
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "首頁",
+      item: siteOrigin,
+    },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: "台中買房",
+      item: canonicalURL,
+    },
+  ],
+};
+---
+
+<Layout title={metaTitle} description={metaDesc} canonicalURL={canonicalURL}>
+  <Fragment slot="head">
+    <script
+      type="application/ld+json"
+      is:inline
+      set:html={safeJsonLd(serviceSchema)}
+    />
+    <script
+      type="application/ld+json"
+      is:inline
+      set:html={safeJsonLd(breadcrumbSchema)}
+    />
+  </Fragment>
+
+  <Header />
+
+  <main id="main-content" class="app-layout">
+    {/* ============ HERO ============ */}
+    <section class="border-border border-b py-12 text-center sm:py-16">
+      <h1 class="text-3xl font-bold sm:text-4xl">
+        在台中買房，<br />
+        <span class="text-accent">不用一個人摸黑找</span>
+      </h1>
+      <p
+        class="text-muted-foreground mx-auto mt-6 max-w-xl text-[17px] leading-relaxed"
+      >
+        看了十間還是不知道哪間該下手？怕買貴、怕踩雷、怕貸款卡關？
+        台中買房的眉角，我用工具一個一個幫你拆開：先過濾物件、再抓合理區間、再跑銀行比較。
+        你只要看屋、做決定，剩下的我來。
+      </p>
+
+      <div
+        class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"
+      >
+        <a
+          href="https://line.me/ti/p/sky811117"
+          class="bg-accent text-accent-foreground rounded-lg px-6 py-3 text-[17px] font-medium no-underline shadow hover:shadow-lg"
+        >
+          🏠 我要找房（LINE 諮詢）
+        </a>
+        <a
+          href="/contact?type=buy"
+          class="border-accent text-accent rounded-lg border-2 px-6 py-3 text-[17px] font-medium no-underline hover:bg-accent hover:text-accent-foreground"
+        >
+          📝 填表單給條件
+        </a>
+      </div>
+    </section>
+
+    {/* ============ 買房 4 步流程 ============ */}
+    <section class="border-border border-b py-12 sm:py-16">
+      <div class="text-center">
+        <p class="text-muted-foreground text-sm">買房流程</p>
+        <h2 class="text-foreground mt-2 text-2xl font-bold sm:text-3xl">
+          從第一通訊息到拿鑰匙，4 步
+        </h2>
+      </div>
+      <ul class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
+        {
+          steps.map(s => (
+            <li class="border-border bg-card rounded-lg border p-6">
+              <div class="text-4xl">{s.emoji}</div>
+              <h3 class="text-foreground mt-3 text-xl font-bold">{s.title}</h3>
+              <p class="text-muted-foreground mt-2 text-[15px] leading-relaxed">
+                {s.desc}
+              </p>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    {/* ============ 我幫你做的事 / 適合誰找 ============ */}
+    <section class="border-border border-b py-12 sm:py-16">
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div class="border-border bg-card rounded-lg border p-6">
+          <h2 class="text-foreground text-xl font-bold sm:text-2xl">
+            📋 我幫你做的事
+          </h2>
+          <ul class="text-muted-foreground mt-4 space-y-2 text-[15px] leading-relaxed">
+            {whatYouGet.map(w => <li>・{w}</li>)}
+          </ul>
+        </div>
+        <div class="border-border bg-card rounded-lg border p-6">
+          <h2 class="text-foreground text-xl font-bold sm:text-2xl">
+            🎯 這些人適合找我
+          </h2>
+          <ul class="text-muted-foreground mt-4 space-y-2 text-[15px] leading-relaxed">
+            {targetUsers.map(u => <li>・{u}</li>)}
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    {/* ============ 工具導引 ============ */}
+    <section class="border-border border-b py-12 sm:py-16">
+      <div class="text-center">
+        <p class="text-muted-foreground text-sm">買房前先用這些</p>
+        <h2 class="text-foreground mt-2 text-2xl font-bold sm:text-3xl">
+          自己先做點功課，看屋更有底
+        </h2>
+      </div>
+      <ul class="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {
+          toolLinks.map(t => (
+            <li>
+              <a
+                href={t.href}
+                class="border-border bg-card hover:border-accent block h-full rounded-lg border p-4 no-underline transition-colors sm:p-5"
+              >
+                <div class="text-3xl sm:text-4xl">{t.emoji}</div>
+                <h3 class="text-foreground mt-2 text-base font-bold sm:text-lg">
+                  {t.title}
+                </h3>
+                <p class="text-muted-foreground mt-1 text-xs leading-relaxed sm:text-sm">
+                  {t.desc}
+                </p>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    {/* ============ 底部表單 ============ */}
+    <ContactForm
+      defaultIntent="buy"
+      title="把你的條件留給我，我幫你過濾"
+      subtitle="預算、想住哪、自備款大概多少 — 寫個大概就好。我看完回你一份適合的方向，不用先加 LINE。"
+    />
+  </main>
+
+  <Footer />
+</Layout>

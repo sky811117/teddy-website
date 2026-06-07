@@ -340,6 +340,21 @@ const bigKanBanAccounts = [
         </div>
       </div>
 
+      {/* 顯式電話 CTA — Layout 設了 format-detection telephone=no，手機要靠這條才撥得通 */}
+      <div class="mt-6 flex flex-col items-center gap-1">
+        <a
+          href="tel:+886920118756"
+          class="text-foreground hover:text-accent inline-flex items-center gap-2 text-lg font-semibold underline-offset-4 hover:underline"
+          data-track="cta"
+          data-cta="hero-tel"
+        >
+          📞 0920-118-756
+        </a>
+        <p class="text-muted-foreground text-[14px]">
+          急約看屋、想直接講？這支號碼直撥本人
+        </p>
+      </div>
+
       {/* 信任 badge — 有巢氏品牌 */}
       <div class="mt-12 flex flex-col items-center gap-3">
         <p class="text-muted-foreground text-xs tracking-wide">所屬公司</p>
@@ -561,9 +576,9 @@ const bigKanBanAccounts = [
             <li>✓ 台中各區行情查詢</li>
           </ul>
           <a
-            href="/tools"
+            href="/buy"
             class="text-accent mt-4 inline-block font-medium hover:underline"
-            >看買方工具 →</a
+            >看買房流程 →</a
           >
         </div>
         <div class="border-border bg-card rounded-lg border p-6">
@@ -578,9 +593,9 @@ const bigKanBanAccounts = [
             <li>✓ 仲介費議價空間（不是天上掉下來的 6%）</li>
           </ul>
           <a
-            href="/tools"
+            href="/sell"
             class="text-accent mt-4 inline-block font-medium hover:underline"
-            >看賣方工具 →</a
+            >看賣房優勢 →</a
           >
         </div>
       </div>

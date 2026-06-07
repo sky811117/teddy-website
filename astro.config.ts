@@ -16,6 +16,9 @@ import {
 } from "@shikijs/transformers";
 import { transformerFileName } from "./src/utils/transformers/fileName";
 import config from "./astro-paper.config";
+import { buildLastmodMap } from "./scripts/sitemap-lastmod.mjs";
+
+const lastmodMap = buildLastmodMap(config.site.url);
 
 export default defineConfig({
   site: config.site.url,
@@ -51,6 +54,8 @@ export default defineConfig({
           item.priority = 0.6;
           item.changefreq = "weekly" as never;
         }
+        const lm = lastmodMap.get(item.url);
+        if (lm) item.lastmod = lm.toISOString();
         return item;
       },
     }),

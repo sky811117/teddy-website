@@ -71,6 +71,22 @@ const isActive = (path: string) => {
       id="nav-menu"
       class="flex w-full flex-col items-center sm:w-auto sm:flex-row sm:justify-end sm:space-x-4 sm:py-0"
     >
+      {
+        features.search !== false && (
+          <a
+            href={getRelativeLocaleUrl(locale, "search")}
+            class:list={[
+              "focus-outline relative size-8 self-end sm:hidden",
+              { "text-accent": isActive("/search") },
+            ]}
+            title="搜尋"
+            aria-label="搜尋文章"
+          >
+            <IconSearch class="absolute top-1/2 left-1/2 size-6 -translate-x-1/2 -translate-y-1/2" />
+            <span class="sr-only">搜尋</span>
+          </a>
+        )
+      }
       <button
         id="menu-btn"
         class="focus-outline self-end p-2 sm:hidden"

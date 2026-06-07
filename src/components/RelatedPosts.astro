@@ -1,6 +1,7 @@
 ---
 import { getCollection, type CollectionEntry } from "astro:content";
 import { getPostUrl } from "@/utils/getPostPaths";
+import { postFilter } from "@/utils/postFilter";
 import config from "@/config";
 
 type Props = {
@@ -21,15 +22,29 @@ const SERIES_PREFIXES = [
   "viewing-",
 ];
 
-const getSeriesPrefix = (id: string): string | null =>
-  SERIES_PREFIXES.find(p => id.startsWith(p)) ?? null;
+const SERIES_KEYWORDS = [
+  "news-",
+  "rate-",
+  "city-",
+  "economy-",
+  "hot_community-",
+  "hot-",
+  "district_focus-",
+  "district_other-",
+  "district-",
+];
+
+const getSeriesPrefix = (id: string): string | null => {
+  const kw = SERIES_KEYWORDS.find(k => id.includes(k));
+  if (kw) return kw;
+  return SERIES_PREFIXES.find(p => id.startsWith(p)) ?? null;
+};
 
 const currentSeries = getSeriesPrefix(currentPost.id);
 const currentTags = currentPost.data.tags ?? [];
 
-const allPosts = await getCollection(
-  "posts",
-  ({ id, data }) => !data.draft && id !== currentPost.id
+const allPosts = (await getCollection("posts")).filter(
+  p => p.id !== currentPost.id && postFilter(p)
 );
 
 type Scored = {
@@ -67,7 +82,11 @@ const tier2Ids = new Set(tier2.map(s => s.post.id));
 
 const tier3 = scored
   .filter(s => !tier1Ids.has(s.post.id) && !tier2Ids.has(s.post.id))
-  .sort((a, b) => b.pubTime - a.pubTime);
+  .sort(
+    (a, b) =>
+      (b.tagMatch > 0 ? 1 : 0) - (a.tagMatch > 0 ? 1 : 0) ||
+      b.pubTime - a.pubTime
+  );
 
 const LIMIT = 6;
 const recommended = [...tier1, ...tier2, ...tier3].slice(0, LIMIT);

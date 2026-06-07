@@ -17,6 +17,7 @@ type Props = {
   noindex?: boolean;
   prevURL?: string;
   nextURL?: string;
+  showFloatingCTA?: boolean;
 };
 
 const { site } = config;
@@ -29,6 +30,7 @@ const {
   noindex = false,
   prevURL,
   nextURL,
+  showFloatingCTA = true,
 } = Astro.props;
 
 const socialImageURL = new URL(ogImage, Astro.site ?? Astro.url);
@@ -285,7 +287,7 @@ const rssHref = getRelativeLocaleUrl(
     class="bg-background font-app text-foreground selection:bg-accent/75 selection:text-accent-foreground flex min-h-svh flex-col"
   >
     <slot />
-    <FloatingCTA />
+    {showFloatingCTA && <FloatingCTA />}
     <script>
       import "@/scripts/theme";
     </script>

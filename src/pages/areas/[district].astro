@@ -104,6 +104,7 @@ const areaServedSchema = {
     `${area.shortName}房價`,
     `${area.shortName}行情`,
     ...area.hotCommunities.map(c => c.name),
+    ...(area.seoSections?.map(s => s.heading) ?? []),
   ],
   hasCredential: [
     "經紀人 黃永隆 113彰縣字324",
@@ -175,6 +176,25 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
     >
       <p class="text-foreground text-lg leading-relaxed">{area.summary}</p>
     </section>
+
+    {/* SEO 敘述內文 (長尾關鍵字) */}
+    {
+      area.seoSections && (
+        <section class="app-prose max-w-app mt-10">
+          {area.seoSections.map(sec => (
+            <Fragment>
+              <h2 class="text-foreground text-xl font-bold sm:text-2xl">
+                {sec.emoji ? sec.emoji + " " : ""}
+                {sec.heading}
+              </h2>
+              {sec.paragraphs.map(p => (
+                <p>{p}</p>
+              ))}
+            </Fragment>
+          ))}
+        </section>
+      )
+    }
 
     {/* 2026 Q1 數據表 */}
     <section class="mt-10">

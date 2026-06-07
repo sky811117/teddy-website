@@ -78,7 +78,11 @@ export const onRequestPost = async ({
     console.warn(
       "[contact-tg] CONTACT_TG_TOKEN / CONTACT_TG_CHAT 未設定、跳過 TG 通知"
     );
-    return jsonResponse({ ok: false, error: "TG not configured" });
+    return jsonResponse({
+      ok: false,
+      degraded: true,
+      error: "backend_not_configured",
+    });
   }
 
   // 5. 組訊息
