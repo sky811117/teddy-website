@@ -51,12 +51,10 @@ function getRoomBucket(layout: string | undefined): string {
 }
 const ROOM_ORDER = ["1房", "2房", "3房", "4房", "5房+"];
 
-// 精選優先，再依發佈時間倒序
-const sortedProperties = allProperties.sort((a, b) => {
-  if (a.data.featured && !b.data.featured) return -1;
-  if (!a.data.featured && b.data.featured) return 1;
-  return b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime();
-});
+// 新上架優先（pubDatetime 倒序）
+const sortedProperties = allProperties.sort(
+  (a, b) => b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime()
+);
 
 // 標籤判斷
 const NEW_LISTING_DAYS = 7;

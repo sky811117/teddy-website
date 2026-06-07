@@ -27,11 +27,7 @@ const allProperties = await getCollection(
   ({ data }) => data.status === "active"
 ).catch(() => []);
 const featuredProperties = allProperties
-  .sort((a, b) => {
-    if (a.data.featured && !b.data.featured) return -1;
-    if (!a.data.featured && b.data.featured) return 1;
-    return b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime();
-  })
+  .sort((a, b) => b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime())
   .slice(0, 3);
 
 const personalAccounts = [

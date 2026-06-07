@@ -28,11 +28,7 @@ const allProperties = await getCollection(
     data.status === "active" && area.districtMatch.includes(data.district)
 );
 const previewProperties = allProperties
-  .sort((a, b) => {
-    if (a.data.featured && !b.data.featured) return -1;
-    if (!a.data.featured && b.data.featured) return 1;
-    return b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime();
-  })
+  .sort((a, b) => b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime())
   .slice(0, 6);
 
 // 取該區 community post (有 postSlug 的) — 並讀 post 的 title/description
