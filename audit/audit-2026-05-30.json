@@ -1,0 +1,118 @@
+{
+  "scanned": 338,
+  "findings": [
+    {
+      "file": "0049919.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "第一",
+      "snippet": "大厦、網銀國際…至少四座商辦群誕生、台中第一間凱悅集團旗下奢華飯店品牌「安達\"\r\n "
+    },
+    {
+      "file": "0071851.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "第一",
+      "snippet": "\"1.水湳經貿園區核心｜中央公園＋綠美圖第一排\"\r\n  - \"位處文商段精華地段，正"
+    },
+    {
+      "file": "0238997.md",
+      "severity": "MEDIUM",
+      "rule": "預售敏感詞",
+      "field": "body",
+      "matched": "即將完工",
+      "snippet": "地段：正臨60米環中路，緊鄰洲際棒球場、即將完工的漢神百貨與太子商場。擁雙巨蛋百億商圈，"
+    },
+    {
+      "file": "0240900.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "第一",
+      "snippet": "程持續推動\"\r\n  - \"正40米環河路第一排，地形方正、面寬佳具高度規劃價值\"\r\n"
+    },
+    {
+      "file": "0240901.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "第一",
+      "snippet": "駐帶動區域\"\r\n  - \"正40米環河路第一排，臨路條件佳\"\r\n  - \"地形方正平"
+    },
+    {
+      "file": "1153122.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "第一",
+      "snippet": "ghlights:\r\n  - \"麗園公園第一排，享受視野與永久棟距，適合小資家庭及新"
+    },
+    {
+      "file": "1153159.md",
+      "severity": "MEDIUM",
+      "rule": "預售敏感詞",
+      "field": "body",
+      "matched": "新建案",
+      "snippet": "南來北往交通超便捷\"\r\n  - \"5. 新建案林立自住收租\"\r\ndescription"
+    },
+    {
+      "file": "1187634.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "第一",
+      "snippet": "竹交流道\"\r\n  - \"榮獲優良社區評選第一名，企業主與高端客群指標社區\"\r\n  -"
+    },
+    {
+      "file": "1187640.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "第一",
+      "snippet": "ights:\r\n  - \"預計2025年第一季交屋公設比：33%總戶數：360戶、1"
+    },
+    {
+      "file": "UG1172042.md",
+      "severity": "MEDIUM",
+      "rule": "廣告誇大",
+      "field": "body",
+      "matched": "第一",
+      "snippet": "**：南簡公園\r\n**鄰近市場**：梧棲第一市場、臺中三井OUTLET\r\n\r\n---"
+    }
+  ],
+  "missingCredentials": [
+    {
+      "file": "0212850.md",
+      "broker": false,
+      "agent": false
+    },
+    {
+      "file": "0387214.md",
+      "broker": false,
+      "agent": false
+    },
+    {
+      "file": "1187665.md",
+      "broker": false,
+      "agent": false
+    },
+    {
+      "file": "1195688.md",
+      "broker": false,
+      "agent": false
+    }
+  ],
+  "summary": {
+    "bySeverity": {
+      "HIGH": 0,
+      "MEDIUM": 10
+    },
+    "byRule": {
+      "廣告誇大": 8,
+      "預售敏感詞": 2
+    },
+    "missingCredentialsCount": 4
+  }
+}
