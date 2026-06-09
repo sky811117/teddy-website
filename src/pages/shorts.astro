@@ -10,6 +10,7 @@ import {
   platformInfo,
   categoryInfo,
   categories,
+  authorInfo,
   getVideoCover,
   type VideoCategory,
 } from "@/data/videos";
@@ -71,7 +72,14 @@ const videoSchemas = sortedVideos.map(v => ({
   publisher: {
     "@id": `${siteOrigin}#organization`,
   },
-  creator: { "@id": realEstateAgentId },
+  creator:
+    v.author === "bigkanban"
+      ? {
+          "@type": "Person",
+          name: "房仲大看板",
+          url: "https://www.facebook.com/BigKanBan",
+        }
+      : { "@id": realEstateAgentId },
 }));
 
 // BreadcrumbList
@@ -129,7 +137,7 @@ function formatDate(d: Date): string {
 
   <Main
     pageTitle="景泰的房仲短影音"
-    pageDesc="YouTube / TikTok / Instagram 三平台。看屋開箱、政策快訊、議價心法 — 看影片比讀文章快。"
+    pageDesc="YouTube / TikTok / Instagram 三平台我自己拍的，加上我關注的房仲前輩「房仲大看板 @bigkanban」精選 — 看影片比讀文章快。"
   >
     {/* ====== 3 個平台大卡片 — 直接連主頁看 latest ====== */}
     <section class="mt-8">
@@ -262,6 +270,8 @@ function formatDate(d: Date): string {
                     data-video-id={v.id}
                     data-video-platform={v.platform}
                     data-video-category={v.category}
+                    data-youtube-id={v.platform === "youtube" ? v.videoId : undefined}
+                    data-video-title={v.title}
                   >
                     <div class="bg-muted relative aspect-video w-full overflow-hidden">
                       {cover ? (
@@ -299,13 +309,23 @@ function formatDate(d: Date): string {
                           v.platform === "tiktok" && "bg-black text-white",
                           v.platform === "instagram" &&
                             "bg-gradient-to-r from-pink-500 to-amber-500 text-white",
+                          v.platform === "facebook" && "bg-blue-600 text-white",
                         ]}
                       >
                         {platform.icon} {platform.name}
                       </span>
                     </div>
                     <div class="p-4">
-                      <div class="text-muted-foreground flex flex-wrap items-center gap-x-2 text-xs">
+                      {/* author badge — 景泰原作 / 推薦・房仲大看板 */}
+                      <span
+                        class:list={[
+                          "inline-block rounded px-2 py-0.5 text-[10px] font-medium",
+                          authorInfo[v.author ?? "teddy"].badgeColor,
+                        ]}
+                      >
+                        {authorInfo[v.author ?? "teddy"].badge}
+                      </span>
+                      <div class="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-2 text-xs">
                         <span>{categoryInfo[v.category].icon} {v.category}</span>
                         <span aria-hidden="true">·</span>
                         <span>{formatDate(v.pubDate)}</span>
@@ -443,6 +463,40 @@ function formatDate(d: Date): string {
     </section>
   </Main>
 
+  {/* ====== YouTube lightbox（站內播放） ====== */}
+  {hasVideos && (
+    <div
+      id="video-lightbox"
+      class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/85 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="影片播放"
+    >
+      <button
+        type="button"
+        data-lightbox-close
+        class="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-2xl text-black hover:bg-white"
+        aria-label="關閉影片"
+      >
+        ×
+      </button>
+      <div
+        data-lightbox-frame
+        class="aspect-[9/16] h-auto max-h-[90vh] w-full max-w-[26rem]"
+      >
+        <iframe
+          data-lightbox-iframe
+          class="h-full w-full rounded-lg"
+          src=""
+          title="YouTube 影片播放"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen
+        ></iframe>
+      </div>
+    </div>
+  )}
+
   <Footer />
 </Layout>
 
@@ -506,6 +560,50 @@ function formatDate(d: Date): string {
       const v = btn.dataset.filterValue || "";
       setActive(v);
       apply(v);
+    });
+  })();
+</script>
+
+<script is:inline>
+  (function () {
+    const lightbox = document.getElementById("video-lightbox");
+    if (!lightbox) return;
+    // 抽到 body 直屬，避開父層 stacking context 蓋不過 header
+    document.body.appendChild(lightbox);
+    const iframe = lightbox.querySelector("[data-lightbox-iframe]");
+    const closeBtn = lightbox.querySelector("[data-lightbox-close]");
+
+    function open(videoId) {
+      iframe.src =
+        "https://www.youtube.com/embed/" +
+        encodeURIComponent(videoId) +
+        "?autoplay=1&rel=0&modestbranding=1";
+      lightbox.classList.remove("hidden");
+      lightbox.classList.add("flex");
+      document.body.style.overflow = "hidden";
+    }
+    function close() {
+      iframe.src = "";
+      lightbox.classList.add("hidden");
+      lightbox.classList.remove("flex");
+      document.body.style.overflow = "";
+    }
+
+    document.querySelectorAll("a[data-youtube-id]").forEach(a => {
+      a.addEventListener("click", e => {
+        const id = a.getAttribute("data-youtube-id");
+        if (!id) return;
+        e.preventDefault();
+        open(id);
+      });
+    });
+
+    closeBtn.addEventListener("click", close);
+    lightbox.addEventListener("click", e => {
+      if (e.target === lightbox) close();
+    });
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape" && !lightbox.classList.contains("hidden")) close();
     });
   })();
 </script>
