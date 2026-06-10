@@ -1,12 +1,24 @@
 ---
-import { getEntry, render } from "astro:content";
+import { getEntry } from "astro:content";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
-import Main from "@/components/Main.astro";
 import Footer from "@/components/Footer.astro";
 import config from "@/config";
 import { safeJsonLd } from "@/utils/safeJsonLd";
+import IconChefHat from "@/assets/icons/IconChefHat.svg";
+import IconCode from "@/assets/icons/IconCode.svg";
+import IconSparkles from "@/assets/icons/IconSparkles.svg";
+import IconNotes from "@/assets/icons/IconNotes.svg";
+import IconHelpCircle from "@/assets/icons/IconHelpCircle.svg";
+import IconChevronDown from "@/assets/icons/IconChevronDown.svg";
+import IconCertificate from "@/assets/icons/IconCertificate.svg";
+import LineIcon from "@/assets/icons/socials/line.svg";
+import InstagramIcon from "@/assets/icons/socials/instagram.svg";
+import FacebookIcon from "@/assets/icons/socials/facebook.svg";
+import YoutubeIcon from "@/assets/icons/socials/youtube.svg";
+import TiktokIcon from "@/assets/icons/socials/tiktok.svg";
+import MailIcon from "@/assets/icons/socials/mail.svg";
 
 const about = await getEntry("pages", "about");
 
@@ -15,8 +27,6 @@ if (!about) {
     "Missing content entry: `about.md` or `about.mdx` in `src/content/pages/`"
   );
 }
-
-const { Content } = await render(about);
 
 // ProfilePage schema (Google rich result for personal profile pages)
 const siteOrigin = new URL("/", Astro.site).href;
@@ -81,9 +91,455 @@ const breadcrumbSchema = {
 
   <Breadcrumb />
 
-  <Main pageTitle={about.data.title} class="app-prose">
-    <Content />
-  </Main>
+  <main id="main-content" class="pb-4">
+    {/* ===== 頂部 hero：左文右圖、手機照片在上 ===== */}
+    <section class="from-muted to-background bg-gradient-to-b">
+      <div
+        class="app-layout-wide grid grid-cols-1 items-center gap-8 py-10 sm:grid-cols-[1fr_auto] sm:gap-12 sm:py-16"
+      >
+        <img
+          src="/photos/teddy-portrait.jpg"
+          alt="陳景泰 / 泰迪 — 一品不動產有巢氏房屋台中世界之心加盟店"
+          width="815"
+          height="1041"
+          class="rounded-card shadow-card-hover mx-auto w-full max-w-sm object-cover sm:order-2"
+          loading="eager"
+          fetchpriority="high"
+        />
+        <div class="sm:order-1">
+          <p class="text-accent font-heading text-sm font-bold tracking-wide">
+            {about.data.description}
+          </p>
+          <h1 class="mt-2 text-3xl font-extrabold sm:text-4xl">
+            {about.data.title}
+          </h1>
+          <p class="mt-6 text-xl leading-relaxed">
+            我是<strong>陳景泰</strong>，台中房仲。
+          </p>
+          <p class="text-muted-foreground mt-4 leading-relaxed">
+            短影音上叫<strong class="text-foreground">泰迪</strong> — 在公司自媒體
+            <a href="/media" class="text-accent hover:underline"
+              >房仲大看板 BigKanBan</a
+            > 團隊、個人
+            <a
+              href="https://www.youtube.com/@%E6%B3%B0%E8%BF%AA001"
+              class="text-accent hover:underline">YouTube @泰迪001</a
+            > /
+            <a
+              href="https://www.tiktok.com/@sky811117"
+              class="text-accent hover:underline">TikTok @sky811117</a
+            > 都用這個名字。本名陳景泰、IP 名泰迪 / Teddy，是同一個人。
+          </p>
+          <p class="text-muted-foreground mt-4 leading-relaxed">
+            一品不動產有巢氏房屋台中世界之心加盟店、營業員證號 114登字488296。
+          </p>
+          <a
+            href="https://line.me/ti/p/sky811117"
+            class="btn-line mt-6"
+            title="LINE 私訊景泰 sky811117"
+          >
+            <LineIcon class="size-5" aria-hidden="true" />
+            LINE 私訊景泰
+          </a>
+        </div>
+      </div>
+    </section>
+
+    {/* ===== 三句話講我這個人：三張卡 ===== */}
+    <section class="app-layout-wide py-12 sm:py-16">
+      <h2 class="text-2xl font-extrabold sm:text-3xl">三句話講我這個人</h2>
+      <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div class="card-surface p-6">
+          <div class="bg-accent/10 w-fit rounded-xl p-3">
+            <IconChefHat class="text-accent size-6" aria-hidden="true" />
+          </div>
+          <p class="mt-4 leading-relaxed">
+            <strong>1. 我以前是廚師。</strong> 2025 年 3 月轉行做房仲。一年多前還在切牛肉、煮高湯、寫菜單。
+          </p>
+        </div>
+        <div class="card-surface p-6">
+          <div class="bg-accent/10 w-fit rounded-xl p-3">
+            <IconCode class="text-accent size-6" aria-hidden="true" />
+          </div>
+          <p class="mt-4 leading-relaxed">
+            <strong>2. 我會寫程式。</strong> 不是「會用 Excel」那種會，是真的會寫
+            Python、跑 API、做網站。這個你現在看的網站、我做的 dashboard、TG bot、修圖工具，都是我自己寫的。
+          </p>
+        </div>
+        <div class="card-surface p-6">
+          <div class="bg-accent/10 w-fit rounded-xl p-3">
+            <IconSparkles class="text-accent size-6" aria-hidden="true" />
+          </div>
+          <p class="mt-4 leading-relaxed">
+            <strong>3. 我把這兩件事疊在一起。</strong> 廚師教我「準備工作 9 成、上桌
+            1 成」。工程教我「重複的事自動化」。房仲一樣 —
+            <strong>能用工具做完的，我絕對不靠記憶、不靠運氣</strong>。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    {/* ===== 垂直時間軸：廚師 13 年 → 轉房仲 → 學寫程式（白色節奏帶）===== */}
+    <section class="bg-card py-12 sm:py-16">
+      <div class="app-layout">
+        <ol class="border-accent relative ms-2 border-s-2">
+          {/* 節點 1：廚師那 13 年 */}
+          <li class="relative ps-8 pb-12">
+            <span
+              class="bg-accent absolute -start-[7px] top-1.5 size-3 rounded-full"
+              aria-hidden="true"></span>
+            <p class="text-accent font-heading text-sm font-bold tracking-wide">
+              2012-2025 廚師 13 年
+            </p>
+            <h2 class="mt-1 text-2xl font-extrabold">廚師那 13 年</h2>
+            <div class="mt-4 space-y-4 leading-relaxed">
+              <p>
+                我從學徒開始做，做了 13 年。中部的餐廳，西餐、義式、燒烤都摸過 —
+                洗碗、備料、爐台，最後當主廚寫菜單。
+              </p>
+              <p>廚師教我三件事：</p>
+              <p>
+                <strong>準備工作就是 90% 的事</strong>。客人坐下來 8
+                分鐘要出菜，那 8 分鐘決定不了什麼 — 真正決定品質的是早上 9
+                點開始的備料、磨刀、煮高湯。
+              </p>
+              <p>
+                <strong>火候不能靠感覺</strong>，要靠「看過 1000
+                塊牛排」累積的肌肉記憶。
+              </p>
+              <p>
+                <strong>團隊出菜不是英雄主義</strong>。10 個人 timing
+                不對，再好的食材也廢。
+              </p>
+              <p>
+                為什麼離開？不是討厭。是看到天花板 — 月薪卡 4 萬
+                5、副業蝦皮一個月補 3 萬，要養家還是不夠。
+              </p>
+              <p>
+                想過開餐廳，但研究下來發現：「<strong
+                  >80% 的餐廳成不成功，已經不取決於食物本身</strong
+                >」 — 是地段、是行銷、是房租、是裝潢。
+              </p>
+              <p>廚藝練到頂端的我，反而被「不是廚藝」的東西卡住。</p>
+              <p>那不如換個跑道。</p>
+            </div>
+          </li>
+
+          {/* 節點 2：為什麼轉房仲 */}
+          <li class="relative ps-8 pb-12">
+            <span
+              class="bg-accent absolute -start-[7px] top-1.5 size-3 rounded-full"
+              aria-hidden="true"></span>
+            <p class="text-accent font-heading text-sm font-bold tracking-wide">
+              2025-03 轉房仲
+            </p>
+            <h2 class="mt-1 text-2xl font-extrabold">為什麼轉房仲</h2>
+            <div class="mt-4 space-y-4 leading-relaxed">
+              <p>2025 年 3 月，朋友介紹我進有巢氏。</p>
+              <p>
+                朋友是「房仲大看板 BigKanBan」短影音團隊的人 —
+                我看他做了快兩年，從零到全網 60
+                萬粉絲，覺得「房仲原來可以這樣做」。
+              </p>
+              <p>
+                選有巢氏不是因為牌子大，是世界之心店的氛圍
+                —「會用內容、會教新人、不只電話拼體力」。
+              </p>
+              <p>為什麼選這行？</p>
+              <ul class="list-disc space-y-2 ps-5">
+                <li><strong>時間彈性</strong> — 自己安排帶看、不打卡</li>
+                <li>
+                  <strong>累積感</strong> — 每個客戶、每個社區、每筆成交都可以複利，不像廚師年資越大越難往上
+                </li>
+                <li>
+                  <strong>沒那麼被討厭</strong> — 我評估過很多行業，房仲被罵很多，但比起某些好一點
+                </li>
+              </ul>
+              <p>
+                入行 14
+                個月。我還是新人。但我把廚師年代學的「準備、火候、團隊」全部搬過來
+                — 帶看前 90% 準備、議價靠數據不靠感覺、跟同事配合不爭功。
+              </p>
+            </div>
+          </li>
+
+          {/* 節點 3：為什麼我學寫程式 */}
+          <li class="relative ps-8 pb-2">
+            <span
+              class="bg-accent absolute -start-[7px] top-1.5 size-3 rounded-full"
+              aria-hidden="true"></span>
+            <p class="text-accent font-heading text-sm font-bold tracking-wide">
+              2026-04 開始寫程式
+            </p>
+            <h2 class="mt-1 text-2xl font-extrabold">為什麼我學寫程式</h2>
+            <div class="mt-4 space-y-4 leading-relaxed">
+              <p>大部分房仲不寫程式。</p>
+              <p>
+                我寫，是因為我發現一個事實：<strong
+                  >一個人作戰，不靠工具會被累死</strong
+                >。
+              </p>
+              <p>
+                公司給的
+                CRM、上架平台、客戶管理工具，能做的有限。同事一筆物件要在
+                591、樂屋、5168 三個平台手動上架，光輸入就 2
+                小時，我覺得這不對。
+              </p>
+              <p>
+                2026 年 4 月底，我開始學 Claude Code。當時以為「會用 AI
+                寫一兩個小腳本」就好。結果一路寫了兩個多月：
+              </p>
+              <ul class="list-disc space-y-2 ps-5">
+                <li>個人 dashboard（管 3 平台物件、客戶 CRM、批量改價）</li>
+                <li>TG bot「泰迪的小聲音」（24/7 復盤、客戶筆記、行程提醒）</li>
+                <li>
+                  6 個 Claude Code skill（樂屋 / 5168
+                  上架、修圖、新聞推播、journal、IG 生圖）
+                </li>
+                <li>各種爬蟲、批量處理、自動化排程</li>
+              </ul>
+              <p>24/7 跑在我家 PC 上。沒公開、沒人看到。</p>
+              <p>
+                直到我意識到：<strong>藏在電腦裡 = 等於沒做</strong>。
+              </p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    {/* ===== 接下來會寫什麼 ===== */}
+    <section class="app-layout py-12">
+      <div class="flex items-center gap-3">
+        <div class="bg-accent/10 w-fit rounded-xl p-3">
+          <IconNotes class="text-accent size-6" aria-hidden="true" />
+        </div>
+        <h2 class="text-2xl font-extrabold">接下來會寫什麼</h2>
+      </div>
+      <p class="mt-4 leading-relaxed">
+        每週帶看、議價、看屋的心得，整理成「下次看屋會用到的」那種。台中各區段實價登錄走勢、新政策（新青安、央行升息）對你影響多少、同一個社區裡
+        A 戶跟 B 戶差在哪。
+      </p>
+    </section>
+
+    {/* ===== 客戶常問我的事：accordion 卡片 ===== */}
+    <section class="app-layout py-12">
+      <h2 class="text-2xl font-extrabold sm:text-3xl">客戶常問我的事</h2>
+      <div class="mt-6 space-y-4">
+        <details class="card-surface group">
+          <summary
+            class="flex cursor-pointer list-none items-center gap-3 p-5 font-bold [&::-webkit-details-marker]:hidden"
+          >
+            <IconHelpCircle
+              class="text-accent size-6 shrink-0"
+              aria-hidden="true"
+            />
+            <span class="flex-1"
+              ><span class="text-accent">Q：</span
+              >廚師轉房仲，你懂房地產嗎？</span
+            >
+            <IconChevronDown
+              class="text-muted-foreground size-5 shrink-0 transition-transform group-open:rotate-180"
+              aria-hidden="true"
+            />
+          </summary>
+          <div
+            class="border-border/60 space-y-3 border-t px-5 pt-4 pb-5 leading-relaxed"
+          >
+            <p>
+              懂多少看你比的對象。比 30 年資歷的店長，我差遠了。比一般入行 1-2
+              年的同事，我可能略多，因為我爬資料爬得多、實價登錄看得比他們多。更重要的是：<strong
+                >我會說「我不知道」</strong
+              >。不懂就查、問前輩、查謄本，不裝懂。
+            </p>
+          </div>
+        </details>
+
+        <details class="card-surface group">
+          <summary
+            class="flex cursor-pointer list-none items-center gap-3 p-5 font-bold [&::-webkit-details-marker]:hidden"
+          >
+            <IconHelpCircle
+              class="text-accent size-6 shrink-0"
+              aria-hidden="true"
+            />
+            <span class="flex-1"
+              ><span class="text-accent">Q：</span
+              >你寫程式，對我（客戶）有什麼好處？</span
+            >
+            <IconChevronDown
+              class="text-muted-foreground size-5 shrink-0 transition-transform group-open:rotate-180"
+              aria-hidden="true"
+            />
+          </summary>
+          <div
+            class="border-border/60 space-y-3 border-t px-5 pt-4 pb-5 leading-relaxed"
+          >
+            <ul class="list-disc space-y-2 ps-5">
+              <li>30 秒給你「同社區半年成交 + 周邊行情」分析</li>
+              <li>客製化推薦頁（不只丟你一個 591 連結）</li>
+              <li>比同行更早抓到「降價物件 / 新案件」</li>
+              <li>你 LINE 我「七期低於 2500 萬」 — 下午就給你 5 戶名單</li>
+            </ul>
+            <p>
+              簡單講：<strong>我的反應速度和資訊密度比一般房仲快 5-10 倍</strong
+              >。
+            </p>
+          </div>
+        </details>
+
+        <details class="card-surface group">
+          <summary
+            class="flex cursor-pointer list-none items-center gap-3 p-5 font-bold [&::-webkit-details-marker]:hidden"
+          >
+            <IconHelpCircle
+              class="text-accent size-6 shrink-0"
+              aria-hidden="true"
+            />
+            <span class="flex-1"
+              ><span class="text-accent">Q：</span>你會帶看嗎，還是只用 AI？</span
+            >
+            <IconChevronDown
+              class="text-muted-foreground size-5 shrink-0 transition-transform group-open:rotate-180"
+              aria-hidden="true"
+            />
+          </summary>
+          <div
+            class="border-border/60 space-y-3 border-t px-5 pt-4 pb-5 leading-relaxed"
+          >
+            <p>
+              當然帶看。AI 是工具不是替代品。帶看 / 議價 / 簽約 / 過戶 —
+              全套服務都做。AI 幫我的是：<strong
+                >準備更好、整理更快、不漏細節</strong
+              >。你看屋當天，我手上會有屋主背景、社區成交記錄、實價登錄走勢、嫌惡設施、貸款試算
+              — 全部寫成一頁紙。
+            </p>
+          </div>
+        </details>
+
+        <details class="card-surface group">
+          <summary
+            class="flex cursor-pointer list-none items-center gap-3 p-5 font-bold [&::-webkit-details-marker]:hidden"
+          >
+            <IconHelpCircle
+              class="text-accent size-6 shrink-0"
+              aria-hidden="true"
+            />
+            <span class="flex-1"
+              ><span class="text-accent">Q：</span>你 5 年後還會做房仲嗎？</span
+            >
+            <IconChevronDown
+              class="text-muted-foreground size-5 shrink-0 transition-transform group-open:rotate-180"
+              aria-hidden="true"
+            />
+          </summary>
+          <div
+            class="border-border/60 space-y-3 border-t px-5 pt-4 pb-5 leading-relaxed"
+          >
+            <p>
+              我目前的答案是：<strong>會，但會做得跟現在不一樣</strong
+              >。我的長期目標是「<strong
+                >台中那個用 AI 工程把房仲業務全自動化、且願意公開過程的房仲</strong
+              >」 —
+              不是換跑道做別的。如果哪天我不做了，我會老實告訴你，並把你轉介給我信任的同行。
+            </p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    {/* ===== 找我：深色 CTA 帶 ===== */}
+    <section class="bg-inverse text-inverse-foreground py-12 sm:py-16">
+      <div class="app-layout-wide text-center">
+        <h2 class="text-2xl font-extrabold sm:text-3xl">找我</h2>
+        <div
+          class="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row"
+        >
+          <span class="text-inverse-muted">最快：</span>
+          <a
+            href="https://line.me/ti/p/sky811117"
+            class="btn-line"
+            title="LINE 私訊景泰 sky811117"
+          >
+            <LineIcon class="size-5" aria-hidden="true" />
+            LINE sky811117
+          </a>
+          <span class="text-inverse-muted">（30 秒到 30 分鐘會回）</span>
+        </div>
+        <p class="text-inverse-muted mt-8">其他都可以：</p>
+        <ul
+          class="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-3"
+        >
+          <li>
+            <a
+              href="https://www.instagram.com/nov__817/"
+              class="text-inverse-foreground hover:text-inverse-accent inline-flex items-center gap-2 no-underline transition-colors"
+            >
+              <InstagramIcon class="size-5" aria-hidden="true" />
+              IG @nov__817
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://www.facebook.com/profile.php?id=61575492127872"
+              class="text-inverse-foreground hover:text-inverse-accent inline-flex items-center gap-2 no-underline transition-colors"
+            >
+              <FacebookIcon class="size-5" aria-hidden="true" />
+              FB 陳景泰
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://www.youtube.com/@%E6%B3%B0%E8%BF%AA001"
+              class="text-inverse-foreground hover:text-inverse-accent inline-flex items-center gap-2 no-underline transition-colors"
+            >
+              <YoutubeIcon class="size-5" aria-hidden="true" />
+              YouTube @泰迪001
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://www.tiktok.com/@sky811117"
+              class="text-inverse-foreground hover:text-inverse-accent inline-flex items-center gap-2 no-underline transition-colors"
+            >
+              <TiktokIcon class="size-5" aria-hidden="true" />
+              TikTok @sky811117
+            </a>
+          </li>
+          <li>
+            <a
+              href="mailto:a0920118756@gmail.com"
+              class="text-inverse-foreground hover:text-inverse-accent inline-flex items-center gap-2 no-underline transition-colors"
+            >
+              <MailIcon class="size-5" aria-hidden="true" />
+              Email a0920118756@gmail.com
+            </a>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    {/* ===== 法規揭露 ===== */}
+    <section class="app-layout py-12">
+      <div class="card-surface p-6 sm:p-8">
+        <div class="flex items-center gap-3">
+          <div class="bg-accent/10 w-fit rounded-xl p-3">
+            <IconCertificate class="text-accent size-6" aria-hidden="true" />
+          </div>
+          <h2 class="text-xl font-extrabold">法規揭露</h2>
+        </div>
+        <ul
+          class="text-muted-foreground mt-4 space-y-1.5 text-sm leading-relaxed"
+        >
+          <li>公司：一品不動產 有巢氏房屋 台中世界之心加盟店</li>
+          <li>經紀人：黃永隆（113彰縣字324）</li>
+          <li>營業員：陳景泰（114登字488296）</li>
+          <li>公司電話：04-2312-0888</li>
+          <li>個人手機：0920-118-756</li>
+        </ul>
+      </div>
+    </section>
+  </main>
 
   <Footer />
 </Layout>

@@ -1,0 +1,67 @@
+---
+/**
+ * 客戶見證區塊（Phase 3 預留版位）
+ *
+ * 使用方式：
+ *   <Testimonials testimonials={[...]} />
+ *
+ * - testimonials 傳空陣列 [] 時整個區塊不渲染（首頁目前就是這個狀態）
+ * - 之後要上線：把真實客戶見證填進 index.astro 的 testimonials 常數即可
+ * - ⚠️ 見證必須是「真實客戶 + 取得刊登授權」，不可虛構、不可改寫客戶原話語意
+ */
+import IconQuote from "@/assets/icons/IconQuote.svg";
+
+interface Testimonial {
+  /** 客戶稱呼（姓氏 + 稱謂即可，例「王太太」「林先生」，不公開全名） */
+  name: string;
+  /** 身分標籤（例「北屯首購夫妻」「西屯換屋族」） */
+  role: string;
+  /** 見證引文（客戶原話，取得授權後刊登） */
+  quote: string;
+  /** 成交類型（例「買方成交」「委託售出」） */
+  dealType: string;
+}
+
+interface Props {
+  testimonials: Testimonial[];
+}
+
+const { testimonials } = Astro.props;
+---
+
+{
+  testimonials.length > 0 && (
+    <section class="border-border bg-card w-full border-b">
+      <div class="app-layout-wide py-14 sm:py-20">
+        <div class="text-center">
+          <p class="text-muted-foreground text-sm">真實成交回饋</p>
+          <h2 class="mt-2 text-2xl font-bold sm:text-3xl">客戶怎麼說</h2>
+        </div>
+        <ul class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {testimonials.map(t => (
+            <li class="card-surface relative p-6">
+              {/* 引號裝飾 icon */}
+              <IconQuote
+                class="text-accent/20 absolute top-5 right-5 size-10"
+                aria-hidden="true"
+              />
+              <p class="text-foreground pr-10 leading-relaxed">{t.quote}</p>
+              <div class="border-border/60 mt-6 flex items-center gap-3 border-t pt-4">
+                {/* 姓氏圓徽 */}
+                <span class="bg-accent/10 text-accent flex size-11 shrink-0 items-center justify-center rounded-full text-lg font-bold">
+                  {t.name.charAt(0)}
+                </span>
+                <div>
+                  <p class="text-foreground text-sm font-bold">{t.name}</p>
+                  <p class="text-muted-foreground mt-0.5 text-xs">
+                    {t.role} ・ {t.dealType}
+                  </p>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}

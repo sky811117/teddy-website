@@ -43,21 +43,21 @@ const isActive = (path: string) => {
 </a>
 
 <header
-  class="app-layout flex flex-col items-center justify-between sm:flex-row"
+  class="app-layout flex flex-col items-center justify-between xl:flex-row"
 >
   <div
-    class="border-border bg-background relative flex w-full items-baseline justify-between border-b py-4 sm:items-center sm:gap-x-10 sm:py-6"
+    class="border-border bg-background relative flex w-full items-baseline justify-between border-b py-4 xl:items-center xl:gap-x-4 xl:py-6"
   >
     <a
       href={getRelativeLocaleUrl(locale, "")}
-      class="absolute flex items-center gap-2 py-1 whitespace-nowrap sm:static sm:my-auto sm:shrink-0"
+      class="absolute flex items-center gap-2 py-1 whitespace-nowrap xl:static xl:my-auto xl:shrink-0"
     >
       <img
         src="/logos/yochaoshi.png"
         alt="有巢氏房屋"
         width="116"
         height="36"
-        class="h-7 w-auto sm:h-9"
+        class="h-7 w-auto sm:h-9 dark:rounded dark:bg-white/90 dark:px-2 dark:py-1"
         fetchpriority="high"
       />
       <span class="text-xl leading-8 font-semibold sm:text-2xl sm:leading-none">
@@ -69,14 +69,14 @@ const isActive = (path: string) => {
     </a>
     <nav
       id="nav-menu"
-      class="flex w-full flex-col items-center sm:w-auto sm:flex-row sm:justify-end sm:space-x-4 sm:py-0"
+      class="flex w-full flex-col items-center xl:w-auto xl:flex-row xl:justify-end xl:space-x-4 xl:py-0"
     >
       {
         features.search !== false && (
           <a
             href={getRelativeLocaleUrl(locale, "search")}
             class:list={[
-              "focus-outline relative size-8 self-end sm:hidden",
+              "focus-outline relative size-8 self-end xl:hidden",
               { "text-accent": isActive("/search") },
             ]}
             title="搜尋"
@@ -89,7 +89,7 @@ const isActive = (path: string) => {
       }
       <button
         id="menu-btn"
-        class="focus-outline self-end p-2 sm:hidden"
+        class="focus-outline self-end p-2 xl:hidden"
         aria-label={t.a11y.openMenu}
         aria-expanded="false"
         aria-controls="menu-items"
@@ -101,7 +101,7 @@ const isActive = (path: string) => {
       </button>
       <ul
         id="menu-items"
-        class="[&>li>a]:hover:text-accent [&>li>a]:whitespace-nowrap mt-4 hidden w-44 grid-cols-2 place-content-center gap-2 sm:mt-0 sm:flex sm:w-auto sm:gap-x-3 sm:gap-y-0 sm:[&>li]:h-8 [&>li>a]:block [&>li>a]:px-4 [&>li>a]:py-3 [&>li>a]:text-center [&>li>a]:font-medium sm:[&>li>a]:px-2 sm:[&>li>a]:py-1"
+        class="[&>li>a]:hover:text-accent [&>li>a]:whitespace-nowrap mt-4 hidden w-44 grid-cols-2 place-content-center gap-2 xl:mt-0 xl:flex xl:w-auto xl:gap-x-2 xl:gap-y-0 xl:[&>li]:h-8 [&>li>a]:block [&>li>a]:px-4 [&>li>a]:py-3 [&>li>a]:text-center [&>li>a]:font-medium xl:[&>li>a]:px-1 xl:[&>li>a]:py-1"
       >
         <li class="col-span-2">
           <a
@@ -181,18 +181,18 @@ const isActive = (path: string) => {
               <LinkButton
                 href={getRelativeLocaleUrl(locale, "archives")}
                 class:list={[
-                  "focus-outline flex size-full justify-center p-3 sm:relative sm:size-8 sm:p-0",
+                  "focus-outline flex size-full justify-center p-3 xl:relative xl:size-8 xl:p-0",
                   { "active-nav": isActive("/archives") },
                 ]}
                 title={t.nav.archives}
                 aria-label={t.nav.archives}
               >
-                <IconArchive class="hidden sm:absolute sm:top-1/2 sm:left-1/2 sm:block sm:size-6 sm:-translate-x-1/2 sm:-translate-y-1/2" />
-                <span class="sm:sr-only">{t.nav.archives}</span>
+                <IconArchive class="hidden xl:absolute xl:top-1/2 xl:left-1/2 xl:block xl:size-6 xl:-translate-x-1/2 xl:-translate-y-1/2" />
+                <span class="xl:sr-only">{t.nav.archives}</span>
                 {isActive("/archives") && (
                   <IconUnderline
                     aria-hidden="true"
-                    class="scale-125 max-sm:hidden sm:absolute sm:bottom-0 sm:w-6"
+                    class="scale-125 max-xl:hidden xl:absolute xl:bottom-0 xl:w-6"
                   />
                 )}
               </LinkButton>
@@ -213,7 +213,7 @@ const isActive = (path: string) => {
                 {isActive("/search") && (
                   <IconUnderline
                     aria-hidden="true"
-                    class="absolute bottom-0 w-6 scale-125 max-sm:inset-s-2"
+                    class="absolute bottom-0 w-6 scale-125 max-xl:inset-s-2"
                   />
                 )}
               </LinkButton>
@@ -225,7 +225,7 @@ const isActive = (path: string) => {
             <li class="col-span-1 flex items-center justify-center">
               <button
                 id="theme-btn"
-                class="focus-outline hover:[&>svg]:stroke-accent relative size-12 p-4 sm:size-8"
+                class="focus-outline hover:[&>svg]:stroke-accent relative size-12 p-4 xl:size-8"
                 title={t.a11y.toggleTheme}
                 aria-label="auto"
                 aria-live="polite"

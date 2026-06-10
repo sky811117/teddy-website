@@ -1,17 +1,31 @@
 ---
 import type { CollectionEntry } from "astro:content";
 import { getPostUrl } from "@/utils/getPostPaths";
+import { ogThumb } from "@/utils/ogThumb";
 import { slugifyStr } from "@/utils/slugify";
+import IconNotes from "@/assets/icons/IconNotes.svg";
 import Datetime from "./Datetime.astro";
 
 type Props = {
-  variant?: "h2" | "h3";
+  /**
+   * featured = 雜誌式大卡（列表第 1 頁第 1 篇用，整欄寬 16:9 大圖）
+   * compact  = 橫向小卡（預設；舊呼叫處不傳 variant 也相容）
+   */
+  variant?: "featured" | "compact";
   priority?: boolean;
 } & CollectionEntry<"posts">;
 
-const { variant: Heading = "h2", id, data, filePath, priority = false } = Astro.props;
+const {
+  variant = "compact",
+  id,
+  data,
+  body,
+  filePath,
+  priority = false,
+} = Astro.props;
 
-const { title, description, ogImage, ...props } = data;
+const { title, description, ogImage, pubDatetime, modDatetime, timezone } =
+  data;
 
 // cover image: 可能是 string (public 路徑) 或 image() object
 const coverSrc =
@@ -22,39 +36,101 @@ const coverSrc =
       : null;
 
 const postUrl = getPostUrl(id, filePath, Astro.currentLocale);
+
+// 預估閱讀時間 — 跟 PostLayout 同一套估算（中文 1 分鐘 ~ 350 字）
+const rawBody = (body ?? "")
+  .replace(/```[\s\S]*?```/g, "") // code block
+  .replace(/!\[[^\]]*\]\([^)]*\)/g, "") // image
+  .replace(/\[[^\]]*\]\([^)]*\)/g, "") // link
+  .replace(/[#>*_`~|-]/g, "") // markdown 符號
+  .replace(/\s+/g, ""); // 空白
+const readingMin = Math.max(1, Math.round(rawBody.length / 350));
 ---
 
-<li class="my-6">
-  <a
-    href={postUrl}
-    class:list={[
-      "group block no-underline",
-    ]}
-  >
-    {
-      coverSrc && (
-        <img
-          src={coverSrc}
-          alt={title}
-          width="800"
-          height="450"
-          class="border-border mb-3 aspect-[16/9] w-full rounded-lg border object-cover transition-opacity group-hover:opacity-90"
-          loading={priority ? "eager" : "lazy"}
-          fetchpriority={priority ? "high" : undefined}
-          decoding={priority ? "sync" : "async"}
-        />
-      )
-    }
-    <Heading
-      transition:name={slugifyStr(title.replaceAll(".", "-"))}
-      class:list={[
-        "text-accent inline-block text-lg font-medium",
-        "decoration-dashed underline-offset-4 group-hover:underline",
-      ]}
-    >
-      {title}
-    </Heading>
-  </a>
-  <Datetime {...props} />
-  <p>{description}</p>
-</li>
+{
+  variant === "featured" ? (
+    <li class="my-6">
+      <a
+        href={postUrl}
+        class="card-interactive group block overflow-hidden no-underline"
+      >
+        {coverSrc ? (
+          <img
+            src={coverSrc}
+            alt={title}
+            width="800"
+            height="450"
+            class="aspect-[16/9] w-full object-cover transition-opacity group-hover:opacity-90"
+            loading={priority ? "eager" : "lazy"}
+            fetchpriority={priority ? "high" : undefined}
+            decoding={priority ? "sync" : "async"}
+          />
+        ) : (
+          <div class="bg-muted flex aspect-[16/9] w-full items-center justify-center">
+            <IconNotes
+              class="text-muted-foreground size-10"
+              aria-hidden="true"
+            />
+          </div>
+        )}
+        <div class="p-4 sm:p-5">
+          <h2
+            transition:name={slugifyStr(title.replaceAll(".", "-"))}
+            class="text-accent text-2xl font-bold decoration-dashed underline-offset-4 group-hover:underline"
+          >
+            {title}
+          </h2>
+          <p class="text-muted-foreground mt-2 line-clamp-2">{description}</p>
+          <div class="text-muted-foreground mt-3 flex flex-wrap items-center gap-x-2 text-sm">
+            <Datetime {pubDatetime} {modDatetime} {timezone} />
+            <span aria-hidden="true">・</span>
+            <span>閱讀時間 {readingMin} 分鐘</span>
+          </div>
+        </div>
+      </a>
+    </li>
+  ) : (
+    <li class="my-4">
+      <a
+        href={postUrl}
+        class="card-interactive group flex gap-4 p-3 no-underline sm:p-4"
+      >
+        {coverSrc ? (
+          <img
+            src={ogThumb(coverSrc)}
+            alt={title}
+            width="320"
+            height="240"
+            class="aspect-[4/3] w-36 shrink-0 rounded-lg object-cover transition-opacity group-hover:opacity-90 sm:w-40"
+            loading={priority ? "eager" : "lazy"}
+            fetchpriority={priority ? "high" : undefined}
+            decoding={priority ? "sync" : "async"}
+          />
+        ) : (
+          <div class="bg-muted flex aspect-[4/3] w-36 shrink-0 items-center justify-center rounded-lg sm:w-40">
+            <IconNotes
+              class="text-muted-foreground size-8"
+              aria-hidden="true"
+            />
+          </div>
+        )}
+        <div class="flex min-w-0 flex-col">
+          <h2
+            transition:name={slugifyStr(title.replaceAll(".", "-"))}
+            class="text-accent line-clamp-2 text-lg font-bold decoration-dashed underline-offset-4 group-hover:underline"
+          >
+            {title}
+          </h2>
+          <p class="text-muted-foreground mt-1 line-clamp-2 text-sm">
+            {description}
+          </p>
+          <div class="text-muted-foreground mt-auto flex flex-wrap items-center gap-x-2 pt-2 text-sm">
+            <Datetime {pubDatetime} {modDatetime} {timezone} />
+            <span aria-hidden="true">・</span>
+            <span>閱讀時間 {readingMin} 分鐘</span>
+          </div>
+        </div>
+      </a>
+    </li>
+  )
+}

@@ -6,6 +6,13 @@ import Footer from "@/components/Footer.astro";
 import Main from "@/components/Main.astro";
 import config from "@/config";
 import { safeJsonLd } from "@/utils/safeJsonLd";
+import { cleanStreetArea } from "@/utils/cleanStreetArea";
+import IconMapPin from "@/assets/icons/IconMapPin.svg";
+import IconBuildingCommunity from "@/assets/icons/IconBuildingCommunity.svg";
+import IconChevronDown from "@/assets/icons/IconChevronDown.svg";
+import IconSearch from "@/assets/icons/IconSearch.svg";
+import IconCheck from "@/assets/icons/IconCheck.svg";
+import IconLine from "@/assets/icons/socials/line.svg";
 
 // 只取 active 的，沒被屋主撤回 / 售出 / 暫停的不顯示
 const allProperties = await getCollection(
@@ -51,10 +58,62 @@ function getRoomBucket(layout: string | undefined): string {
 }
 const ROOM_ORDER = ["1房", "2房", "3房", "4房", "5房+"];
 
-// 新上架優先（pubDatetime 倒序）
-const sortedProperties = allProperties.sort(
-  (a, b) => b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime()
-);
+// 台中行政區清單（推薦排序「台中優先」+ 下方 county mapping 共用）
+const TAICHUNG = [
+  "北屯區",
+  "西屯區",
+  "南屯區",
+  "北區",
+  "南區",
+  "東區",
+  "西區",
+  "中區",
+  "太平區",
+  "大里區",
+  "霧峰區",
+  "烏日區",
+  "大肚區",
+  "沙鹿區",
+  "梧棲區",
+  "清水區",
+  "大甲區",
+  "外埔區",
+  "大安區",
+  "龍井區",
+  "潭子區",
+  "大雅區",
+  "神岡區",
+  "豐原區",
+  "后里區",
+  "東勢區",
+  "和平區",
+  "新社區",
+  "石岡區",
+];
+const TAICHUNG_SET = new Set(TAICHUNG);
+
+// frontmatter 沒有 city/county 欄位 → 用 district 是否在台中行政區清單內判斷
+// （dirty data 帶「台中」prefix 也算台中）
+function isTaichung(district: string | undefined): boolean {
+  if (!district) return false;
+  return (
+    TAICHUNG_SET.has(district) ||
+    district.startsWith("台中") ||
+    district.startsWith("臺中")
+  );
+}
+
+// 推薦排序（複合）：有圖優先 > 台中市優先 > featured > 最新上架。缺圖卡沉到後面。
+const sortedProperties = allProperties.sort((a, b) => {
+  const coverDiff = (a.data.coverImage ? 0 : 1) - (b.data.coverImage ? 0 : 1);
+  if (coverDiff !== 0) return coverDiff;
+  const tcDiff =
+    (isTaichung(a.data.district) ? 0 : 1) - (isTaichung(b.data.district) ? 0 : 1);
+  if (tcDiff !== 0) return tcDiff;
+  const featDiff = (a.data.featured ? 0 : 1) - (b.data.featured ? 0 : 1);
+  if (featDiff !== 0) return featDiff;
+  return b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime();
+});
 
 // 標籤判斷
 const NEW_LISTING_DAYS = 7;
@@ -91,39 +150,17 @@ const propertyMeta = sortedProperties.map(p => {
   return { p, district, type, rooms, newListing, dropPct };
 });
 
-// district → county mapping
+// badge 防通膨：pubDatetime 是批次同步日（properties-sync 整批重寫），
+// 若全列表超過 30% 物件都判定為「新上架」，代表是同步日 artifact 不是真的新
+// → 整批不顯示新上架 badge（含快選 chip）。
+// 等 properties-sync 補 firstSeen 欄位後才能恢復精準判定。
+const NEW_BADGE_MAX_RATIO = 0.3;
+const showNewBadge =
+  sortedProperties.length > 0 &&
+  newCount / sortedProperties.length <= NEW_BADGE_MAX_RATIO;
+
+// district → county mapping（TAICHUNG 清單已上移至推薦排序前共用）
 const COUNTY_MAP: Record<string, string> = {};
-const TAICHUNG = [
-  "北屯區",
-  "西屯區",
-  "南屯區",
-  "北區",
-  "南區",
-  "東區",
-  "西區",
-  "中區",
-  "太平區",
-  "大里區",
-  "霧峰區",
-  "烏日區",
-  "大肚區",
-  "沙鹿區",
-  "梧棲區",
-  "清水區",
-  "大甲區",
-  "外埔區",
-  "大安區",
-  "龍井區",
-  "潭子區",
-  "大雅區",
-  "神岡區",
-  "豐原區",
-  "后里區",
-  "東勢區",
-  "和平區",
-  "新社區",
-  "石岡區",
-];
 const NANTOU = [
   "南投市",
   "草屯鎮",
@@ -243,6 +280,13 @@ for (const c of Object.keys(districtsByCounty)) {
 // 縣市排序（依 COUNTY_ORDER + 筆數）
 const counties = COUNTY_ORDER.filter(c => districtsByCounty[c]);
 
+// 篩選收斂：預設只露台中市筆數前 8 行政區，長尾 + 其他縣市收進「更多區域」
+const TOP_DISTRICTS = 8;
+const taichungDistricts = districtsByCounty["台中市"] ?? [];
+const taichungTop = taichungDistricts.slice(0, TOP_DISTRICTS);
+const taichungRest = taichungDistricts.slice(TOP_DISTRICTS);
+const otherCounties = counties.filter(c => c !== "台中市");
+
 const types = Object.entries(typeCount).sort((a, b) => b[1] - a[1]);
 
 const rooms = ROOM_ORDER.filter(r => roomCount[r]).map(
@@ -316,276 +360,387 @@ const breadcrumbSchema = {
 
   <Main
     pageTitle="在售物件"
-    pageDesc={`${sortedProperties.length} 筆台中精選物件，含本店所有同事聯賣案件。`}
+    pageDesc={`${sortedProperties.length} 筆精選物件以台中為主，含本店跨縣市聯賣案件。`}
   >
     <!-- 篩選列 -->
-    <div class="border-border bg-card mb-6 space-y-3 rounded-lg border p-4">
-      <!-- 快選（降價 / 新上架） -->
-      <div>
-        <div class="text-muted-foreground mb-2 text-xs font-medium">⚡ 快選</div>
-        <div class="flex flex-wrap gap-2" data-filter-group="quick" role="group" aria-label="快選篩選">
-          <button
-            type="button"
-            data-filter-value=""
-            class="filter-chip filter-chip-active"
-          >
-            全部
-          </button>
-          {
-            newCount > 0 && (
-              <button
-                type="button"
-                data-filter-value="new"
-                class="filter-chip"
-              >
-                🔥 新上架 ({newCount})
-              </button>
-            )
-          }
-          {
-            dropCount > 0 && (
-              <button
-                type="button"
-                data-filter-value="drop"
-                class="filter-chip"
-              >
-                💰 降價中 ({dropCount})
-              </button>
-            )
-          }
-        </div>
-      </div>
+    <div class="card-surface mb-6 space-y-3 p-4">
+      <!-- 手機篩選收合開關（sm 以上恆展開） -->
+      <button
+        type="button"
+        data-filter-toggle
+        aria-expanded="false"
+        class="text-foreground flex min-h-11 w-full cursor-pointer items-center justify-between text-sm font-medium sm:hidden"
+      >
+        篩選條件
+        <IconChevronDown
+          class="size-5 transition-transform"
+          aria-hidden="true"
+          data-filter-toggle-icon
+        />
+      </button>
 
-      <!-- 區域（按縣市分組） -->
-      <div>
-        <div class="text-muted-foreground mb-2 text-xs font-medium">📍 區域</div>
-        <div class="space-y-2" data-filter-group="district" role="group" aria-label="區域篩選">
-          <div class="flex flex-wrap gap-2">
+      <div class="hidden space-y-4 sm:block" data-filter-body>
+        <!-- 快選（降價；新上架 chip 受 showNewBadge 防通膨判定，目前不顯示） -->
+        <div>
+          <div class="text-muted-foreground mb-2 text-xs font-medium">快選</div>
+          <div
+            class="flex flex-wrap gap-2"
+            data-filter-group="quick"
+            role="group"
+            aria-label="快選篩選"
+          >
             <button
               type="button"
               data-filter-value=""
               class="filter-chip filter-chip-active"
             >
-              全部 ({sortedProperties.length})
+              全部
             </button>
+            {
+              showNewBadge && newCount > 0 && (
+                <button
+                  type="button"
+                  data-filter-value="new"
+                  class="filter-chip"
+                >
+                  新上架 ({newCount})
+                </button>
+              )
+            }
+            {
+              dropCount > 0 && (
+                <button
+                  type="button"
+                  data-filter-value="drop"
+                  class="filter-chip"
+                >
+                  降價中 ({dropCount})
+                </button>
+              )
+            }
           </div>
-          {
-            counties.map(c => (
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="text-muted-foreground w-14 shrink-0 text-xs font-medium">
-                  {c}
-                </span>
-                {districtsByCounty[c].map(([d, n]) => (
-                  <button
-                    type="button"
-                    data-filter-value={d}
-                    class="filter-chip"
-                  >
-                    {d} ({n})
-                  </button>
-                ))}
-              </div>
-            ))
-          }
         </div>
-      </div>
 
-      <!-- 類型 -->
-      <div>
-        <div class="text-muted-foreground mb-2 text-xs font-medium">🏠 類型</div>
-        <div class="flex flex-wrap gap-2" data-filter-group="type" role="group" aria-label="物件類型篩選">
-          <button
-            type="button"
-            data-filter-value=""
-            class="filter-chip filter-chip-active"
+        <!-- 區域：預設露台中前 8 區，其餘收進「更多區域」 -->
+        <div>
+          <div class="text-muted-foreground mb-2 text-xs font-medium">區域</div>
+          <div
+            class="space-y-2"
+            data-filter-group="district"
+            role="group"
+            aria-label="區域篩選"
           >
-            全部
-          </button>
-          {
-            types.map(([t, n]) => (
-              <button type="button" data-filter-value={t} class="filter-chip">
-                {t} ({n})
-              </button>
-            ))
-          }
-        </div>
-      </div>
-
-      <!-- 房型（幾房） -->
-      {
-        rooms.length > 0 && (
-          <div>
-            <div class="text-muted-foreground mb-2 text-xs font-medium">
-              🛏️ 房型
-            </div>
-            <div class="flex flex-wrap gap-2" data-filter-group="rooms" role="group" aria-label="房型篩選">
+            <div class="flex flex-wrap gap-2">
               <button
                 type="button"
                 data-filter-value=""
                 class="filter-chip filter-chip-active"
               >
-                全部
+                全部 ({sortedProperties.length})
               </button>
-              {rooms.map(([r, n]) => (
-                <button type="button" data-filter-value={r} class="filter-chip">
-                  {r} ({n})
+              {
+                taichungTop.map(([d, n]) => (
+                  <button type="button" data-filter-value={d} class="filter-chip">
+                    {d} ({n})
+                  </button>
+                ))
+              }
+            </div>
+            {
+              (taichungRest.length > 0 || otherCounties.length > 0) && (
+                <details class="group">
+                  <summary class="text-muted-foreground hover:text-accent flex cursor-pointer items-center gap-1 text-sm select-none">
+                    更多區域
+                    <IconChevronDown
+                      class="size-4 transition-transform group-open:rotate-180"
+                      aria-hidden="true"
+                    />
+                  </summary>
+                  <div class="mt-2 space-y-2">
+                    {taichungRest.length > 0 && (
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-muted-foreground w-14 shrink-0 text-xs font-medium">
+                          台中市
+                        </span>
+                        {taichungRest.map(([d, n]) => (
+                          <button
+                            type="button"
+                            data-filter-value={d}
+                            class="filter-chip"
+                          >
+                            {d} ({n})
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {otherCounties.map(c => (
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-muted-foreground w-14 shrink-0 text-xs font-medium">
+                          {c}
+                        </span>
+                        {districtsByCounty[c].map(([d, n]) => (
+                          <button
+                            type="button"
+                            data-filter-value={d}
+                            class="filter-chip"
+                          >
+                            {d} ({n})
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )
+            }
+          </div>
+        </div>
+
+        <!-- 總價 range + 快選 -->
+        <div>
+          <div class="text-muted-foreground mb-2 text-xs font-medium">總價</div>
+          <div class="flex flex-wrap items-center gap-2">
+            <input
+              type="number"
+              inputmode="numeric"
+              min="0"
+              step="50"
+              placeholder="不限"
+              aria-label="總價下限（萬）"
+              class="filter-range-input"
+              data-filter-range="priceMin"
+            />
+            <span class="text-muted-foreground text-sm">~</span>
+            <input
+              type="number"
+              inputmode="numeric"
+              min="0"
+              step="50"
+              placeholder="不限"
+              aria-label="總價上限（萬）"
+              class="filter-range-input"
+              data-filter-range="priceMax"
+            />
+            <span class="text-muted-foreground text-sm">萬</span>
+          </div>
+          <div class="mt-2 flex flex-wrap gap-2" data-filter-quick="price">
+            <button
+              type="button"
+              data-quick-min=""
+              data-quick-max="500"
+              class="filter-chip"
+            >
+              500 萬以下
+            </button>
+            <button
+              type="button"
+              data-quick-min="500"
+              data-quick-max="1000"
+              class="filter-chip"
+            >
+              500–1000 萬
+            </button>
+            <button
+              type="button"
+              data-quick-min="1000"
+              data-quick-max="2000"
+              class="filter-chip"
+            >
+              1000–2000 萬
+            </button>
+            <button
+              type="button"
+              data-quick-min="2000"
+              data-quick-max="3000"
+              class="filter-chip"
+            >
+              2000–3000 萬
+            </button>
+            <button
+              type="button"
+              data-quick-min="3000"
+              data-quick-max="5000"
+              class="filter-chip"
+            >
+              3000–5000 萬
+            </button>
+            <button
+              type="button"
+              data-quick-min="5000"
+              data-quick-max=""
+              class="filter-chip"
+            >
+              5000 萬以上
+            </button>
+          </div>
+        </div>
+
+        <!-- 更多條件：類型 / 房型 / 屋齡 收斂進 details -->
+        <details class="group">
+          <summary
+            class="text-muted-foreground hover:text-accent flex cursor-pointer items-center gap-1 text-sm select-none"
+          >
+            更多條件（類型・房型・屋齡）
+            <IconChevronDown
+              class="size-4 transition-transform group-open:rotate-180"
+              aria-hidden="true"
+            />
+          </summary>
+          <div class="mt-3 space-y-4">
+            <!-- 類型 -->
+            <div>
+              <div class="text-muted-foreground mb-2 text-xs font-medium">
+                類型
+              </div>
+              <div
+                class="flex flex-wrap gap-2"
+                data-filter-group="type"
+                role="group"
+                aria-label="物件類型篩選"
+              >
+                <button
+                  type="button"
+                  data-filter-value=""
+                  class="filter-chip filter-chip-active"
+                >
+                  全部
                 </button>
-              ))}
+                {
+                  types.map(([t, n]) => (
+                    <button
+                      type="button"
+                      data-filter-value={t}
+                      class="filter-chip"
+                    >
+                      {t} ({n})
+                    </button>
+                  ))
+                }
+              </div>
+            </div>
+
+            <!-- 房型（幾房） -->
+            {
+              rooms.length > 0 && (
+                <div>
+                  <div class="text-muted-foreground mb-2 text-xs font-medium">
+                    房型
+                  </div>
+                  <div
+                    class="flex flex-wrap gap-2"
+                    data-filter-group="rooms"
+                    role="group"
+                    aria-label="房型篩選"
+                  >
+                    <button
+                      type="button"
+                      data-filter-value=""
+                      class="filter-chip filter-chip-active"
+                    >
+                      全部
+                    </button>
+                    {rooms.map(([r, n]) => (
+                      <button
+                        type="button"
+                        data-filter-value={r}
+                        class="filter-chip"
+                      >
+                        {r} ({n})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )
+            }
+
+            <!-- 屋齡 range -->
+            <div>
+              <div class="text-muted-foreground mb-2 text-xs font-medium">
+                屋齡
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <input
+                  type="number"
+                  inputmode="numeric"
+                  min="0"
+                  step="1"
+                  placeholder="不限"
+                  aria-label="屋齡下限（年）"
+                  class="filter-range-input"
+                  data-filter-range="ageMin"
+                />
+                <span class="text-muted-foreground text-sm">~</span>
+                <input
+                  type="number"
+                  inputmode="numeric"
+                  min="0"
+                  step="1"
+                  placeholder="不限"
+                  aria-label="屋齡上限（年）"
+                  class="filter-range-input"
+                  data-filter-range="ageMax"
+                />
+                <span class="text-muted-foreground text-sm">年</span>
+              </div>
+              <div class="mt-2 flex flex-wrap gap-2" data-filter-quick="age">
+                <button
+                  type="button"
+                  data-quick-min=""
+                  data-quick-max="5"
+                  class="filter-chip"
+                >
+                  新成屋（≤5 年）
+                </button>
+                <button
+                  type="button"
+                  data-quick-min=""
+                  data-quick-max="15"
+                  class="filter-chip"
+                >
+                  15 年內
+                </button>
+                <button
+                  type="button"
+                  data-quick-min="15"
+                  data-quick-max="30"
+                  class="filter-chip"
+                >
+                  15–30 年
+                </button>
+                <button
+                  type="button"
+                  data-quick-min="30"
+                  data-quick-max=""
+                  class="filter-chip"
+                >
+                  30 年以上
+                </button>
+              </div>
             </div>
           </div>
-        )
-      }
-
-      <!-- 總價 range -->
-      <div>
-        <div class="text-muted-foreground mb-2 text-xs font-medium">💰 總價</div>
-        <div class="flex flex-wrap items-center gap-2">
-          <input
-            type="number"
-            inputmode="numeric"
-            min="0"
-            step="50"
-            placeholder="不限"
-            aria-label="總價下限（萬）"
-            class="filter-range-input"
-            data-filter-range="priceMin"
-          />
-          <span class="text-muted-foreground text-sm">~</span>
-          <input
-            type="number"
-            inputmode="numeric"
-            min="0"
-            step="50"
-            placeholder="不限"
-            aria-label="總價上限（萬）"
-            class="filter-range-input"
-            data-filter-range="priceMax"
-          />
-          <span class="text-muted-foreground text-sm">萬</span>
-        </div>
-        <div class="mt-2 flex flex-wrap gap-2" data-filter-quick="price">
-          <button
-            type="button"
-            data-quick-min=""
-            data-quick-max="500"
-            class="filter-chip"
-          >
-            500 萬以下
-          </button>
-          <button
-            type="button"
-            data-quick-min="500"
-            data-quick-max="1000"
-            class="filter-chip"
-          >
-            500–1000 萬
-          </button>
-          <button
-            type="button"
-            data-quick-min="1000"
-            data-quick-max="2000"
-            class="filter-chip"
-          >
-            1000–2000 萬
-          </button>
-          <button
-            type="button"
-            data-quick-min="2000"
-            data-quick-max="3000"
-            class="filter-chip"
-          >
-            2000–3000 萬
-          </button>
-          <button
-            type="button"
-            data-quick-min="3000"
-            data-quick-max="5000"
-            class="filter-chip"
-          >
-            3000–5000 萬
-          </button>
-          <button
-            type="button"
-            data-quick-min="5000"
-            data-quick-max=""
-            class="filter-chip"
-          >
-            5000 萬以上
-          </button>
-        </div>
+        </details>
       </div>
 
-      <!-- 屋齡 range -->
-      <div>
-        <div class="text-muted-foreground mb-2 text-xs font-medium">
-          🏗️ 屋齡
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <input
-            type="number"
-            inputmode="numeric"
-            min="0"
-            step="1"
-            placeholder="不限"
-            aria-label="屋齡下限（年）"
-            class="filter-range-input"
-            data-filter-range="ageMin"
-          />
-          <span class="text-muted-foreground text-sm">~</span>
-          <input
-            type="number"
-            inputmode="numeric"
-            min="0"
-            step="1"
-            placeholder="不限"
-            aria-label="屋齡上限（年）"
-            class="filter-range-input"
-            data-filter-range="ageMax"
-          />
-          <span class="text-muted-foreground text-sm">年</span>
-        </div>
-        <div class="mt-2 flex flex-wrap gap-2" data-filter-quick="age">
-          <button
-            type="button"
-            data-quick-min=""
-            data-quick-max="5"
-            class="filter-chip"
-          >
-            新成屋（≤5 年）
-          </button>
-          <button
-            type="button"
-            data-quick-min=""
-            data-quick-max="15"
-            class="filter-chip"
-          >
-            15 年內
-          </button>
-          <button
-            type="button"
-            data-quick-min="15"
-            data-quick-max="30"
-            class="filter-chip"
-          >
-            15–30 年
-          </button>
-          <button
-            type="button"
-            data-quick-min="30"
-            data-quick-max=""
-            class="filter-chip"
-          >
-            30 年以上
-          </button>
-        </div>
-      </div>
-
-      <!-- 結果計數 -->
+      <!-- 結果計數（醒目）+ 排序控制 — 不收進手機收合區，恆顯示 -->
       <div
-        class="text-muted-foreground border-border border-t pt-3 text-sm"
+        class="border-border flex flex-wrap items-center justify-between gap-3 border-t pt-3"
         data-filter-summary
       >
-        顯示 <span data-filter-count>{sortedProperties.length}</span> 筆
+        <div class="text-foreground text-sm font-medium">
+          顯示 <span
+            class="text-accent text-lg font-extrabold"
+            data-filter-count>{sortedProperties.length}</span
+          > 筆
+        </div>
+        <label class="flex items-center gap-2">
+          <span class="text-muted-foreground text-xs">排序</span>
+          <select data-sort-select aria-label="排序方式" class="sort-select">
+            <option value="recommended" selected>推薦排序</option>
+            <option value="price-asc">總價低→高</option>
+            <option value="price-desc">總價高→低</option>
+            <option value="newest">最新上架</option>
+          </select>
+        </label>
       </div>
     </div>
 
@@ -605,12 +760,14 @@ const breadcrumbSchema = {
         >
           {propertyMeta.map(({ p: property, district, type, rooms, newListing, dropPct }, idx) => (
             <li
-              class="border-border bg-card overflow-hidden rounded-lg border transition-shadow hover:shadow-lg"
+              class="card-interactive overflow-hidden"
               data-district={district}
               data-type={type}
               data-rooms={rooms}
               data-price={property.data.totalPrice}
               data-age={property.data.age ?? ""}
+              data-pub={property.data.pubDatetime.getTime()}
+              data-order={idx}
               data-quick={[newListing ? "new" : "", dropPct ? "drop" : ""].filter(Boolean).join(" ")}
             >
               <a
@@ -640,42 +797,35 @@ const breadcrumbSchema = {
                     />
                   </div>
                 ) : (
-                  <div class="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-gradient-to-br from-amber-50 to-orange-100 dark:from-slate-800 dark:to-slate-900">
-                    <svg
-                      class="text-accent/30 absolute inset-0 m-auto h-32 w-32"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                    >
-                      <path d="M3 12L12 3l9 9M5 10v10h14V10" stroke-linecap="round" stroke-linejoin="round" />
-                      <path d="M10 20v-6h4v6" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                    <div class="text-foreground/80 relative z-10 px-3 text-center">
-                      <p class="text-sm font-bold">📷 照片整理中</p>
-                      <p class="mt-1 text-xs">想看實照？LINE 問景泰</p>
-                    </div>
+                  <div class="bg-muted flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 overflow-hidden">
+                    <IconBuildingCommunity
+                      class="text-muted-foreground/50 size-16"
+                      aria-hidden="true"
+                    />
+                    <p class="text-muted-foreground text-xs">
+                      想看實照？LINE 問景泰
+                    </p>
                   </div>
                 )}
 
                 <div class="p-4">
                   <div class="mb-2 flex flex-wrap gap-1">
                     {property.data.featured && (
-                      <span class="bg-accent text-background inline-block rounded px-2 py-0.5 text-xs">
-                        🔥 精選
+                      <span class="bg-accent text-accent-foreground inline-block rounded-full px-2 py-0.5 text-xs">
+                        精選
                       </span>
                     )}
-                    {newListing && (
-                      <span class="inline-block rounded bg-emerald-500 px-2 py-0.5 text-xs text-white">
-                        🔥 新上架
+                    {showNewBadge && newListing && (
+                      <span class="inline-block rounded-full bg-emerald-700 px-2 py-0.5 text-xs text-white">
+                        新上架
                       </span>
                     )}
                     {dropPct && (
-                      <span class="inline-block rounded bg-red-500 px-2 py-0.5 text-xs text-white">
-                        💰 降價 {dropPct}%
+                      <span class="inline-block rounded-full bg-rose-700 px-2 py-0.5 text-xs text-white">
+                        降價 {dropPct}%
                       </span>
                     )}
-                    <span class="bg-muted text-muted-foreground inline-block rounded px-2 py-0.5 text-xs">
+                    <span class="bg-muted text-muted-foreground inline-block rounded-full px-2 py-0.5 text-xs">
                       {type}
                     </span>
                   </div>
@@ -684,20 +834,31 @@ const breadcrumbSchema = {
                     {property.data.title}
                   </h2>
 
-                  <p class="text-muted-foreground mt-1 text-sm">
-                    📍 {property.data.district}
-                    {property.data.streetArea
-                      ? `・${property.data.streetArea}`
-                      : ""}
+                  <p class="text-muted-foreground mt-1 flex items-center gap-1 text-sm">
+                    <IconMapPin class="size-4 shrink-0" aria-hidden="true" />
+                    <span class="line-clamp-1">
+                      {property.data.district}
+                      {cleanStreetArea(
+                        property.data.streetArea,
+                        property.data.district
+                      )
+                        ? `・${cleanStreetArea(property.data.streetArea, property.data.district)}`
+                        : ""}
+                    </span>
                   </p>
 
                   <div class="mt-3 flex items-baseline gap-2">
-                    <span class="text-accent text-2xl font-bold">
+                    <span class="text-accent text-2xl font-extrabold">
                       {formatPrice(property.data.totalPrice)}
                     </span>
                     {dropPct && property.data.lastPrice && (
                       <span class="text-muted-foreground text-sm line-through">
                         {formatPrice(property.data.lastPrice)}
+                      </span>
+                    )}
+                    {property.data.pricePerPing && (
+                      <span class="text-muted-foreground ml-auto text-xs">
+                        {property.data.pricePerPing.toFixed(1)} 萬/坪
                       </span>
                     )}
                   </div>
@@ -706,6 +867,12 @@ const breadcrumbSchema = {
                     <span>{property.data.layout}</span>
                     <span>·</span>
                     <span>{property.data.area} 坪</span>
+                    {property.data.floor && (
+                      <>
+                        <span>·</span>
+                        <span>{property.data.floor}</span>
+                      </>
+                    )}
                     {property.data.age !== undefined && (
                       <>
                         <span>·</span>
@@ -722,10 +889,12 @@ const breadcrumbSchema = {
     }
 
     <div
-      class="border-border bg-card hidden rounded-lg border py-10 px-6 text-center sm:py-12 sm:px-8"
+      class="card-surface hidden px-6 py-10 text-center sm:px-8 sm:py-12"
       data-filter-empty
     >
-      <div class="text-5xl">🔍</div>
+      <div class="bg-accent/10 mx-auto w-fit rounded-xl p-3">
+        <IconSearch class="text-accent size-8" aria-hidden="true" />
+      </div>
       <h3 class="text-foreground mt-4 text-xl font-bold sm:text-2xl">
         沒有完全符合條件的物件
       </h3>
@@ -733,25 +902,32 @@ const breadcrumbSchema = {
         試試放寬條件 — 我手上常有未公開物件、跟你的條件可能對得上。
       </p>
 
-      <ul class="text-foreground mx-auto mt-5 max-w-md space-y-2 text-left text-[15px] leading-relaxed">
-        <li>✓ 試試 <strong>清空所有條件</strong> 看完整 list</li>
-        <li>✓ 把<strong>總價上限</strong>加 100-200 萬看更多選擇</li>
-        <li>✓ 試試<strong>相鄰行政區</strong>（例 北屯 → 太平 / 西屯 → 北區）</li>
+      <ul
+        class="text-foreground mx-auto mt-5 max-w-md space-y-2 text-left text-[15px] leading-relaxed"
+      >
+        <li class="flex items-start gap-2">
+          <IconCheck class="text-accent mt-1 size-4 shrink-0" aria-hidden="true" />
+          <span>試試 <strong>清空所有條件</strong> 看完整 list</span>
+        </li>
+        <li class="flex items-start gap-2">
+          <IconCheck class="text-accent mt-1 size-4 shrink-0" aria-hidden="true" />
+          <span>把<strong>總價上限</strong>加 100-200 萬看更多選擇</span>
+        </li>
+        <li class="flex items-start gap-2">
+          <IconCheck class="text-accent mt-1 size-4 shrink-0" aria-hidden="true" />
+          <span>試試<strong>相鄰行政區</strong>（例 北屯 → 太平 / 西屯 → 北區）</span>
+        </li>
       </ul>
 
-      <div class="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
-        <button
-          type="button"
-          data-filter-reset
-          class="border-accent text-accent rounded-md border-2 px-5 py-2.5 text-[15px] font-medium no-underline hover:bg-accent hover:text-accent-foreground transition-colors"
-        >
-          🧹 清空篩選
+      <div
+        class="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4"
+      >
+        <button type="button" data-filter-reset class="btn-outline text-[15px]">
+          清空篩選
         </button>
-        <a
-          href="https://line.me/ti/p/sky811117"
-          class="bg-accent text-accent-foreground rounded-md px-5 py-2.5 text-[15px] font-medium no-underline hover:opacity-90"
-        >
-          💬 LINE 告訴我需求
+        <a href="https://line.me/ti/p/sky811117" class="btn-line text-[15px]">
+          <IconLine class="size-5" aria-hidden="true" />
+          LINE 告訴我需求
         </a>
       </div>
 
@@ -760,14 +936,12 @@ const breadcrumbSchema = {
       </p>
     </div>
 
-    <div class="border-border mt-12 rounded-lg border border-dashed p-6 text-center">
+    <div class="border-border mt-12 rounded-card border border-dashed p-6 text-center">
       <p class="text-muted-foreground mb-3 text-sm">
         看到喜歡的物件？或想看未公開物件？
       </p>
-      <a
-        href="https://line.me/ti/p/sky811117"
-        class="bg-accent text-background inline-block rounded px-4 py-2 font-medium no-underline"
-      >
+      <a href="https://line.me/ti/p/sky811117" class="btn-line">
+        <IconLine class="size-5" aria-hidden="true" />
         LINE 私訊 sky811117
       </a>
       <p class="text-muted-foreground mt-4 text-xs">
@@ -827,6 +1001,20 @@ const breadcrumbSchema = {
   .filter-range-input[type="number"] {
     -moz-appearance: textfield;
   }
+  .sort-select {
+    cursor: pointer;
+    border-radius: 0.375rem;
+    border: 1px solid var(--border);
+    background: var(--background);
+    color: var(--foreground);
+    padding: 0.375rem 0.5rem;
+    font-size: 0.875rem;
+    transition: border-color 0.15s;
+  }
+  .sort-select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
 </style>
 
 <script is:inline>
@@ -873,10 +1061,13 @@ const breadcrumbSchema = {
         const okR = !state.rooms || li.dataset.rooms === state.rooms;
 
         const priceNum = num(li.dataset.price);
+        // 價格 filter 沒啟用時一律通過，避免缺價格的卡被無聲隱藏
+        const priceActive = pMin !== null || pMax !== null;
         const okP =
-          priceNum !== null &&
-          (pMin === null || priceNum >= pMin) &&
-          (pMax === null || priceNum <= pMax);
+          !priceActive ||
+          (priceNum !== null &&
+            (pMin === null || priceNum >= pMin) &&
+            (pMax === null || priceNum <= pMax));
 
         let okA = true;
         if (ageActive) {
@@ -1015,5 +1206,51 @@ const breadcrumbSchema = {
     });
 
     apply();
+
+    // 深連結進來時，active chip 若藏在 <details>（更多區域 / 更多條件）裡 → 自動展開
+    // 注意：data-filter-value 為空字串 =「全部」chip（預設 active）→ 跳過，避免每次載入都展開
+    document.querySelectorAll(".filter-chip-active").forEach(chip => {
+      if (!chip.dataset.filterValue) return;
+      const det = chip.closest("details");
+      if (det) det.open = true;
+    });
+  })();
+
+  // 手機篩選收合：sm 以下預設收起，點「篩選條件」展開（sm 以上 CSS 恆顯示）
+  (function () {
+    const btn = document.querySelector("[data-filter-toggle]");
+    const body = document.querySelector("[data-filter-body]");
+    const icon = document.querySelector("[data-filter-toggle-icon]");
+    if (!btn || !body) return;
+    btn.addEventListener("click", () => {
+      const opened = body.classList.toggle("hidden") === false;
+      btn.setAttribute("aria-expanded", opened ? "true" : "false");
+      if (icon) icon.classList.toggle("rotate-180", opened);
+    });
+  })();
+
+  // 排序控制：client-side 重排卡片 DOM（不動 filter 顯示狀態）
+  (function () {
+    const select = document.querySelector("[data-sort-select]");
+    const list = document.querySelector("[data-property-list]");
+    if (!select || !list) return;
+
+    function val(li, key) {
+      const n = parseFloat(li.dataset[key]);
+      return isNaN(n) ? 0 : n;
+    }
+
+    select.addEventListener("change", () => {
+      const v = select.value;
+      const items = Array.from(list.children);
+      items.sort((a, b) => {
+        if (v === "price-asc") return val(a, "price") - val(b, "price");
+        if (v === "price-desc") return val(b, "price") - val(a, "price");
+        if (v === "newest") return val(b, "pub") - val(a, "pub");
+        // 推薦排序 = build-time 複合排序（data-order 還原）
+        return val(a, "order") - val(b, "order");
+      });
+      items.forEach(li => list.appendChild(li));
+    });
   })();
 </script>

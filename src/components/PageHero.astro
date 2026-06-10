@@ -1,0 +1,53 @@
+---
+/**
+ * PageHero — 頁面頂部漸層 hero 帶
+ * eyebrow（小字標）+ 中文大標 + 副標 + 可選右側圖片
+ * 背景「米色 → 頁面底色」漸層，做出品牌站的開場節奏
+ */
+type Props = {
+  eyebrow?: string;
+  title: string;
+  description?: string;
+  image?: string;
+};
+
+const { eyebrow, title, description, image } = Astro.props;
+---
+
+<section class="from-muted to-background bg-gradient-to-b">
+  <div
+    class:list={[
+      "app-layout-wide flex flex-col items-center gap-8 py-10 sm:py-14",
+      image ? "sm:flex-row sm:justify-between sm:text-left" : "text-center",
+    ]}
+  >
+    <div class:list={[image ? "" : "mx-auto max-w-2xl"]}>
+      {
+        eyebrow && (
+          <p class="text-accent font-heading text-sm font-bold tracking-widest">
+            {eyebrow}
+          </p>
+        )
+      }
+      <h1 class="mt-2 text-3xl font-extrabold sm:text-4xl">{title}</h1>
+      {
+        description && (
+          <p class="text-muted-foreground mx-auto mt-4 max-w-2xl leading-relaxed">
+            {description}
+          </p>
+        )
+      }
+    </div>
+    {
+      image && (
+        <img
+          src={image}
+          alt=""
+          class="rounded-card shadow-card w-full max-w-xs object-cover"
+          loading="eager"
+          fetchpriority="high"
+        />
+      )
+    }
+  </div>
+</section>

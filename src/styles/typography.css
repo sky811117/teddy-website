@@ -12,6 +12,29 @@
     font-family: var(--font-app-cjk);
   }
 
+  /* 標題層吃 Noto Sans TC webfont（Google provider unicode-range 切片，
+     只下載標題實際出現的字）；內文維持系統字 */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+  }
+
+  h1,
+  h2 {
+    font-weight: 900;
+    letter-spacing: 0.015em;
+    text-wrap: balance;
+  }
+
+  h3,
+  h4 {
+    font-weight: 700;
+  }
+
   /* ===== Override default Tailwind Typography styles ===== */
   .app-prose {
     @apply prose prose-lg;
@@ -24,8 +47,10 @@
       @apply text-foreground mb-3;
     }
 
+    /* 中文無真斜體字形，italic 會變假斜（廉價感來源）—
+       h3 層次改用 accent 左邊框 */
     h3 {
-      @apply italic;
+      @apply border-accent border-l-4 pl-3 not-italic;
     }
 
     p,

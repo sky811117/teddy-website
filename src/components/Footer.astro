@@ -1,7 +1,15 @@
 ---
+/**
+ * Footer — 深色三欄品牌頁腳（bg-inverse 深咖啡底、米字、暖金 hover）
+ * ① 品牌欄：名稱 + 公司 + 證號（內容一字不動）
+ * ② 站內連結欄：六個主要頁面
+ * ③ 聯絡欄：電話 / LINE 按鈕 + 社群 icon 列
+ * 手機單欄堆疊、版權列最底（border-t border-white/10）
+ */
 import type { HTMLAttributes } from "astro/types";
-import Socials from "./Socials.astro";
-import { useTranslations } from "@/i18n";
+import IconPhone from "@/assets/icons/IconPhone.svg";
+import LineIcon from "@/assets/icons/socials/line.svg";
+import config from "@/config";
 
 type Props = {
   noMarginTop?: boolean;
@@ -9,37 +17,127 @@ type Props = {
 
 const { noMarginTop = false, class: className, ...attrs } = Astro.props;
 
-const t = useTranslations(Astro.currentLocale);
 const currentYear = new Date().getFullYear();
+
+// 站內主要頁面連結
+const siteLinks = [
+  { label: "在售物件", href: "/properties" },
+  { label: "房市筆記", href: "/posts" },
+  { label: "客戶工具", href: "/tools" },
+  { label: "常見問題", href: "/faq" },
+  { label: "台中各區", href: "/areas" },
+  { label: "關於景泰", href: "/about" },
+];
+
+// 社群 icon — 沿用全站 socials 設定（同 Socials.astro 的載入方式），深底配色自己排
+const icons = import.meta.glob<{
+  default: (_props: Record<string, unknown>) => unknown;
+}>("/src/assets/icons/socials/*.svg");
+
+const socialItems = await Promise.all(
+  config.socials.map(async ({ name, url, linkTitle }) => {
+    const mod = await icons[`/src/assets/icons/socials/${name}.svg`]?.();
+    return { name, url, linkTitle, Icon: mod?.default };
+  })
+);
 ---
 
 <footer
-  class:list={["app-layout", { "mt-auto": !noMarginTop }, className]}
+  class:list={[
+    "bg-inverse text-inverse-foreground w-full",
+    { "mt-auto": !noMarginTop },
+    className,
+  ]}
   {...attrs}
 >
-  <div
-    class="border-border flex flex-col items-center gap-3 border-t py-5 sm:flex-row sm:justify-between"
-  >
-    <Socials />
-    <div class="text-muted-foreground flex items-center gap-2 text-sm whitespace-nowrap">
-      <img
-        src="/photos/teddy-avatar.jpg"
-        alt="陳景泰 / 泰迪"
-        width="32"
-        height="32"
-        class="border-accent h-8 w-8 rounded-full border object-cover"
-        loading="lazy"
-        decoding="async"
-      />
-      <span>&#169; {currentYear} 陳景泰 / 泰迪</span>
+  <div class="app-layout-wide grid grid-cols-1 gap-10 py-12 sm:grid-cols-3">
+    {/* ① 品牌欄 */}
+    <div>
+      <div class="flex items-center gap-3">
+        <img
+          src="/photos/teddy-avatar.jpg"
+          alt="陳景泰 / 泰迪"
+          width="40"
+          height="40"
+          class="border-inverse-accent h-10 w-10 rounded-full border object-cover"
+          loading="lazy"
+          decoding="async"
+        />
+        <p class="font-heading text-lg font-bold">陳景泰｜台中房仲</p>
+      </div>
+      <p class="text-inverse-muted mt-4 text-sm leading-relaxed">
+        一品不動產 有巢氏房屋 台中世界之心加盟店
+      </p>
+      <p class="text-inverse-muted text-sm leading-relaxed">
+        經紀人 黃永隆 113彰縣字324 ・ 營業員 陳景泰 114登字488296 ・
+        0920-118-756
+      </p>
+    </div>
+
+    {/* ② 站內連結欄 */}
+    <nav aria-label="站內連結">
+      <p class="font-heading font-bold">站內連結</p>
+      <ul class="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm">
+        {
+          siteLinks.map(({ label, href }) => (
+            <li>
+              <a
+                href={href}
+                class="text-inverse-muted hover:text-inverse-accent no-underline transition-colors"
+              >
+                {label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    {/* ③ 聯絡欄 */}
+    <div>
+      <p class="font-heading font-bold">聯絡景泰</p>
+      <div class="mt-4 flex flex-col items-stretch gap-3 sm:max-w-xs">
+        <a
+          href="tel:+886920118756"
+          class="rounded-btn text-inverse-foreground hover:border-inverse-accent hover:text-inverse-accent inline-flex min-h-11 items-center justify-center gap-2 border-2 border-white/25 px-6 py-3 font-medium no-underline transition-colors"
+        >
+          <IconPhone class="size-5" aria-hidden="true" />
+          0920-118-756
+        </a>
+        <a
+          href="https://line.me/ti/p/sky811117"
+          class="btn-line"
+          title="LINE 私訊景泰 sky811117"
+        >
+          <LineIcon class="size-5" aria-hidden="true" />
+          LINE 私訊景泰
+        </a>
+      </div>
+      <div class="-ms-2 mt-5 flex flex-wrap items-center gap-1">
+        {
+          socialItems.map(({ url, linkTitle, Icon }) =>
+            Icon ? (
+              <a
+                href={url}
+                title={linkTitle}
+                class="text-inverse-muted hover:text-inverse-accent p-2 transition-colors"
+              >
+                <Icon class="size-6" aria-hidden="true" />
+                <span class="sr-only">{linkTitle}</span>
+              </a>
+            ) : null
+          )
+        }
+      </div>
     </div>
   </div>
-  <div
-    class="text-muted-foreground border-border border-t py-3 text-center text-xs leading-relaxed"
-  >
-    <p>一品不動產 有巢氏房屋 台中世界之心加盟店</p>
-    <p>
-      經紀人 黃永隆 113彰縣字324 ・ 營業員 陳景泰 114登字488296 ・ 0920-118-756
-    </p>
+
+  {/* 版權列 */}
+  <div class="border-t border-white/10">
+    <div
+      class="app-layout-wide text-inverse-muted flex items-center justify-center py-4 text-xs"
+    >
+      <p>&#169; {currentYear} 陳景泰 / 泰迪</p>
+    </div>
   </div>
 </footer>

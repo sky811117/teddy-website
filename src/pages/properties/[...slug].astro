@@ -7,6 +7,12 @@ import ContactForm from "@/components/ContactForm.astro";
 import config from "@/config";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 import { resolveDefaultOgImagePath } from "@/utils/resolveDefaultOgImagePath";
+import { cleanStreetArea } from "@/utils/cleanStreetArea";
+import IconMapPin from "@/assets/icons/IconMapPin.svg";
+import IconBuildingCommunity from "@/assets/icons/IconBuildingCommunity.svg";
+import IconPhone from "@/assets/icons/IconPhone.svg";
+import IconClipboardList from "@/assets/icons/IconClipboardList.svg";
+import IconLine from "@/assets/icons/socials/line.svg";
 
 // 縣市對照（與 index.astro 同步）
 const TAICHUNG = new Set([
@@ -60,12 +66,64 @@ const dropPct =
     ? Math.round(((property.data.lastPrice - property.data.totalPrice) / property.data.lastPrice) * 100)
     : null;
 
+// badge 防通膨（與列表頁同步）：pubDatetime 是批次同步日（properties-sync 整批重寫），
+// 若全站超過 30% 物件都判定為「新上架」→ 整批不顯示新上架 badge。
+// 等 properties-sync 補 firstSeen 欄位後才能恢復精準判定。
+const NEW_BADGE_MAX_RATIO = 0.3;
+const siteNewCount = properties.filter(
+  p =>
+    p.data.pubDatetime &&
+    (Date.now() - p.data.pubDatetime.getTime()) / 86400000 <= NEW_DAYS
+).length;
+const showNewBadge =
+  properties.length > 0 &&
+  siteNewCount / properties.length <= NEW_BADGE_MAX_RATIO;
+
+// 位置去重：streetArea 帶行政區前綴時去掉（標題下 / sticky bar 共用）
+const streetAreaClean = cleanStreetArea(
+  property.data.streetArea,
+  property.data.district
+);
+
+// 委編 / 專任 badge：
+// - 完整委編（含 UT/UG/HG 前綴）藏在 markdown body 的「> 委編：XXX」blockquote，
+//   build-time 從 body 撈出來，fallback frontmatter listingCode
+// - 「本店專任」依標題是否含「專任」判定
+const bodyCodeMatch = property.body?.match(/委編：([A-Z0-9]+)/);
+const fullListingCode = bodyCodeMatch?.[1] ?? property.data.listingCode;
+const isExclusive = property.data.title.includes("專任");
+
+// 類型（給規格卡用）：優先撈 markdown body 的「**類型**：XXX」，最準
+const bodyTypeMatch = property.body?.match(/\*\*類型\*\*：\s*([^\n\r]+)/);
+const propertyType = bodyTypeMatch?.[1]?.trim();
+
+// 月付試算（build-time 靜態值）：8 成 30 年本利均攤、利率 2.306%（/tools 每月底更新）
+const LOAN_RATIO = 0.8;
+const LOAN_YEARS = 30;
+const LOAN_RATE = 0.02306;
+const monthlyRate = LOAN_RATE / 12;
+const totalMonths = LOAN_YEARS * 12;
+const loanPrincipal = property.data.totalPrice * LOAN_RATIO; // 單位：萬
+const monthlyPayment =
+  (loanPrincipal * monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) /
+  (Math.pow(1 + monthlyRate, totalMonths) - 1); // 單位：萬/月
+const monthlyPaymentText = monthlyPayment.toFixed(1);
+
+// 照片 collage（桌面、照片 ≥3 張才啟用）：主圖 + 副圖最多 4 張
+const photos = property.data.photos;
+const useCollage = photos.length >= 3;
+const collageSide = photos.slice(1, 5);
+// 沒露出的張數（疊在最後一格的「+N 張」遮罩）
+const collageHiddenCount = photos.length - 1 - collageSide.length;
+
 // 找同縣市其他物件（最多 6 筆）
 const thisCounty = getCounty(property.data.district);
 const sameCounty = properties
   .filter(p => p.id !== property.id && getCounty(p.data.district) === thisCounty)
-  // 同區域優先，其次按價格相近排序
+  // 有照片優先 > 同區域 > 價格相近
   .sort((a, b) => {
+    const coverDiff = (a.data.coverImage ? 0 : 1) - (b.data.coverImage ? 0 : 1);
+    if (coverDiff !== 0) return coverDiff;
     const aSameDistrict = a.data.district === property.data.district ? 0 : 1;
     const bSameDistrict = b.data.district === property.data.district ? 0 : 1;
     if (aSameDistrict !== bSameDistrict) return aSameDistrict - bSameDistrict;
@@ -307,38 +365,46 @@ const breadcrumbSchema = {
         <p class="text-foreground line-clamp-1 text-sm font-semibold">
           {property.data.title}
         </p>
-        <p class="text-muted-foreground line-clamp-1 text-xs">
-          📍 {property.data.district}
-          {property.data.streetArea ? `・${property.data.streetArea}` : ""}
-          ・{property.data.layout} ・{property.data.area} 坪
+        <p class="text-muted-foreground flex items-center gap-1 text-xs">
+          <IconMapPin class="size-3.5 shrink-0" aria-hidden="true" />
+          <span class="line-clamp-1">
+            {property.data.district}
+            {streetAreaClean ? `・${streetAreaClean}` : ""}
+            ・{property.data.layout} ・{property.data.area} 坪
+          </span>
         </p>
       </div>
       <div class="text-accent shrink-0 text-xl font-bold sm:text-2xl">
         {formatPrice(property.data.totalPrice)}
       </div>
       <div class="flex shrink-0 items-center gap-2">
-        <a
-          href="#contact-form-section"
-          class="border-accent text-accent hover:bg-accent hover:text-accent-foreground rounded-md border-2 px-4 py-2 text-sm font-medium no-underline transition-colors"
-        >
-          📝 詢問
+        <a href="#contact-form-section" class="btn-outline text-sm">
+          <IconClipboardList class="size-4" aria-hidden="true" />
+          詢問
         </a>
-        <a href="tel:+886920118756" class="border-accent text-accent hover:bg-accent hover:text-accent-foreground rounded-md border-2 px-4 py-2 text-sm font-medium no-underline transition-colors">📞 撥打</a>
-        <a
-          href="https://line.me/ti/p/sky811117"
-          class="bg-accent text-accent-foreground hover:opacity-90 rounded-md px-4 py-2 text-sm font-medium no-underline"
-        >
-          💬 LINE 景泰
+        <a href="tel:+886920118756" class="btn-outline text-sm">
+          <IconPhone class="size-4" aria-hidden="true" />
+          撥打
+        </a>
+        <a href="https://line.me/ti/p/sky811117" class="btn-line text-sm">
+          <IconLine class="size-4" aria-hidden="true" />
+          LINE 景泰
         </a>
       </div>
     </div>
   </div>
 
-  {/* 手機版常駐底部三鍵 CTA bar — 純 CSS、只在手機出現 */}
-  <div class="border-border bg-card/95 fixed inset-x-0 bottom-0 z-40 grid grid-cols-3 border-t shadow-lg backdrop-blur sm:hidden" data-property-mobile-cta>
-    <a href="tel:+886920118756" class="text-accent flex flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-medium no-underline"><span class="text-lg" aria-hidden="true">📞</span>撥電話</a>
-    <a href="https://line.me/ti/p/sky811117" class="bg-accent text-accent-foreground flex flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-medium no-underline"><span class="text-lg" aria-hidden="true">💬</span>LINE 景泰</a>
-    <a href="#contact-form-section" class="text-accent flex flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-medium no-underline"><span class="text-lg" aria-hidden="true">📝</span>詢問</a>
+  {/* 手機版常駐底部 CTA bar — 細價格列 + 三鍵、純 CSS、只在手機出現 */}
+  <div class="border-border bg-card/95 fixed inset-x-0 bottom-0 z-40 border-t shadow-lg backdrop-blur sm:hidden" data-property-mobile-cta>
+    <div class="border-border flex h-8 min-w-0 items-center justify-between gap-2 border-b px-3">
+      <p class="text-foreground line-clamp-1 min-w-0 flex-1 text-xs">{property.data.title}</p>
+      <span class="text-accent shrink-0 text-base font-bold">{formatPrice(property.data.totalPrice)}</span>
+    </div>
+    <div class="grid grid-cols-3">
+      <a href="tel:+886920118756" class="text-accent flex min-h-11 flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-medium no-underline"><IconPhone class="size-5" aria-hidden="true" />撥電話</a>
+      <a href="https://line.me/ti/p/sky811117" class="bg-line flex min-h-11 flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-medium text-white no-underline"><IconLine class="size-5" aria-hidden="true" />LINE 景泰</a>
+      <a href="#contact-form-section" class="text-accent flex min-h-11 flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-medium no-underline"><IconClipboardList class="size-5" aria-hidden="true" />詢問</a>
+    </div>
   </div>
 
   <main id="main-content" class="app-layout max-w-app py-8 pb-24 sm:pb-24">
@@ -354,21 +420,35 @@ const breadcrumbSchema = {
         {property.data.title}
       </h1>
 
-      <p class="text-muted-foreground mt-2 text-sm">
-        📍 {property.data.district}
-        {property.data.streetArea ? `・${property.data.streetArea}` : ""}
-        {property.data.community ? `・${property.data.community}` : ""}
+      <p class="text-muted-foreground mt-2 flex items-center gap-1 text-sm">
+        <IconMapPin class="size-4 shrink-0" aria-hidden="true" />
+        <span>
+          {property.data.district}
+          {streetAreaClean ? `・${streetAreaClean}` : ""}
+          {property.data.community ? `・${property.data.community}` : ""}
+        </span>
       </p>
 
-      <div class="mt-4 flex flex-wrap gap-2">
-        {isNew && (
-          <span class="inline-block rounded bg-emerald-500 px-2 py-1 text-xs font-medium text-white">
-            🔥 新上架
+      {/* 委編 / 專任 / 新上架 / 降價 badge 列 */}
+      <div class="mt-3 flex flex-wrap items-center gap-2">
+        {fullListingCode && (
+          <span class="bg-muted text-muted-foreground inline-block rounded px-2 py-0.5 text-xs">
+            委編 {fullListingCode}
+          </span>
+        )}
+        {isExclusive && (
+          <span class="inline-block rounded border border-emerald-700 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:border-emerald-400 dark:text-emerald-400">
+            本店專任
+          </span>
+        )}
+        {showNewBadge && isNew && (
+          <span class="inline-block rounded-full bg-emerald-700 px-2 py-0.5 text-xs font-medium text-white">
+            新上架
           </span>
         )}
         {dropPct && (
-          <span class="inline-block rounded bg-red-500 px-2 py-1 text-xs font-medium text-white">
-            💰 降價 {dropPct}%
+          <span class="inline-block rounded-full bg-rose-700 px-2 py-0.5 text-xs font-medium text-white">
+            降價 {dropPct}%
           </span>
         )}
       </div>
@@ -391,73 +471,153 @@ const breadcrumbSchema = {
         }
       </div>
 
-      {
-        property.data.photos.length > 0 ? (
-          <div class="my-6" data-gallery>
-            {/* 主圖（點擊開 lightbox） */}
-            <button
-              type="button"
-              data-gallery-main-btn
-              class="bg-muted group relative block aspect-[4/3] w-full cursor-zoom-in overflow-hidden rounded-lg"
-              aria-label="點擊放大查看"
-            >
-              <img
-                src={property.data.photos[0]}
-                alt={`${property.data.title}（第 1 張，共 ${property.data.photos.length} 張）`}
-                width="800"
-                height="600"
-                class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                loading="eager"
-                fetchpriority="high"
-                decoding="sync"
-                data-gallery-main
-              />
-              <span
-                class="pointer-events-none absolute right-3 bottom-3 rounded bg-black/60 px-2 py-1 font-mono text-xs text-white"
-                data-gallery-counter
-              >
-                1 / {property.data.photos.length}
-              </span>
-              <span class="pointer-events-none absolute top-3 right-3 rounded bg-black/60 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
-                🔍 點擊放大
-              </span>
-            </button>
+      {/* 月付試算（build-time 靜態值，公式見 frontmatter）*/}
+      <p class="text-muted-foreground mt-2 text-sm">
+        8 成 30 年・利率 2.306% 試算 → 月付約 {monthlyPaymentText} 萬
+        <a href="/tools" class="text-accent ml-1 no-underline hover:underline">
+          試算工具 →
+        </a>
+      </p>
 
-            {/* 縮圖列（橫向 scroll） */}
-            {property.data.photos.length > 1 && (
+      {
+        photos.length > 0 ? (
+          <div class="my-6" data-gallery>
+            {/* 桌面 collage（照片 ≥3 張、sm 以上）：主圖 2x2 + 副圖 2-4 張 */}
+            {useCollage && (
               <div
-                class="mt-3 flex gap-2 overflow-x-auto pb-2"
-                data-gallery-thumbs
-                style="scrollbar-width: thin;"
+                class="hidden gap-2 sm:grid sm:aspect-[2/1] sm:grid-cols-4 sm:grid-rows-2"
+                data-gallery-collage
               >
-                {property.data.photos.map((p, i) => (
-                  <button
-                    type="button"
-                    data-gallery-index={i}
-                    aria-label={`查看第 ${i + 1} 張`}
-                    class={`bg-muted aspect-[4/3] w-20 shrink-0 overflow-hidden rounded border-2 transition-all sm:w-24 ${
-                      i === 0
-                        ? "border-accent opacity-100"
-                        : "border-transparent opacity-60 hover:opacity-100"
-                    }`}
-                  >
-                    <img
-                      src={p}
-                      alt={`${property.data.title} 縮圖 ${i + 1}`}
-                      width="120"
-                      height="90"
-                      loading="lazy"
-                      decoding="async"
-                      class="h-full w-full object-cover"
-                    />
-                  </button>
-                ))}
+                <button
+                  type="button"
+                  data-collage-index="0"
+                  class="bg-muted group relative col-span-2 row-span-2 cursor-zoom-in overflow-hidden rounded-lg"
+                  aria-label="查看第 1 張"
+                >
+                  <img
+                    src={photos[0]}
+                    alt={`${property.data.title}（第 1 張，共 ${photos.length} 張）`}
+                    width="800"
+                    height="600"
+                    class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    loading="eager"
+                    fetchpriority="high"
+                    decoding="sync"
+                  />
+                </button>
+                {collageSide.map((p, i) => {
+                  // 依副圖張數決定 span 避免破格：2 張各佔整排、3 張時最後一張補滿第二排
+                  const spanClass =
+                    collageSide.length === 2
+                      ? "col-span-2"
+                      : collageSide.length === 3 && i === 2
+                        ? "col-span-2"
+                        : "";
+                  const isLastTile = i === collageSide.length - 1;
+                  return (
+                    <button
+                      type="button"
+                      data-collage-index={i + 1}
+                      class={`bg-muted group relative cursor-zoom-in overflow-hidden rounded-lg ${spanClass}`}
+                      aria-label={`查看第 ${i + 2} 張`}
+                    >
+                      <img
+                        src={p}
+                        alt={`${property.data.title}（第 ${i + 2} 張，共 ${photos.length} 張）`}
+                        width="400"
+                        height="300"
+                        class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        loading="eager"
+                        decoding="async"
+                      />
+                      {isLastTile && collageHiddenCount > 0 && (
+                        <span class="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/55 text-xl font-bold text-white">
+                          +{collageHiddenCount} 張
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             )}
+
+            {/* 主圖 + 縮圖列（手機維持現狀；<3 張時桌面也用這套） */}
+            <div class={useCollage ? "sm:hidden" : ""}>
+              {/* 主圖（點擊開 lightbox） */}
+              <button
+                type="button"
+                data-gallery-main-btn
+                class="bg-muted group relative block aspect-[4/3] w-full cursor-zoom-in overflow-hidden rounded-lg"
+                aria-label="點擊放大查看"
+              >
+                <img
+                  src={photos[0]}
+                  alt={`${property.data.title}（第 1 張，共 ${photos.length} 張）`}
+                  width="800"
+                  height="600"
+                  class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  loading="eager"
+                  fetchpriority="high"
+                  decoding="sync"
+                  data-gallery-main
+                />
+                <span
+                  class="pointer-events-none absolute right-3 bottom-3 rounded bg-black/60 px-2 py-1 font-mono text-xs text-white"
+                  data-gallery-counter
+                >
+                  1 / {photos.length}
+                </span>
+                <span class="pointer-events-none absolute top-3 right-3 rounded bg-black/60 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                  點擊放大
+                </span>
+              </button>
+
+              {/* 縮圖列（橫向 scroll） */}
+              {photos.length > 1 && (
+                <div
+                  class="mt-3 flex gap-2 overflow-x-auto pb-2"
+                  data-gallery-thumbs
+                  style="scrollbar-width: thin;"
+                >
+                  {photos.map((p, i) => (
+                    <button
+                      type="button"
+                      data-gallery-index={i}
+                      aria-label={`查看第 ${i + 1} 張`}
+                      class={`bg-muted aspect-[4/3] w-20 shrink-0 overflow-hidden rounded border-2 transition-all sm:w-24 ${
+                        i === 0
+                          ? "border-accent opacity-100"
+                          : "border-transparent opacity-60 hover:opacity-100"
+                      }`}
+                    >
+                      <img
+                        src={p}
+                        alt={`${property.data.title} 縮圖 ${i + 1}`}
+                        width="120"
+                        height="90"
+                        loading="lazy"
+                        decoding="async"
+                        class="h-full w-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         ) : (
-          <div class="bg-muted text-muted-foreground my-6 flex aspect-[4/3] w-full items-center justify-center rounded-lg text-sm">
-            📷 照片整理中
+          <div class="bg-muted rounded-card my-6 flex h-48 w-full flex-col items-center justify-center gap-3 sm:h-56">
+            <IconBuildingCommunity
+              class="text-muted-foreground/50 size-14"
+              aria-hidden="true"
+            />
+            <p class="text-muted-foreground text-sm">
+              照片整理中 — 想先看實照/影片？
+            </p>
+            <a href="https://line.me/ti/p/sky811117" class="btn-line text-sm">
+              <IconLine class="size-4" aria-hidden="true" />
+              LINE 索取實照
+            </a>
           </div>
         )
       }
@@ -521,22 +681,23 @@ const breadcrumbSchema = {
         )
       }
 
-      <div
-        class="border-border bg-card mt-6 grid grid-cols-2 gap-4 rounded-lg border p-4 sm:grid-cols-4"
-      >
+      {/* 規格卡：格局 / 權狀 / 主建物 / 樓層 / 車位 / 屋齡 / 類型 / 單價 */}
+      <div class="card-surface mt-6 grid grid-cols-2 gap-4 p-5 sm:grid-cols-4">
         <div>
           <div class="text-muted-foreground text-xs">格局</div>
-          <div class="mt-1 font-medium">{property.data.layout}</div>
+          <div class="mt-1 text-lg font-bold">{property.data.layout}</div>
         </div>
         <div>
           <div class="text-muted-foreground text-xs">權狀</div>
-          <div class="mt-1 font-medium">{property.data.area} 坪</div>
+          <div class="mt-1 text-lg font-bold">{property.data.area} 坪</div>
         </div>
         {
-          property.data.age !== undefined && (
+          property.data.indoorArea !== undefined && (
             <div>
-              <div class="text-muted-foreground text-xs">屋齡</div>
-              <div class="mt-1 font-medium">{property.data.age} 年</div>
+              <div class="text-muted-foreground text-xs">主建物</div>
+              <div class="mt-1 text-lg font-bold">
+                {property.data.indoorArea} 坪
+              </div>
             </div>
           )
         }
@@ -544,7 +705,7 @@ const breadcrumbSchema = {
           property.data.floor && (
             <div>
               <div class="text-muted-foreground text-xs">樓層</div>
-              <div class="mt-1 font-medium">{property.data.floor}</div>
+              <div class="mt-1 text-lg font-bold">{property.data.floor}</div>
             </div>
           )
         }
@@ -552,7 +713,33 @@ const breadcrumbSchema = {
           property.data.parking && (
             <div>
               <div class="text-muted-foreground text-xs">車位</div>
-              <div class="mt-1 font-medium">{property.data.parking}</div>
+              <div class="mt-1 text-lg font-bold">{property.data.parking}</div>
+            </div>
+          )
+        }
+        {
+          property.data.age !== undefined && (
+            <div>
+              <div class="text-muted-foreground text-xs">屋齡</div>
+              <div class="mt-1 text-lg font-bold">{property.data.age} 年</div>
+            </div>
+          )
+        }
+        {
+          propertyType && (
+            <div>
+              <div class="text-muted-foreground text-xs">類型</div>
+              <div class="mt-1 text-lg font-bold">{propertyType}</div>
+            </div>
+          )
+        }
+        {
+          property.data.pricePerPing && (
+            <div>
+              <div class="text-muted-foreground text-xs">單價</div>
+              <div class="mt-1 text-lg font-bold">
+                {property.data.pricePerPing.toFixed(1)} 萬/坪
+              </div>
             </div>
           )
         }
@@ -573,6 +760,7 @@ const breadcrumbSchema = {
 
       <div
         class="app-prose max-w-app prose-pre:bg-(--shiki-light-bg) dark:prose-pre:bg-(--shiki-dark-bg) mt-8"
+        data-property-content
       >
         <Content />
       </div>
@@ -588,7 +776,7 @@ const breadcrumbSchema = {
             </h2>
             <ul class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
               {sameCounty.map(p => (
-                <li class="border-border bg-card overflow-hidden rounded-lg border transition-shadow hover:shadow-md">
+                <li class="card-interactive overflow-hidden">
                   <a
                     href={`/properties/${p.id}`}
                     class="block no-underline"
@@ -615,20 +803,28 @@ const breadcrumbSchema = {
                         />
                       </div>
                     ) : (
-                      <div class="bg-muted text-muted-foreground flex aspect-[4/3] w-full items-center justify-center text-xs">
-                        📷
+                      <div class="bg-muted flex aspect-[4/3] w-full flex-col items-center justify-center gap-1 overflow-hidden">
+                        <IconBuildingCommunity
+                          class="text-muted-foreground/50 size-10"
+                          aria-hidden="true"
+                        />
+                        <p class="text-muted-foreground text-xs">
+                          想看實照？LINE 問景泰
+                        </p>
                       </div>
                     )}
+                    {/* price-first：價格在上、標題在下 */}
                     <div class="p-3">
-                      <h3 class="text-foreground line-clamp-2 text-sm font-bold">
-                        {p.data.title}
-                      </h3>
-                      <p class="text-muted-foreground mt-1 text-xs">
-                        📍 {p.data.district}
-                      </p>
-                      <div class="text-accent mt-2 text-base font-bold">
+                      <div class="text-accent text-lg font-bold">
                         {formatPrice(p.data.totalPrice)}
                       </div>
+                      <h3 class="text-foreground mt-1 line-clamp-1 text-xs font-medium">
+                        {p.data.title}
+                      </h3>
+                      <p class="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
+                        <IconMapPin class="size-3.5 shrink-0" aria-hidden="true" />
+                        {p.data.district}
+                      </p>
                       <div class="text-muted-foreground mt-1 text-xs">
                         {p.data.layout} · {p.data.area} 坪
                       </div>
@@ -664,17 +860,13 @@ const breadcrumbSchema = {
         <div
           class="mt-4 flex flex-col items-center justify-center gap-3 sm:flex-row"
         >
-          <a
-            href="https://line.me/ti/p/sky811117"
-            class="bg-accent text-accent-foreground inline-block rounded-md px-6 py-3 text-[17px] font-medium no-underline"
-          >
-            💬 LINE sky811117
+          <a href="https://line.me/ti/p/sky811117" class="btn-line text-[17px]">
+            <IconLine class="size-5" aria-hidden="true" />
+            LINE sky811117
           </a>
-          <a
-            href="tel:+886920118756"
-            class="border-accent text-accent inline-block rounded-md border-2 px-6 py-3 text-[17px] font-medium no-underline"
-          >
-            📞 0920-118-756
+          <a href="tel:+886920118756" class="btn-outline text-[17px]">
+            <IconPhone class="size-5" aria-hidden="true" />
+            0920-118-756
           </a>
         </div>
         <p class="text-muted-foreground mt-4 text-[13px]">
@@ -776,6 +968,14 @@ const breadcrumbSchema = {
         setIndex(i);
       });
     });
+
+    // 桌面 collage：點任一格 → 跳到該張並開 lightbox（沿用既有邏輯）
+    gallery.querySelectorAll("[data-collage-index]").forEach(b => {
+      b.addEventListener("click", () => {
+        setIndex(parseInt(b.dataset.collageIndex || "0", 10));
+        openLightbox();
+      });
+    });
     if (closeBtn) closeBtn.addEventListener("click", closeLightbox);
     if (prevBtn) prevBtn.addEventListener("click", () => setIndex(current - 1));
     if (nextBtn) nextBtn.addEventListener("click", () => setIndex(current + 1));
@@ -831,5 +1031,97 @@ const breadcrumbSchema = {
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll, { passive: true });
     update();
+  })();
+</script>
+
+<script is:inline>
+  // 內文去重：markdown body 由 properties-sync 批次產出，固定帶「## 物件規格」
+  // bullet 段落（與上方規格卡重複）+「> 委編：…」blockquote（已改成標題下 badge）。
+  // .md 內容不能動（sync 會整批覆寫），改在 client 端把這兩段從渲染移除；
+  // 無 JS 時 fallback 維持完整內文，資訊不會缺。
+  (function () {
+    const prose = document.querySelector("[data-property-content]");
+    if (!prose) return;
+    prose.querySelectorAll("h2").forEach(h => {
+      if ((h.textContent || "").trim() !== "物件規格") return;
+      let node = h.nextElementSibling;
+      h.remove();
+      // 連同其後內容（到下一個標題 / hr 為止）一起移除，證號段落在 hr 後不受影響
+      while (node && !/^(H[1-6]|HR)$/.test(node.tagName)) {
+        const next = node.nextElementSibling;
+        node.remove();
+        node = next;
+      }
+    });
+    prose.querySelectorAll("blockquote").forEach(bq => {
+      if ((bq.textContent || "").includes("委編：")) bq.remove();
+    });
+  })();
+</script>
+
+<script
+  is:inline
+  define:vars={{
+    quickCode: property.data.listingCode ?? "",
+    quickTitle: property.data.title,
+  }}
+>
+  // 表單瘦身（漸進增強）：ContactForm 是全站共用元件不能動，改在本頁把
+  // Email / 我想 / 預算 / 區域偏好 收進「進階需求（選填）」<details>，
+  // 預設只露 姓名 / 手機 / 訊息；並在表單頂部加 3 顆 quick chips 一鍵覆寫訊息。
+  // 無 JS 時 fallback 維持完整表單，功能不會缺。
+  (function () {
+    const form = document.querySelector("[data-contact-form]");
+    if (!form) return;
+    const msgInput = form.querySelector("[name='訊息']");
+    const msgWrap = msgInput ? msgInput.closest("div") : null;
+
+    // --- 進階需求 <details>：搬 Email / 我想+預算 grid / 區域偏好 ---
+    const emailEl = document.getElementById("cf-email");
+    const emailWrap = emailEl ? emailEl.closest("div") : null;
+    const intentEl = document.getElementById("cf-intent");
+    const intentGrid = intentEl ? intentEl.closest(".grid") : null;
+    const areaSummary = form.querySelector("[data-area-summary]");
+    const areaDetails = areaSummary ? areaSummary.closest("details") : null;
+    const areaBlock = areaDetails ? areaDetails.parentElement : null;
+
+    if (msgWrap && (emailWrap || intentGrid || areaBlock)) {
+      const adv = document.createElement("details");
+      adv.className = "border-border bg-background rounded-md border";
+      const summary = document.createElement("summary");
+      summary.className =
+        "text-muted-foreground cursor-pointer px-4 py-3 text-[15px] select-none";
+      summary.textContent = "進階需求（選填）▾";
+      const body = document.createElement("div");
+      body.className = "space-y-5 p-4 pt-2";
+      adv.append(summary, body);
+      msgWrap.after(adv);
+      [emailWrap, intentGrid, areaBlock].forEach(el => {
+        if (el) body.appendChild(el);
+      });
+    }
+
+    // --- quick chips：點了覆寫訊息（物件編號 hidden 欄位另有預填、不受影響） ---
+    if (msgInput) {
+      const chips = document.createElement("div");
+      chips.className = "flex flex-wrap gap-2";
+      ["想約看屋", "想問貸款", "想要實照"].forEach(text => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className =
+          "border-border bg-background text-foreground hover:border-accent hover:text-accent cursor-pointer rounded-full border px-3 py-1.5 text-sm transition-colors";
+        b.textContent = text;
+        b.addEventListener("click", () => {
+          const ref = quickCode
+            ? "物件 " + quickCode + (quickTitle ? "（" + quickTitle + "）" : "")
+            : "這個物件";
+          msgInput.value = text + "：" + ref;
+          msgInput.dispatchEvent(new Event("input", { bubbles: true }));
+          msgInput.focus();
+        });
+        chips.appendChild(b);
+      });
+      form.insertBefore(chips, form.firstElementChild);
+    }
   })();
 </script>

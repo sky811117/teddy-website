@@ -8,6 +8,7 @@
  * Props 用來讓不同入口頁面預填欄位（詳情頁帶物件編號、服務頁帶意圖）。
  */
 import { PUBLIC_FORMSPREE_FORM_ID } from "astro:env/client";
+import IconMapPin from "@/assets/icons/IconMapPin.svg";
 
 type Props = {
   /** 預填物件編號（詳情頁帶入） */
@@ -67,7 +68,7 @@ const defaultDescription = propertyId
     </p>
     {
       propertyHintText && (
-        <p class="text-accent mt-2 text-[15px]">📌 {propertyHintText}</p>
+        <p class="text-accent mt-2 text-[15px]"><IconMapPin class="size-4 inline-block" aria-hidden="true" /> {propertyHintText}</p>
       )
     }
   </header>
@@ -151,7 +152,7 @@ const defaultDescription = propertyId
           autocomplete="tel"
           inputmode="tel"
           placeholder="0912-345-678"
-          pattern="[\d\s\-\+]{8,}"
+          pattern="[0-9 +-]{8,}"
           class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 mt-2 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2"
         />
         <p
@@ -273,7 +274,7 @@ const defaultDescription = propertyId
       </label>
       <details class="border-border bg-background mt-2 rounded-md border">
         <summary
-          class="text-muted-foreground cursor-pointer px-4 py-3 text-[16px] select-none"
+          class="text-muted-foreground cursor-pointer list-none px-4 py-3 text-[16px] select-none [&::-webkit-details-marker]:hidden"
           data-area-summary
         >
           點開選擇區域 ▾

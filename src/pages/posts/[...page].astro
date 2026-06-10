@@ -11,6 +11,12 @@ import Pagination from "@/components/Pagination.astro";
 import { getSortedPosts } from "@/utils/getSortedPosts";
 import { useTranslations } from "@/i18n";
 import config from "@/config";
+import IconHelpCircle from "@/assets/icons/IconHelpCircle.svg";
+import IconBuildingCommunity from "@/assets/icons/IconBuildingCommunity.svg";
+import IconFileDescription from "@/assets/icons/IconFileDescription.svg";
+import IconTool from "@/assets/icons/IconTool.svg";
+import IconNotes from "@/assets/icons/IconNotes.svg";
+import IconMapPin from "@/assets/icons/IconMapPin.svg";
 
 export const getStaticPaths = (async ({ paginate }) => {
   const posts = await getCollection("posts", ({ data }) => !data.draft);
@@ -30,6 +36,20 @@ const prevURL = page.url.prev
 const nextURL = page.url.next
   ? new URL(page.url.next, Astro.site).href
   : undefined;
+
+// 列表頂部入口卡 — emoji 全面換成 Tabler outline SVG icon
+const quickLinks = [
+  { Icon: IconHelpCircle, label: "常見問題 30 題", href: "/faq/" },
+  {
+    Icon: IconBuildingCommunity,
+    label: "社區深度評測",
+    href: "/tags/community-review/",
+  },
+  { Icon: IconFileDescription, label: "政策解析", href: "/tags/政策解析/" },
+  { Icon: IconTool, label: "買房工具", href: "/tools/" },
+  { Icon: IconNotes, label: "房地產詞典", href: "/tags/房地產詞典/" },
+  { Icon: IconMapPin, label: "台中各區行情", href: "/areas/" },
+];
 ---
 
 <Layout
@@ -44,27 +64,26 @@ const nextURL = page.url.next
 
   <Main pageTitle={t.pages.postsTitle} pageDesc={t.pages.postsDesc}>
     {page.currentPage === 1 && (
-      <div class="mb-8 grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {[
-          { emoji: "❓", label: "常見問題 30 題", href: "/faq/" },
-          { emoji: "🏘", label: "社區深度評測", href: "/tags/community-review/" },
-          { emoji: "📜", label: "政策解析", href: "/tags/政策解析/" },
-          { emoji: "🔧", label: "買房工具", href: "/tools/" },
-          { emoji: "📖", label: "房地產詞典", href: "/tags/房地產詞典/" },
-          { emoji: "🗺", label: "台中各區行情", href: "/areas/" },
-        ].map(({ emoji, label, href }) => (
+      <div class="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {quickLinks.map(({ Icon, label, href }) => (
           <a
             href={href}
-            class="flex items-center gap-2 rounded-lg border border-skin-line bg-skin-fill px-4 py-3 text-sm font-medium text-skin-base transition-colors hover:bg-skin-accent hover:text-skin-inverted no-underline"
+            class="card-interactive flex min-h-11 items-center gap-2.5 px-4 py-3 text-sm font-medium no-underline"
           >
-            <span class="text-lg">{emoji}</span>
+            <Icon class="text-accent size-5 shrink-0" aria-hidden="true" />
             <span>{label}</span>
           </a>
         ))}
       </div>
     )}
     <ul>
-      {page.data.map((data, idx) => <Card {...data} priority={idx === 0 && page.currentPage === 1} />)}
+      {page.data.map((data, idx) => (
+        <Card
+          {...data}
+          variant={page.currentPage === 1 && idx === 0 ? "featured" : "compact"}
+          priority={idx === 0 && page.currentPage === 1}
+        />
+      ))}
     </ul>
   </Main>
 

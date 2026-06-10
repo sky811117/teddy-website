@@ -8,7 +8,23 @@
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
+  /* 深色節奏帶（首頁/footer 用）— light 模式是深咖啡、dark 模式微提亮 */
+  --color-inverse: var(--surface-inverse);
+  --color-inverse-foreground: var(--surface-inverse-foreground);
+  --color-inverse-muted: var(--surface-inverse-muted);
+  --color-inverse-accent: var(--surface-inverse-accent);
+  /* LINE 官方品牌綠 — 全站 LINE CTA 統一用這組 */
+  --color-line: #06c755;
+  --color-line-hover: #05b34c;
   --font-app: var(--font-app-cjk), var(--font-google-sans-code);
+  /* 標題字體：Noto Sans TC（webfont）→ 系統字 fallback */
+  --font-heading: var(--font-noto-sans-tc), var(--font-app-cjk);
+  /* elevation 三層（暖棕色調陰影，不用 Tailwind 預設冷灰） */
+  --shadow-card: var(--elev-1);
+  --shadow-card-hover: var(--elev-2);
+  --shadow-cta: var(--elev-cta);
+  --radius-card: 1rem;
+  --radius-btn: 0.625rem;
 }
 
 /* Light theme — 米色 + 淺木色（景泰美學鐵則：現代簡約北歐風）
@@ -23,6 +39,15 @@
   --muted: #efe9de; /* 米色再深一點 */
   --muted-foreground: #6b5e54; /* 深暖灰 — 對米色 contrast 5.5:1 */
   --border: #e8e0d5;
+  /* 深色節奏帶：深咖啡底 + 米色字 + 暖金強調 */
+  --surface-inverse: #241f1a;
+  --surface-inverse-foreground: #f5f1eb;
+  --surface-inverse-muted: #b3a89e;
+  --surface-inverse-accent: #c9a87c;
+  /* 暖棕陰影（rgb 取自 foreground #2c2522） */
+  --elev-1: 0 1px 3px rgb(44 37 34 / 0.06), 0 4px 12px rgb(44 37 34 / 0.05);
+  --elev-2: 0 4px 8px rgb(44 37 34 / 0.08), 0 14px 28px rgb(44 37 34 / 0.11);
+  --elev-cta: 0 4px 14px rgb(138 101 57 / 0.35);
 }
 
 /* Dark theme — 深咖啡 + 暖金 */
@@ -35,11 +60,20 @@
   --muted: #2c2522;
   --muted-foreground: #9a8e86;
   --border: #3a3530;
+  /* 深色節奏帶在 dark 模式：壓到近黑、比背景更深一階才看得出分區 */
+  --surface-inverse: #17120d;
+  --surface-inverse-foreground: #f5f1eb;
+  --surface-inverse-muted: #9a8e86;
+  --surface-inverse-accent: #c9a87c;
+  /* 深色底陰影看不見 — 改用淡光暈 + 靠 border 提層次 */
+  --elev-1: 0 0 0 1px rgb(255 255 255 / 0.04);
+  --elev-2: 0 0 0 1px rgb(255 255 255 / 0.08), 0 8px 24px rgb(0 0 0 / 0.4);
+  --elev-cta: 0 4px 14px rgb(201 168 124 / 0.25);
 }
 
-/* CJK 字型優先 — Noto Sans TC，落到 Google Sans Code（程式碼）跟系統字 */
+/* CJK 字型 — 內文走系統字（刻意不含 Noto Sans TC：webfont 只給標題層用，
+ * 內文若也吃 webfont 會拖下數百 KB 的 CJK 切片）*/
 :root {
   --font-app-cjk:
-    "Noto Sans TC", "PingFang TC", "Heiti TC", "Microsoft JhengHei",
-    "微軟正黑體", sans-serif;
+    "PingFang TC", "Heiti TC", "Microsoft JhengHei", "微軟正黑體", sans-serif;
 }

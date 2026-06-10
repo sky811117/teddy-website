@@ -2,11 +2,14 @@
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
-import Main from "@/components/Main.astro";
+import PageHero from "@/components/PageHero.astro";
 import ContactForm from "@/components/ContactForm.astro";
 import SellForm from "@/components/SellForm.astro";
 import config from "@/config";
 import { safeJsonLd } from "@/utils/safeJsonLd";
+import IconPhone from "@/assets/icons/IconPhone.svg";
+import LineIcon from "@/assets/icons/socials/line.svg";
+import InstagramIcon from "@/assets/icons/socials/instagram.svg";
 
 // 讀 ?type= 決定要呈現「賣房表單」還是「通用詢價表單」
 const type = Astro.url.searchParams.get("type") ?? "";
@@ -86,10 +89,12 @@ const breadcrumbSchema = {
 
   <Header />
 
-  <Main pageTitle={pageTitle} pageDesc={pageDesc}>
+  <PageHero title={pageTitle} description={pageDesc} />
+
+  <main id="main-content" class="app-layout pb-4">
     {/* 實名 / 證號信任段 — 讓客戶確認對接的是登記在案的本人，不是名單機器人 */}
     <div
-      class="border-border bg-card mt-6 flex flex-col items-center gap-4 rounded-lg border p-6 sm:flex-row sm:items-center sm:text-left"
+      class="card-surface mt-6 flex flex-col items-center gap-4 p-6 sm:flex-row sm:items-center sm:text-left"
     >
       <img
         src="/photos/teddy-avatar.jpg"
@@ -112,46 +117,60 @@ const breadcrumbSchema = {
       </div>
     </div>
 
-    {/* 三個主要聯絡方式 cards — 不分 type 都保留（賣房客戶也可能想直接 LINE） */}
+    {
+      /* 三個主要聯絡方式 cards — 不分 type 都保留（賣房客戶也可能想直接 LINE） */
+    }
     <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
       <a
         href="https://line.me/ti/p/sky811117"
         target="_blank"
         rel="noopener"
-        class="border-border bg-card hover:border-accent hover:bg-accent/5 flex flex-col items-center rounded-lg border p-6 text-center no-underline transition-all"
+        class="card-interactive flex flex-col items-center p-6 text-center no-underline"
       >
-        <span class="text-5xl">💬</span>
+        <div class="bg-line/10 w-fit rounded-xl p-3">
+          <LineIcon class="text-line size-7" aria-hidden="true" />
+        </div>
         <h3 class="text-foreground mt-3 text-[18px] font-bold">LINE</h3>
-        <p class="text-muted-foreground mt-1 text-[15px]">sky811117</p>
-        <p class="text-muted-foreground mt-3 text-[14px] leading-relaxed">
+        <p
+          class="text-muted-foreground mt-2 flex-1 text-[14px] leading-relaxed"
+        >
           {isSell ? "想先聊聊再填表？這條最快" : "最快、習慣 LINE 的話直接這條"}
         </p>
+        <span class="btn-line mt-4 w-full text-sm">sky811117</span>
       </a>
 
       <a
         href="tel:+886920118756"
-        class="border-border bg-card hover:border-accent hover:bg-accent/5 flex flex-col items-center rounded-lg border p-6 text-center no-underline transition-all"
+        class="card-interactive flex flex-col items-center p-6 text-center no-underline"
       >
-        <span class="text-5xl">📞</span>
+        <div class="bg-accent/10 w-fit rounded-xl p-3">
+          <IconPhone class="text-accent size-7" aria-hidden="true" />
+        </div>
         <h3 class="text-foreground mt-3 text-[18px] font-bold">電話</h3>
-        <p class="text-muted-foreground mt-1 text-[15px]">0920-118-756</p>
-        <p class="text-muted-foreground mt-3 text-[14px] leading-relaxed">
-          急的話直接撥、平日 09:00-22:00 都接
+        <p
+          class="text-muted-foreground mt-2 flex-1 text-[14px] leading-relaxed"
+        >
+          急的話直接撥、每天 09:00-22:00 都接
         </p>
+        <span class="btn-outline mt-4 w-full text-sm">0920-118-756</span>
       </a>
 
       <a
         href="https://instagram.com/nov__817"
         target="_blank"
         rel="noopener"
-        class="border-border bg-card hover:border-accent hover:bg-accent/5 flex flex-col items-center rounded-lg border p-6 text-center no-underline transition-all"
+        class="card-interactive flex flex-col items-center p-6 text-center no-underline"
       >
-        <span class="text-5xl">📷</span>
+        <div class="bg-accent/10 w-fit rounded-xl p-3">
+          <InstagramIcon class="text-accent size-7" aria-hidden="true" />
+        </div>
         <h3 class="text-foreground mt-3 text-[18px] font-bold">Instagram</h3>
-        <p class="text-muted-foreground mt-1 text-[15px]">@nov__817</p>
-        <p class="text-muted-foreground mt-3 text-[14px] leading-relaxed">
+        <p
+          class="text-muted-foreground mt-2 flex-1 text-[14px] leading-relaxed"
+        >
           看日常 + 物件短影音、DM 也接
         </p>
+        <span class="btn-outline mt-4 w-full text-sm">@nov__817</span>
       </a>
     </div>
 
@@ -184,7 +203,7 @@ const breadcrumbSchema = {
 
     {/* 補充說明 */}
     <section
-      class="border-border mt-10 rounded-lg border border-dashed p-6 sm:p-8"
+      class="border-border rounded-card mt-10 border border-dashed p-6 sm:p-8"
     >
       <h3 class="text-foreground text-[18px] font-bold">
         {isSell ? "關於估價時程" : "關於回覆時間"}
@@ -192,14 +211,16 @@ const breadcrumbSchema = {
       {
         isSell ? (
           <ul class="text-muted-foreground mt-3 space-y-2 text-[15px] leading-relaxed">
-            <li>・收到表單後 24 小時內，給你估價區間（不是單一價、是合理區間）</li>
+            <li>
+              ・收到表單後 24 小時內，給你估價區間（不是單一價、是合理區間）
+            </li>
             <li>・估價依據：實價登錄成交 + 同社區在售 + 屋況加減項</li>
             <li>・想看完整估價報告：景泰會約一次 30 分鐘的免費通話 / 視訊</li>
             <li>・委託 vs 自售都可以聊、沒委託壓力</li>
           </ul>
         ) : (
           <ul class="text-muted-foreground mt-3 space-y-2 text-[15px] leading-relaxed">
-            <li>・週一到週日 09:00 - 22:00：30 秒到 30 分鐘內回</li>
+            <li>・每天 09:00-22:00：30 秒到 30 分鐘內回</li>
             <li>・22:00 後 - 翌日 09:00：隔天早上一起回</li>
             <li>・帶看 / 開會中：訊息看到會排進當日回覆順序</li>
             <li>・所有訊息都會回，沒有「回不上」的</li>
@@ -207,7 +228,7 @@ const breadcrumbSchema = {
         )
       }
     </section>
-  </Main>
+  </main>
 
   <Footer />
 </Layout>

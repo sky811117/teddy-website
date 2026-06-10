@@ -45,23 +45,24 @@ const gtagId = PUBLIC_GA4_MEASUREMENT_ID;
       if (stored === 'denied') return;
 
       // 動態建立 banner（放在 body，避免放進 <head> 非法）
+      // 單行貼底窄條（text-xs py-2）— 壓低高度、不遮擋表單互動元件
       var banner = document.createElement('div');
       banner.style.cssText = [
         'position:fixed;bottom:0;left:0;right:0;z-index:9999',
-        'display:flex;flex-wrap:wrap;align-items:center;gap:12px',
-        'padding:12px 20px',
+        'display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px',
+        'padding:8px 12px',
         'background:var(--background,#fff)',
         'border-top:1px solid var(--border,#e5e7eb)',
         'box-shadow:0 -2px 12px rgba(0,0,0,.08)',
-        'font-size:0.875rem',
+        'font-size:0.75rem;line-height:1.4',
       ].join(';');
       banner.innerHTML =
-        '<span style="flex:1;min-width:200px;color:var(--foreground,#111);">' +
+        '<span style="color:var(--foreground,#111);">' +
           '本站使用 Google Analytics 分析流量，協助改善內容品質。' +
         '</span>' +
         '<div style="display:flex;gap:8px;">' +
-          '<button id="ga-accept" style="padding:6px 16px;background:var(--accent);color:var(--accent-foreground,#fff);border:none;border-radius:6px;cursor:pointer;font-weight:500;">接受</button>' +
-          '<button id="ga-decline" style="padding:6px 14px;background:transparent;color:var(--muted-foreground);border:1px solid var(--border,#e5e7eb);border-radius:6px;cursor:pointer;">拒絕</button>' +
+          '<button id="ga-accept" style="height:32px;padding:0 12px;font-size:0.75rem;background:var(--accent);color:var(--accent-foreground,#fff);border:none;border-radius:6px;cursor:pointer;font-weight:500;">接受</button>' +
+          '<button id="ga-decline" style="height:32px;padding:0 12px;font-size:0.75rem;background:transparent;color:var(--muted-foreground);border:1px solid var(--border,#e5e7eb);border-radius:6px;cursor:pointer;">拒絕</button>' +
         '</div>';
       document.body.appendChild(banner);
 

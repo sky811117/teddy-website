@@ -2,7 +2,10 @@
 import { getCollection, type CollectionEntry } from "astro:content";
 import { getPostUrl } from "@/utils/getPostPaths";
 import { postFilter } from "@/utils/postFilter";
+import { ogThumb } from "@/utils/ogThumb";
 import config from "@/config";
+import IconCamera from "@/assets/icons/IconCamera.svg";
+import IconNotes from "@/assets/icons/IconNotes.svg";
 
 type Props = {
   post: CollectionEntry<"posts">;
@@ -103,7 +106,7 @@ const getCover = (data: CollectionEntry<"posts">["data"]): string | null => {
   recommended.length > 0 && (
     <section data-pagefind-ignore class="my-10">
       <h2 class="text-foreground text-xl font-bold sm:text-2xl">
-        📚 相關文章
+        <IconNotes class="size-5 inline-block" aria-hidden="true" /> 相關文章
       </h2>
       <p class="text-muted-foreground mt-2 text-sm">你可能也想看的</p>
       <ul class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -117,14 +120,17 @@ const getCover = (data: CollectionEntry<"posts">["data"]): string | null => {
               >
                 {cover ? (
                   <img
-                    src={cover}
+                    src={ogThumb(cover)}
                     alt={post.data.title}
+                    width="640"
+                    height="360"
                     class="aspect-[16/9] w-full object-cover"
                     loading="lazy"
                   />
                 ) : (
-                  <div class="bg-muted text-muted-foreground flex aspect-[16/9] w-full items-center justify-center text-sm">
-                    📷 照片整理中
+                  <div class="bg-muted text-muted-foreground flex aspect-[16/9] w-full items-center justify-center gap-1.5 text-sm">
+                    <IconCamera class="size-4" aria-hidden="true" />
+                    照片整理中
                   </div>
                 )}
                 <div class="p-4">

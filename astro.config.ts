@@ -97,11 +97,17 @@ export default defineConfig({
     {
       // 中文字體 — 給動態 OG 圖渲染 zh-TW 標題用
       // 沒這個，satori 渲染中文 = 豆腐方塊（社群分享預覽爛掉）
+      // 900 給網頁標題層（Layout.astro 有渲染 <Font>，內文維持系統字控載量）
       name: "Noto Sans TC",
       cssVariable: "--font-noto-sans-tc",
       provider: fontProviders.google(),
-      fallbacks: ["sans-serif"],
-      weights: [400, 700],
+      fallbacks: [
+        "PingFang TC",
+        "Heiti TC",
+        "Microsoft JhengHei",
+        "sans-serif",
+      ],
+      weights: [400, 700, 900],
       styles: ["normal"],
       formats: ["woff", "ttf"],
     },

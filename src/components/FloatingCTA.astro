@@ -1,16 +1,45 @@
 ---
 /**
- * Mobile sticky LINE 按鈕 — 永久浮動在右下角
+ * Mobile sticky LINE 按鈕 — 浮動在右下角
  * 桌面版隱藏（已有 Hero CTA + Footer LINE）
- * 手機版顯示、提升轉換率
+ * 首屏先隱藏（hero 內已有 LINE CTA，且會壓到搜尋按鈕）——
+ * 滑過 hero 後才淡入；找不到 #hero 時 fallback 直接顯示
+ * LINE 官方綠 + 品牌 SVG icon（全站 LINE CTA 統一視覺）
  */
+import LineIcon from "@/assets/icons/socials/line.svg";
 ---
 
 <a
   href="https://line.me/ti/p/sky811117"
-  class="bg-accent text-accent-foreground fixed end-4 bottom-4 z-40 flex items-center gap-2 rounded-full px-4 py-3 font-medium no-underline shadow-lg transition-transform hover:scale-105 sm:hidden"
+  data-floating-cta
+  class="bg-line hover:bg-line-hover shadow-cta pointer-events-none fixed end-4 bottom-4 z-40 flex min-h-11 translate-y-2 items-center gap-2 rounded-full px-4 py-3 font-medium text-white no-underline opacity-0 transition-[opacity,transform] duration-300 hover:scale-105 sm:hidden"
   title="LINE 私訊景泰 sky811117"
 >
-  <span class="text-xl" aria-hidden="true">💬</span>
+  <LineIcon class="size-5" aria-hidden="true" />
   <span class="text-sm">LINE 我 — 私訊景泰</span>
 </a>
+
+<script is:inline>
+  (function () {
+    const cta = document.querySelector("[data-floating-cta]");
+    if (!cta) return;
+    const show = () => {
+      cta.classList.remove("opacity-0", "translate-y-2", "pointer-events-none");
+    };
+    const hide = () => {
+      cta.classList.add("opacity-0", "translate-y-2", "pointer-events-none");
+    };
+    const hero = document.getElementById("hero");
+    // 沒有 hero 的內頁直接顯示
+    if (!hero || !("IntersectionObserver" in window)) {
+      show();
+      return;
+    }
+    new IntersectionObserver(
+      entries => {
+        entries.forEach(e => (e.isIntersecting ? hide() : show()));
+      },
+      { threshold: 0.05 }
+    ).observe(hero);
+  })();
+</script>

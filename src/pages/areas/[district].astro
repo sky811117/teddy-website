@@ -7,6 +7,8 @@ import Main from "@/components/Main.astro";
 import config from "@/config";
 import { areas, type Area } from "@/data/areas";
 import { safeJsonLd } from "@/utils/safeJsonLd";
+import IconAlertTriangle from "@/assets/icons/IconAlertTriangle.svg";
+import IconNotes from "@/assets/icons/IconNotes.svg";
 
 export async function getStaticPaths() {
   return areas.map(area => ({
@@ -280,7 +282,7 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
       </div>
       <div class="border-border bg-card rounded-lg border p-6">
         <h2 class="text-foreground text-lg font-bold">
-          ⚠️ 哪種人不建議買{area.shortName}
+          <IconAlertTriangle class="size-5 inline-block" aria-hidden="true" /> 哪種人不建議買{area.shortName}
         </h2>
         <ul class="text-foreground mt-3 space-y-2 leading-relaxed">
           {area.avoidIf.map(s => <li>・{s}</li>)}
@@ -390,7 +392,7 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
       area.relatedTag && (
         <section class="mt-10">
           <h2 class="text-foreground text-xl font-bold sm:text-2xl">
-            📚 {area.shortName}相關文章
+            <IconNotes class="size-5 inline-block" aria-hidden="true" /> {area.shortName}相關文章
           </h2>
           <p class="text-muted-foreground mt-2 text-sm">
             <a

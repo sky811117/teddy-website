@@ -28,6 +28,34 @@
   @apply max-w-app mx-auto w-full px-4;
 }
 
+/* 寬版容器 — 首頁 / 物件列表等「品牌站」頁面用，文章閱讀頁維持窄欄 */
+@utility app-layout-wide {
+  @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
+}
+
+/* ===== 卡片 elevation 系統（token 在 theme.css）===== */
+/* 靜態資訊卡 */
+@utility card-surface {
+  @apply bg-card border-border/60 rounded-card shadow-card border;
+}
+/* 可點擊卡 — hover 浮起 */
+@utility card-interactive {
+  @apply bg-card border-border/60 rounded-card shadow-card hover:shadow-card-hover border transition-all duration-300 hover:-translate-y-0.5;
+}
+
+/* LINE 官方綠 CTA — 全站 LINE 按鈕統一這顆 */
+@utility btn-line {
+  @apply bg-line hover:bg-line-hover rounded-btn shadow-cta inline-flex min-h-11 items-center justify-center gap-2 px-6 py-3 font-medium text-white no-underline transition-colors;
+}
+
+/* 主要 / 次要 CTA */
+@utility btn-primary {
+  @apply bg-accent text-accent-foreground rounded-btn shadow-cta inline-flex min-h-11 items-center justify-center gap-2 px-6 py-3 font-medium no-underline transition-shadow hover:shadow-lg;
+}
+@utility btn-outline {
+  @apply border-accent text-accent hover:bg-accent hover:text-accent-foreground rounded-btn inline-flex min-h-11 items-center justify-center gap-2 border-2 px-6 py-3 font-medium no-underline transition-colors;
+}
+
 @utility active-nav {
   @apply underline decoration-wavy decoration-2 underline-offset-8;
 }
