@@ -62,8 +62,9 @@ export const onRequest = async ({
     upstream = await fetch(UPSTREAM + path, {
       headers: { "User-Agent": "teddy-website-share-proxy" },
       // 邊快取 30s：加速客戶載入、減 GitHub Pages 壓力；regen 同 id 最多延遲 30s
+      // cf 是 Workers 執行期欄位，標準 RequestInit 型別沒有 → 斷言避開 TS2353/2769
       cf: { cacheTtl: 30, cacheEverything: true },
-    });
+    } as RequestInit);
   } catch {
     return new Response("分享頁暫時無法載入，請稍後再試。", {
       status: 502,
