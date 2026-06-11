@@ -1,7 +1,7 @@
 ---
 title: 讓 AI 每天早上自動幫你整理新聞 — 免費 5 分鐘設定（附 ChatGPT／Gemini 指令）
 author: 陳景泰
-pubDatetime: 2026-06-12 10:00:00+08:00
+pubDatetime: 2026-06-12 00:00:00+08:00
 slug: ai-daily-news-digest
 featured: false
 draft: false
