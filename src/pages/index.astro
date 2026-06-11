@@ -397,12 +397,13 @@ const bigKanBanAccounts = [
             </div>
           </div>
 
-          {/* --- 右欄：視覺面板（空拍背板 + 景泰去背人像） --- */}
+          {/* --- 右欄：視覺面板（台中空拍主視覺；人像合成觀感不佳已撤，
+               等景泰有新形象照再評估要不要疊回來） --- */}
           <div class="mx-auto w-full max-w-xs sm:max-w-sm lg:mx-0 lg:max-w-none">
             <div
               class="rounded-card shadow-card-hover relative aspect-[4/5] w-full overflow-hidden"
             >
-              {/* 背板：秋紅谷 + 七期天際線空拍 */}
+              {/* 主視覺：秋紅谷 + 七期天際線空拍 */}
               <picture>
                 <source srcset="/photos/hero-aerial.webp" type="image/webp" />
                 <img
@@ -415,27 +416,19 @@ const bigKanBanAccounts = [
                   fetchpriority="high"
                 />
               </picture>
-              {/* 底部漸層 — 壓深背板下緣，讓前景人像清晰 */}
+              {/* 底部淡漸層 — 給地點標籤一點對比 */}
               <div
-                class="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/40 to-transparent"
+                class="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-black/35 to-transparent"
                 aria-hidden="true"
               >
               </div>
-              {/* 前景：景泰去背半身像 */}
-              <picture>
-                <source
-                  srcset="/photos/teddy-portrait-cutout.webp"
-                  type="image/webp"
-                />
-                <img
-                  src="/photos/teddy-portrait-cutout.png"
-                  alt="陳景泰 / 泰迪 — 台中房仲形象照"
-                  width="815"
-                  height="1041"
-                  class="absolute bottom-0 left-1/2 h-[85%] w-auto -translate-x-1/2 object-contain"
-                  loading="eager"
-                />
-              </picture>
+              {/* 地點標籤 — 在地識別 */}
+              <p
+                class="absolute bottom-4 left-4 flex items-center gap-1.5 rounded-full bg-black/35 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm"
+              >
+                <IconMapPin class="size-4" aria-hidden="true" />
+                台中・秋紅谷｜七期天際線
+              </p>
             </div>
           </div>
         </div>
