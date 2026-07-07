@@ -3,6 +3,7 @@ title: 同一個南屯，兩種行情：單元二/三中位84.5萬、單元四/�
 author: 陳景泰
 pubDatetime: 2026-07-17T09:00:00+08:00
 slug: 2026-07-W02-district_presale-nantun-unit2-unit5-presale-two-markets
+ogImage: /og/2026-07-W02-district_presale-nantun-unit2-unit5-presale-two-markets.jpg
 featured: false
 draft: false
 tags:

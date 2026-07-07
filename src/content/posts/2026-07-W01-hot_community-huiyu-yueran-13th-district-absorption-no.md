@@ -3,6 +3,7 @@ title: 上市2週成交11筆：惠宇悅然去化全台中第一，同區卻有1
 author: 陳景泰
 pubDatetime: 2026-07-13T09:00:00+08:00
 slug: 2026-07-W01-hot_community-huiyu-yueran-13th-district-absorption-no
+ogImage: /og/2026-07-W01-hot_community-huiyu-yueran-13th-district-absorption-no.jpg
 featured: false
 draft: false
 tags:

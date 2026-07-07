@@ -3,6 +3,7 @@ title: 台中5月新案銷量冠軍在豐原：富宇豐云上市3週成交19筆
 author: 陳景泰
 pubDatetime: 2026-07-21T09:00:00+08:00
 slug: 2026-07-W03-hot_community-fengyuan-fuyu-fengyun-may-top-seller
+ogImage: /og/2026-07-W03-hot_community-fengyuan-fuyu-fengyun-may-top-seller.jpg
 featured: false
 draft: false
 tags:

@@ -3,6 +3,7 @@ title: 央行三率連9凍，房貸1-5月卻年減26%：利率沒動，動的是
 author: 陳景泰
 pubDatetime: 2026-07-09T09:00:00+08:00
 slug: 2026-07-W01-rate-rate-freeze-9-mortgage-tightening-2026-0
+ogImage: /og/2026-07-W01-rate-rate-freeze-9-mortgage-tightening-2026-0.jpg
 featured: false
 draft: false
 tags:

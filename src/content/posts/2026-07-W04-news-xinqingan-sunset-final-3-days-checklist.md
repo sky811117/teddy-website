@@ -3,6 +3,7 @@ title: 新青安 1.0 只剩 3 天：門票是 7/31 前「完成撥款」，不�
 author: 陳景泰
 pubDatetime: 2026-07-28T09:00:00+08:00
 slug: 2026-07-W04-news-xinqingan-sunset-final-3-days-checklist
+ogImage: /og/2026-07-W04-news-xinqingan-sunset-final-3-days-checklist.jpg
 featured: true
 draft: false
 tags:

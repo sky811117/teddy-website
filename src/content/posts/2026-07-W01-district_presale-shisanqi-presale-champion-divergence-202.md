@@ -3,6 +3,7 @@ title: 十三期37筆奪台中預售成交冠軍，但22案裡有6案連三個�
 author: 陳景泰
 pubDatetime: 2026-07-08T09:00:00+08:00
 slug: 2026-07-W01-district_presale-shisanqi-presale-champion-divergence-202
+ogImage: /og/2026-07-W01-district_presale-shisanqi-presale-champion-divergence-202.jpg
 featured: false
 draft: false
 tags:

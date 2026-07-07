@@ -3,6 +3,7 @@ title: 30年老公寓不用等都更：公共空間補助最高960萬/棟、室�
 author: 陳景泰
 pubDatetime: 2026-07-20T09:00:00+08:00
 slug: 2026-07-W02-news-old-apartment-renovation-subsidy
+ogImage: /og/2026-07-W02-news-old-apartment-renovation-subsidy.jpg
 featured: false
 draft: false
 tags:

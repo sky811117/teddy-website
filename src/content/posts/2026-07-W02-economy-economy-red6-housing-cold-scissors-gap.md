@@ -3,6 +3,7 @@ title: 景氣連6紅、買房意願卻是-39.1：「經濟熱、房市冷」的�
 author: 陳景泰
 pubDatetime: 2026-07-16T09:00:00+08:00
 slug: 2026-07-W02-economy-economy-red6-housing-cold-scissors-gap
+ogImage: /og/2026-07-W02-economy-economy-red6-housing-cold-scissors-gap.jpg
 featured: false
 draft: false
 tags:

@@ -3,6 +3,7 @@ title: 84.9萬/坪還能去化71.6%？水湳/單元八：最貴生活圈也在�
 author: 陳景泰
 pubDatetime: 2026-07-15T09:00:00+08:00
 slug: 2026-07-W02-district_presale-shuinan-unit8-presale-2026-05
+ogImage: /og/2026-07-W02-district_presale-shuinan-unit8-presale-2026-05.jpg
 featured: false
 draft: false
 tags:

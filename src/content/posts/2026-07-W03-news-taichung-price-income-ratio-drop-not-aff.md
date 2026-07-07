@@ -3,6 +3,7 @@ title: 台中房價所得比降到11.68倍，為什麼你還是覺得買不起�
 author: 陳景泰
 pubDatetime: 2026-07-23T09:00:00+08:00
 slug: 2026-07-W03-news-taichung-price-income-ratio-drop-not-aff
+ogImage: /og/2026-07-W03-news-taichung-price-income-ratio-drop-not-aff.jpg
 featured: false
 draft: false
 tags:

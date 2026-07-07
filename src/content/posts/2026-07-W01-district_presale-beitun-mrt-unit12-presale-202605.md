@@ -3,6 +3,7 @@ title: 機捷特區月銷25筆全市第2：三個月賣34筆的建案，去化�
 author: 陳景泰
 pubDatetime: 2026-07-10T09:00:00+08:00
 slug: 2026-07-W01-district_presale-beitun-mrt-unit12-presale-202605
+ogImage: /og/2026-07-W01-district_presale-beitun-mrt-unit12-presale-202605.jpg
 featured: false
 draft: false
 tags:

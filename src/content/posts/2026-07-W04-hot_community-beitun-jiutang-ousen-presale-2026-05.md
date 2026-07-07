@@ -3,6 +3,7 @@ title: 久樘歐森 7 週成交 17 筆：北屯走量最快的新案，不在重
 author: 陳景泰
 pubDatetime: 2026-07-30T09:00:00+08:00
 slug: 2026-07-W04-hot_community-beitun-jiutang-ousen-presale-2026-05
+ogImage: /og/2026-07-W04-hot_community-beitun-jiutang-ousen-presale-2026-05.jpg
 featured: false
 draft: false
 tags:

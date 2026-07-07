@@ -3,6 +3,7 @@ title: 第2戶6成上路3個多月，還有人以為能貸8成：央行連9凍�
 author: 陳景泰
 pubDatetime: 2026-07-14T09:00:00+08:00
 slug: 2026-07-W02-news-cbc-9th-rate-freeze-credit-control-ltv-g
+ogImage: /og/2026-07-W02-news-cbc-9th-rate-freeze-credit-control-ltv-g.jpg
 featured: false
 draft: false
 tags:

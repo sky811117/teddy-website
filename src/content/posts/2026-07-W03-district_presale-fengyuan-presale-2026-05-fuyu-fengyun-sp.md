@@ -3,6 +3,7 @@ title: 豐原預售單月23筆、增幅全市最大？拆開看：19筆來自同
 author: 陳景泰
 pubDatetime: 2026-07-24T09:00:00+08:00
 slug: 2026-07-W03-district_presale-fengyuan-presale-2026-05-fuyu-fengyun-sp
+ogImage: /og/2026-07-W03-district_presale-fengyuan-presale-2026-05-fuyu-fengyun-sp.jpg
 featured: false
 draft: false
 tags:
