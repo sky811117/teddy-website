@@ -1,7 +1,7 @@
 ---
 title: 台中520檔期推案量20年新低：8成案場掛蛋、建商「買貴退差價」，急凍的預售市場對買方不是壞消息
 author: 陳景泰
-pubDatetime: 2026-07-07T09:00:00+08:00
+pubDatetime: 2026-07-07T07:00:00+08:00
 slug: 2026-07-W01-news-taichung-presale-supply-20year-low
 featured: true
 draft: false
