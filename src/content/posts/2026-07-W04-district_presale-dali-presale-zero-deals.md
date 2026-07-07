@@ -3,6 +3,7 @@ title: 大里12個預售案本月成交掛零：不是沒人買，是3字頭賣�
 author: 陳景泰
 pubDatetime: 2026-07-29T09:00:00+08:00
 slug: 2026-07-W04-district_presale-dali-presale-zero-deals
+ogImage: /og/2026-07-W04-district_presale-dali-presale-zero-deals.jpg
 featured: false
 draft: false
 tags:

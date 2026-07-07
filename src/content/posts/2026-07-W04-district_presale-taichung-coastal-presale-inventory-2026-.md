@@ -3,6 +3,7 @@ title: 海線44個預售案盤點：沙鹿11案三個月零成交，2字頭的�
 author: 陳景泰
 pubDatetime: 2026-07-31T09:00:00+08:00
 slug: 2026-07-W04-district_presale-taichung-coastal-presale-inventory-2026-
+ogImage: /og/2026-07-W04-district_presale-taichung-coastal-presale-inventory-2026-.jpg
 featured: false
 draft: false
 tags:

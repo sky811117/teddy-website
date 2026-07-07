@@ -3,6 +3,7 @@ title: 建照自動展延2~3年，你的預售屋交屋日還算得準嗎？台�
 author: 陳景泰
 pubDatetime: 2026-08-03T09:00:00+08:00
 slug: 2026-07-W04-news-taichung-soil-disposal-handover-delay
+ogImage: /og/2026-07-W04-news-taichung-soil-disposal-handover-delay.jpg
 featured: false
 draft: false
 tags:
