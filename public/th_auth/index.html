@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Threads 授權跳板</title>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:90vh;gap:24px;padding:20px;text-align:center}
+a.btn{display:block;padding:16px 32px;background:#000;color:#fff;border-radius:12px;text-decoration:none;font-size:18px;font-weight:700}
+p{color:#666;font-size:14px}
+</style>
+</head>
+<body>
+<h2>Threads 授權</h2>
+<p>點下面按鈕 → 登入/選帳號 → 按「允許」→ 下一頁會顯示 code，複製給 Claude</p>
+<a class="btn" id="go" href="#">前往 Threads 授權</a>
+<p id="url" style="word-break:break-all;font-size:11px;color:#aaa"></p>
+<script>
+var u = 'https://www.threads.com/oauth/authorize?client_id=1366477145444193'
+      + '&redirect_uri=' + encodeURIComponent('https://teddy-website-blog.pages.dev/ig_callback')
+      + '&response_type=code'
+      + '&scope=' + encodeURIComponent('threads_basic,threads_content_publish,threads_manage_replies,threads_manage_insights');
+document.getElementById('go').href = u;
+document.getElementById('url').textContent = u;
+</script>
+</body>
+</html>
