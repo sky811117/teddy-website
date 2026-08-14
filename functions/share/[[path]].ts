@@ -94,8 +94,14 @@ export const onRequest = async ({
   }
 
   // 注入「回官網」區塊 — 新舊頁面只要走 proxy 都會有底部引流區塊。
-  // guard：頁面已含此區塊（後端新版也會 bake）就不重複注入。
-  if (!html.includes("想看更多好屋") && html.includes("</body>")) {
+  // guard 一：頁面已含此區塊（後端新版也會 bake）就不重複注入。
+  // guard 二：白牌頁面不注入。查詢台開放給同事之後（2026-08-14），同事分享出去的
+  //   客戶頁掛的是他自己的姓名/電話/LINE/證號，這裡再注入「認識景泰／房仲官網」
+  //   等於把景泰塞回別人的客戶頁。share app 會在 <head> 蓋一個
+  //   <meta name="x-share-promo" content="off">，看到就跳過。
+  //   ⚠️ 兩邊要一起改才有用 —— 只改 share app 那邊，這個 proxy 還是會把景泰加回去。
+  const promoOff = /<meta[^>]+name=["']x-share-promo["'][^>]+content=["']off["']/i.test(html);
+  if (!promoOff && !html.includes("想看更多好屋") && html.includes("</body>")) {
     html = html.replace("</body>", BACK_TO_SITE + "</body>");
   }
 
