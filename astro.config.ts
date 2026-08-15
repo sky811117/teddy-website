@@ -16,9 +16,13 @@ import {
 } from "@shikijs/transformers";
 import { transformerFileName } from "./src/utils/transformers/fileName";
 import config from "./astro-paper.config";
-import { buildLastmodMap } from "./scripts/sitemap-lastmod.mjs";
+import {
+  buildLastmodMap,
+  buildSectionLastmod,
+} from "./scripts/sitemap-lastmod.mjs";
 
 const lastmodMap = buildLastmodMap(config.site.url);
+const sectionLastmod = buildSectionLastmod(config.site.url);
 
 export default defineConfig({
   site: config.site.url,
@@ -54,7 +58,14 @@ export default defineConfig({
           item.priority = 0.6;
           item.changefreq = "weekly" as never;
         }
-        const lm = lastmodMap.get(item.url);
+        let lm = lastmodMap.get(item.url);
+        if (!lm) {
+          // 分頁(/posts/2/)、個別區域頁(/areas/north-tun/) 等沒進精確表的，
+          // 用該 section 最新日期 fallback；靜態頁(about/contact)無前綴匹配 → 維持無 lastmod
+          if (item.url.includes("/posts")) lm = sectionLastmod.posts ?? undefined;
+          else if (item.url.includes("/properties") || item.url.includes("/areas"))
+            lm = sectionLastmod.properties ?? undefined;
+        }
         if (lm) item.lastmod = lm.toISOString();
         return item;
       },

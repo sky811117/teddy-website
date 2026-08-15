@@ -78,12 +78,14 @@ function listFirstLevelMd(dirUrl) {
 }
 
 /**
- * @param {string} siteUrl config.site.url（自帶尾斜線）
- * @returns {Map<string, Date>} 完整 URL（含尾斜線）→ lastmod Date
+ * 收集個別 posts / properties 頁的「URL → Date」（buildLastmodMap 與
+ * buildSectionLastmod 共用底層，避免掃兩次目錄）。
+ * @param {string} base 不含尾斜線的站點 URL
+ * @returns {{posts: {url: string, date: Date}[], properties: {url: string, date: Date}[]}}
  */
-export function buildLastmodMap(siteUrl) {
-  const base = String(siteUrl || "").replace(/\/$/, "");
-  const map = new Map();
+function collectEntries(base) {
+  const posts = [];
+  const properties = [];
 
   // posts：URL = base + /posts/<slug>/，lastmod = modDatetime ?? pubDatetime
   for (const name of listFirstLevelMd(POSTS_DIR)) {
@@ -93,15 +95,12 @@ export function buildLastmodMap(siteUrl) {
       if (!meta) continue;
 
       let slug = meta.slug;
-      if (!slug) {
-        const fileBase = name.replace(/\.mdx?$/, "");
-        slug = slugifyStr(fileBase);
-      }
+      if (!slug) slug = slugifyStr(name.replace(/\.mdx?$/, ""));
 
       const lastmod = parseDate(meta.modDatetime) ?? parseDate(meta.pubDatetime);
       if (!lastmod) continue;
 
-      map.set(`${base}/posts/${slug}/`, lastmod);
+      posts.push({ url: `${base}/posts/${slug}/`, date: lastmod });
     } catch (err) {
       console.warn(`[sitemap-lastmod] 解析 post 失敗 ${name}: ${err.message}`);
     }
@@ -122,11 +121,63 @@ export function buildLastmodMap(siteUrl) {
         parseDate(meta.pubDatetime);
       if (!lastmod) continue;
 
-      map.set(`${base}/properties/${id}/`, lastmod);
+      properties.push({ url: `${base}/properties/${id}/`, date: lastmod });
     } catch (err) {
       console.warn(`[sitemap-lastmod] 解析 property 失敗 ${name}: ${err.message}`);
     }
   }
 
+  return { posts, properties };
+}
+
+function maxDate(arr) {
+  let m = null;
+  for (const { date } of arr) {
+    if (!m || date > m) m = date;
+  }
+  return m;
+}
+
+/**
+ * @param {string} siteUrl config.site.url（自帶尾斜線）
+ * @returns {Map<string, Date>} 個別頁 + 列表頁（首頁 / /posts/ / /properties/ / /areas/）→ lastmod
+ *
+ * 列表頁的 lastmod = 該 section 最新一筆內容的日期（清單頁在最新內容發布時即更新）。
+ * 分頁(/posts/2/)與個別區域頁(/areas/north-tun/)無法預先枚舉，交給 astro.config.ts
+ * serialize 用 buildSectionLastmod 做前綴 fallback。
+ */
+export function buildLastmodMap(siteUrl) {
+  const base = String(siteUrl || "").replace(/\/$/, "");
+  const { posts, properties } = collectEntries(base);
+  const map = new Map();
+
+  for (const { url, date } of posts) map.set(url, date);
+  for (const { url, date } of properties) map.set(url, date);
+
+  // 列表頁（精確 URL）
+  const postsLatest = maxDate(posts);
+  const propsLatest = maxDate(properties);
+  const allLatest = [postsLatest, propsLatest].filter(Boolean).sort((a, b) => b - a)[0] || null;
+  if (postsLatest) map.set(`${base}/posts/`, postsLatest);
+  if (propsLatest) {
+    map.set(`${base}/properties/`, propsLatest);
+    map.set(`${base}/areas/`, propsLatest); // 區域列表頁列的是物件
+  }
+  if (allLatest) map.set(`${base}/`, allLatest); // 首頁取全站最新
+
   return map;
+}
+
+/**
+ * 給 serialize 對「分頁 / 個別區域頁」做前綴 fallback 用的各 section 最新日期。
+ * @param {string} siteUrl
+ * @returns {{posts: Date|null, properties: Date|null, all: Date|null}}
+ */
+export function buildSectionLastmod(siteUrl) {
+  const base = String(siteUrl || "").replace(/\/$/, "");
+  const { posts, properties } = collectEntries(base);
+  const postsLatest = maxDate(posts);
+  const propsLatest = maxDate(properties);
+  const all = [postsLatest, propsLatest].filter(Boolean).sort((a, b) => b - a)[0] || null;
+  return { posts: postsLatest, properties: propsLatest, all };
 }
