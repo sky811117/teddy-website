@@ -634,8 +634,11 @@ const breadcrumbSchema = {
                 data-gallery-lightbox-img
                 src={property.data.photos[0]}
                 alt={property.data.title}
-                width="1600"
-                height="1200"
+                {/* 2026-08-26：原本硬寫 width=1600 height=1200。max-h/max-w 是
+                    上限不是固定值，所以 1024px 的來源會被硬撐到 1600px 顯示
+                    （放大 1.56 倍→糊）。公司前台物件的圖源 CDN 只給 1024px，
+                    重抓也拿不到更大的，正解是不要撐。拿掉後依原生尺寸顯示。
+                    這是全螢幕 flex 置中的 lightbox，沒有 CLS 問題。 */}
                 loading="lazy"
                 decoding="async"
                 class="max-h-[92vh] max-w-[96vw] object-contain"

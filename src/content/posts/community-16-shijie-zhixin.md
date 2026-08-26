@@ -7,6 +7,7 @@ ogImage: /og/community-16-shijie-zhixin.jpg
 featured: true
 draft: false
 tags:
+  - community-review
   - 社區深度
   - 台中買屋
   - 佳茂世界之心

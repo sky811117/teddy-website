@@ -82,7 +82,7 @@ const t = useTranslations(locale);
       const search = new PagefindUI({
         element: "#pagefind-search",
         bundlePath,
-        showImages: false,
+        showImages: true, // 2026-08-26 開啟：全站文章都有 ogImage，Pagefind 抓得到
         showSubResults: true,
         processTerm: function (term: string) {
           params.set("q", term); // Update the `q` parameter in the URL

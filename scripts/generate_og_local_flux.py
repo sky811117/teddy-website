@@ -51,6 +51,59 @@ OG_W, OG_H = 1200, 630
 FM_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 
 
+# ── 文章家族判定（優先於下面的關鍵字表）─────────────────────────────
+# 2026-08-26 加：教學型文章（看屋/名詞/FAQ/工具/週記/社區）要的畫面跟
+# 房市數據文完全不同。舊那批 109 張就是全部丟同一個「黃昏豪宅」prompt，
+# 結果「教你測漏水」配一張夕陽別墅，還印著 TAVAN / REAL WHAT MARKEET 亂碼。
+SLUG_FAMILIES = [
+    ("viewing-", [   # 看屋實戰：實地檢查場景
+        "close up of a bright empty apartment corner where wall meets ceiling, clean white paint, daylight from a nearby window",
+        "empty bright apartment room with bare walls, a window frame and wooden floor, inspection viewpoint, natural daylight",
+        "bright empty balcony of a Taiwanese apartment with a metal railing, looking out to a green neighborhood, daytime",
+        "bright empty bathroom interior with tiled walls and a window, clean and dry, natural light",
+        "empty apartment kitchen with bare counters and a bright window, light wood cabinets, daylight",
+        "looking up at an apartment ceiling with a light fixture and clean white surface, bright daylight from a window",
+    ]),
+    ("term-", [      # 房地產名詞：建築構造特寫
+        "close up architectural detail of a Taiwanese apartment balcony and its overhanging eave, clean concrete, bright daylight",
+        "exterior detail of a modern apartment facade showing balconies and window ledges, clean lines, bright sunlight",
+        "bright apartment building lobby with a high ceiling and stone floor, common area, natural daylight",
+        "roof terrace of a Taiwanese apartment with tiled floor and a low parapet wall, blue sky, daytime",
+        "apartment stairwell and corridor with clean tiled walls, daylight through a window, no people",
+    ]),
+    ("faq-", [       # 常見問題：文件 / 諮詢 / 桌面
+        "tidy desk with an open folder of documents and a pen by a sunny window, overhead view, bright natural light",
+        "clean modern meeting table with a notebook and two chairs by a large bright window, no people, warm neutral tones",
+        "sunlit desk with a calculator, a small house model and a clipboard, minimal composition, soft shadows",
+        "bright modern office corner with a wooden desk, a plant and a bookshelf, natural daylight, no people",
+        "close up of a stack of clean blank documents and a pen on a light wooden table, morning sunlight",
+        "modern apartment entrance door with a clean frame and a doormat, bright hallway daylight",
+    ]),
+    ("tool-", [      # 工具：桌面試算 / 工作台
+        "clean modern desk with a laptop, calculator and notepad, bright daylight, overhead view, blank screen",
+        "minimal workspace with a tablet, a cup of coffee and a notebook by a sunny window, warm neutral tones",
+        "tidy home office desk with a monitor, keyboard and a small plant, bright morning light, blank screen",
+    ]),
+    ("week-", [      # 週記：工作 / 城市
+        "tidy desk setup with a monitor and keyboard by a window overlooking a bright city, blank screen, daytime",
+        "modern home office with a desk, chair and bookshelf, large window with daylight, clean and minimal",
+        "bright coworking space interior with wooden desks and plants, large windows, no people, daytime",
+    ]),
+    ("community-", [  # 社區評論：住宅社區示意（刻意不拍成可辨識的特定建築）
+        "landscaped inner courtyard of a Taiwanese residential complex with trees and walking paths, bright daylight, no people",
+        "modern Taiwanese residential community entrance with a stone facade and greenery, clean and bright, daytime",
+        "row of mid-rise residential apartment buildings along a tree-lined Taiwanese street, bright clear daytime",
+        "bright residential building lobby with high ceiling, stone walls and indoor plants, daylight through tall glass",
+        "aerial view of a Taiwanese residential community with several apartment blocks and a central green space, clear sky",
+    ]),
+    ("policy-", [    # 政策
+        "modern Taiwanese government civic building exterior, clean concrete and glass facade, wide plaza, bright open sky",
+        "bright public service hall interior with orderly counters and high ceilings, natural daylight",
+        "wide daytime view of a Taiwanese city hall plaza with open paving and flagpoles, clear blue sky",
+    ]),
+]
+
+
 # ── 主題判定 ───────────────────────────────────────────────────────────
 # 由上而下比對，第一個命中的類別決定畫面。畫面一律亮色白天。
 #
@@ -154,7 +207,12 @@ DEFAULT_SCENES = [
 STYLE_SUFFIX = (
     "bright daytime, clear blue sky, natural sunlight, soft shadows, "
     "photorealistic architectural photography, wide angle, sharp focus, "
-    "clean and airy, professional magazine quality, no text, no signage, no people, no cars in focus"
+    "clean and airy, professional photography, "
+    # ⚠️ 舊那批 109 張的 prompt 寫「magazine cover quality / Architectural Digest
+    #    style」，模型就真的畫出雜誌版面 —— 印著 TAVAN / REAL WHAT MARKEET /
+    #    DASKET 一堆亂碼英文字。任何「雜誌/海報/排版」字眼都會誘發出字。
+    "no text, no lettering, no watermark, no logo, no signage, no captions, "
+    "no magazine layout, no border, no frame, no people, no cars in focus"
 )
 
 
@@ -168,11 +226,18 @@ def build_prompt(title: str, tags: list[str], slug: str, variant_shift: int = 0)
     但同類別的不同文章會分散到不同場景，避免整批長一樣。
     variant_shift 用來「換一張」：重生時 +1 就會挑到別的場景。"""
     haystack = title + " " + " ".join(str(t) for t in tags)
-    scenes = DEFAULT_SCENES
-    for keywords, opts in THEMES:
-        if any(k in haystack for k in keywords):
+    scenes = None
+    # 先看文章家族（slug 前綴），教學文的畫面需求跟數據文完全不同
+    for prefix, opts in SLUG_FAMILIES:
+        if slug.startswith(prefix):
             scenes = opts
             break
+    if scenes is None:
+        scenes = DEFAULT_SCENES
+        for keywords, opts in THEMES:
+            if any(k in haystack for k in keywords):
+                scenes = opts
+                break
     scene = scenes[(stable_hash(slug) + variant_shift) % len(scenes)]
     return f"{scene}, {STYLE_SUFFIX}"
 
@@ -328,8 +393,12 @@ def main() -> int:
             png = gen_flux_image(prompt, width=GEN_W, height=GEN_H, seed=seed)
             to_og_jpg(png, out)
             if not re.search(r"^ogImage:\s*\S", text, re.MULTILINE):
-                text = insert_og_line(text, f"/og/{out.name}")
-            md.write_text(text, encoding="utf-8")
+                # ⚠️ newline="" 不做行尾轉換。Windows 的 write_text 預設會把
+                #    \n 寫成 \r\n，--regen 時 109 個檔會全部變成「有改動但
+                #    diff 是空的」，把 commit 洗成一片雜訊。
+                md.write_text(insert_og_line(text, f"/og/{out.name}"),
+                              encoding="utf-8", newline="")
+            # 已經有 ogImage 就完全不碰檔案（重生只換圖，不動 frontmatter）
             print(f"        -> {out.name}  {out.stat().st_size/1024:.0f}KB  ({time.time()-t0:.0f}s)")
             ok += 1
         except Exception as e:
