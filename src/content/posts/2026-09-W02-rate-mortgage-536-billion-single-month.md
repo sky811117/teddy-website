@@ -3,6 +3,7 @@ title: 房貸單月大增536億創近一年新高，但上半年累計衰退24% 
 author: 陳景泰
 pubDatetime: 2026-09-07T09:00:00+08:00
 slug: 2026-09-W02-rate-mortgage-536-billion-single-month
+ogImage: /og/2026-09-W02-rate-mortgage-536-billion-single-month.jpg
 featured: false
 draft: false
 tags:

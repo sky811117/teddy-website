@@ -3,6 +3,7 @@ title: 台中房價所得比11.35倍：15年前不吃不喝存7.3年，現在要
 author: 陳景泰
 pubDatetime: 2026-08-26T09:00:00+08:00
 slug: 2026-08-W04-economy-taichung-price-income-ratio-11-35
+ogImage: /og/2026-08-W04-economy-taichung-price-income-ratio-11-35.jpg
 featured: false
 draft: false
 tags:

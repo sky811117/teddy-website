@@ -3,6 +3,7 @@ title: "新青安 2.0 擬 8/1 上路：年收破 200 萬不能用、50 歲是門
 author: 陳景泰
 pubDatetime: 2026-06-24 09:30:00+08:00
 slug: news-2026-06-24-new-housing-loan-2
+ogImage: /og/news-2026-06-24-new-housing-loan-2.jpg
 featured: true
 draft: true
 tags:

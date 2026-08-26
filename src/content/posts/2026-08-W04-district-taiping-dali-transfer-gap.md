@@ -3,6 +3,7 @@ title: 太平1,074棟、大里324棟：同樣在台中東南，交易量差了3.
 author: 陳景泰
 pubDatetime: 2026-08-28T09:00:00+08:00
 slug: 2026-08-W04-district-taiping-dali-transfer-gap
+ogImage: /og/2026-08-W04-district-taiping-dali-transfer-gap.jpg
 featured: false
 draft: false
 tags:

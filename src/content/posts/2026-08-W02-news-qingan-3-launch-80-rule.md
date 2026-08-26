@@ -3,6 +3,7 @@ title: 青安3.0上路：額度加碼到1500萬，卻多了一條「80條款」�
 author: 陳景泰
 pubDatetime: 2026-08-12T09:00:00+08:00
 slug: 2026-08-W02-news-qingan-3-launch-80-rule
+ogImage: /og/2026-08-W02-news-qingan-3-launch-80-rule.jpg
 featured: true
 draft: false
 tags:

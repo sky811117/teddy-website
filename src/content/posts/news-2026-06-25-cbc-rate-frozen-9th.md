@@ -3,6 +3,7 @@ title: "央行連九凍、信用管制不放寬 — 等降息救你的人要失�
 author: 陳景泰
 pubDatetime: 2026-06-25T08:00:00+08:00
 slug: cbc-rate-frozen-9th-2026
+ogImage: /og/cbc-rate-frozen-9th-2026.jpg
 featured: true
 draft: true
 tags:

@@ -3,6 +3,7 @@ title: "新青安2.0 傳要變嚴：年收200萬上限、補貼逐年退場 — 
 author: 陳景泰
 pubDatetime: 2026-06-10 09:30:00+08:00
 slug: news-2026-06-10-new-housing-loan-2-countdown
+ogImage: /og/news-2026-06-10-new-housing-loan-2-countdown.jpg
 featured: true
 draft: true
 tags:

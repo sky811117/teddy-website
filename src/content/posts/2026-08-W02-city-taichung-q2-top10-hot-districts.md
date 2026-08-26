@@ -3,6 +3,7 @@ title: 台中Q2十大交易熱區出爐：西屯1,689棟居冠，前四名吃掉
 author: 陳景泰
 pubDatetime: 2026-08-14T09:00:00+08:00
 slug: 2026-08-W02-city-taichung-q2-top10-hot-districts
+ogImage: /og/2026-08-W02-city-taichung-q2-top10-hot-districts.jpg
 featured: false
 draft: false
 tags:

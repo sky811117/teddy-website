@@ -3,6 +3,7 @@ title: 老宅延壽計畫：屋齡30年以上，公共空間最高補助960萬�
 author: 陳景泰
 pubDatetime: 2026-09-03T09:00:00+08:00
 slug: 2026-09-W01-policy-old-house-longevity-subsidy
+ogImage: /og/2026-09-W01-policy-old-house-longevity-subsidy.jpg
 featured: false
 draft: false
 tags:

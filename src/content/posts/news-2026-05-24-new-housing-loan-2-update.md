@@ -3,6 +3,7 @@ title: "新青安2.0最新動向：利率恐升到 2.3%、寬限期縮短——�
 author: 陳景泰
 pubDatetime: 2026-05-24 08:00:00+08:00
 slug: new-housing-loan-2-update
+ogImage: /og/new-housing-loan-2-update.jpg
 featured: true
 draft: false
 tags:

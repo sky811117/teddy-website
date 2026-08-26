@@ -3,6 +3,7 @@ title: 危老重建要常態化了：行政院通過修正草案，再加15%容�
 author: 陳景泰
 pubDatetime: 2026-08-27T09:00:00+08:00
 slug: 2026-08-W04-news-danger-old-building-urban-renewal-amendment
+ogImage: /og/2026-08-W04-news-danger-old-building-urban-renewal-amendment.jpg
 featured: false
 draft: false
 tags:

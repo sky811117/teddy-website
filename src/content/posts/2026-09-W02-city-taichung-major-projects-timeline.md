@@ -3,6 +3,7 @@ title: 台中重大建設進度總表：今年已完成4項、年底前還有7�
 author: 陳景泰
 pubDatetime: 2026-09-08T09:00:00+08:00
 slug: 2026-09-W02-city-taichung-major-projects-timeline
+ogImage: /og/2026-09-W02-city-taichung-major-projects-timeline.jpg
 featured: false
 draft: false
 tags:

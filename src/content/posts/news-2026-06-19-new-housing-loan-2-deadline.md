@@ -3,6 +3,7 @@ title: "新青安 2.0 要來了！6 月底公告、8 月上路 — 你現在該�
 author: 陳景泰
 pubDatetime: 2026-06-19 08:00:00+08:00
 slug: news-2026-06-19-new-housing-loan-2-deadline
+ogImage: /og/news-2026-06-19-new-housing-loan-2-deadline.jpg
 featured: true
 draft: true
 tags:

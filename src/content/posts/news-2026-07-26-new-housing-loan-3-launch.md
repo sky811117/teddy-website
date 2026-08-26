@@ -3,6 +3,7 @@ title: "青安3.0 定案 8/1 上路：台中房價上限 2000 萬、年收 200 �
 author: 陳景泰
 pubDatetime: 2026-07-26T08:00:00+08:00
 slug: new-housing-loan-3-launch-2026
+ogImage: /og/new-housing-loan-3-launch-2026.jpg
 featured: true
 draft: false
 tags:

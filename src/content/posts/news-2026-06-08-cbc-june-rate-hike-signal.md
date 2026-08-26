@@ -3,6 +3,7 @@ title: "央行 6 月可能升息？訊號出現了 — 借 800 萬 30 年，升�
 author: 陳景泰
 pubDatetime: 2026-06-08T09:00:00+08:00
 slug: news-2026-06-08-cbc-june-rate-hike-signal
+ogImage: /og/news-2026-06-08-cbc-june-rate-hike-signal.jpg
 featured: true
 draft: true
 tags:

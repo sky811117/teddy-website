@@ -3,6 +3,7 @@ title: 第二戶房貸放寬到6成，實際只多借到90萬 — 用1,500萬的
 author: 陳景泰
 pubDatetime: 2026-08-13T09:00:00+08:00
 slug: 2026-08-W02-rate-second-home-60-percent-reality
+ogImage: /og/2026-08-W02-rate-second-home-60-percent-reality.jpg
 featured: false
 draft: false
 tags:

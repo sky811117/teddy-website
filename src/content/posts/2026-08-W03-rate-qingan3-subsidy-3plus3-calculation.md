@@ -3,6 +3,7 @@ title: 青安3.0補貼「3加3」退場試算：同樣貸1,000萬，月付從29,
 author: 陳景泰
 pubDatetime: 2026-08-18T09:00:00+08:00
 slug: 2026-08-W03-rate-qingan3-subsidy-3plus3-calculation
+ogImage: /og/2026-08-W03-rate-qingan3-subsidy-3plus3-calculation.jpg
 featured: false
 draft: false
 tags:

@@ -3,6 +3,7 @@ title: "新青安補貼倒數最後 1 個月：7/31 到期、8 月首批寬限�
 author: 陳景泰
 pubDatetime: 2026-07-01T08:30:00+08:00
 slug: new-housing-loan-final-month-2026
+ogImage: /og/new-housing-loan-final-month-2026.jpg
 featured: true
 draft: false
 tags:

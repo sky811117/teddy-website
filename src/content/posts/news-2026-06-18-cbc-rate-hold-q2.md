@@ -3,6 +3,7 @@ title: "央行第二季理監事會今天登場：利率料連7凍、房貸不�
 author: 陳景泰
 pubDatetime: 2026-06-18T08:00:00+08:00
 slug: cbc-rate-hold-q2-2026
+ogImage: /og/cbc-rate-hold-q2-2026.jpg
 featured: true
 draft: true
 tags:

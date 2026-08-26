@@ -3,6 +3,7 @@ title: 台中預售屋每坪51.4萬、年減7.9% — 六都唯一下跌的城市
 author: 陳景泰
 pubDatetime: 2026-08-24T09:00:00+08:00
 slug: 2026-08-W04-city-taichung-presale-51-4-only-drop
+ogImage: /og/2026-08-W04-city-taichung-presale-51-4-only-drop.jpg
 featured: false
 draft: false
 tags:

@@ -3,6 +3,7 @@ title: 全台空屋跌破90萬宅、台中10萬140宅 — 但台中的空屋，�
 author: 陳景泰
 pubDatetime: 2026-08-31T09:00:00+08:00
 slug: 2026-08-W05-news-vacant-homes-below-900k
+ogImage: /og/2026-08-W05-news-vacant-homes-below-900k.jpg
 featured: false
 draft: false
 tags:

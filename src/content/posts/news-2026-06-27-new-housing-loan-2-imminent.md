@@ -3,6 +3,7 @@ title: "新青安 2.0 月底拍板在即：財政部要嚴查人頭戶、補貼�
 author: 陳景泰
 pubDatetime: 2026-06-27T08:30:00+08:00
 slug: new-housing-loan-2-imminent-2026
+ogImage: /og/new-housing-loan-2-imminent-2026.jpg
 featured: true
 draft: true
 tags:

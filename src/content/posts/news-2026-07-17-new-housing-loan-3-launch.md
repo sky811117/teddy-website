@@ -3,6 +3,7 @@ title: "青安3.0 拍板！8/1 接棒新青安 — 多了 3 道門檻，你還�
 author: 陳景泰
 pubDatetime: 2026-07-17 08:00:00+08:00
 slug: news-2026-07-17-new-housing-loan-3-launch
+ogImage: /og/news-2026-07-17-new-housing-loan-3-launch.jpg
 featured: true
 draft: false
 tags:

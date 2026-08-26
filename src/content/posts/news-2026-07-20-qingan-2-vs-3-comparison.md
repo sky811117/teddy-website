@@ -3,6 +3,7 @@ title: "青安2.0 vs 3.0 完整對照表｜官方定案版：已經貸的人利�
 author: 陳景泰
 pubDatetime: 2026-07-20 15:30:00+08:00
 slug: news-2026-07-20-qingan-2-vs-3-comparison
+ogImage: /og/news-2026-07-20-qingan-2-vs-3-comparison.jpg
 featured: true
 draft: false
 tags:

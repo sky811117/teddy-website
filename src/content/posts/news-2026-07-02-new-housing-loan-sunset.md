@@ -3,6 +3,7 @@ title: "新青安倒數本月落日！7/31 前沒申請，30 年多付 73 萬 �
 author: 陳景泰
 pubDatetime: 2026-07-02 09:00:00+08:00
 slug: news-2026-07-02-new-housing-loan-sunset
+ogImage: /og/news-2026-07-02-new-housing-loan-sunset.jpg
 featured: true
 draft: false
 tags:

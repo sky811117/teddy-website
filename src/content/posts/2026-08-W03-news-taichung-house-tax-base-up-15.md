@@ -3,6 +3,7 @@ title: 台中房屋稅基調升15%、六都漲最兇 — 但你家現在這間�
 author: 陳景泰
 pubDatetime: 2026-08-21T09:00:00+08:00
 slug: 2026-08-W03-news-taichung-house-tax-base-up-15
+ogImage: /og/2026-08-W03-news-taichung-house-tax-base-up-15.jpg
 featured: false
 draft: false
 tags:

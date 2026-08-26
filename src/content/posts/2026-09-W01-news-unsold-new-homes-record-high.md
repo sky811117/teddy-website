@@ -3,6 +3,7 @@ title: 全台待售新成屋11萬2,501宅創新高，台中卻在降 — 但四�
 author: 陳景泰
 pubDatetime: 2026-09-02T09:00:00+08:00
 slug: 2026-09-W01-news-unsold-new-homes-record-high
+ogImage: /og/2026-09-W01-news-unsold-new-homes-record-high.jpg
 featured: false
 draft: false
 tags:

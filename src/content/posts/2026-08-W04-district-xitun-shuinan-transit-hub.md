@@ -3,6 +3,7 @@ title: 西屯Q2成交1,689棟居台中之冠：水湳轉運中心8/5啟用，會
 author: 陳景泰
 pubDatetime: 2026-08-25T09:00:00+08:00
 slug: 2026-08-W04-district-xitun-shuinan-transit-hub
+ogImage: /og/2026-08-W04-district-xitun-shuinan-transit-hub.jpg
 featured: false
 draft: false
 tags:

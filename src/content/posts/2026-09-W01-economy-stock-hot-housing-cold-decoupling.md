@@ -3,6 +3,7 @@ title: 景氣紅燈連7個月、台股創48,218點，房市卻沒跟上 — 這�
 author: 陳景泰
 pubDatetime: 2026-09-01T09:00:00+08:00
 slug: 2026-09-W01-economy-stock-hot-housing-cold-decoupling
+ogImage: /og/2026-09-W01-economy-stock-hot-housing-cold-decoupling.jpg
 featured: false
 draft: false
 tags:

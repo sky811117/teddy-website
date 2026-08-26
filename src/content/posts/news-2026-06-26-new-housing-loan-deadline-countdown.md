@@ -3,6 +3,7 @@ title: "新青安補貼倒數 5 週：7/31 到期，沒搶到差多少？800 萬
 author: 陳景泰
 pubDatetime: 2026-06-26T08:00:00+08:00
 slug: new-housing-loan-deadline-countdown-2026
+ogImage: /og/new-housing-loan-deadline-countdown-2026.jpg
 featured: true
 draft: true
 tags:

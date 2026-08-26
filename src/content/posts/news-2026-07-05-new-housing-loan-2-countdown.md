@@ -3,6 +3,7 @@ title: "新青安 2.0 最快 8/1 接棒、現行版剩 26 天到期 — 800 萬 
 author: 陳景泰
 pubDatetime: 2026-07-05T08:00:00+08:00
 slug: new-housing-loan-2-countdown-2026
+ogImage: /og/new-housing-loan-2-countdown-2026.jpg
 featured: true
 draft: false
 tags:

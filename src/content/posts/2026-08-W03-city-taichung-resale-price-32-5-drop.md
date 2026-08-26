@@ -3,6 +3,7 @@ title: 台中中古大樓每坪32.5萬、一年跌6.3% — 40坪的房子，一�
 author: 陳景泰
 pubDatetime: 2026-08-19T09:00:00+08:00
 slug: 2026-08-W03-city-taichung-resale-price-32-5-drop
+ogImage: /og/2026-08-W03-city-taichung-resale-price-32-5-drop.jpg
 featured: false
 draft: false
 tags:

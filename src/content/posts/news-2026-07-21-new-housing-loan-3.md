@@ -3,6 +3,7 @@ title: "青安 3.0 拍板！8/1 上路三道新門檻：未滿 50 歲、年收 2
 author: 陳景泰
 pubDatetime: 2026-07-21T08:00:00+08:00
 slug: new-housing-loan-3-2026
+ogImage: /og/new-housing-loan-3-2026.jpg
 featured: true
 draft: false
 tags:

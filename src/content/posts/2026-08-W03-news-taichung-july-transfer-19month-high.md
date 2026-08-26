@@ -3,6 +3,7 @@ title: 台中7月移轉3,703棟、月增18.8%六都最高 — 但年增只有1.2
 author: 陳景泰
 pubDatetime: 2026-08-17T09:00:00+08:00
 slug: 2026-08-W03-news-taichung-july-transfer-19month-high
+ogImage: /og/2026-08-W03-news-taichung-july-transfer-19month-high.jpg
 featured: false
 draft: false
 tags:

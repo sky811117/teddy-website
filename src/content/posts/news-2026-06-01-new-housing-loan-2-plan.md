@@ -3,6 +3,7 @@ title: "新青安 2.0 規劃版本流出：利息補貼逐年歸零、年收 200
 author: 陳景泰
 pubDatetime: 2026-06-01T08:00:00+08:00
 slug: new-housing-loan-2-plan-2026
+ogImage: /og/new-housing-loan-2-plan-2026.jpg
 featured: true
 draft: true
 tags:

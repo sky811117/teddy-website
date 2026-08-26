@@ -3,6 +3,7 @@ title: "Week 07：我把自己網站上 51 篇文章下架了 — 因為那是 A
 author: 陳景泰
 pubDatetime: 2026-06-08T21:00:00+08:00
 slug: week-07-ai-fabrication-cleanup
+ogImage: /og/week-07-ai-fabrication-cleanup.jpg
 featured: false
 draft: true
 tags:

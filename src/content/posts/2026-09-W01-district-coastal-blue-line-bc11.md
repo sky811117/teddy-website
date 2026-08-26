@@ -3,6 +3,7 @@ title: 捷運藍線海線段開工倒數：BC11標簽約、工期1,950個日曆�
 author: 陳景泰
 pubDatetime: 2026-09-04T09:00:00+08:00
 slug: 2026-09-W01-district-coastal-blue-line-bc11
+ogImage: /og/2026-09-W01-district-coastal-blue-line-bc11.jpg
 featured: false
 draft: false
 tags:

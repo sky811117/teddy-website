@@ -3,6 +3,7 @@ title: 北屯Q2成交1,571棟居台中第2：中興橋8月通車後，到潭子�
 author: 陳景泰
 pubDatetime: 2026-08-20T09:00:00+08:00
 slug: 2026-08-W03-district-beitun-zhongxing-bridge-august
+ogImage: /og/2026-08-W03-district-beitun-zhongxing-bridge-august.jpg
 featured: false
 draft: false
 tags:
