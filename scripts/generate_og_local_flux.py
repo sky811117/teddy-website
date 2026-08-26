@@ -21,6 +21,7 @@ teddy-website OG 封面圖批次補圖 — 本地 ComfyUI + FLUX.1-schnell，永
 from __future__ import annotations
 
 import argparse
+import hashlib
 import io
 import re
 import sys
@@ -48,44 +49,103 @@ FM_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 
 
 # ── 主題判定 ───────────────────────────────────────────────────────────
-# 由上而下比對，第一個命中的決定畫面。畫面一律亮色白天。
+# 由上而下比對，第一個命中的類別決定畫面。畫面一律亮色白天。
+#
+# ⚠️ 每個類別都要給「多個場景變體」，用 slug hash 挑一個。
+#    2026-08-26 第一版每類只有一個場景，結果 40 張裡 23 張是同一個銀行大廳
+#    （news-alert 那批幾乎全是新青安主題），/posts/ 列表看起來像複製貼上。
 THEMES = [
-    # 行政區 / 地標 —— 給具體場景，避免整批長一樣
-    (("北屯", "捷運綠線", "十四期", "機捷"),
-     "wide aerial view of Beitun district Taichung, new mid-rise residential towers along a green MRT viaduct, tree-lined boulevard"),
-    (("西屯", "水湳", "七期", "會展"),
-     "wide aerial view of Xitun Taichung modern business district, glass office towers and luxury residential high-rises, wide landscaped avenue"),
-    (("南屯", "單元二", "單元五", "文心"),
-     "wide aerial view of Nantun Taichung, contemporary residential towers beside a large green park, wide clean streets"),
-    (("豐原", "后里", "神岡", "大雅"),
-     "wide aerial view of a Taiwanese suburban town center, low-rise apartment blocks and shophouses, distant green mountains"),
-    (("大里", "太平", "霧峰", "烏日"),
-     "wide aerial view of a Taichung satellite township, mixed low-rise apartments and new residential towers, rice fields and hills in the distance"),
-    (("海線", "沙鹿", "梧棲", "清水", "龍井", "大甲"),
-     "wide aerial view of Taichung coastal township, low-rise housing and new residential blocks, open sky and distant sea horizon"),
-    (("中區", "東區", "南區", "北區", "舊市區"),
-     "wide aerial view of central Taichung old town, dense mid-rise apartment buildings and narrow busy streets, urban texture"),
-    # 主題類
-    (("利率", "房貸", "貸款", "新青安", "青安", "撥款"),
-     "clean modern bank lobby interior with tall bright windows, minimalist counters, soft daylight, architectural interior photography"),
-    (("政策", "稅", "法規", "都更", "危老", "囤房"),
-     "modern Taiwanese government civic building exterior, clean concrete and glass facade, wide plaza, bright open sky"),
-    (("預售", "建案", "推案", "工地", "建照", "使照"),
-     "construction site of a modern residential high-rise in Taiwan, tower crane against clear sky, tidy safety fencing, daytime"),
-    (("餘屋", "待售", "庫存", "空屋", "餘量"),
-     "row of newly finished residential towers in Taiwan, empty balconies, clean facade, wide open sky, daytime"),
-    (("移轉", "成交", "交易", "量能", "棟數"),
-     "wide aerial view of a Taichung residential neighborhood, orderly rows of apartment towers, wide boulevards, clear daytime sky"),
-    (("社區", "熱銷", "銷售"),
-     "modern Taiwanese residential community entrance, landscaped courtyard, clean stone facade, bright natural daylight"),
-    (("景氣", "總經", "股", "經濟", "所得"),
-     "modern Taichung city skyline seen from a distance, mixed high-rise towers, clear blue sky, calm bright daytime atmosphere"),
+    # ── 行政區 / 地標 ────────────────────────────────────────────────
+    (("北屯", "捷運綠線", "十四期", "機捷"), [
+        "wide aerial view of Beitun district Taichung, new mid-rise residential towers along a green MRT viaduct, tree-lined boulevard",
+        "street level view of a broad Taichung avenue with an elevated MRT line overhead, modern apartment buildings, leafy street trees",
+        "aerial view of a newly developed Taichung residential block, orderly apartment towers around a green neighborhood park",
+    ]),
+    (("西屯", "水湳", "七期", "會展"), [
+        "wide aerial view of Xitun Taichung modern business district, glass office towers and luxury residential high-rises, wide landscaped avenue",
+        "modern Taiwanese convention center exterior with sweeping curved roof, wide plaza, clear sky",
+        "street level view of a wide upscale Taichung boulevard lined with glass towers and manicured median planting",
+    ]),
+    (("南屯", "單元二", "單元五", "文心"), [
+        "wide aerial view of Nantun Taichung, contemporary residential towers beside a large green park, wide clean streets",
+        "large urban park with a lake surrounded by modern residential towers, Taiwan, bright daytime",
+        "aerial view of a planned residential district in Taiwan, grid streets, new apartment blocks and green belts",
+    ]),
+    (("豐原", "后里", "神岡", "大雅"), [
+        "wide aerial view of a Taiwanese suburban town center, low-rise apartment blocks and shophouses, distant green mountains",
+        "quiet Taiwanese small town street with mixed shophouses and low apartments, mountains on the horizon, bright daylight",
+        "aerial view of a Taiwanese township edge where housing meets farmland, green fields and distant hills",
+    ]),
+    (("大里", "太平", "霧峰", "烏日"), [
+        "wide aerial view of a Taichung satellite township, mixed low-rise apartments and new residential towers, rice fields and hills in the distance",
+        "new residential towers rising at the edge of a Taiwanese township, surrounding low houses and green fields, bright sky",
+        "aerial view of a Taiwanese suburb with a river running through it, bridges and mixed housing, clear daytime",
+    ]),
+    (("海線", "沙鹿", "梧棲", "清水", "龍井", "大甲"), [
+        "wide aerial view of Taichung coastal township, low-rise housing and new residential blocks, open sky and distant sea horizon",
+        "coastal Taiwanese town seen from above, wide flat streets, port cranes far in the distance, bright open sky",
+        "aerial view of a seaside Taiwanese township with wind turbines on the far coastline, low housing, clear blue sky",
+    ]),
+    (("中區", "東區", "南區", "北區", "舊市區"), [
+        "wide aerial view of central Taichung old town, dense mid-rise apartment buildings and narrow busy streets, urban texture",
+        "street level view of an older Taichung shopping street with tiled mid-rise buildings and shop awnings, bright midday light",
+        "aerial view of a dense older Taiwanese city district, rooftops with water tanks, narrow lanes, bright daylight",
+    ]),
+    # ── 房貸 / 利率（最大宗，變體要最多）─────────────────────────────
+    (("利率", "房貸", "貸款", "新青安", "青安", "撥款", "成數", "寬限期"), [
+        "clean modern bank lobby interior with tall bright windows, minimalist counters, soft daylight, architectural interior photography",
+        "sunlit wooden desk with a small white house model, a set of keys and neatly stacked documents, shallow depth of field, warm morning light",
+        "bright modern apartment building entrance lobby with mailboxes, polished stone floor, sunlight through glass doors",
+        "modern Taiwanese bank branch exterior at street level, clean glass and stone facade, bright daytime, tidy sidewalk",
+        "tidy home desk by a sunny window with a calculator, an open notebook and a potted plant, overhead view, bright natural light",
+        "empty bright new apartment living room with a large window looking out over a green city, wooden floor, morning sunlight",
+        "close up of house keys resting on a clean signed document beside a small potted plant, soft daylight, minimal composition",
+    ]),
+    # ── 政策 / 稅制 ─────────────────────────────────────────────────
+    (("政策", "稅", "法規", "都更", "危老", "囤房", "實價", "登錄"), [
+        "modern Taiwanese government civic building exterior, clean concrete and glass facade, wide plaza, bright open sky",
+        "bright public service hall interior with orderly counters and high ceilings, natural daylight, clean modern architecture",
+        "wide daytime view of a Taiwanese city hall plaza with flagpoles and open paving, clear blue sky",
+        "old low-rise Taiwanese apartment block beside a newly rebuilt modern tower, urban renewal contrast, bright daylight",
+    ]),
+    # ── 預售 / 建案 ─────────────────────────────────────────────────
+    (("預售", "建案", "推案", "工地", "建照", "使照", "開工"), [
+        "construction site of a modern residential high-rise in Taiwan, tower crane against clear sky, tidy safety fencing, daytime",
+        "residential towers under construction with scaffolding and green safety netting, bright blue sky, wide shot",
+        "architectural scale model of a residential development on a clean white table, bright studio daylight, no text",
+        "aerial view of a large construction site with foundations and cranes beside finished apartment towers, clear daytime",
+    ]),
+    # ── 餘屋 / 庫存 ─────────────────────────────────────────────────
+    (("餘屋", "待售", "庫存", "空屋", "餘量", "去化"), [
+        "row of newly finished residential towers in Taiwan, empty balconies, clean facade, wide open sky, daytime",
+        "empty bright unfurnished apartment interior with bare walls and large windows, wooden floor, daylight",
+        "aerial view of several completed but unoccupied apartment towers with empty parking areas, bright daytime",
+    ]),
+    # ── 交易量 ─────────────────────────────────────────────────────
+    (("移轉", "成交", "交易", "量能", "棟數", "買氣"), [
+        "wide aerial view of a Taichung residential neighborhood, orderly rows of apartment towers, wide boulevards, clear daytime sky",
+        "busy Taiwanese city street from above with traffic and mixed residential buildings, bright midday light",
+        "aerial view of a mixed Taiwanese cityscape, apartment towers, parks and arterial roads, clear sky",
+    ]),
+    # ── 社區 ───────────────────────────────────────────────────────
+    (("社區", "熱銷", "銷售", "戶數"), [
+        "modern Taiwanese residential community entrance, landscaped courtyard, clean stone facade, bright natural daylight",
+        "landscaped inner courtyard of a modern residential complex with trees and walkways, sunlight, no people",
+        "clean modern residential lobby with high ceiling, stone walls and greenery, daylight through tall glass",
+    ]),
+    # ── 總經 / 景氣 ─────────────────────────────────────────────────
+    (("景氣", "總經", "股", "經濟", "所得", "房價所得比", "通膨"), [
+        "modern Taichung city skyline seen from a distance, mixed high-rise towers, clear blue sky, calm bright daytime atmosphere",
+        "wide panoramic daytime view of a Taiwanese city with mountains behind, hazy blue sky, orderly urban grid",
+        "elevated view of a Taiwanese business district with office towers and wide roads, bright clear morning",
+    ]),
 ]
 
-DEFAULT_SCENE = (
-    "wide aerial view of modern Taichung Taiwan residential district, "
-    "clean mid-rise and high-rise apartment towers, tree-lined streets"
-)
+DEFAULT_SCENES = [
+    "wide aerial view of modern Taichung Taiwan residential district, clean mid-rise and high-rise apartment towers, tree-lined streets",
+    "street level view of a clean modern Taiwanese residential street with apartment buildings and street trees, bright daylight",
+    "aerial view of a Taiwanese city neighborhood at midday, apartment blocks, parks and wide roads, clear sky",
+]
 
 # 亮色鐵則：禁 night / dusk / dark / moody / neon / blue hour（CLAUDE.md 圖卡鐵則延伸）
 STYLE_SUFFIX = (
@@ -95,13 +155,22 @@ STYLE_SUFFIX = (
 )
 
 
-def build_prompt(title: str, tags: list[str]) -> str:
+def stable_hash(s: str) -> int:
+    """穩定 hash（Python 內建 hash 有 PYTHONHASHSEED 隨機化，不能用）。"""
+    return int(hashlib.sha1(s.encode("utf-8")).hexdigest()[:12], 16)
+
+
+def build_prompt(title: str, tags: list[str], slug: str, variant_shift: int = 0) -> str:
+    """挑場景 → 組 prompt。同一篇 slug 永遠拿到同一個場景（可重現），
+    但同類別的不同文章會分散到不同場景，避免整批長一樣。
+    variant_shift 用來「換一張」：重生時 +1 就會挑到別的場景。"""
     haystack = title + " " + " ".join(str(t) for t in tags)
-    scene = DEFAULT_SCENE
-    for keywords, s in THEMES:
+    scenes = DEFAULT_SCENES
+    for keywords, opts in THEMES:
         if any(k in haystack for k in keywords):
-            scene = s
+            scenes = opts
             break
+    scene = scenes[(stable_hash(slug) + variant_shift) % len(scenes)]
     return f"{scene}, {STYLE_SUFFIX}"
 
 
@@ -177,6 +246,10 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=0, help="最多處理幾篇（0=不限）")
     ap.add_argument("--only", nargs="+", default=None,
                     help="只處理指定檔名（給發布管線單篇呼叫用）")
+    ap.add_argument("--regen", action="store_true",
+                    help="連已有圖的也重生（配 --only 用來換掉不喜歡的那幾張）")
+    ap.add_argument("--shift", type=int, default=0,
+                    help="換一個場景變體（--regen 時用，1/2/3… 會挑到不同畫面）")
     args = ap.parse_args()
 
     candidates = sorted(POSTS_DIR.glob("*.md"))
@@ -189,6 +262,9 @@ def main() -> int:
 
     todo = []
     for md in candidates:
+        if args.regen:
+            todo.append((md, "強制重生"))
+            continue
         need, why = needs_og(md)
         if need:
             todo.append((md, why))
@@ -214,16 +290,20 @@ def main() -> int:
         title = fm_get_scalar(fm, "title") or md.stem
         slug = fm_get_scalar(fm, "slug") or md.stem
         tags = fm_get_tags(fm)
-        prompt = build_prompt(title, tags)
+        prompt = build_prompt(title, tags, slug, args.shift)
         out = OG_DIR / f"{slug}.jpg"
+        # seed 綁 slug＋shift：同一篇重跑結果一樣（可重現），--shift 才換畫面
+        seed = (stable_hash(slug) + args.shift * 7919) % (2 ** 31)
 
         print(f"\n[{i}/{len(todo)}] {title[:48]}")
         print(f"        prompt: {prompt[:110]}...")
         t0 = time.time()
         try:
-            png = gen_flux_image(prompt, width=GEN_W, height=GEN_H)
+            png = gen_flux_image(prompt, width=GEN_W, height=GEN_H, seed=seed)
             to_og_jpg(png, out)
-            md.write_text(insert_og_line(text, f"/og/{out.name}"), encoding="utf-8")
+            if not re.search(r"^ogImage:\s*\S", text, re.MULTILINE):
+                text = insert_og_line(text, f"/og/{out.name}")
+            md.write_text(text, encoding="utf-8")
             print(f"        -> {out.name}  {out.stat().st_size/1024:.0f}KB  ({time.time()-t0:.0f}s)")
             ok += 1
         except Exception as e:
