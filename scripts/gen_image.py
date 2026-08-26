@@ -35,14 +35,22 @@ if sys.platform == "win32":
 ROOT = Path(__file__).resolve().parent.parent
 
 STYLE_SUFFIX = (
-    "bright daytime, clear blue sky, natural sunlight, soft shadows, "
-    "photorealistic architectural photography, sharp focus, clean and airy, "
-    "professional magazine quality, no text, no signage, no people"
+    # 2026-08-26 景泰定案：要漂亮的台灣市容風景，不要老舊破爛感
+    "pristine and well maintained, upscale modern development, immaculate clean surfaces, "
+    "manicured landscaping, bright daytime, clear blue sky, natural sunlight, "
+    "photorealistic architectural photography, sharp focus, high end real estate photography, "
+    "no old weathered buildings, no rust, no metal window grilles, no utility poles, "
+    "no overhead cables, no corrugated metal roofs, no clutter, "
+    "no text, no lettering, no watermark, no signage, no people"
 )
 
 # 景泰兩次打槍過的暗色字眼，一律擋下
-BANNED = ("night", "twilight", "dusk", "dark", "moody", "neon", "blue hour",
-          "sunset", "midnight", "gloomy")
+BANNED = (# 暗色（景泰 2026-05-27 / 06-04 兩次打槍）
+          "night", "twilight", "dusk", "dark", "moody", "neon", "blue hour",
+          "sunset", "midnight", "gloomy",
+          # 破爛感（景泰 2026-08-26：要漂亮的，不要舊城市破破爛爛）
+          "run-down", "rundown", "dilapidated", "shabby", "slum", "decayed",
+          "weathered", "rusty", "grungy", "gritty", "abandoned")
 
 
 def parse_size(s: str) -> tuple[int, int]:

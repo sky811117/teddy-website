@@ -131,6 +131,7 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
   title={`${pageTitle} | ${config.site.title}`}
   description={pageDescription}
   canonicalURL={canonicalURL}
+  ogImage={area.heroImage}
 >
   <Fragment slot="head">
     <script
@@ -168,9 +169,26 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
       </ol>
     </nav>
 
+    {/* 區域代表圖 — 2026-08-26 補，原本整頁零視覺
+        ⚠️ 本地 FLUX 生的示意圖，不是該區實景照，alt 要講清楚 */}
+    {
+      area.heroImage && (
+        <img
+          src={area.heroImage}
+          alt={`${area.shortName}城市景觀示意圖`}
+          width="1600"
+          height="900"
+          loading="eager"
+          fetchpriority="high"
+          decoding="async"
+          class="rounded-card shadow-card aspect-[16/9] w-full object-cover"
+        />
+      )
+    }
+
     {/* Hero summary */}
     <section
-      class="border-border bg-card rounded-lg border p-6 sm:p-8"
+      class={`border-border bg-card rounded-lg border p-6 sm:p-8 ${area.heroImage ? "mt-6" : ""}`}
     >
       <p class="text-foreground text-lg leading-relaxed">{area.summary}</p>
     </section>

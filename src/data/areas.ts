@@ -32,6 +32,8 @@ export type Area = {
   name: string;            // 顯示名 例「西屯區（含七期）」
   shortName: string;       // 短名 例「西屯區」(breadcrumb / schema)
   emoji: string;
+  // 區域代表圖 /areas/{slug}.jpg（本地 FLUX 生的示意圖，非實景照）
+  heroImage?: string;
   headline: string;
   summary: string;
   // properties filter 用：data.district 命中任一即列入該區
@@ -49,6 +51,7 @@ export type Area = {
 export const areas: Area[] = [
   {
     slug: "north-tun",
+    heroImage: "/areas/north-tun.jpg",
     name: "北屯區",
     shortName: "北屯區",
     emoji: "🏗️",
@@ -130,6 +133,7 @@ export const areas: Area[] = [
   },
   {
     slug: "west-tun",
+    heroImage: "/areas/west-tun.jpg",
     name: "西屯區（含七期）",
     shortName: "西屯區",
     emoji: "🏙️",
@@ -211,6 +215,7 @@ export const areas: Area[] = [
   },
   {
     slug: "south-tun",
+    heroImage: "/areas/south-tun.jpg",
     name: "南屯區",
     shortName: "南屯區",
     emoji: "🌳",
@@ -288,6 +293,7 @@ export const areas: Area[] = [
   },
   {
     slug: "north-district",
+    heroImage: "/areas/north-district.jpg",
     name: "北區",
     shortName: "北區",
     emoji: "🏛️",
@@ -367,6 +373,7 @@ export const areas: Area[] = [
   },
   {
     slug: "central-district",
+    heroImage: "/areas/central-district.jpg",
     name: "中區",
     shortName: "中區",
     emoji: "🏯",
@@ -442,6 +449,7 @@ export const areas: Area[] = [
   },
   {
     slug: "taiping",
+    heroImage: "/areas/taiping.jpg",
     name: "太平區",
     shortName: "太平區",
     emoji: "🌄",
@@ -518,6 +526,7 @@ export const areas: Area[] = [
   },
   {
     slug: "dali",
+    heroImage: "/areas/dali.jpg",
     name: "大里區",
     shortName: "大里區",
     emoji: "🌾",

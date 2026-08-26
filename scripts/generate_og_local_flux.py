@@ -51,169 +51,191 @@ OG_W, OG_H = 1200, 630
 FM_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 
 
+# ── 畫面總則：漂亮的台灣 ─────────────────────────────────────────────
+# 2026-08-26 景泰兩次指示定案：
+#   ①「儘量要是台灣的市容、風景」→ 場景一律帶台灣地景（中央山脈／大肚山
+#      當背景、亞熱帶植栽、台中真實地標）
+#   ②「是要漂亮的，不是那種舊城市破破爛爛的感覺」→ ⛔ 禁鐵窗、電線桿、
+#      交錯電線、鐵皮加蓋、老磁磚髒污、機車亂停、密集雜亂老市區
+#
+# A/B 測試結論（4 輪 33 張實測）：只寫 "Taiwan/Taichung" 會生出通用亞洲城市；
+# 加寫實老台灣元素會變成景泰打槍的破爛感；正解是「新重劃區 + 台中地標 +
+# 自然美景 + 山景」，台灣辨識度靠山景與亞熱帶植栽，不靠老舊質感。
+#
+# ⚠️ FLUX 實測畫得出來的台中地標：國家歌劇院（曲面白殼）、秋紅谷（下凹綠地
+#    +湖+拱橋）、高美濕地（木棧道+風機）、東海路思義教堂（黃色曲面屋頂）、
+#    大坑（層疊綠山+雲霧）、大肚山（俯瞰台中盆地）。這幾個都很漂亮，可用。
+
+PRETTY = (
+    "pristine and well maintained, upscale modern development, immaculate clean surfaces, "
+    "manicured landscaping, bright daytime, clear blue sky, golden natural sunlight, "
+    "photorealistic architectural photography, sharp focus, high end real estate photography"
+)
+
+# ⛔ 這些一定要擋：前段是景泰的「不要破爛」，後段是「不要出字」
+#    （5/24 那批 109 張就是 prompt 寫 magazine cover quality 才印出
+#     TAVAN / REAL WHAT MARKEET / DASKET 一堆亂碼英文）
+STYLE_SUFFIX = (
+    f"{PRETTY}, "
+    "no old weathered buildings, no rust, no stains, no metal window grilles, "
+    "no utility poles, no overhead cables, no corrugated metal roofs, no rooftop additions, "
+    "no clutter, no parked scooters, no cramped alleys, "
+    "no text, no lettering, no watermark, no logo, no signage, no captions, "
+    "no magazine layout, no border, no frame, no people, no cars in focus"
+)
+
+# 台灣味的來源：山景 + 亞熱帶植栽。所有場景都盡量帶上其中之一。
+TW_BG = "green Central Range mountains on the horizon"
+TW_PLANT = "palms and flowering subtropical trees"
+
+
 # ── 文章家族判定（優先於下面的關鍵字表）─────────────────────────────
-# 2026-08-26 加：教學型文章（看屋/名詞/FAQ/工具/週記/社區）要的畫面跟
-# 房市數據文完全不同。舊那批 109 張就是全部丟同一個「黃昏豪宅」prompt，
-# 結果「教你測漏水」配一張夕陽別墅，還印著 TAVAN / REAL WHAT MARKEET 亂碼。
+# 教學型文章（看屋／名詞／FAQ／工具／週記／社區）要的畫面跟房市數據文
+# 完全不同。舊那批 109 張就是全部丟同一個「黃昏豪宅」prompt，結果
+# 「教你測漏水」配一張夕陽別墅。
 SLUG_FAMILIES = [
-    ("viewing-", [   # 看屋實戰：實地檢查場景
-        "close up of a bright empty apartment corner where wall meets ceiling, clean white paint, daylight from a nearby window",
-        "empty bright apartment room with bare walls, a window frame and wooden floor, inspection viewpoint, natural daylight",
-        "bright empty balcony of a Taiwanese apartment with a metal railing, looking out to a green neighborhood, daytime",
-        "bright empty bathroom interior with tiled walls and a window, clean and dry, natural light",
-        "empty apartment kitchen with bare counters and a bright window, light wood cabinets, daylight",
-        "looking up at an apartment ceiling with a light fixture and clean white surface, bright daylight from a window",
+    ("viewing-", [   # 看屋實戰：明亮新成屋的檢查點（不是老屋）
+        f"close up of a bright clean empty apartment corner where wall meets ceiling, flawless white paint, sunlight from a nearby window, {PRETTY}",
+        f"bright spacious empty modern apartment room, floor to ceiling window, polished light stone floor, view over a green Taiwanese cityscape with {TW_BG}",
+        f"clean modern apartment balcony with glass railing, {TW_PLANT} below, looking out over an upscale Taiwanese residential district with {TW_BG}",
+        f"bright immaculate modern bathroom, large format tiles, frameless glass shower, window with daylight",
+        f"bright empty modern kitchen with clean stone countertops and light wood cabinets, large window, daylight",
+        f"looking up at a clean modern apartment ceiling with recessed lighting, flawless white surface, daylight",
     ]),
-    ("term-", [      # 房地產名詞：建築構造特寫
-        "close up architectural detail of a Taiwanese apartment balcony and its overhanging eave, clean concrete, bright daylight",
-        "exterior detail of a modern apartment facade showing balconies and window ledges, clean lines, bright sunlight",
-        "bright apartment building lobby with a high ceiling and stone floor, common area, natural daylight",
-        "roof terrace of a Taiwanese apartment with tiled floor and a low parapet wall, blue sky, daytime",
-        "apartment stairwell and corridor with clean tiled walls, daylight through a window, no people",
+    ("term-", [      # 房地產名詞：現代建築構造細節
+        f"architectural detail of an elegant modern Taiwanese residential tower, clean stone facade with generous balconies and glass railings, {TW_BG}",
+        f"upscale modern apartment building facade seen from below, glass curtain wall and stone cladding, {TW_PLANT}, clear sky",
+        f"spacious bright residential lobby with high ceiling, stone walls, indoor greenery, tall glass wall with daylight",
+        f"beautiful roof terrace of a modern Taiwanese residential tower, wooden deck, planters, panoramic view of a green city with {TW_BG}",
+        f"clean bright modern apartment corridor with stone floor and recessed lighting, daylight from an end window",
     ]),
-    ("faq-", [       # 常見問題：文件 / 諮詢 / 桌面
-        "tidy desk with an open folder of documents and a pen by a sunny window, overhead view, bright natural light",
-        "clean modern meeting table with a notebook and two chairs by a large bright window, no people, warm neutral tones",
-        "sunlit desk with a calculator, a small house model and a clipboard, minimal composition, soft shadows",
-        "bright modern office corner with a wooden desk, a plant and a bookshelf, natural daylight, no people",
-        "close up of a stack of clean blank documents and a pen on a light wooden table, morning sunlight",
-        "modern apartment entrance door with a clean frame and a doormat, bright hallway daylight",
+    ("faq-", [       # 常見問題：乾淨的文件 / 諮詢 / 現代空間
+        f"tidy light wooden desk with an open folder and a pen by a sunny window, overhead view, {PRETTY}",
+        f"elegant modern consultation room with a round table and two chairs, floor to ceiling window overlooking a green Taiwanese city with {TW_BG}",
+        f"sunlit clean desk with a calculator, a small white house model and a clipboard, minimal composition",
+        f"bright modern office corner with a light wood desk, a potted plant and a bookshelf, large window, daylight",
+        f"close up of neatly stacked blank documents and a fountain pen on a light stone table, morning sunlight",
+        f"elegant modern apartment entrance door with clean stone surround, bright hallway daylight",
     ]),
-    ("tool-", [      # 工具：桌面試算 / 工作台
-        "clean modern desk with a laptop, calculator and notepad, bright daylight, overhead view, blank screen",
-        "minimal workspace with a tablet, a cup of coffee and a notebook by a sunny window, warm neutral tones",
-        "tidy home office desk with a monitor, keyboard and a small plant, bright morning light, blank screen",
+    ("tool-", [      # 工具：乾淨桌面
+        f"clean modern desk with a laptop, calculator and notepad, blank screen, bright daylight, overhead view, {PRETTY}",
+        f"minimal bright workspace with a tablet, a cup and a notebook by a sunny window, light wood and stone",
+        f"tidy modern home office desk with a monitor and a small plant, blank screen, large window with city and {TW_BG}",
     ]),
-    ("week-", [      # 週記：工作 / 城市
-        "tidy desk setup with a monitor and keyboard by a window overlooking a bright city, blank screen, daytime",
-        "modern home office with a desk, chair and bookshelf, large window with daylight, clean and minimal",
-        "bright coworking space interior with wooden desks and plants, large windows, no people, daytime",
+    ("week-", [      # 週記：現代工作空間
+        f"elegant modern home office with a desk by a floor to ceiling window overlooking a bright green Taiwanese city with {TW_BG}, blank screen",
+        f"bright minimal workspace with light wood desk, designer chair and bookshelf, large window, daylight",
+        f"spacious modern coworking interior with wooden desks and abundant plants, floor to ceiling glass, daytime",
     ]),
-    ("community-", [  # 社區評論：住宅社區示意（刻意不拍成可辨識的特定建築）
-        "landscaped inner courtyard of a Taiwanese residential complex with trees and walking paths, bright daylight, no people",
-        "modern Taiwanese residential community entrance with a stone facade and greenery, clean and bright, daytime",
-        "row of mid-rise residential apartment buildings along a tree-lined Taiwanese street, bright clear daytime",
-        "bright residential building lobby with high ceiling, stone walls and indoor plants, daylight through tall glass",
-        "aerial view of a Taiwanese residential community with several apartment blocks and a central green space, clear sky",
+    ("community-", [  # 社區評論：高級社區（示意，不指向特定建築）
+        f"beautifully landscaped courtyard of an upscale Taiwanese residential complex, reflecting pool, {TW_PLANT}, stone paving, modern towers around, sunlight",
+        f"elegant entrance plaza of a modern Taiwanese residential community, stone facade, water feature, {TW_PLANT}, {TW_BG}",
+        f"row of elegant modern residential towers along a wide tree-lined boulevard in Taichung Taiwan, {TW_BG}",
+        f"spacious bright residential lobby with high ceiling, stone walls and indoor greenery, tall glass with daylight",
+        f"aerial view of an upscale Taiwanese residential community, well spaced modern towers around a large landscaped garden, {TW_BG}",
     ]),
-    ("policy-", [    # 政策
-        "modern Taiwanese government civic building exterior, clean concrete and glass facade, wide plaza, bright open sky",
-        "bright public service hall interior with orderly counters and high ceilings, natural daylight",
-        "wide daytime view of a Taiwanese city hall plaza with open paving and flagpoles, clear blue sky",
+    ("policy-", [    # 政策：現代公共建築
+        f"elegant modern Taiwanese civic building, clean stone and glass facade, wide plaza with {TW_PLANT}, clear sky",
+        f"bright spacious public service hall interior, high ceiling, orderly counters, abundant natural daylight",
+        f"the National Taichung Theater by Toyo Ito, distinctive curved white concrete shell facade, wide clean plaza, clear sky",
     ]),
 ]
 
 
 # ── 主題判定 ───────────────────────────────────────────────────────────
-# 由上而下比對，第一個命中的類別決定畫面。畫面一律亮色白天。
-#
-# ⚠️ 每個類別都要給「多個場景變體」，用 slug hash 挑一個。
-#    2026-08-26 第一版每類只有一個場景，結果 40 張裡 23 張是同一個銀行大廳
-#    （news-alert 那批幾乎全是新青安主題），/posts/ 列表看起來像複製貼上。
+# 由上而下比對，第一個命中的類別決定畫面。
 THEMES = [
     # ── 行政區 / 地標 ────────────────────────────────────────────────
     (("北屯", "捷運綠線", "十四期", "機捷"), [
-        "wide aerial view of Beitun district Taichung, new mid-rise residential towers along a green MRT viaduct, tree-lined boulevard",
-        "street level view of a broad Taichung avenue with an elevated MRT line overhead, modern apartment buildings, leafy street trees",
-        "aerial view of a newly developed Taichung residential block, orderly apartment towers around a green neighborhood park",
+        f"wide aerial view of a modern newly developed residential district in Beitun Taichung Taiwan, elegant high-rise towers along a landscaped MRT boulevard, large green park, {TW_BG}",
+        f"street level view of a wide clean boulevard in Taichung with an elevated MRT viaduct, elegant modern apartment towers, {TW_PLANT}",
+        f"aerial view of a newly built upscale Taichung residential block, well spaced modern towers around a green neighborhood park, {TW_BG}",
     ]),
     (("西屯", "水湳", "七期", "會展"), [
-        "wide aerial view of Xitun Taichung modern business district, glass office towers and luxury residential high-rises, wide landscaped avenue",
-        "modern Taiwanese convention center exterior with sweeping curved roof, wide plaza, clear sky",
-        "street level view of a wide upscale Taichung boulevard lined with glass towers and manicured median planting",
+        f"Taichung Taiwan 7th redevelopment zone skyline, sleek glass office and residential towers, wide landscaped avenue with {TW_PLANT}, {TW_BG}",
+        f"Qiuhong Valley Park Taichung Taiwan, sunken green park with a lake and arched wooden bridges, surrounded by elegant modern high rise towers, clear sky",
+        f"modern Taiwanese convention center exterior with a sweeping curved roof, wide clean plaza, {TW_PLANT}, clear sky",
     ]),
     (("南屯", "單元二", "單元五", "文心"), [
-        "wide aerial view of Nantun Taichung, contemporary residential towers beside a large green park, wide clean streets",
-        "large urban park with a lake surrounded by modern residential towers, Taiwan, bright daytime",
-        "aerial view of a planned residential district in Taiwan, grid streets, new apartment blocks and green belts",
+        f"large beautiful urban park in Taichung Taiwan with wide lawns, curved paths and a lake, elegant modern residential towers beyond the treeline, {TW_BG}",
+        f"wide aerial view of a planned upscale residential district in Taichung, grid of clean boulevards, modern towers and generous green belts, {TW_BG}",
+        f"street level view of a wide green parkway in Taichung Taiwan, elegant modern towers on both sides, flowering trees, neat sidewalks",
     ]),
     (("豐原", "后里", "神岡", "大雅"), [
-        "wide aerial view of a Taiwanese suburban town center, low-rise apartment blocks and shophouses, distant green mountains",
-        "quiet Taiwanese small town street with mixed shophouses and low apartments, mountains on the horizon, bright daylight",
-        "aerial view of a Taiwanese township edge where housing meets farmland, green fields and distant hills",
+        f"aerial view of a tidy Taiwanese town center with modern low-rise apartment blocks and clean streets, surrounding farmland, {TW_BG}",
+        f"beautiful Taiwanese countryside near a town, neat flooded rice paddies reflecting the sky, tree lines, {TW_BG}",
+        f"wide clean street of a Taiwanese town with modern mid-rise buildings and street trees, bright daylight, {TW_BG}",
     ]),
     (("大里", "太平", "霧峰", "烏日"), [
-        "wide aerial view of a Taichung satellite township, mixed low-rise apartments and new residential towers, rice fields and hills in the distance",
-        "new residential towers rising at the edge of a Taiwanese township, surrounding low houses and green fields, bright sky",
-        "aerial view of a Taiwanese suburb with a river running through it, bridges and mixed housing, clear daytime",
+        f"aerial view of a Taichung satellite township, new modern residential towers rising beside neat green farmland, {TW_BG}",
+        f"wide aerial view of a Taiwanese suburb with a clean river running through it, landscaped riverside parks and modern housing, {TW_BG}",
+        f"elegant modern residential towers at the edge of a Taiwanese township, wide clean roads, green fields beyond, clear sky",
     ]),
     (("海線", "沙鹿", "梧棲", "清水", "龍井", "大甲"), [
-        "wide aerial view of Taichung coastal township, low-rise housing and new residential blocks, open sky and distant sea horizon",
-        "coastal Taiwanese town seen from above, wide flat streets, port cranes far in the distance, bright open sky",
-        "aerial view of a seaside Taiwanese township with wind turbines on the far coastline, low housing, clear blue sky",
+        f"Gaomei Wetlands Taichung Taiwan, long clean wooden boardwalk over shallow reflective tidal flats, rows of white wind turbines on the horizon, bright clear sky",
+        f"wide aerial view of the Taichung coastal plain, tidy modern low-rise townscape, white wind turbines along the shoreline, blue Taiwan Strait horizon",
+        f"beautiful coastal scenery of western Taiwan, calm sea, clean sandy shoreline, white wind turbines, bright open sky",
     ]),
     (("中區", "東區", "南區", "北區", "舊市區"), [
-        "wide aerial view of central Taichung old town, dense mid-rise apartment buildings and narrow busy streets, urban texture",
-        "street level view of an older Taichung shopping street with tiled mid-rise buildings and shop awnings, bright midday light",
-        "aerial view of a dense older Taiwanese city district, rooftops with water tanks, narrow lanes, bright daylight",
+        f"beautifully restored riverside walkway in central Taichung Taiwan, clear water canal, stone banks, landscaped planting and modern lighting, bright daylight",
+        f"revitalized old town district of Taichung Taiwan, restored heritage buildings beside clean modern mid-rise architecture, tidy pedestrian street, {TW_PLANT}",
+        f"elegant tree-lined pedestrian boulevard in central Taichung Taiwan, modern buildings, wide clean paving, flowering trees",
     ]),
     # ── 房貸 / 利率（最大宗，變體要最多）─────────────────────────────
     (("利率", "房貸", "貸款", "新青安", "青安", "撥款", "成數", "寬限期"), [
-        "clean modern bank lobby interior with tall bright windows, minimalist counters, soft daylight, architectural interior photography",
-        "sunlit wooden desk with a small white house model, a set of keys and neatly stacked documents, shallow depth of field, warm morning light",
-        "bright modern apartment building entrance lobby with mailboxes, polished stone floor, sunlight through glass doors",
-        "modern Taiwanese bank branch exterior at street level, clean glass and stone facade, bright daytime, tidy sidewalk",
-        "tidy home desk by a sunny window with a calculator, an open notebook and a potted plant, overhead view, bright natural light",
-        "empty bright new apartment living room with a large window looking out over a green city, wooden floor, morning sunlight",
-        "close up of house keys resting on a clean signed document beside a small potted plant, soft daylight, minimal composition",
+        f"elegant modern bank lobby interior with tall bright windows and minimalist stone counters, abundant daylight",
+        f"sunlit light wooden desk with a small white house model, a set of keys and neatly stacked documents, shallow depth of field",
+        f"beautiful bright residential lobby with mailboxes, polished stone floor, sunlight through tall glass doors, indoor greenery",
+        f"elegant modern bank branch exterior at street level, clean glass and stone facade, {TW_PLANT}, bright daytime",
+        f"tidy modern desk by a sunny window with a calculator, an open notebook and a small plant, overhead view",
+        f"bright spacious empty new apartment living room with floor to ceiling windows overlooking a green Taiwanese city with {TW_BG}",
+        f"close up of house keys resting on a clean document beside a small potted plant on light stone, soft daylight",
     ]),
     # ── 政策 / 稅制 ─────────────────────────────────────────────────
     (("政策", "稅", "法規", "都更", "危老", "囤房", "實價", "登錄"), [
-        "modern Taiwanese government civic building exterior, clean concrete and glass facade, wide plaza, bright open sky",
-        "bright public service hall interior with orderly counters and high ceilings, natural daylight, clean modern architecture",
-        "wide daytime view of a Taiwanese city hall plaza with flagpoles and open paving, clear blue sky",
-        "old low-rise Taiwanese apartment block beside a newly rebuilt modern tower, urban renewal contrast, bright daylight",
+        f"elegant modern Taiwanese civic building, clean stone and glass facade, wide plaza with {TW_PLANT}, clear sky",
+        f"bright spacious public service hall interior, high ceiling, orderly counters, abundant natural daylight",
+        f"the National Taichung Theater by Toyo Ito, distinctive curved white concrete shell facade, wide clean plaza",
+        f"a newly rebuilt elegant modern residential tower standing on a tidy urban renewal site, clean hoarding, {TW_BG}",
     ]),
     # ── 預售 / 建案 ─────────────────────────────────────────────────
     (("預售", "建案", "推案", "工地", "建照", "使照", "開工"), [
-        "construction site of a modern residential high-rise in Taiwan, tower crane against clear sky, tidy safety fencing, daytime",
-        "residential towers under construction with scaffolding and green safety netting, bright blue sky, wide shot",
-        "architectural scale model of a residential development on a clean white table, bright studio daylight, no text",
-        "aerial view of a large construction site with foundations and cranes beside finished apartment towers, clear daytime",
+        f"tidy construction site of an elegant modern residential high-rise in Taiwan, tower crane against a clear sky, clean safety hoarding, {TW_BG}",
+        f"newly topped out modern residential towers with neat scaffolding and clean green safety netting, bright blue sky",
+        f"beautiful architectural scale model of an upscale residential development on a clean white table, bright studio daylight",
+        f"aerial view of a large well organised construction site beside finished elegant apartment towers, clear daytime, {TW_BG}",
     ]),
     # ── 餘屋 / 庫存 ─────────────────────────────────────────────────
     (("餘屋", "待售", "庫存", "空屋", "餘量", "去化"), [
-        "row of newly finished residential towers in Taiwan, empty balconies, clean facade, wide open sky, daytime",
-        "empty bright unfurnished apartment interior with bare walls and large windows, wooden floor, daylight",
-        "aerial view of several completed but unoccupied apartment towers with empty parking areas, bright daytime",
+        f"row of newly completed elegant residential towers in Taiwan, clean stone facades, glass balcony railings, {TW_PLANT}, clear sky",
+        f"bright spacious empty new apartment interior with flawless walls and floor to ceiling windows, polished stone floor, daylight",
+        f"aerial view of several newly finished upscale apartment towers with landscaped grounds, {TW_BG}",
     ]),
     # ── 交易量 ─────────────────────────────────────────────────────
     (("移轉", "成交", "交易", "量能", "棟數", "買氣"), [
-        "wide aerial view of a Taichung residential neighborhood, orderly rows of apartment towers, wide boulevards, clear daytime sky",
-        "busy Taiwanese city street from above with traffic and mixed residential buildings, bright midday light",
-        "aerial view of a mixed Taiwanese cityscape, apartment towers, parks and arterial roads, clear sky",
+        f"wide aerial view of a modern upscale Taichung residential district, elegant towers along clean tree-lined boulevards, {TW_BG}",
+        f"elevated view of a bright modern Taiwanese cityscape, well spaced towers, green parks and wide avenues, clear sky",
+        f"beautiful aerial view of a newly developed Taiwanese city district at midday, orderly modern architecture and abundant greenery, {TW_BG}",
     ]),
     # ── 社區 ───────────────────────────────────────────────────────
     (("社區", "熱銷", "銷售", "戶數"), [
-        "modern Taiwanese residential community entrance, landscaped courtyard, clean stone facade, bright natural daylight",
-        "landscaped inner courtyard of a modern residential complex with trees and walkways, sunlight, no people",
-        "clean modern residential lobby with high ceiling, stone walls and greenery, daylight through tall glass",
+        f"beautifully landscaped courtyard of an upscale Taiwanese residential complex, reflecting pool, {TW_PLANT}, stone paving, sunlight",
+        f"elegant entrance plaza of a modern Taiwanese residential community, stone facade, water feature, {TW_PLANT}, {TW_BG}",
+        f"spacious bright residential lobby with high ceiling, stone walls and indoor greenery, tall glass with daylight",
     ]),
     # ── 總經 / 景氣 ─────────────────────────────────────────────────
     (("景氣", "總經", "股", "經濟", "所得", "房價所得比", "通膨"), [
-        "modern Taichung city skyline seen from a distance, mixed high-rise towers, clear blue sky, calm bright daytime atmosphere",
-        "wide panoramic daytime view of a Taiwanese city with mountains behind, hazy blue sky, orderly urban grid",
-        "elevated view of a Taiwanese business district with office towers and wide roads, bright clear morning",
+        f"panoramic view from Dadu plateau over the Taichung Taiwan basin, bright modern cityscape stretching to the {TW_BG}",
+        f"elegant modern Taichung skyline seen across a large green park, glass towers, clear blue sky",
+        f"elevated view of an upscale Taiwanese business district, sleek office towers and wide landscaped avenues, bright morning",
     ]),
 ]
 
 DEFAULT_SCENES = [
-    "wide aerial view of modern Taichung Taiwan residential district, clean mid-rise and high-rise apartment towers, tree-lined streets",
-    "street level view of a clean modern Taiwanese residential street with apartment buildings and street trees, bright daylight",
-    "aerial view of a Taiwanese city neighborhood at midday, apartment blocks, parks and wide roads, clear sky",
+    f"wide aerial view of a modern upscale Taichung Taiwan residential district, elegant towers, clean tree-lined boulevards and a green park, {TW_BG}",
+    f"street level view of a wide clean tree-lined boulevard in Taichung Taiwan, elegant modern residential buildings, {TW_PLANT}",
+    f"beautiful elevated view of a bright modern Taiwanese city neighborhood, well spaced towers, parks and wide avenues, {TW_BG}",
 ]
-
-# 亮色鐵則：禁 night / dusk / dark / moody / neon / blue hour（CLAUDE.md 圖卡鐵則延伸）
-STYLE_SUFFIX = (
-    "bright daytime, clear blue sky, natural sunlight, soft shadows, "
-    "photorealistic architectural photography, wide angle, sharp focus, "
-    "clean and airy, professional photography, "
-    # ⚠️ 舊那批 109 張的 prompt 寫「magazine cover quality / Architectural Digest
-    #    style」，模型就真的畫出雜誌版面 —— 印著 TAVAN / REAL WHAT MARKEET /
-    #    DASKET 一堆亂碼英文字。任何「雜誌/海報/排版」字眼都會誘發出字。
-    "no text, no lettering, no watermark, no logo, no signage, no captions, "
-    "no magazine layout, no border, no frame, no people, no cars in focus"
-)
 
 
 def stable_hash(s: str) -> int:

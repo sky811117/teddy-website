@@ -53,8 +53,15 @@ LOGO = ROOT / "public" / "logos" / "yochaoshi.png"
 BRAND_LINE = "陳景泰・有巢氏房屋 台中世界之心加盟店"
 CONTACT_LINE = "LINE sky811117 ・ 0920-118-756"
 
-STYLE = ("bright daytime, clear blue sky, natural sunlight, photorealistic "
-         "architectural photography, sharp focus, clean and airy, no text, no people")
+STYLE = (
+    # 2026-08-26 景泰定案：要漂亮的台灣，不要老舊破爛的市容
+    "pristine and well maintained, upscale modern development, immaculate clean surfaces, "
+    "manicured landscaping, bright daytime, clear blue sky, golden natural sunlight, "
+    "photorealistic architectural photography, sharp focus, high end real estate photography, "
+    "no old weathered buildings, no rust, no metal window grilles, no utility poles, "
+    "no overhead cables, no corrugated metal roofs, no clutter, "
+    "no text, no lettering, no watermark, no signage, no people"
+)
 
 # 每個 preset 給多個底圖候選，--shift 換一張
 PRESETS = {
@@ -63,9 +70,9 @@ PRESETS = {
         "title": "台中買房賣房",
         "sub": "用 AI 工具，把資訊差還給你",
         "scenes": [
-            "wide aerial view of Taichung Taiwan city skyline, modern residential and office towers, green boulevards, distant mountains",
-            "elevated daytime view of a modern Taiwanese city district, apartment towers around a large green park",
-            "panoramic aerial view of a Taiwanese metropolitan area at midday, orderly urban grid, clear blue sky",
+            "wide aerial view of a modern upscale Taichung Taiwan district, elegant glass and stone towers, wide tree-lined boulevards, a large green park, green Central Range mountains on the horizon",
+            "Qiuhong Valley Park Taichung Taiwan, sunken green park with a lake and arched wooden bridges, surrounded by elegant modern high rise towers, clear sky",
+            "panoramic view from Dadu plateau over the bright modern Taichung Taiwan basin, elegant cityscape stretching to the green Central Range mountains on the horizon",
         ],
     },
     "buy": {
@@ -73,8 +80,8 @@ PRESETS = {
         "title": "買房，不用自己摸索",
         "sub": "看屋、出價、貸款，一步一步陪你走",
         "scenes": [
-            "bright empty modern apartment living room with a large window and wooden floor, morning sunlight, warm beige tones",
-            "sunlit modern apartment interior with open kitchen and dining area, light wood and beige palette, empty room",
+            "bright spacious empty modern apartment living room, floor to ceiling windows overlooking a green Taiwanese city with green Central Range mountains on the horizon, polished light stone floor",
+            "elegant empty modern apartment interior with open kitchen and dining area, light wood and stone, large windows with city and mountain view",
         ],
     },
     "sell": {
@@ -82,8 +89,8 @@ PRESETS = {
         "title": "賣房，先把價格算清楚",
         "sub": "行情評估、屋況建議、多平台曝光",
         "scenes": [
-            "modern Taiwanese residential building exterior seen from the street, clean facade, landscaped entrance, bright daylight",
-            "bright tidy living room of a well-kept apartment ready for viewing, beige and light wood tones, sunlight through window",
+            "elegant modern Taiwanese residential tower exterior, clean stone and glass facade, landscaped entrance plaza with palms, green Central Range mountains on the horizon",
+            "beautifully staged bright modern living room ready for viewing, light stone floor, large window with green city view",
         ],
     },
     "services": {
@@ -91,8 +98,8 @@ PRESETS = {
         "title": "我幫你做的事",
         "sub": "買房・賣房・行情評估・換屋",
         "scenes": [
-            "clean modern real estate office interior with a meeting table and large bright windows, beige and wood tones, no people",
-            "bright modern consultation room with a round table and city view through tall windows, warm neutral palette",
+            "elegant modern real estate office interior, meeting table, floor to ceiling windows overlooking a green Taichung cityscape with green Central Range mountains on the horizon",
+            "bright modern consultation room with a round table, tall windows with a panoramic view of an upscale Taiwanese city",
         ],
     },
     "about": {
@@ -100,8 +107,8 @@ PRESETS = {
         "title": "陳景泰｜台中房仲",
         "sub": "短影音叫泰迪・房仲大看板 BigKanBan 團隊",
         "scenes": [
-            "wide aerial view of Taichung Taiwan residential district with mountains on the horizon, bright clear morning",
-            "modern Taiwanese city street with apartment buildings and street trees, warm daylight, clean composition",
+            "beautiful wide aerial view of an upscale Taichung Taiwan residential district, elegant towers, green parks, green Central Range mountains on the horizon",
+            "wide clean tree-lined green parkway in Taichung Taiwan, elegant modern towers on both sides, flowering trees",
         ],
     },
     "contact": {
@@ -109,8 +116,8 @@ PRESETS = {
         "title": "有問題，直接問我",
         "sub": "LINE 秒回・台中全區",
         "scenes": [
-            "bright modern reception area with a wooden counter and green plants, natural light, warm neutral tones, no people",
-            "sunlit modern lobby interior with glass doors and stone floor, warm beige palette",
+            "elegant bright reception area with a stone counter and abundant green plants, tall glass with daylight",
+            "spacious bright residential lobby with high ceiling, stone walls and indoor greenery, tall glass with daylight",
         ],
     },
     "faq": {
@@ -118,8 +125,8 @@ PRESETS = {
         "title": "買賣房常見問題",
         "sub": "稅費、貸款、看屋、簽約，一次講清楚",
         "scenes": [
-            "tidy desk with an open notebook, a calculator and a small house model by a sunny window, overhead view",
-            "clean modern study desk with documents and a potted plant, bright natural light, minimal composition",
+            "tidy light wooden desk with an open notebook, a calculator and a small white house model by a sunny window, overhead view",
+            "clean modern desk with neatly stacked documents and a small plant, bright daylight, minimal composition",
         ],
     },
     "tools": {
@@ -127,8 +134,8 @@ PRESETS = {
         "title": "免費房產小工具",
         "sub": "新青安試算・稅費計算・議價心法",
         "scenes": [
-            "clean modern desk with a laptop, calculator and small house model, bright daylight, overhead view, no text on screen",
-            "minimal workspace with a tablet, notebook and a cup by a sunny window, warm neutral tones",
+            "clean modern desk with a laptop, calculator and a small white house model, blank screen, bright daylight, overhead view",
+            "minimal bright workspace with a tablet, notebook and a cup by a sunny window, light wood and stone",
         ],
     },
     "properties": {
@@ -136,8 +143,8 @@ PRESETS = {
         "title": "在售物件",
         "sub": "台中全區・持續更新",
         "scenes": [
-            "row of modern residential apartment towers in Taiwan seen from across a green park, bright clear daytime",
-            "aerial view of a Taichung residential neighborhood with orderly apartment blocks and tree-lined streets",
+            "row of elegant modern residential towers in Taiwan seen across a beautiful green park with a lake, green Central Range mountains on the horizon",
+            "aerial view of an upscale Taichung residential neighborhood, well spaced elegant towers and landscaped streets, green Central Range mountains on the horizon",
         ],
     },
     "posts": {
@@ -145,8 +152,8 @@ PRESETS = {
         "title": "台中房市筆記",
         "sub": "數據、政策、區域，白話講給你聽",
         "scenes": [
-            "modern Taichung city skyline seen from a distance on a clear day, mixed high-rise towers, blue sky",
-            "elevated view of a Taiwanese city with apartment towers and wide roads, bright morning light",
+            "elegant modern Taichung skyline seen across a large green park, glass towers, clear blue sky, green Central Range mountains on the horizon",
+            "beautiful elevated view of an upscale Taiwanese city district, sleek towers and wide landscaped avenues, bright morning",
         ],
     },
 }

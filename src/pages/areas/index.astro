@@ -71,8 +71,21 @@ const breadcrumbSchema = {
         areas.map(area => (
           <a
             href={`/areas/${area.slug}`}
-            class="border-border bg-card hover:border-accent group flex flex-col rounded-lg border p-6 no-underline transition-colors"
+            class="border-border bg-card hover:border-accent group flex flex-col overflow-hidden rounded-lg border no-underline transition-colors"
           >
+            {/* 2026-08-26 補：原本 7 張卡片零縮圖，整頁只有 emoji 撐版面 */}
+            {area.heroImage && (
+              <img
+                src={area.heroImage}
+                alt={`${area.shortName}城市景觀示意圖`}
+                width="1600"
+                height="900"
+                loading="lazy"
+                decoding="async"
+                class="aspect-[16/9] w-full object-cover transition-opacity group-hover:opacity-90"
+              />
+            )}
+            <div class="flex flex-col p-6">
             <div class="flex items-center gap-3">
               <span class="text-4xl">{area.emoji}</span>
               <h2 class="text-foreground text-xl font-bold">
@@ -98,6 +111,7 @@ const breadcrumbSchema = {
 
             <div class="text-accent mt-auto pt-4 text-sm font-medium group-hover:underline">
               看 {area.shortName}深度頁 →
+            </div>
             </div>
           </a>
         ))
