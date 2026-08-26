@@ -48,7 +48,9 @@ OG_DIR = ROOT / "public" / "og"
 GEN_W, GEN_H = 1216, 640
 OG_W, OG_H = 1200, 630
 
-FM_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
+# 容忍 CRLF：git core.autocrlf=true，checkout 出來的 md 是 CRLF，
+# 只認 LF 的 regex 會整個比對不到 → parse_frontmatter 回 None → crash
+FM_RE = re.compile("^---\r?\n(.*?)\r?\n---\r?\n", re.DOTALL)
 
 
 # ── 畫面總則：漂亮的台灣 ─────────────────────────────────────────────
@@ -281,7 +283,7 @@ def fm_get_scalar(fm: str, key: str) -> str | None:
 
 
 def fm_get_tags(fm: str) -> list[str]:
-    m = re.search(r"^tags:\s*\n((?:\s+-\s+.+\n)+)", fm, re.MULTILINE)
+    m = re.search("^tags:[ \t]*\r?\n((?:[ \t]*-[ \t]+.+\r?\n)+)", fm, re.MULTILINE)
     if m:
         return [line.strip().lstrip("- ").strip() for line in m.group(1).splitlines() if line.strip()]
     m = re.search(r"^tags:\s*\[(.*?)\]", fm, re.MULTILINE)
@@ -300,7 +302,7 @@ def insert_og_line(text: str, og_path: str) -> str:
 
 
 def needs_og(md: Path) -> tuple[bool, str]:
-    text = md.read_text(encoding="utf-8")
+    text = md.read_text(encoding="utf-8-sig")
     parsed = parse_frontmatter(text)
     if not parsed:
         return False, "無 frontmatter，跳過"
@@ -398,7 +400,7 @@ def main() -> int:
 
     ok, fail = 0, []
     for i, (md, _why) in enumerate(todo, 1):
-        text = md.read_text(encoding="utf-8")
+        text = md.read_text(encoding="utf-8-sig")
         fm, _ = parse_frontmatter(text)
         title = fm_get_scalar(fm, "title") or md.stem
         slug = fm_get_scalar(fm, "slug") or md.stem

@@ -33,6 +33,18 @@ const {
   showFloatingCTA = true,
 } = Astro.props;
 
+// Cloudflare Pages 一律 308 轉址到帶尾斜線的網址（實測 /properties/0066565 →
+// /properties/0066565/），所以 canonical 也必須帶尾斜線，否則等於告訴 Google
+// 「我的標準網址是那個會跳轉的」，索引報告就會累積「頁面會重新導向」。
+// 各頁自己傳進來的 canonicalURL 也一併正規化，只放過帶副檔名的檔案路徑。
+const canonicalHref = (() => {
+  const u = new URL(canonicalURL);
+  if (!u.pathname.endsWith("/") && !/\.[a-zA-Z0-9]+$/.test(u.pathname)) {
+    u.pathname += "/";
+  }
+  return u.href;
+})();
+
 const socialImageURL = new URL(ogImage, Astro.site ?? Astro.url);
 const rssHref = getRelativeLocaleUrl(
   Astro.currentLocale ?? config.site.lang,
@@ -53,7 +65,7 @@ const rssHref = getRelativeLocaleUrl(
     <link rel="icon" href={getAssetPath("favicon.ico")} />
     <link rel="apple-touch-icon" href={getAssetPath("favicon.svg")} />
     <link rel="manifest" href={getAssetPath("manifest.json")} />
-    <link rel="canonical" href={canonicalURL} />
+    <link rel="canonical" href={canonicalHref} />
     {prevURL && <link rel="prev" href={prevURL} />}
     {nextURL && <link rel="next" href={nextURL} />}
     {noindex && <meta name="robots" content="noindex, follow" />}
@@ -89,7 +101,7 @@ const rssHref = getRelativeLocaleUrl(
     <meta property="og:site_name" content={site.title} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:url" content={canonicalHref} />
     <meta property="og:image" content={socialImageURL} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -98,7 +110,7 @@ const rssHref = getRelativeLocaleUrl(
 
     <!-- Twitter / X -->
     <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content={canonicalURL} />
+    <meta property="twitter:url" content={canonicalHref} />
     <meta property="twitter:title" content={title} />
     <meta property="twitter:description" content={description} />
     <meta property="twitter:image" content={socialImageURL} />
@@ -254,9 +266,6 @@ const rssHref = getRelativeLocaleUrl(
       })}
     />
 
-    <!-- Extra head content injected by child layouts (e.g. JSON-LD, article meta) -->
-    <slot name="head" />
-
     {
       site.googleVerification && (
         <meta
@@ -266,7 +275,13 @@ const rssHref = getRelativeLocaleUrl(
       )
     }
 
+    {/* Analytics 必須排在 <slot name="head" /> 之前：PostLayout 注進 head slot 的
+        追蹤腳本是 is:inline 的同步 script，會依文件順序先執行。放在後面時
+        window.gtag 還沒定義，read_post 事件會被無聲丟棄（線上實測 byte 序驗證過）。 */}
     <Analytics />
+
+    <!-- Extra head content injected by child layouts (e.g. JSON-LD, article meta) -->
+    <slot name="head" />
 
     <!--
       Inline FOUC-prevention script: sets data-theme on <html> before
