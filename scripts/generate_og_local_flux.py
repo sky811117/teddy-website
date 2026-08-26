@@ -11,7 +11,9 @@ teddy-website OG 封面圖批次補圖 — 本地 ComfyUI + FLUX.1-schnell，永
   2. 依標題 / tags 判主題 → 組亮色白天 FLUX prompt（禁暗色，見 CLAUDE.md 圖卡鐵則）
   3. 本地 8188 生圖 1216x640 → PIL 裁成 1200x630 → public/og/{slug}.jpg
   4. 回寫 frontmatter 的 ogImage: /og/{slug}.jpg
-  （縮圖 webp 由 npm build 的 scripts/generate-og-thumbs.mjs 自動產，這裡不用管）
+  5. 呼叫 generate-og-thumbs.mjs 產 /og/thumbs/*.webp
+     ⚠️ 縮圖不是可有可無：列表卡片走 ogThumb.ts 硬改寫成 webp 且無 fallback，
+        只生 jpg 不生 webp = 線上列表 404 破圖（2026-08-26 踩過）
 
 用法：
     python scripts/generate_og_local_flux.py --dry-run      # 只列出要補哪些，不生圖
@@ -24,6 +26,7 @@ import argparse
 import hashlib
 import io
 import re
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -240,6 +243,29 @@ def to_og_jpg(png_bytes: bytes, out: Path) -> None:
     im.save(out, "JPEG", quality=86, optimize=True, progressive=True)
 
 
+def make_thumbs() -> None:
+    """產 /og/thumbs/*.webp 縮圖。
+
+    ⚠️ 2026-08-26 血淚：Card.astro / RelatedPosts.astro 是透過
+    src/utils/ogThumb.ts 把 /og/x.jpg 硬改寫成 /og/thumbs/x.webp，**沒有
+    fallback**。只生 jpg 不生 webp，列表卡片線上就是 404 破圖 —— 而且
+    文章頁本身看起來正常，很難發現。CI 那邊已補上這步，這裡再做一次
+    當保險（發布管線單篇呼叫時 CI 還沒跑到）。"""
+    script = ROOT / "scripts" / "generate-og-thumbs.mjs"
+    if not script.exists():
+        print("[!] 找不到 generate-og-thumbs.mjs，縮圖沒產（列表卡片會破圖）")
+        return
+    print("\n[*] 產縮圖 webp（列表卡片吃這個，不產會 404）…")
+    r = subprocess.run(["node", str(script)], cwd=ROOT,
+                       capture_output=True, text=True, encoding="utf-8", errors="replace")
+    tail = [l for l in (r.stdout or "").splitlines() if l.strip()][-3:]
+    for l in tail:
+        print("   ", l)
+    if r.returncode != 0:
+        print(f"[!] 縮圖產生失敗（{r.returncode}），列表卡片可能破圖："
+              f"{(r.stderr or '')[:200]}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="只列出要補哪些，不生圖")
@@ -309,6 +335,9 @@ def main() -> int:
         except Exception as e:
             print(f"        !! 失敗: {str(e)[:160]}")
             fail.append(md.name)
+
+    if ok:
+        make_thumbs()
 
     print(f"\n[完成] 成功 {ok} / {len(todo)}")
     if fail:

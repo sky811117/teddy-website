@@ -33,6 +33,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # 2026-08-26 補：這步以前漏掉，導致 Card/RelatedPosts 指向的
+      # /og/thumbs/*.webp 在 CI 從沒產出、線上一路 404（列表卡片破圖）。
+      # package.json 的 build 腳本本來就有這步，但下面跑的是 `astro build`
+      # 而不是 `pnpm run build`，整條前綴被繞過。
+      - name: Generate OG thumbnails
+        run: pnpm exec node scripts/generate-og-thumbs.mjs
+
       - name: Build site
         run: pnpm exec astro build
         env:
@@ -42,6 +49,12 @@ jobs:
       - name: Build search index (Pagefind)
         run: pnpm exec pagefind --site dist
         continue-on-error: true
+
+      # 2026-08-26 補：同一個根因漏掉的第二步。dist/_headers.txt 沒被改名成
+      # dist/_headers，Cloudflare 完全不吃 public/_headers.txt 的快取規則
+      # （實測線上圖片回 max-age=0, must-revalidate，等於每次都回源）。
+      - name: Postbuild (_headers rename + pagefind copy)
+        run: pnpm exec node scripts/postbuild-headers.mjs
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3

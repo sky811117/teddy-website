@@ -1,5 +1,6 @@
 ---
 title: "關於景泰"
+ogImage: "/og/page-about.jpg"
 description: "台中房仲 × AI 工程 — 我做這件事的方式跟別人不一樣"
 ---
 
