@@ -185,6 +185,6 @@ timezone: Asia/Taipei
 - [4 大服務項目](/services) — 買 / 賣 / 投資 / 換屋
 
 **同系列文章:**
-- [議價 7 心法](/posts/week-03-negotiation-7) — 議到價格再算貸款
+- [買房前該查清楚的 7 件事](/posts/week-03-negotiation-7) — 實價登錄、謄本、總價外費用怎麼自己查
 - [嫌惡設施 Google Map 10 大設施](/posts/week-04-undesirable-facilities) — 看屋前先過濾
 - [不動產說明書 5 個含糊欄位](/posts/week-05-property-disclosure) — 簽約前必看

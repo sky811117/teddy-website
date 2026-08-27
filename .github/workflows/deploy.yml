@@ -40,6 +40,13 @@ jobs:
       - name: Generate OG thumbnails
         run: pnpm exec node scripts/generate-og-thumbs.mjs
 
+      # 2026-08-27 補：內容紅線閘門。景泰 2026-06 清過 51 篇 AI 編造的客戶故事，
+      # 兩個月後又長回 23 篇（供文管線沒有防呆），這一步就是防第三次。
+      # 擋：編造的第一人稱客戶故事 / 同業品牌比較 / 教議價殺價。
+      # 要暫時放行（例如誤判擋住緊急更新）就把這步註解掉，修完再打開。
+      - name: Content lint (紅線閘門)
+        run: pnpm exec node scripts/lint-seo.mjs
+
       - name: Build site
         run: pnpm exec astro build
         env:

@@ -7,13 +7,14 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "node scripts/generate-og-thumbs.mjs && astro check && astro build && pagefind --site dist && node scripts/postbuild-headers.mjs",
+    "build": "node scripts/lint-seo.mjs && node scripts/generate-og-thumbs.mjs && astro check && astro build && pagefind --site dist && node scripts/postbuild-headers.mjs",
     "preview": "astro preview",
     "sync": "astro sync",
     "astro": "astro",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "lint:content": "node scripts/lint-seo.mjs"
   },
   "dependencies": {
     "@astro-community/astro-embed-youtube": "^0.5.10",

@@ -175,5 +175,5 @@ Google Map 不是萬能。**還要做這 3 件事**:
 
 **同系列文章:**
 - [不動產說明書 5 個含糊欄位](/posts/week-05-property-disclosure) — 說明書也會揭露嫌惡設施
-- [議價 7 心法](/posts/week-03-negotiation-7) — 鄰近嫌惡設施可當議價籌碼
+- [買房前該查清楚的 7 件事](/posts/week-03-negotiation-7) — 簽約前該自己查完的功課清單
 - [新青安 vs 一般房貸 30 年實算](/posts/week-02-new-housing-loan) — 嫌惡設施物件貸款成數可能降

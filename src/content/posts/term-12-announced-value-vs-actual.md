@@ -9,7 +9,7 @@ ogImage: /og/term-12-announced-value-vs-actual.jpg
 tags:
 - 房地產詞典
 - 買方教學
-- 估價
+- 行情評估
 description: 政府公告土地現值 18 萬/坪，實際成交 65 萬/坪 — 差 3.6 倍。為什麼？這篇講公告現值的角色（課稅基準）、跟實際成交的差距、跟為什麼這個差距會影響你賣房的土地增值稅。
 timezone: Asia/Taipei
 ---
