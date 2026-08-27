@@ -27,6 +27,9 @@ const BACK_TO_SITE = `
       <a href="${SITE}/about" target="_blank" rel="noopener" style="display:inline-block;padding:13px 26px;border-radius:24px;font-size:16px;font-weight:700;background:#fff;color:#6B8E23;border:1.5px solid #6B8E23;text-decoration:none;">認識景泰</a>
       <a href="${SITE}/" target="_blank" rel="noopener" style="display:inline-block;padding:13px 26px;border-radius:24px;font-size:16px;font-weight:700;background:#fff;color:#6B8E23;border:1.5px solid #6B8E23;text-decoration:none;">房仲官網</a>
     </div>
+    <div style="margin-top:14px;font-size:12px;line-height:1.6;color:#9a8f7a;">
+      本頁會記錄不含 cookie、無法識別個人的匿名瀏覽數（Google Analytics），用來了解哪些物件比較多人看。
+    </div>
   </div>
 </div>`;
 
@@ -86,9 +89,15 @@ export const onRequest = async ({
 
   // 注入 GA4 — 讓個人網站 GA 也算到這次造訪（頁面本身原本沒有 gtag）
   if (!html.includes(GA4_ID) && html.includes("</head>")) {
+    // ⚠️ 2026-08-27 修：原本這裡是無 consent、無告知直接注入 gtag，
+    //   客戶從 LINE 點進推薦頁就開始寫 cookie，頁面上沒有任何隱私說明。
+    //   改成 Consent Mode v2 預設 denied → 只送不含識別碼的匿名瀏覽數、
+    //   不寫 cookie；頁尾另有一行告知（見 BACK_TO_SITE）。
     const ga =
       `<script async src="https://www.googletagmanager.com/gtag/js?id=${GA4_ID}"></script>` +
       `<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}` +
+      `gtag('consent','default',{analytics_storage:'denied',ad_storage:'denied',` +
+      `ad_user_data:'denied',ad_personalization:'denied'});` +
       `gtag('js',new Date());gtag('config','${GA4_ID}');</script>`;
     html = html.replace("</head>", ga + "</head>");
   }

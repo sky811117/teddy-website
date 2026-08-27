@@ -102,7 +102,7 @@ timezone: "Asia/Taipei"
 ## 給你的下一步
 
 1. **先用工具自己算**：[buyer-fee2 試算](https://teddy-share-app.vercel.app/buyer-fee2/index.html)
-2. **想算具體某間房**：LINE 我 [sky811117](https://line.me/ti/p/sky811117)，給我總價我幫你跑 5 個情境
+2. **想算具體某間房**：LINE 我 [sky811117](/go/line?src=post)，給我總價我幫你跑 5 個情境
 3. **想看完整決議**：[中央銀行理監事聯席會議決議新聞稿](https://www.cbc.gov.tw/tw/cp-302-189508-c6f08-1.html)
 
 ⏰ **時間提醒**：央行利率短期不動，但**現行新青安補貼 2026/7/31 到期**。利率不會等你，補貼更不會。先把你的資格和那間房子搞清楚。
@@ -111,4 +111,4 @@ timezone: "Asia/Taipei"
 
 陳景泰 / 有巢氏房屋 台中世界之心店
 經紀人 黃永隆 113彰縣字324 / 營業員 陳景泰 114登字488296
-☎️ 0920-118-756 / LINE: [sky811117](https://line.me/ti/p/sky811117) / IG: [@nov__817](https://instagram.com/nov__817)
+☎️ 0920-118-756 / LINE: [sky811117](/go/line?src=post) / IG: [@nov__817](https://instagram.com/nov__817)

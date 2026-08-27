@@ -205,7 +205,7 @@ faqSchema:
 
 ## 我幫你做的事
 
-LINE 我 [sky811117](https://line.me/ti/p/sky811117),給我:
+LINE 我 [sky811117](/go/line?src=post),給我:
 - **物件地址 / 社區名**
 - **總坪數、屋主開價**
 - **公設項目清單**(如果有)

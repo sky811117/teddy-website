@@ -108,7 +108,7 @@ timezone: "Asia/Taipei"
 ## 給你的下一步
 
 1. **先用工具自己算**：[buyer-fee2 試算](https://teddy-share-app.vercel.app/buyer-fee2/index.html)
-2. **確認你的資格**：LINE 我 [sky811117](https://line.me/ti/p/sky811117)，我問 3 題幫你判斷
+2. **確認你的資格**：LINE 我 [sky811117](/go/line?src=post)，我問 3 題幫你判斷
 3. **看完整公告**：[財政部官網](https://www.mof.gov.tw/)
 
 ⏰ **時間提醒**：現行新青安 **2026/7/31** 補貼到期，從今天算剩 **68 天**。
@@ -118,4 +118,4 @@ timezone: "Asia/Taipei"
 
 陳景泰 / 有巢氏房屋 台中世界之心店
 經紀人 黃永隆 113彰縣字324 / 營業員 陳景泰 114登字488296
-☎️ 0920-118-756 / LINE: [sky811117](https://line.me/ti/p/sky811117) / IG: [@nov__817](https://instagram.com/nov__817)
+☎️ 0920-118-756 / LINE: [sky811117](/go/line?src=post) / IG: [@nov__817](https://instagram.com/nov__817)

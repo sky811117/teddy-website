@@ -106,7 +106,7 @@ timezone: "Asia/Taipei"
 ## 給你的下一步
 
 1. **先用工具自己算**：[買方費用試算工具](https://teddy-share-app.vercel.app/buyer-fee2/index.html)（記得用銀行給你的真實利率）
-2. **確認你的資格**：LINE 我 [sky811117](https://line.me/ti/p/sky811117)，我問 3 題幫你判斷該卡舊制還是走青安3.0
+2. **確認你的資格**：LINE 我 [sky811117](/go/line?src=post)，我問 3 題幫你判斷該卡舊制還是走青安3.0
 3. **看官方說法**：[財政部全球資訊網](https://www.mof.gov.tw/)
 
 ⏰ **時間提醒**：舊制新青安 **2026/7/31** 屆滿、青安3.0 **8/1** 接棒上路。不必恐慌搶件，但如果你今年會滿 50、或本人年收會破 200 萬，先把資格和那間房子搞清楚。
@@ -115,4 +115,4 @@ timezone: "Asia/Taipei"
 
 陳景泰 / 有巢氏房屋 台中世界之心店
 經紀人 黃永隆 113彰縣字324 / 營業員 陳景泰 114登字488296
-☎️ 0920-118-756 / LINE: [sky811117](https://line.me/ti/p/sky811117) / IG: [@nov__817](https://instagram.com/nov__817)
+☎️ 0920-118-756 / LINE: [sky811117](/go/line?src=post) / IG: [@nov__817](https://instagram.com/nov__817)

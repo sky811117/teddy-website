@@ -107,6 +107,6 @@ timezone: "Asia/Taipei"
 ## 給你的下一步
 
 1. **看官方景氣燈號公布**：[國發會景氣燈號](https://index.ndc.gov.tw/)
-2. **想知道台中你看的區現在熱度怎樣**：LINE 我 [sky811117](https://line.me/ti/p/sky811117)
+2. **想知道台中你看的區現在熱度怎樣**：LINE 我 [sky811117](/go/line?src=post)
 
 ⏰ **景氣燈號公布日**：每月 27 日左右。

@@ -125,7 +125,7 @@ timezone: Asia/Taipei
 完整整合版工具兩週內上線，**目前你可以這樣用**：
 
 1. **內政部實價登錄自己篩** — [lvr.land.moi.gov.tw](https://lvr.land.moi.gov.tw/)
-2. **LINE 我給你客製報告** — [sky811117](https://line.me/ti/p/sky811117)，告訴我：
+2. **LINE 我給你客製報告** — [sky811117](/go/line?src=post)，告訴我：
    - 想看的區（北屯/西屯/南屯/七期/中區/太平）
    - 建物類型
    - 屋齡、坪數、樓層

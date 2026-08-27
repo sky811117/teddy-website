@@ -230,7 +230,7 @@ timezone: Asia/Taipei
 
 ## 我幫你做的事
 
-如果你手上已經有在看的物件,可以 LINE 我 [sky811117](https://line.me/ti/p/sky811117)。給我**社區 + 樓層 + 屋齡**,我可以:
+如果你手上已經有在看的物件,可以 LINE 我 [sky811117](/go/line?src=post)。給我**社區 + 樓層 + 屋齡**,我可以:
 
 - 把同社區近一年的成交**逐筆**拉出來,把車位拆開,算成「不含車位」的成交行情分析
 - 陪你把不動產說明書一欄一欄對過,該追問的欄位圈出來給你
@@ -243,7 +243,7 @@ timezone: Asia/Taipei
 
 **陳景泰 — 一品不動產(有巢氏房屋台中世界之心加盟店)**
 經紀人黃永隆 113 彰縣字第 324 號 / 營業員陳景泰 114 登字第 488296 號
-0920-118-756 / LINE [sky811117](https://line.me/ti/p/sky811117) / IG [@nov__817](https://www.instagram.com/nov__817)
+0920-118-756 / LINE [sky811117](/go/line?src=post) / IG [@nov__817](https://www.instagram.com/nov__817)
 
 ---
 

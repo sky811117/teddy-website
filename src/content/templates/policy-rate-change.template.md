@@ -117,7 +117,7 @@ timezone: "Asia/Taipei"
 ## 給你的下一步
 
 1. **先用工具自己算**：[買方費用試算](https://teddy-share-app.vercel.app/buyer-fee2/index.html)
-2. **想算具體某間房 / 你的轉貸**：LINE 我 [sky811117](https://line.me/ti/p/sky811117)，給我數字我幫你跑試算
+2. **想算具體某間房 / 你的轉貸**：LINE 我 [sky811117](/go/line?src=post)，給我數字我幫你跑試算
 3. **想看央行原始公告**：[央行新聞稿](https://www.cbc.gov.tw/tw/lp-285-1.html)
 
 ⏰ **時間提醒**：銀行通常會在央行宣布後 **1~2 週內**調整新承做利率。

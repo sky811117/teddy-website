@@ -100,7 +100,7 @@ timezone: "Asia/Taipei"
 ## 給你的下一步
 
 1. **先用工具自己算**：[buyer-fee2 試算](https://teddy-share-app.vercel.app/buyer-fee2/index.html)
-2. **想算具體某間房**：LINE 我 [sky811117](https://line.me/ti/p/sky811117)，給我總價我幫你跑升息前後 5 個情境
+2. **想算具體某間房**：LINE 我 [sky811117](/go/line?src=post)，給我總價我幫你跑升息前後 5 個情境
 3. **想看完整新聞**：[經濟日報原文](https://money.udn.com/money/story/5613/9392494)
 
 ⏰ **時間提醒**：央行 6 月理監事會通常在月中下旬，正式決議出來我會再幫你更新。在那之前，這篇的數字幫你先做好心理準備。
@@ -109,4 +109,4 @@ timezone: "Asia/Taipei"
 
 陳景泰 / 有巢氏房屋 台中世界之心店
 經紀人 黃永隆 113彰縣字324 / 營業員 陳景泰 114登字488296
-☎️ 0920-118-756 / LINE: [sky811117](https://line.me/ti/p/sky811117) / IG: [@nov__817](https://instagram.com/nov__817)
+☎️ 0920-118-756 / LINE: [sky811117](/go/line?src=post) / IG: [@nov__817](https://instagram.com/nov__817)

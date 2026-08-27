@@ -196,7 +196,7 @@ faqSchema:
 
 ## 我幫你做的事
 
-如果你正準備簽約、想確認合約有沒有漏網,可以 LINE 我 [sky811117](https://line.me/ti/p/sky811117)。你可以:
+如果你正準備簽約、想確認合約有沒有漏網,可以 LINE 我 [sky811117](/go/line?src=post)。你可以:
 
 - 簽約前把合約初稿拍給我,我逐條檢查 + 列出該補的特約
 - 簽約當天陪你去確保 8 大重點沒漏
@@ -209,4 +209,4 @@ faqSchema:
 
 **陳景泰 — 一品不動產(有巢氏房屋台中世界之心加盟店)**
 經紀人黃永隆 113 彰縣字第 324 號 / 營業員陳景泰 114 登字第 488296 號
-0920-118-756 / LINE [sky811117](https://line.me/ti/p/sky811117) / IG [@nov__817](https://www.instagram.com/nov__817)
+0920-118-756 / LINE [sky811117](/go/line?src=post) / IG [@nov__817](https://www.instagram.com/nov__817)

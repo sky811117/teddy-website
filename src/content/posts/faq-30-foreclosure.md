@@ -198,7 +198,7 @@ faqSchema:
 
 ## 我幫你做的事
 
-LINE 我 [sky811117](https://line.me/ti/p/sky811117)，給我：
+LINE 我 [sky811117](/go/line?src=post)，給我：
 
 - **法拍公告的拍賣字號**（例如「113 司執字第 12345 號」）
 - **你想標的物件地址**

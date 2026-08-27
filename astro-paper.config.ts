@@ -28,7 +28,7 @@ export default defineAstroPaperConfig({
     search: "pagefind",
   },
   socials: [
-    { name: "line",      url: "https://line.me/ti/p/sky811117",                          linkTitle: "LINE 私訊景泰 sky811117" },
+    { name: "line",      url: "/go/line?src=socials",                                    linkTitle: "LINE 私訊景泰 sky811117" },
     { name: "instagram", url: "https://www.instagram.com/nov__817/",                     linkTitle: "@nov__817 Instagram" },
     { name: "youtube",   url: "https://www.youtube.com/@%E6%B3%B0%E8%BF%AA001",         linkTitle: "YouTube @泰迪001" },
     { name: "tiktok",    url: "https://www.tiktok.com/@sky811117",                       linkTitle: "TikTok @sky811117" },

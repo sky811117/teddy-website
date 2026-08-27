@@ -134,7 +134,12 @@ const structuredData = {
     <!-- GA4: 文章閱讀 + 停留時間追蹤 -->
     <script is:inline define:vars={{ postSlug, postTitle, postTags }}>
       function _gaConsented() {
-        return localStorage.getItem("ga_consent") === "granted";
+        // 量測是否就緒（Analytics.astro 設的全域旗標）。
+        // ⚠️ 不能只判斷 localStorage 的同意值 —— 2026-08-27 起未同意也會送
+        //    cookieless 匿名瀏覽數，read_post / dwell 同樣不該被擋掉。
+        if (window.__gaMeasure === true) return true;
+        try { return localStorage.getItem("ga_consent") === "granted"; }
+        catch (e) { return false; }
       }
       function _sendIfConsented(fn) {
         if (_gaConsented()) { fn(); }

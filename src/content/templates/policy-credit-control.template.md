@@ -182,7 +182,7 @@ timezone: "Asia/Taipei"
 
 ## 給你的下一步
 
-1. **想算你的新頭期款**：LINE 我 [sky811117](https://line.me/ti/p/sky811117)，給我「總價 + 你目前名下幾戶」我跑試算
+1. **想算你的新頭期款**：LINE 我 [sky811117](/go/line?src=post)，給我「總價 + 你目前名下幾戶」我跑試算
 2. **想看央行原始公告**：[央行新聞稿](https://www.cbc.gov.tw/tw/lp-285-1.html)
 3. **想知道你的區受不受影響**：用 [內政部不動產資訊平台](https://pip.moi.gov.tw/) 查、或 LINE 我直接問
 4. **想算具體某間房的買賣稅 + 頭期 + 月付**：[買方費用試算工具](https://teddy-share-app.vercel.app/buyer-fee2/index.html)

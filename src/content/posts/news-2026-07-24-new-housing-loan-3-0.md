@@ -103,7 +103,7 @@ timezone: "Asia/Taipei"
 ## 給你的下一步
 
 1. **先用工具自己算**：[買方費用試算工具](https://teddy-share-app.vercel.app/buyer-fee2/index.html)（記得用銀行給你的真實利率）
-2. **確認你的資格**：LINE 我 [sky811117](https://line.me/ti/p/sky811117)，我問 3 題幫你判斷
+2. **確認你的資格**：LINE 我 [sky811117](/go/line?src=post)，我問 3 題幫你判斷
 3. **看官方說法**：[財政部全球資訊網](https://www.mof.gov.tw/)
 
 ⏰ **時間提醒**：現行新青安補貼 **2026/7/31** 到期，青安 3.0 **2026/8/1 上路、2029/7/31 截止**。8/1 前後沒有空窗，但條件換了一套 —— 先把自己的年收、年齡、房子總價這三條線搞清楚，比搶時間更重要。
@@ -112,4 +112,4 @@ timezone: "Asia/Taipei"
 
 陳景泰 / 有巢氏房屋 台中世界之心店
 經紀人 黃永隆 113彰縣字324 / 營業員 陳景泰 114登字488296
-☎️ 0920-118-756 / LINE: [sky811117](https://line.me/ti/p/sky811117) / IG: [@nov__817](https://instagram.com/nov__817)
+☎️ 0920-118-756 / LINE: [sky811117](/go/line?src=post) / IG: [@nov__817](https://instagram.com/nov__817)

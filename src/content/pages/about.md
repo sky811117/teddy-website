@@ -118,7 +118,7 @@ description: "台中房仲 × AI 工程 — 我做這件事的方式跟別人不
 
 ## 找我
 
-最快：**LINE [sky811117](https://line.me/ti/p/sky811117)**（30 秒到 30 分鐘會回）
+最快：**LINE [sky811117](/go/line?src=about-page)**（30 秒到 30 分鐘會回）
 
 其他都可以：
 

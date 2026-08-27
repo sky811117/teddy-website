@@ -63,7 +63,7 @@ timezone: Asia/Taipei
 
 **Step 1：委託我代銷**（這個工具只給委託客戶）
 
-LINE [sky811117](https://line.me/ti/p/sky811117) 約我看房 → 簽委託書 → 我接手後續全部。
+LINE [sky811117](/go/line?src=post) 約我看房 → 簽委託書 → 我接手後續全部。
 
 **Step 2：給我物件資料 24 小時內全平台上架**
 
@@ -129,7 +129,7 @@ LINE [sky811117](https://line.me/ti/p/sky811117) 約我看房 → 簽委託書 �
 
 這個服務**只給委託我代銷的客戶**，因為要動四個平台 + IG 短影音是大工程。
 
-想了解我代銷的細節 → LINE [sky811117](https://line.me/ti/p/sky811117) 約看屋面談。**免費，零壓力**。
+想了解我代銷的細節 → LINE [sky811117](/go/line?src=post) 約看屋面談。**免費，零壓力**。
 
 純好奇我幫別人代銷的成果 → 看 [我的代銷物件](/properties) 或 [作品集](/media)。
 

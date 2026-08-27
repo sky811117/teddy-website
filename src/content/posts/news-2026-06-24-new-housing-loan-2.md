@@ -101,7 +101,7 @@ timezone: "Asia/Taipei"
 ## 給你的下一步
 
 1. **先用工具自己算**：[buyer-fee2 試算](https://teddy-share-app.vercel.app/buyer-fee2/index.html) — 輸入總價，自動算月付與 30 年總利息
-2. **確認你的資格**：LINE 我 [sky811117](https://line.me/ti/p/sky811117)，我問你 3 題（年收、年齡、名下有沒有房）幫你判斷該趕現行版、還是等 2.0
+2. **確認你的資格**：LINE 我 [sky811117](/go/line?src=post)，我問你 3 題（年收、年齡、名下有沒有房）幫你判斷該趕現行版、還是等 2.0
 3. **看完整規劃**：[財政部官網](https://www.mof.gov.tw/) / [好房網 News 整理](https://news.housefun.com.tw/news/article/814584485760.html)
 
 ⏰ **時間提醒**：現行新青安 **7/31 到期**，新青安 2.0 擬 **8/1 接力**。如果你符合現行版、又怕被新版排富限齡卡掉，從今天算大概剩 **37 天**做完「確認資格 → 看屋下訂 → 申辦核貸」，要動就要快。
@@ -110,7 +110,7 @@ timezone: "Asia/Taipei"
 
 ## 我幫你做的事
 
-如果你正準備買房、想搞清楚自己該趕現行新青安還是等 2.0，可以 LINE 我 [sky811117](https://line.me/ti/p/sky811117)。給我背景條件，我會：
+如果你正準備買房、想搞清楚自己該趕現行新青安還是等 2.0，可以 LINE 我 [sky811117](/go/line?src=post)。給我背景條件，我會：
 
 - 幫你判斷你這個年收、年齡、家庭狀況，哪一版對你划算
 - 跑相關的實價登錄、政策條文、月付試算給你
@@ -120,7 +120,7 @@ timezone: "Asia/Taipei"
 
 **陳景泰 — 一品不動產（有巢氏房屋台中世界之心加盟店）**
 經紀人黃永隆 113 彰縣字第 324 號 / 營業員陳景泰 114 登字第 488296 號
-0920-118-756 / LINE [sky811117](https://line.me/ti/p/sky811117) / IG [@nov__817](https://www.instagram.com/nov__817)
+0920-118-756 / LINE [sky811117](/go/line?src=post) / IG [@nov__817](https://www.instagram.com/nov__817)
 
 ---
 

@@ -175,7 +175,7 @@ timezone: Asia/Taipei
 
 ## 我幫你做的事
 
-如果你正在兩間之間猶豫、或想評估目標物件的採光通風,可以 LINE 我 [sky811117](https://line.me/ti/p/sky811117)。給我背景條件,我會:
+如果你正在兩間之間猶豫、或想評估目標物件的採光通風,可以 LINE 我 [sky811117](/go/line?src=post)。給我背景條件,我會:
 
 - 幫你判斷這個情況實際怎麼處理(Google Map 3D 先掃周邊遮蔽 + 看屋當天對流測試)
 - 跑相關的實價登錄、政策條文、實務細節給你
@@ -187,4 +187,4 @@ timezone: Asia/Taipei
 
 **陳景泰 — 一品不動產(有巢氏房屋台中世界之心加盟店)**
 經紀人黃永隆 113 彰縣字第 324 號 / 營業員陳景泰 114 登字第 488296 號
-0920-118-756 / LINE [sky811117](https://line.me/ti/p/sky811117) / IG [@nov__817](https://www.instagram.com/nov__817)
+0920-118-756 / LINE [sky811117](/go/line?src=post) / IG [@nov__817](https://www.instagram.com/nov__817)

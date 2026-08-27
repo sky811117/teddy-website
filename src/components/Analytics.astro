@@ -9,13 +9,21 @@ const gtagId = PUBLIC_GA4_MEASUREMENT_ID;
     window.dataLayer = window.dataLayer || [];
     function gtag() { dataLayer.push(arguments); }
 
-    // Consent default：全部 denied，等使用者選擇（GA4 Consent Mode v2）
+    // Consent Mode v2。
+    // ⚠️ 2026-08-27 修：原本 default 一律 denied + send_page_view:false，等於
+    //   「沒按接受就什麼都不送」。實測後果是同期 GSC 有 151 次自然搜尋點擊、
+    //   GA4 只認到 1 個 Organic Search 工作階段 —— 量測整個失真、無法歸因。
+    // 現在的行為（也是 Consent Mode v2 原本的設計）：
+    //   未同意 → analytics_storage denied：**不寫任何 cookie、不建立跨頁識別**，
+    //            只送一筆不含識別碼的匿名瀏覽數（cookieless ping）。
+    //   已同意 → granted：才啟用 cookie，能分辨新訪客 / 回訪。
+    var _gaStored = null;
+    try { _gaStored = localStorage.getItem('ga_consent'); } catch (e) {}
     gtag('consent', 'default', {
-      analytics_storage: 'denied',
+      analytics_storage: _gaStored === 'granted' ? 'granted' : 'denied',
       ad_storage: 'denied',
       ad_user_data: 'denied',
       ad_personalization: 'denied',
-      wait_for_update: 500,
     });
 
     // 動態載 gtag.js（帶 measurement ID）
@@ -27,22 +35,25 @@ const gtagId = PUBLIC_GA4_MEASUREMENT_ID;
     })();
 
     gtag('js', new Date());
-    // send_page_view:false — 等 consent granted 後才手動送
-    gtag('config', gtagId, { send_page_view: false });
+    // page_view 立刻送。denied 狀態下是 cookieless ping（無識別碼），
+    // referrer 仍在 → 自然搜尋 / 社群 / 直接輸入才分得出來。
+    gtag('config', gtagId);
+
+    // 給其他 inline script 判斷「量測已就緒」用（不代表已取得 cookie 同意）。
+    // 必須是全域旗標而不是事件 —— Analytics 排在 head slot 之前，
+    // 事件會早於後面的 script 掛上 listener 而被錯過。
+    window.__gaMeasure = true;
 
     // ── 2. Consent helper（供 PostLayout dwell script 訂閱）────────────────
     function _gaApplyGranted() {
+      // 只是把 cookie 打開；page_view 一開始就送過了，不再補送以免重複計數。
       gtag('consent', 'update', { analytics_storage: 'granted' });
-      gtag('config', gtagId, { page_path: location.pathname });
-      // 通知文章頁等待 consent 的 listener
       window.dispatchEvent(new Event('ga:consented'));
     }
 
     // ── 3. Cookie consent banner ──────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
-      var stored = localStorage.getItem('ga_consent');
-      if (stored === 'granted') { _gaApplyGranted(); return; }
-      if (stored === 'denied') return;
+      if (_gaStored === 'granted' || _gaStored === 'denied') return;
 
       // 動態建立 banner（放在 body，避免放進 <head> 非法）
       // 單行貼底窄條（text-xs py-2）— 壓低高度、不遮擋表單互動元件
@@ -58,7 +69,7 @@ const gtagId = PUBLIC_GA4_MEASUREMENT_ID;
       ].join(';');
       banner.innerHTML =
         '<span style="color:var(--foreground,#111);">' +
-          '本站使用 Google Analytics 分析流量，協助改善內容品質。' +
+          '本站會記錄不含 cookie、無法識別個人的匿名瀏覽數。按「接受」才會啟用 cookie（用來分辨回訪），協助改善內容品質。' +
         '</span>' +
         '<div style="display:flex;gap:8px;">' +
           '<button id="ga-accept" style="height:32px;padding:0 12px;font-size:0.75rem;background:var(--accent);color:var(--accent-foreground,#fff);border:none;border-radius:6px;cursor:pointer;font-weight:500;">接受</button>' +
@@ -78,12 +89,16 @@ const gtagId = PUBLIC_GA4_MEASUREMENT_ID;
     });
 
     // ── 4. Event delegation ───────────────────────────────────────────────
-    function _gaOk() { return localStorage.getItem('ga_consent') === 'granted'; }
+    // 事件（點 LINE、點物件、Web Vitals）不含任何個人識別資料，
+    // 跟 page_view 一樣在 cookieless 狀態下也送；cookie 與否由 consent 決定。
+    function _gaOk() { return window.__gaMeasure === true; }
 
     // LINE 點擊：抓頁面所有 line.me 連結（FloatingCTA / Footer / 文章內 / 物件頁）
     document.addEventListener('click', function (e) {
       if (!_gaOk() || !window.gtag) return;
-      var a = e.target.closest('a[href*="line.me"]');
+      // 站上的 LINE 按鈕 2026-08-27 起走 /go/line 中繼（為了追得出來源），
+      // 但文章內文若有人直接寫 line.me 連結也要抓得到，兩種都比對。
+      var a = e.target.closest('a[href*="/go/line"], a[href*="line.me"]');
       if (a) gtag('event', 'click_line', {
         link_url: a.href,
         link_text: (a.textContent || '').trim().slice(0, 80),

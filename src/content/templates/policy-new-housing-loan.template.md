@@ -144,7 +144,7 @@ timezone: "Asia/Taipei"
 ## 給你的下一步
 
 1. **先用工具算你的新月付**：[買方費用試算](https://teddy-share-app.vercel.app/buyer-fee2/index.html)
-2. **想算具體某間房**：LINE 我 [sky811117](https://line.me/ti/p/sky811117)，給我總價和你的條件，我跑 5 個情境
+2. **想算具體某間房**：LINE 我 [sky811117](/go/line?src=post)，給我總價和你的條件，我跑 5 個情境
 3. **想看財政部原始公告**：[財政部新聞稿](https://www.mof.gov.tw/)
 4. **想了解承辦銀行細節**：8 家公股 — 兆豐 / 台銀 / 台企 / 第一 / 土銀 / 合庫 / 彰銀 / 華南
 

@@ -98,6 +98,6 @@ timezone: "Asia/Taipei"
 ## 給你的下一步
 
 1. **用試算工具自己算**：[買方費用試算](https://teddy-share-app.vercel.app/buyer-fee2/index.html)
-2. **想算具體某間房**：LINE 我 [sky811117](https://line.me/ti/p/sky811117)，給我總價我幫你跑 5 個情境
+2. **想算具體某間房**：LINE 我 [sky811117](/go/line?src=post)，給我總價我幫你跑 5 個情境
 
 ⏰ **下個月利率公布日**：通常是每月 20-25 日，央行月報出爐後 1-2 天。

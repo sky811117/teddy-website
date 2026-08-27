@@ -52,7 +52,7 @@ LINE 我，我用我跑過的案件經驗，陪你理清楚。
 
 - **看完整公告**：[財政部全球資訊網](https://www.mof.gov.tw/)
 - **自己試算**：[買方費用試算工具](https://teddy-share-app.vercel.app/buyer-fee2/index.html)（記得用銀行給你的真實利率，不要用網路上的數字）
-- **直接問我**：LINE [sky811117](https://line.me/ti/p/sky811117)
+- **直接問我**：LINE [sky811117](/go/line?src=post)
 
 ⏰ 政府補貼 **2026/7/31** 到期，新版本目前**無官方承諾**。
 
@@ -62,4 +62,4 @@ LINE 我，我用我跑過的案件經驗，陪你理清楚。
 
 陳景泰 / 有巢氏房屋 台中世界之心店
 經紀人 黃永隆 113彰縣字324 / 營業員 陳景泰 114登字488296
-☎️ 0920-118-756 / LINE: [sky811117](https://line.me/ti/p/sky811117) / IG: [@nov__817](https://instagram.com/nov__817)
+☎️ 0920-118-756 / LINE: [sky811117](/go/line?src=post) / IG: [@nov__817](https://instagram.com/nov__817)

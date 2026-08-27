@@ -212,7 +212,7 @@ timezone: Asia/Taipei
 1. **看完整 TOP 20 榜單**：→ [W14 TOP 20](/posts/2026-05-W14-top20-communities/)
 2. **看北屯行情**：→ [W16 北屯](/posts/2026-05-W16-beitun/)
 3. **看月付試算**：→ [W11 房貸利率](/posts/2026-05-W11-loan-rate-2306/)
-4. **想實際看梧棲物件**：LINE 我 [sky811117](https://line.me/ti/p/sky811117)，跟你約時間
+4. **想實際看梧棲物件**：LINE 我 [sky811117](/go/line?src=post)，跟你約時間
 
 ⚠️ 數據來源：合泰建經 2026 年 5 月（內政部實價登錄）。
 

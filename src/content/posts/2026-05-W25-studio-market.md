@@ -280,7 +280,7 @@ timezone: Asia/Taipei
 1. **看大樓 vs 透天**：→ [W24 大樓 vs 透天](/posts/2026-05-W24-apt-vs-townhouse/)
 2. **看預售 vs 成屋**：→ [W23 預售 vs 成屋](/posts/2026-05-W23-presale-vs-existing/)
 3. **看總價帶分布**：→ [W26 總價帶分布](/posts/2026-05-W26-price-bands/)
-4. **想看套房物件**：LINE 我 [sky811117](https://line.me/ti/p/sky811117)，告訴我預算 + 投資/自住
+4. **想看套房物件**：LINE 我 [sky811117](/go/line?src=post)，告訴我預算 + 投資/自住
 
 ⚠️ 數據來源：合泰建經 2026 年 5 月（永慶房產集團套房資料）。
 

@@ -258,7 +258,7 @@ timezone: Asia/Taipei
 1. **看其他區對比**：→ [W16 北屯](/posts/2026-05-W16-beitun/) / [W17 西屯](/posts/2026-05-W17-xitun/) / [W18 南屯](/posts/2026-05-W18-nantun/)
 2. **看月付試算**：→ [W11 房貸利率](/posts/2026-05-W11-loan-rate-2306/)
 3. **回主柱**：→ [W07 主柱](/posts/2026-05-taichung-market-pillar/)
-4. **如果你是創業者想看中區物件**：LINE 我 [sky811117](https://line.me/ti/p/sky811117)，我帶你跑一輪實況
+4. **如果你是創業者想看中區物件**：LINE 我 [sky811117](/go/line?src=post)，我帶你跑一輪實況
 
 ⚠️ 數據來源：合泰建經 2026 年 5 月（中區未列入分析）、台中市政府都市發展局、內政部實價登錄。
 

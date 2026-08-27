@@ -95,7 +95,7 @@ timezone: "Asia/Taipei"
 ## 給你的下一步
 
 1. **先用工具自己算**：[buyer-fee2 試算](https://teddy-share-app.vercel.app/buyer-fee2/index.html) — 自動算新青安 vs 一般房貸月付差距、30 年總利息對照，不用註冊
-2. **確認你的資格**：LINE 我 [sky811117](https://line.me/ti/p/sky811117)，給我背景條件，我問 3 題幫你判斷「搶 1.0 還是等 2.0」
+2. **確認你的資格**：LINE 我 [sky811117](/go/line?src=post)，給我背景條件，我問 3 題幫你判斷「搶 1.0 還是等 2.0」
 3. **看官方說明**：[財政部全球資訊網](https://www.mof.gov.tw/houseandland)
 
 ⏰ **時間提醒**：新青安 1.0 受理 **2026/7/31** 屆期，從今天算大約剩 **42 天**走完整套流程。2.0 細節以財政部 6 月底正式公告為準。
@@ -104,7 +104,7 @@ timezone: "Asia/Taipei"
 
 **陳景泰 — 一品不動產（有巢氏房屋台中世界之心加盟店）**
 經紀人黃永隆 113 彰縣字第 324 號 / 營業員陳景泰 114 登字第 488296 號
-0920-118-756 / LINE [sky811117](https://line.me/ti/p/sky811117) / IG [@nov__817](https://www.instagram.com/nov__817)
+0920-118-756 / LINE [sky811117](/go/line?src=post) / IG [@nov__817](https://www.instagram.com/nov__817)
 
 ---
 

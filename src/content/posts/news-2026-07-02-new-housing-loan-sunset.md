@@ -106,7 +106,7 @@ timezone: "Asia/Taipei"
 ## 給你的下一步
 
 1. **先用工具自己算**：[buyer-fee2 試算工具](https://teddy-share-app.vercel.app/buyer-fee2/index.html) — 輸入總價、自備款、年限，自動算新青安 vs 一般房貸月付差距與 30 年總利息，免註冊、免加 LINE。
-2. **確認你的資格**：LINE 我 [sky811117](https://line.me/ti/p/sky811117)，給我背景條件，我問 3 題幫你判斷「這個月該不該送件」。
+2. **確認你的資格**：LINE 我 [sky811117](/go/line?src=post)，給我背景條件，我問 3 題幫你判斷「這個月該不該送件」。
 3. **看官方最新說明**：[財政部全球資訊網](https://www.mof.gov.tw/) — 2.0 以行政院正式公告為準。
 
 ⏰ **時間提醒**：現行補貼 **2026/7/31** 申請截止。從今天算，只剩 20 幾天能把送件動作做完。時間趕，但符合資格又看好房的，還來得及。
@@ -115,7 +115,7 @@ timezone: "Asia/Taipei"
 
 **陳景泰 — 一品不動產（有巢氏房屋台中世界之心加盟店）**
 經紀人黃永隆 113 彰縣字第 324 號 / 營業員陳景泰 114 登字第 488296 號
-☎️ 0920-118-756 / LINE [sky811117](https://line.me/ti/p/sky811117) / IG [@nov__817](https://www.instagram.com/nov__817)
+☎️ 0920-118-756 / LINE [sky811117](/go/line?src=post) / IG [@nov__817](https://www.instagram.com/nov__817)
 
 ---
 
