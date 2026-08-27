@@ -191,11 +191,20 @@ function main() {
       }
       const { meta, body } = parsed;
       scanned++;
+
+      // 例外機制：frontmatter 寫 lintAllow: [fabrication|brand|negotiation|appraisal]
+      // 就跳過該條檢查。用途是「文章本身在討論這些東西、必須引用原句」，
+      // 例如檢討 AI 編造客戶故事的那篇，內文一定會引用假故事當證據。
+      // ⛔ 這是逃生門，不是繞過紅線的方法 —— 每加一次都要寫得出理由。
+      const lintAllow = Array.isArray(meta.lintAllow)
+        ? meta.lintAllow
+        : (meta.lintAllow ? [meta.lintAllow] : []);
+      const allow = k => lintAllow.includes(k);
       const isDraft = meta.draft === "true" || meta.draft === true;
 
       // 11. 編造的第一人稱客戶故事（景泰紅線 — 2026-06 清過 51 篇、2026-08 又復發 23 篇）
       //     draft 也要檢查：草稿之後會被發布，等到發布才擋就太晚了（只是降級成 warning）
-      {
+      if (!allow('fabrication')) {
         const whole = `${meta.title || ""}
 ${meta.description || ""}
 ${body || ""}`;
@@ -211,7 +220,7 @@ ${body || ""}`;
       }
 
       // 12. 同業仲介品牌（景泰紅線 — 不掛同業品牌）
-      {
+      if (!allow('brand')) {
         const whole = `${meta.title || ""}
 ${meta.description || ""}
 ${body || ""}`;
@@ -239,7 +248,7 @@ ${body || ""}`;
       }
 
       // 13. 教議價 / 殺價（景泰紅線）— 描述市場的「議價空間」不算，故不列入
-      {
+      if (!allow('negotiation')) {
         const whole = `${meta.title || ""}
 ${meta.description || ""}
 ${body || ""}`;
@@ -254,7 +263,7 @@ ${body || ""}`;
       }
 
       // 14. 「估價」是不動產估價師的法定專屬業務，對外文字改「行情評估」
-      {
+      if (!allow('appraisal')) {
         const whole = `${meta.title || ""}
 ${meta.description || ""}
 ${body || ""}`;
