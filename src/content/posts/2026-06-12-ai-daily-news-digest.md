@@ -90,3 +90,9 @@ timezone: Asia/Taipei
 如果你也想自己玩玩看、或卡在哪一步，**我的 IG [@nov_817taidi](https://www.instagram.com/nov_817taidi/) 有更多這類的內容**，歡迎來找我聊。
 
 — 泰迪（一個在台中、平常用 AI 在跑業務的房仲）
+
+---
+
+**陳景泰 — 一品不動產（有巢氏房屋台中世界之心加盟店）**
+經紀人黃永隆 113 彰縣字第 324 號 / 營業員陳景泰 114 登字第 488296 號
+0920-118-756 / LINE [sky811117](/go/line?src=post) / IG [@nov__817](https://www.instagram.com/nov__817)
