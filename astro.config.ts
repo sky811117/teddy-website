@@ -19,10 +19,13 @@ import config from "./astro-paper.config";
 import {
   buildLastmodMap,
   buildSectionLastmod,
+  buildThinTagSlugs,
 } from "./scripts/sitemap-lastmod.mjs";
 
 const lastmodMap = buildLastmodMap(config.site.url);
 const sectionLastmod = buildSectionLastmod(config.site.url);
+// 只掛 1 篇文章的 tag 聚合頁（實測 121 個）— 不送進 sitemap，見該函式的說明
+const thinTagSlugs = buildThinTagSlugs();
 
 export default defineConfig({
   site: config.site.url,
@@ -38,6 +41,10 @@ export default defineConfig({
         if (page.endsWith("/robots.txt/")) return false;
         if (page.endsWith("/rss.xml/")) return false;
         if (config.features?.showArchives === false && page.endsWith("/archives/")) return false;
+        // 薄 tag 頁（只掛 1 篇文章）不送進 sitemap。頁面本身照樣存在、照樣可爬，
+        // 只是不主動把爬取預算花在跟單篇文章幾乎重複的聚合頁上。
+        const tagMatch = page.match(/\/tags\/([^/]+)\/?$/);
+        if (tagMatch && thinTagSlugs.has(decodeURIComponent(tagMatch[1]))) return false;
         return true;
       },
       // 物件頁、文章頁優先級高、列表頁次之

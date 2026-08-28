@@ -181,3 +181,55 @@ export function buildSectionLastmod(siteUrl) {
   const all = [postsLatest, propsLatest].filter(Boolean).sort((a, b) => b - a)[0] || null;
   return { posts: postsLatest, properties: propsLatest, all };
 }
+
+/**
+ * 只掛 1 篇文章的 tag（薄內容聚合頁）— 用來把它們排除在 sitemap 之外。
+ *
+ * 為什麼要做：sitemap 959 筆裡有 360 筆是 tag 頁（38%），其中大多數只掛一篇文章，
+ * 內容跟那篇文章的列表項幾乎一樣。爬取預算浪費在這裡，真正該被收錄的物件頁與
+ * 文章反而排在後面。tag 頁本身保留（站內導覽還用得到），只是不主動送進 sitemap。
+ *
+ * 回傳 slug 化後的 tag 集合，跟 /tags/<slug>/ 的網址一致。
+ */
+export function buildThinTagSlugs() {
+  const counts = new Map();
+
+  for (const name of listFirstLevelMd(POSTS_DIR)) {
+    let text;
+    try {
+      text = readFileSync(new URL(name, POSTS_DIR), "utf-8");
+    } catch {
+      continue;
+    }
+    const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    if (!m) continue;
+    const fm = m[1];
+
+    // draft 不算 —— 沒公開的文章不該撐起一個聚合頁
+    if (/^draft:\s*true\s*$/m.test(fm)) continue;
+
+    // tags: 底下的 "- xxx" 清單，遇到下一個頂層 key 就停
+    const lines = fm.split(/\r?\n/);
+    let inTags = false;
+    for (const line of lines) {
+      if (/^tags:\s*$/.test(line)) {
+        inTags = true;
+        continue;
+      }
+      if (!inTags) continue;
+      const item = line.match(/^\s+-\s+(.+?)\s*$/);
+      if (item) {
+        const tag = item[1].replace(/^["']|["']$/g, "").trim();
+        if (tag) counts.set(tag, (counts.get(tag) || 0) + 1);
+        continue;
+      }
+      if (/^\S/.test(line)) break; // 下一個頂層 key
+    }
+  }
+
+  const thin = new Set();
+  for (const [tag, n] of counts) {
+    if (n <= 1) thin.add(slugifyStr(tag));
+  }
+  return thin;
+}

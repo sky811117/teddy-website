@@ -159,9 +159,71 @@ function smartTruncate(s: string, max: number): string {
   return head + "…";
 }
 
-const seoDescription = property.data.description
-  ? smartTruncate(property.data.description, 160)
-  : `${property.data.district} ${property.data.layout} ${property.data.area}坪，總價 ${formatPrice(property.data.totalPrice)}。台中房仲景泰實價整理。`;
+// ── SEO 標題與描述（2026-08-28 重寫）──────────────────────────────
+// 委託書的案名與賣點文字是寫給同事看的，不是寫給搜尋者的：
+//   - 標題帶「專任」「賠售」「稀有」等內部用語與誇大字眼（實測 359 筆裡約 50 筆）
+//   - 描述是賣點原文，63 筆含 ⭐❤ 之類 emoji，沒有任何結構化事實
+// 買方實際會搜的是「北屯 三房 1500萬」這種組合，所以把行政區、格局、坪數、
+// 總價補進標題，並把誇大字眼濾掉（也避免踩不實廣告與 lint-seo 的誇大詞檢查）。
+
+// 誇大／最高級用語 — 房仲廣告踩公平交易法第 21 條的風險字
+const EXAGGERATED_RE =
+  /賠售|稀有|絕美|絕版|最便宜|最低價|最低|最強|最優|超值|搶手|完美無缺|無敵|急售|割愛|甜甜價|破盤|俗俗賣|全市場最低|千載難逢/g;
+// 委託類型是內部資訊，不該出現在搜尋結果標題上
+const INTERNAL_RE = /^\s*[（(【]?\s*(專任|一般|獨家)\s*[）)】]?\s*[｜|、,，\-—\s]*/;
+
+const cleanTitle = (property.data.title || "")
+  .replace(INTERNAL_RE, "")
+  .replace(EXAGGERATED_RE, "")
+  .replace(/[｜|]\s*[｜|]/g, "｜")
+  .replace(/^[｜|、,，\-—\s]+|[｜|、,，\-—\s]+$/g, "")
+  .replace(/\s{2,}/g, " ")
+  .trim();
+
+// 結構化事實 — 這才是買方打進 Google 的字
+const areaNum = Number(property.data.area);
+// 案名裡若已經有行政區（例如「北區｜麗園道｜…」）就不要再重複一次
+const districtInTitle =
+  !!property.data.district && cleanTitle.includes(property.data.district);
+const seoFacts = [
+  districtInTitle ? "" : property.data.district,
+  property.data.layout,
+  Number.isFinite(areaNum) && areaNum > 0 ? `${Math.round(areaNum)}坪` : "",
+  property.data.totalPrice ? `${property.data.totalPrice}萬` : "",
+]
+  .filter(Boolean)
+  .join(" ");
+
+// 物件頁不掛站名後綴 —— 後綴要 19 個字，等於把買方搜的詞擠出 SERP 可見範圍。
+// 頁面本身與 JSON-LD 都有景泰的身分資訊，品牌訊號不靠標題後綴。
+const seoTitle = [cleanTitle, seoFacts].filter(Boolean).join("｜");
+
+// 描述：先給事實，再接乾淨的賣點（去 emoji、去誇大、壓掉連續空白）
+const cleanBlurb = (property.data.description || "")
+  .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{2190}-\u{21FF}\u{2700}-\u{27BF}]/gu, "")
+  .replace(EXAGGERATED_RE, "")
+  .replace(/\s{2,}/g, " ")
+  .replace(/^[\s，、。!！?？]+/, "")
+  .trim();
+
+const factSentence = [
+  // streetArea 本身通常已含行政區（「北屯區環中東路二段」），別再前綴一次
+  property.data.streetArea
+    ? (property.data.streetArea.startsWith(property.data.district)
+        ? property.data.streetArea
+        : `${property.data.district}・${property.data.streetArea}`)
+    : property.data.district,
+  property.data.layout,
+  Number.isFinite(areaNum) && areaNum > 0 ? `${areaNum}坪` : "",
+  property.data.totalPrice ? `總價 ${formatPrice(property.data.totalPrice)}` : "",
+]
+  .filter(Boolean)
+  .join("，");
+
+const seoDescription = smartTruncate(
+  [factSentence, cleanBlurb].filter(Boolean).join("。").replace(/。。+/g, "。"),
+  160
+);
 
 // ogImage: 用物件首圖（絕對路徑），fallback 到全站 default OG
 const coverImageSrc = property.data.coverImage
@@ -328,7 +390,7 @@ const breadcrumbSchema = {
 ---
 
 <Layout
-  title={`${property.data.title} | ${config.site.title}`}
+  title={seoTitle}
   description={seoDescription}
   ogImage={ogImagePath}
   canonicalURL={canonicalURL}
