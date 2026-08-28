@@ -1,5 +1,5 @@
 ---
-title: FAQ 27:公契 vs 私契差在哪?為什麼買房要簽兩份合約
+title: 公契和私契差在哪?買房簽兩份金額不同的合約,這樣合法嗎
 author: 陳景泰
 pubDatetime: 2026-06-17 11:00:00+08:00
 slug: faq-27-public-private-deed
@@ -10,7 +10,7 @@ tags:
 - faq
 - 買方教學
 - 簽約
-description: 買房簽兩份合約 — 一份公契、一份私契,金額不一樣,但都合法。這篇講清楚公契私契的差別、為什麼分兩份、法律地位怎麼分。
+description: 公契是報稅、辦過戶用的,金額按房屋評定現值加土地公告現值算;私契是雙方真實的買賣合約,寫的是實際成交價。兩份金額不同不違法,是制度設計。這篇講兩份各管什麼、爭議時以哪一份為準。
 timezone: Asia/Taipei
 faqSchema:
   '@context': https://schema.org

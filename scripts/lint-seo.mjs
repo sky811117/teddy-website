@@ -125,6 +125,24 @@ async function listMdFiles(dir) {
   return files;
 }
 
+/**
+ * 紅線檢查要掃的全部對外文字 = 標題 + 描述 + 正文 + frontmatter 的 faqSchema。
+ *
+ * 為什麼要含 faqSchema：2026-08-28 查核發現站上 30 篇寫了 faqSchema，裡面藏著
+ * 「議價建議」「最強保護」這類踩紅線的字，而原本的檢查只掃 title/description/body，
+ * 完全掃不到。那段 JSON 是對外文字（會被爬蟲讀），一樣要受規範。
+ *
+ * faqSchema 在 frontmatter 是巢狀 YAML，parseFrontmatter 只回純量，
+ * 所以這裡直接從原始 frontmatter 文字把那一段切出來當純文字掃。
+ */
+function scanText(meta, body, rawFrontmatter) {
+  // 直接把整份 frontmatter 一起掃。
+  // ⛔ 原本想用正規表示式只切出 faqSchema 那一段，但 /m 旗標下的 $ 會匹配到
+  //    「faqSchema:」那一行的行尾，結果只切到 10 個字、等於沒掃。
+  //    整份 frontmatter 都是對外文字（title/description 本來就在裡面），全掃最保險。
+  return [meta.title || "", meta.description || "", rawFrontmatter || "", body || ""].join("\n");
+}
+
 function main() {
   return listMdFiles(POSTS_DIR).then(async files => {
     const errors = [];
@@ -170,8 +188,12 @@ function main() {
     //   「買方會殺價」「結果不是買方殺價」= 描述市場行為
     const NEGOTIATION_COACHING = [
       "殺價要", "殺價可以", "可以殺到", "能殺到", "再殺", "多殺",
-      "壓價", "怎麼開口談", "談判心理", "留尾數", "哀兵",
+      "壓價", "再壓", "怎麼開口談", "談判心理", "留尾數", "哀兵",
       "給賣方台階", "給屋主台階", "對話骨架", "砍仲介費", "議價話術", "殺價話術",
+      // 2026-08-28 查核補：faq-23 有整張「建議價 / 下到 920」的出價指導表、
+      // faq-23 的 faqSchema 寫「提供議價建議」、faq-25 寫「要不要再壓」，
+      // 原本的清單一個都沒抓到。
+      "議價建議", "議價策略", "建議價", "可以下多少",
     ];
 
     const EXAGGERATED_TERMS = [
@@ -190,6 +212,7 @@ function main() {
         continue;
       }
       const { meta, body } = parsed;
+      const rawFm = (text.match(/^---\r?\n([\s\S]*?)\r?\n---/) || [])[1] || "";
       scanned++;
 
       // 例外機制：frontmatter 寫 lintAllow: [fabrication|brand|negotiation|appraisal]
@@ -205,9 +228,7 @@ function main() {
       // 11. 編造的第一人稱客戶故事（景泰紅線 — 2026-06 清過 51 篇、2026-08 又復發 23 篇）
       //     draft 也要檢查：草稿之後會被發布，等到發布才擋就太晚了（只是降級成 warning）
       if (!allow('fabrication')) {
-        const whole = `${meta.title || ""}
-${meta.description || ""}
-${body || ""}`;
+        const whole = scanText(meta, body, rawFm);
         const hits = [];
         for (const { re, label } of FABRICATION_PATTERNS) {
           const m = whole.match(re);
@@ -221,9 +242,7 @@ ${body || ""}`;
 
       // 12. 同業仲介品牌（景泰紅線 — 不掛同業品牌）
       if (!allow('brand')) {
-        const whole = `${meta.title || ""}
-${meta.description || ""}
-${body || ""}`;
+        const whole = scanText(meta, body, rawFm);
         for (const brand of COMPETITOR_BRANDS) {
           let idx = whole.indexOf(brand);
           while (idx !== -1) {
@@ -249,9 +268,7 @@ ${body || ""}`;
 
       // 13. 教議價 / 殺價（景泰紅線）— 描述市場的「議價空間」不算，故不列入
       if (!allow('negotiation')) {
-        const whole = `${meta.title || ""}
-${meta.description || ""}
-${body || ""}`;
+        const whole = scanText(meta, body, rawFm);
         for (const term of NEGOTIATION_COACHING) {
           if (whole.includes(term)) {
             (isDraft ? warnings : errors).push({
@@ -264,9 +281,7 @@ ${body || ""}`;
 
       // 14. 「估價」是不動產估價師的法定專屬業務，對外文字改「行情評估」
       if (!allow('appraisal')) {
-        const whole = `${meta.title || ""}
-${meta.description || ""}
-${body || ""}`;
+        const whole = scanText(meta, body, rawFm);
         // 排除別的主體的行為或機構全名：銀行估價 / 估價單 / 估價師
         const stripped = whole
           .replace(/銀行(?:派)?估價/g, "")
@@ -330,14 +345,29 @@ ${body || ""}`;
         }
       }
 
-      // 8. 廣告誇大形容詞 (title + description 都檢)
-      const combinedText = `${meta.title || ""} ${meta.description || ""}`;
-      for (const term of EXAGGERATED_TERMS) {
-        if (combinedText.includes(term)) {
-          warnings.push({
-            file: f,
-            msg: `廣告誇大: 含「${term}」(房仲業違反公平交易法 21 條風險)`,
-          });
+      // 8. 廣告誇大形容詞
+      // 2026-08-28 起連正文與 faqSchema 一起掃 —— 原本只掃 title + description，
+      // 所以 faq-11 的 faqSchema 寫「是最強保護」一直沒被抓到，而那段是會送給
+      // 爬蟲的結構化資料。
+      // ⚠️ 否定用法要放行：「不是哪一個平台最強」是在破除迷思，不是誇大宣稱。
+      {
+        const wide = scanText(meta, body, rawFm);
+        for (const term of EXAGGERATED_TERMS) {
+          let idx = wide.indexOf(term);
+          while (idx !== -1) {
+            const before = wide.slice(Math.max(0, idx - 6), idx);
+            const negated = /不是|並非|沒有|不見得|未必/.test(before);
+            if (!negated) {
+              warnings.push({
+                file: f,
+                msg: `廣告誇大: 含「${term}」(房仲業違反公平交易法 21 條風險)。前文：…${wide
+                  .slice(Math.max(0, idx - 18), idx + term.length + 12)
+                  .replace(/\s+/g, " ")}…`,
+              });
+              break;
+            }
+            idx = wide.indexOf(term, idx + 1);
+          }
         }
       }
 

@@ -1,5 +1,5 @@
 ---
-title: Week 03:買房前該查清楚的 7 件事 — 從實價登錄到交屋條件
+title: 買房前該查清楚的 7 件事 — 從實價登錄、謄本到交屋條件
 author: 陳景泰
 pubDatetime: 2026-05-21 22:30:00+08:00
 slug: week-03-negotiation-7

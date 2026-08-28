@@ -1,0 +1,13 @@
+# Cloudflare Pages _redirects — 301 轉址表
+#
+# 注意：本檔 build 後會由 scripts/postbuild-headers.mjs rename 為 dist/_redirects
+# (跟 _headers 同一個雷：Vite/Rollup 對 public/_redirects 無副檔名會試 parse JS 報錯，
+#  實測噴 "Expected ';', '}' or <eof>"，故用 .txt 規避)
+#
+# 格式：<來源路徑> <目標路徑> <狀態碼>
+#
+# 2026-08-28 履約保證三篇整併：policy-05 / faq-17 併入 faq-09
+# (GSC 近 3 個月：faq-09 曝光 463、policy-05 18、faq-17 7 — 三篇互搶同一群查詢字，
+#  合併成一篇完整文章，舊網址 301 把權重導到主頁)
+/posts/policy-05-escrow-system/ /posts/faq-09-escrow-guarantee/ 301
+/posts/faq-17-escrow-necessary/ /posts/faq-09-escrow-guarantee/ 301

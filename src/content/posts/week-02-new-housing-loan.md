@@ -1,5 +1,5 @@
 ---
-title: Week 02:新青安 vs 一般房貸 — 30 年總利息差多少(實算)
+title: 新青安 vs 一般房貸差多少?30 年總利息實算給你看
 author: 陳景泰
 pubDatetime: 2026-05-21 22:00:00+08:00
 slug: week-02-new-housing-loan

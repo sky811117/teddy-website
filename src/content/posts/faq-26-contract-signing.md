@@ -1,5 +1,5 @@
 ---
-title: FAQ 26:簽約當天要看什麼?8 大重點清單,漏一條虧一輩子
+title: 買房簽約當天要注意什麼?契約 8 大重點與最容易空白的欄位
 author: 陳景泰
 pubDatetime: 2026-06-16 11:00:00+08:00
 slug: faq-26-contract-signing
@@ -10,7 +10,7 @@ tags:
 - faq
 - 買方教學
 - 簽約
-description: 買賣 1000 萬的合約少一行字、模糊一個日期,將來糾紛起來扯 30-50 萬都很正常。這篇把簽約當天要檢查的 8 大重點寫下來。
+description: 簽約當天要逐條看完買賣標的、總價付款期程、點交日、漏水保固、違約罰則、履約保證、稅費分擔、特約條款這 8 項,任何一欄空白或日期模糊都要當場補。這篇講每一項該看什麼、哪幾格最常被留白。
 timezone: Asia/Taipei
 faqSchema:
   '@context': https://schema.org

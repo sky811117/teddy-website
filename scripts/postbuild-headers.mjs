@@ -3,7 +3,11 @@
  * Postbuild：
  * 1. dist/_headers.txt → dist/_headers (Cloudflare Pages 要求無副檔名)
  *    workaround：public/_headers 會被 Vite/Rollup 試 parse JS 報錯
- * 2. cross-platform copy dist/pagefind → public/pagefind (替代 cp -r)
+ * 2. dist/_redirects.txt → dist/_redirects (同上，301 轉址表)
+ *    2026-08-28 實測 public/_redirects 會噴
+ *    "Expected ';', '}' or <eof> ... you need plugins to import files that are
+ *     not JavaScript"，跟 _headers 是同一個雷，所以比照用 .txt 規避
+ * 3. cross-platform copy dist/pagefind → public/pagefind (替代 cp -r)
  *
  * Windows + Linux 都能跑。
  */
@@ -38,6 +42,7 @@ async function copyPagefind() {
 
 async function main() {
   await maybeRename("_headers.txt", "_headers");
+  await maybeRename("_redirects.txt", "_redirects");
   await copyPagefind();
 }
 

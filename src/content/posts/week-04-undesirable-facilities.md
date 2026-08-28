@@ -1,5 +1,5 @@
 ---
-title: Week 04:用 Google Map 揪出 10 大嫌惡設施 — 看屋前 30 分鐘做完
+title: 嫌惡設施怎麼查?用 Google Map 揪出 10 大地雷,看屋前 30 分鐘做完
 author: 陳景泰
 pubDatetime: 2026-05-21 23:00:00+08:00
 slug: week-04-undesirable-facilities
