@@ -6,6 +6,7 @@ slug: community-mantingfang
 featured: false
 draft: false
 ogImage: /og/community-mantingfang.jpg
+community: "滿庭芳花園"
 tags:
 - community-review
 - 西屯

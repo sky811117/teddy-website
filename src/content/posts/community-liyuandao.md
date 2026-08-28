@@ -6,6 +6,7 @@ slug: community-liyuandao
 featured: false
 draft: false
 ogImage: /og/community-liyuandao.jpg
+community: "麗園道"
 tags:
 - community-review
 - 北區

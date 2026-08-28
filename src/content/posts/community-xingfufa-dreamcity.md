@@ -6,6 +6,7 @@ slug: community-xingfufa-dreamcity
 featured: false
 draft: false
 ogImage: /og/community-xingfufa-dreamcity.jpg
+community: "興富發夢幻誠"
 tags:
 - community-review
 - 烏日區

@@ -25,6 +25,12 @@ const posts = defineCollection({
       hideEditPost: z.boolean().optional(),
       timezone: z.string().optional(),
       faqSchema: z.unknown().optional(),
+      // 社區文章用：填社區名，文末會自動列出該社區目前的在售物件。
+      // 值要跟 properties collection 的 community 欄位一字不差。
+      community: z.string().optional(),
+      // 內容紅線檢查的豁免清單（scripts/lint-seo.mjs 讀原始檔用）。
+      // Astro 這邊不使用，但要宣告，否則語意上像是誤植的欄位。
+      lintAllow: z.array(z.string()).optional(),
     }),
 });
 

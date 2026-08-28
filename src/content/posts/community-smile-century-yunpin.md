@@ -6,6 +6,7 @@ slug: community-smile-century-yunpin
 featured: false
 draft: false
 ogImage: /og/community-smile-century-yunpin.jpg
+community: "微笑世紀雲品特區"
 tags:
 - community-review
 - 北區

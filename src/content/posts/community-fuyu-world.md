@@ -6,6 +6,7 @@ slug: community-fuyu-world
 featured: false
 draft: false
 ogImage: /og/community-fuyu-world.jpg
+community: "富宇世界花園"
 tags:
 - community-review
 - 南屯區

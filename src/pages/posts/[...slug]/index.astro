@@ -16,6 +16,7 @@ import BackButton from "./_components/BackButton.astro";
 import BackToTopButton from "./_components/BackToTopButton.astro";
 import AdjacentPostNav from "./_components/AdjacentPostNav.astro";
 import RelatedPosts from "@/components/RelatedPosts.astro";
+import CommunityListings from "@/components/CommunityListings.astro";
 import Cusdis from "@/components/Cusdis.astro";
 import config from "@/config";
 
@@ -262,6 +263,9 @@ const timeRequired = `PT${timeRequiredMin}M`;
     <BackToTopButton />
 
     <ShareLinks />
+
+    {/* 社區文章 → 該社區目前的在售物件。沒設 community 或該社區沒在售就整段不出現 */}
+    <CommunityListings community={post.data.community} />
 
     <hr class="my-8 border-dashed" />
 

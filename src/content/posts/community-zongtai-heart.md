@@ -6,6 +6,7 @@ slug: community-zongtai-heart
 featured: false
 draft: false
 ogImage: /og/community-zongtai-heart.jpg
+community: "總太心之所向"
 tags:
 - community-review
 - 北屯區

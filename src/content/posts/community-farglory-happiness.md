@@ -6,6 +6,7 @@ slug: community-farglory-happiness
 featured: false
 draft: false
 ogImage: /og/community-farglory-happiness.jpg
+community: "遠雄幸福成"
 tags:
 - community-review
 - 梧棲區

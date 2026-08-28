@@ -6,6 +6,7 @@ slug: community-16-shijie-zhixin
 ogImage: /og/community-16-shijie-zhixin.jpg
 featured: true
 draft: false
+community: "佳茂世界之心"
 tags:
   - community-review
   - 社區深度

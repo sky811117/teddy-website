@@ -6,6 +6,7 @@ slug: community-huangpu-manor
 featured: false
 draft: false
 ogImage: /og/community-huangpu-manor.jpg
+community: "皇普莊園"
 tags:
 - community-review
 - 北區

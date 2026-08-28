@@ -6,6 +6,7 @@ slug: community-hollywood-mansion
 featured: false
 draft: false
 ogImage: /og/community-hollywood-mansion.jpg
+community: "好萊塢大廈"
 tags:
 - community-review
 - 西區

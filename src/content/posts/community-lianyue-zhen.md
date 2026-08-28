@@ -6,6 +6,7 @@ slug: community-lianyue-zhen
 featured: false
 draft: false
 ogImage: /og/community-lianyue-zhen.jpg
+community: "聯悅臻"
 tags:
 - community-review
 - 梧棲區

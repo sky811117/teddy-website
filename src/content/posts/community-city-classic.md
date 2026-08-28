@@ -6,6 +6,7 @@ slug: community-city-classic
 featured: false
 draft: false
 ogImage: /og/community-city-classic.jpg
+community: "城市經典"
 tags:
 - community-review
 - 西區

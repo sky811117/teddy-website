@@ -6,6 +6,7 @@ slug: community-shengxing-fengjing
 featured: false
 draft: false
 ogImage: /og/community-shengxing-fengjing.jpg
+community: "勝興豐境"
 tags:
 - community-review
 - 梧棲區

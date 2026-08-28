@@ -6,6 +6,7 @@ slug: community-zongtai-2020
 featured: false
 draft: false
 ogImage: /og/community-zongtai-2020.jpg
+community: "總太2020"
 tags:
 - community-review
 - 北屯區

@@ -1,0 +1,114 @@
+---
+/**
+ * 社區文章底下的「這個社區目前的在售物件」區塊。
+ *
+ * 為什麼要有：2026-08-26 查 GSC 時發現，麗園道那篇在 Google 拿得到點擊，
+ * 但站上明明有一戶麗園道的在售物件，文章卻完全沒有連過去 —— 讀者看完只能
+ * 自己去找。全站社區文章都有同樣的問題。
+ *
+ * 對 SEO 的作用：社區文章是目前唯一有排名的頁面類型，物件明細頁則是 0 曝光。
+ * 從有排名的頁連到沒排名的頁，是把爬蟲與讀者一起帶過去最直接的做法。
+ *
+ * 配對方式：文章 frontmatter 的 community 對 properties 的 community，
+ * 要求一字不差（不做模糊比對，避免「陸府」「龍寶」這種同名社區配錯）。
+ */
+import { getCollection } from "astro:content";
+
+interface Props {
+  community?: string;
+}
+
+const { community } = Astro.props;
+
+const all = community ? await getCollection("properties") : [];
+const listings = all
+  .filter(p => p.data.status === "active" && p.data.community === community)
+  .sort((a, b) => {
+    // 有封面照的排前面，其次照總價由低到高
+    const cover = (a.data.coverImage ? 0 : 1) - (b.data.coverImage ? 0 : 1);
+    if (cover !== 0) return cover;
+    return (a.data.totalPrice ?? 0) - (b.data.totalPrice ?? 0);
+  })
+  .slice(0, 6);
+
+function coverOf(p: (typeof listings)[number]): string | null {
+  const c = p.data.coverImage;
+  if (!c) return p.data.photos?.[0] ?? null;
+  return typeof c === "string" ? c : c.src;
+}
+
+function fmtPrice(n?: number): string {
+  if (!n) return "";
+  return n.toLocaleString("zh-TW") + " 萬";
+}
+---
+
+{
+  listings.length > 0 && (
+    <section class="mt-10" aria-labelledby="community-listings-heading">
+      <hr class="my-8 border-dashed" />
+      <h2 id="community-listings-heading" class="text-xl font-semibold">
+        {community}目前的在售物件（{listings.length} 筆）
+      </h2>
+      <p class="text-muted-foreground mt-1 text-sm">
+        以下是我手上這個社區還在銷售的物件。點進去看完整資料與照片。
+      </p>
+
+      <ul class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {listings.map(p => {
+          const cover = coverOf(p);
+          return (
+            <li class="border-border overflow-hidden rounded-lg border">
+              <a
+                href={`/properties/${p.id}/`}
+                class="block no-underline"
+                data-track="property"
+                data-property-id={p.id}
+                data-property-title={p.data.title}
+                data-property-price={String(p.data.totalPrice ?? "")}
+                data-property-district={p.data.district}
+              >
+                {cover && (
+                  <div class="bg-muted aspect-[4/3] w-full overflow-hidden">
+                    <img
+                      src={cover}
+                      alt={`${community} ${p.data.layout ?? ""} 物件照片`}
+                      loading="lazy"
+                      decoding="async"
+                      class="h-full w-full object-cover"
+                    />
+                  </div>
+                )}
+                <div class="p-3">
+                  <div class="text-foreground text-sm font-medium">
+                    {p.data.title}
+                  </div>
+                  <div class="text-muted-foreground mt-1 text-xs">
+                    {[
+                      p.data.district,
+                      p.data.layout,
+                      p.data.area ? `${Math.round(Number(p.data.area))} 坪` : "",
+                    ]
+                      .filter(Boolean)
+                      .join("・")}
+                  </div>
+                  <div class="text-accent mt-2 text-base font-semibold">
+                    {fmtPrice(p.data.totalPrice)}
+                  </div>
+                </div>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+
+      <p class="text-muted-foreground mt-4 text-xs">
+        物件狀態每天同步，成交或下架會自動移除。想看這個社區其他條件的物件，
+        <a href="/properties/" class="text-accent underline">
+          看全部在售物件
+        </a>
+        。
+      </p>
+    </section>
+  )
+}

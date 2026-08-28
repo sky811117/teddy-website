@@ -6,6 +6,7 @@ slug: community-meili-dian
 featured: false
 draft: false
 ogImage: /og/community-meili-dian.jpg
+community: "美麗殿"
 tags:
 - community-review
 - 北區

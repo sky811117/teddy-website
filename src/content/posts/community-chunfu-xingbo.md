@@ -6,6 +6,7 @@ slug: community-chunfu-xingbo
 featured: false
 draft: false
 ogImage: /og/community-chunfu-xingbo.jpg
+community: "春福興波"
 tags:
 - community-review
 - 太平區
