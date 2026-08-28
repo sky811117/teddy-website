@@ -33,10 +33,13 @@ const buyerTools = [
   },
   {
     icon: "🗺️",
-    name: "嫌惡設施地圖檢查",
-    desc: "輸入地址，地圖自動圈出半徑 500 公尺內的宮廟、加油站、高壓電塔、墓地、垃圾場等鄰避設施（OSM 公開圖資，輔助參考）。",
-    url: "https://teddy-share-app.vercel.app/nuisance-map/index.html",
-    external: true,
+    name: "嫌惡設施查詢地圖",
+    desc: "輸入台中地址或直接在地圖上點，查周邊 300／500／1000 公尺內的加油站、宮廟、公墓、殯葬設施、變電所、高壓電塔、基地台、市場、矯正機關。台中共 4,028 筆（OSM 公開圖資，輔助參考）。",
+    // 2026-08-28 從 teddy-share-app.vercel.app 搬到站內：
+    // 工具掛在別的網域，對官網 SEO 一點幫助都沒有 —— 而「嫌惡設施查詢」
+    // 這群字有 157 次曝光、Google 第一頁全是地圖工具站。
+    url: "/tools/undesirable-facilities/",
+    external: false,
     status: "上線",
   },
   {

@@ -1,0 +1,418 @@
+---
+/**
+ * 嫌惡設施查詢工具 — /tools/undesirable-facilities/
+ *
+ * 為什麼做這頁：GSC 實測「嫌惡設施查詢」113 曝、「嫌惡設施地圖」31 曝、
+ * 「不動產嫌惡設施查詢」7 曝、「300公尺內嫌惡設施查詢」6 曝，合計 157 次搜尋。
+ * 但 Google 第一頁全是**地圖工具站** —— 搜這個字的人要的是可以點的東西，
+ * 不是一篇教學文。站上原本只有 week-04 那篇文章（排 8.1），差的就是工具本身。
+ *
+ * 資料：建置前用 scripts/fetch-undesirable-facilities.mjs 從 OpenStreetMap 抓一次，
+ * 存成 public/data/undesirable-facilities.json（4,028 筆、gzip 後約 38KB）。
+ * ⚠️ 不讓訪客直接打 Overpass —— 公開節點有速率限制，會被擋也會很慢。
+ */
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import Main from "@/components/Main.astro";
+import config from "@/config";
+import { safeJsonLd } from "@/utils/safeJsonLd";
+import facilities from "../../../public/data/undesirable-facilities.json";
+
+const canonicalURL = new URL("/tools/undesirable-facilities", Astro.site).href;
+
+type Cat = { label: string; why: string };
+const cats = facilities.categories as Record<string, Cat>;
+const whyOf = new Map<string, string>();
+for (const c of Object.values(cats)) whyOf.set(c.label, c.why);
+
+// 先在這裡把「類別 → 筆數 + 為什麼在意」組好。
+// ⚠️ 不要在下面的 JSX 裡寫 TS 泛型（Record<string, ...>）——
+//    Astro 的模板解析器會把 < 當成標籤開頭，build 直接失敗。
+const catRows = Object.entries(facilities.byCategory as Record<string, number>)
+  .sort((a, b) => b[1] - a[1])
+  .map(([label, n]) => ({ label, n, why: whyOf.get(label) ?? "" }));
+
+const appSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "台中嫌惡設施查詢地圖",
+  applicationCategory: "UtilitiesApplication",
+  operatingSystem: "Web",
+  url: canonicalURL,
+  description:
+    "輸入台中的地址或在地圖上點一下，查出周邊 300／500／1000 公尺內的加油站、宮廟、公墓、變電所、高壓電塔、基地台、市場等嫌惡設施。",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "TWD" },
+  provider: { "@id": `${config.site.url}#realestateagent` },
+};
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "首頁", item: config.site.url },
+    { "@type": "ListItem", position: 2, name: "客戶工具", item: `${config.site.url}tools/` },
+    { "@type": "ListItem", position: 3, name: "嫌惡設施查詢", item: canonicalURL },
+  ],
+};
+---
+
+<Layout
+  title={`嫌惡設施查詢地圖｜輸入台中地址，查周邊 300 公尺內有什麼 | ${config.site.title}`}
+  description="輸入台中的地址或在地圖上點一下，就查得到周邊 300／500／1000 公尺內的加油站、宮廟、公墓、殯葬設施、變電所、高壓電塔、基地台、市場與矯正機關。資料 4,028 筆，來自 OpenStreetMap。看屋前先查一次，不用到現場才發現。"
+  canonicalURL={canonicalURL}
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(appSchema)} />
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(breadcrumbSchema)} />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+  </Fragment>
+  <Header />
+
+  <Main
+    pageTitle="嫌惡設施查詢地圖（台中）"
+    pageDesc="輸入地址或在地圖上點一下，查周邊有什麼。看屋前先查一次，不用等到現場才發現隔壁是變電所。"
+  >
+    <section class="mt-6">
+      <div class="border-border rounded-lg border p-4">
+        <label class="text-sm font-medium" for="addr">查地址</label>
+        <div class="mt-2 flex flex-wrap gap-2">
+          <input
+            id="addr"
+            type="text"
+            inputmode="text"
+            placeholder="例：台中市北屯區文心路四段"
+            class="border-border bg-background min-w-0 flex-1 rounded-md border px-3 py-2 text-base"
+          />
+          <button
+            id="go"
+            type="button"
+            class="bg-accent text-accent-foreground rounded-md px-4 py-2 text-base font-medium"
+          >查詢</button>
+          <button
+            id="here"
+            type="button"
+            class="border-border rounded-md border px-4 py-2 text-base"
+          >用我的位置</button>
+        </div>
+
+        <div class="mt-3 flex flex-wrap items-center gap-3 text-sm">
+          <span class="text-muted-foreground">範圍</span>
+          <label class="flex items-center gap-1"><input type="radio" name="r" value="300" checked /> 300 公尺</label>
+          <label class="flex items-center gap-1"><input type="radio" name="r" value="500" /> 500 公尺</label>
+          <label class="flex items-center gap-1"><input type="radio" name="r" value="1000" /> 1 公里</label>
+        </div>
+
+        <p id="hint" class="text-muted-foreground mt-3 text-sm">
+          也可以直接在下面地圖上點一下你要查的位置。
+        </p>
+      </div>
+
+      <div
+        id="map"
+        class="border-border mt-4 h-[420px] w-full rounded-lg border"
+        role="application"
+        aria-label="嫌惡設施地圖"
+      ></div>
+
+      <div id="result" class="mt-4"></div>
+    </section>
+
+    <hr class="my-8 border-dashed" />
+
+    <section>
+      <h2 class="text-xl font-semibold">這份資料涵蓋什麼</h2>
+      <p class="text-muted-foreground mt-2 text-sm">
+        台中市共 {facilities.count.toLocaleString("zh-TW")} 筆，資料日期 {facilities.fetchedAt}。
+      </p>
+      <div class="mt-4 overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-border border-b">
+              <th class="py-2 text-left">類別</th>
+              <th class="py-2 text-right">筆數</th>
+              <th class="py-2 text-left ps-4">為什麼買方在意</th>
+            </tr>
+          </thead>
+          <tbody>
+            {catRows.map(row => (
+              <tr class="border-border/50 border-b">
+                <td class="py-2">{row.label}</td>
+                <td class="py-2 text-right tabular-nums">{row.n.toLocaleString("zh-TW")}</td>
+                <td class="text-muted-foreground py-2 ps-4">{row.why}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="border-border mt-6 rounded-lg border p-4 text-sm">
+        <p class="font-medium">⚠️ 這個工具的限制，先講清楚</p>
+        <ul class="mt-2 space-y-1.5 ps-5" style="list-style:disc;">
+          <li>
+            資料來自 <strong>OpenStreetMap</strong> 的社群標註，<strong>不保證完整</strong>。
+            沒查到不等於沒有 —— 特別是小型宮廟、剛蓋好的設施、以及 OSM 上沒人標的地點。
+          </li>
+          <li>
+            <strong>凶宅、輻射屋、海砂屋不在這份資料裡</strong>，那些要走各自的查詢管道，
+            寫在 <a class="text-accent underline" href="/posts/faq-03-haunted-house-check/">凶宅怎麼查</a> 與
+            <a class="text-accent underline" href="/posts/viewing-04-sea-sand-radiation/">海砂屋年代怎麼判別</a>。
+          </li>
+          <li>
+            <strong>「嫌惡」是主觀的。</strong> 有人不能接受宮廟，有人覺得熱鬧有人氣；
+            有人怕變電所，有人只在意通勤。這個工具負責告訴你「附近有什麼」，
+            <strong>值不值得在意由你自己決定</strong>。
+          </li>
+          <li>
+            真正要下決定前，請以現場實地走一趟、以及賣方提供的
+            <strong>不動產說明書</strong>記載為準。
+          </li>
+        </ul>
+      </div>
+
+      <p class="text-muted-foreground mt-4 text-xs">
+        地圖與設施資料 ©
+        <a class="underline" href="https://www.openstreetmap.org/copyright" rel="noopener" target="_blank">
+          OpenStreetMap</a> 貢獻者，採 ODbL 授權。地址搜尋使用 OSM Nominatim 服務。
+      </p>
+
+      <p class="mt-6 text-sm">
+        想知道每一種設施實際會影響什麼、看屋當天怎麼自己再查一次，
+        看這篇：<a class="text-accent underline" href="/posts/week-04-undesirable-facilities/">嫌惡設施怎麼查？用 Google Map 揪出 10 大地雷</a>
+      </p>
+
+      <hr class="my-8 border-dashed" />
+
+      <p class="text-muted-foreground text-sm">
+        <strong>陳景泰 — 一品不動產（有巢氏房屋台中世界之心加盟店）</strong><br />
+        經紀人黃永隆 113 彰縣字第 324 號 / 營業員陳景泰 114 登字第 488296 號<br />
+        0920-118-756 / LINE <a class="text-accent underline" href="/go/line?src=tools">sky811117</a>
+      </p>
+    </section>
+  </Main>
+
+  <Footer />
+
+  <script
+    is:inline
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+
+  <script is:inline>
+    (function () {
+      var DATA_URL = "/data/undesirable-facilities.json";
+      var TAICHUNG = [24.1477, 120.6736];
+
+      var map, marker, circle, layer, data = null;
+      var mapEl = document.getElementById("map");
+      var resultEl = document.getElementById("result");
+      var hintEl = document.getElementById("hint");
+
+      function radius() {
+        var el = document.querySelector('input[name="r"]:checked');
+        return el ? Number(el.value) : 300;
+      }
+
+      // 兩點距離（公尺）。Haversine，這個尺度下誤差可以忽略。
+      function distance(aLat, aLon, bLat, bLon) {
+        var R = 6371000;
+        var p = Math.PI / 180;
+        var dLat = (bLat - aLat) * p;
+        var dLon = (bLon - aLon) * p;
+        var s =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(aLat * p) * Math.cos(bLat * p) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return 2 * R * Math.asin(Math.sqrt(s));
+      }
+
+      function setStatus(msg) {
+        if (hintEl) hintEl.textContent = msg;
+      }
+
+      function initMap() {
+        map = L.map(mapEl).setView(TAICHUNG, 13);
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> 貢獻者',
+        }).addTo(map);
+        layer = L.layerGroup().addTo(map);
+        map.on("click", function (e) {
+          check(e.latlng.lat, e.latlng.lng);
+        });
+      }
+
+      function loadData() {
+        if (data) return Promise.resolve(data);
+        return fetch(DATA_URL)
+          .then(function (r) {
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            return r.json();
+          })
+          .then(function (j) {
+            data = j;
+            return j;
+          });
+      }
+
+      function render(lat, lon, found, r) {
+        layer.clearLayers();
+        if (marker) map.removeLayer(marker);
+        if (circle) map.removeLayer(circle);
+
+        marker = L.marker([lat, lon]).addTo(map);
+        circle = L.circle([lat, lon], {
+          radius: r,
+          color: "#6B8E23",
+          weight: 2,
+          fillOpacity: 0.06,
+        }).addTo(map);
+        map.fitBounds(circle.getBounds(), { padding: [20, 20] });
+
+        found.forEach(function (f) {
+          L.circleMarker([f.y, f.x], {
+            radius: 6,
+            color: "#c1440e",
+            weight: 2,
+            fillOpacity: 0.7,
+          })
+            .bindPopup(
+              "<strong>" + f.n + "</strong><br>" + f.label + "・約 " + Math.round(f.d) + " 公尺"
+            )
+            .addTo(layer);
+        });
+
+        if (!found.length) {
+          resultEl.innerHTML =
+            '<div class="border-border rounded-lg border p-4"><p class="font-medium">' +
+            r +
+            " 公尺內，這份資料裡沒有查到嫌惡設施。</p>" +
+            '<p class="text-muted-foreground mt-2 text-sm">⚠️ 沒查到不等於沒有 —— ' +
+            "OSM 是社群標註，小型宮廟或新設施可能還沒被標上去。現場還是要自己走一趟。</p></div>";
+          return;
+        }
+
+        var groups = {};
+        found.forEach(function (f) {
+          (groups[f.label] = groups[f.label] || []).push(f);
+        });
+
+        var html =
+          '<div class="border-border rounded-lg border p-4">' +
+          '<p class="font-medium">' + r + " 公尺內找到 " + found.length + " 個</p>" +
+          '<p class="text-muted-foreground mt-1 text-sm">由近到遠。點地圖上的紅點看名稱。</p>' +
+          '<div class="mt-3 overflow-x-auto"><table class="w-full text-sm"><thead><tr class="border-border border-b">' +
+          '<th class="py-2 text-left">距離</th><th class="py-2 text-left ps-3">類別</th>' +
+          '<th class="py-2 text-left ps-3">名稱</th></tr></thead><tbody>';
+
+        found.forEach(function (f) {
+          html +=
+            '<tr class="border-border/50 border-b"><td class="py-2 tabular-nums">' +
+            Math.round(f.d) +
+            ' m</td><td class="py-2 ps-3">' +
+            f.label +
+            '</td><td class="text-muted-foreground py-2 ps-3">' +
+            f.n +
+            "</td></tr>";
+        });
+        html += "</tbody></table></div>";
+
+        html += '<p class="text-muted-foreground mt-3 text-sm">';
+        html += Object.keys(groups)
+          .map(function (k) {
+            return k + " " + groups[k].length;
+          })
+          .join("・");
+        html += "</p></div>";
+
+        resultEl.innerHTML = html;
+      }
+
+      function check(lat, lon) {
+        setStatus("查詢中…");
+        loadData()
+          .then(function (j) {
+            var r = radius();
+            var cats = j.categories || {};
+            var found = [];
+            for (var i = 0; i < j.items.length; i++) {
+              var it = j.items[i];
+              // 先用經緯度做粗篩，省掉大部分的三角函數計算
+              if (Math.abs(it.y - lat) > 0.012 || Math.abs(it.x - lon) > 0.013) continue;
+              var d = distance(lat, lon, it.y, it.x);
+              if (d <= r) {
+                found.push({
+                  y: it.y, x: it.x, n: it.n, d: d,
+                  label: (cats[it.k] && cats[it.k].label) || it.k,
+                });
+              }
+            }
+            found.sort(function (a, b) { return a.d - b.d; });
+            render(lat, lon, found, r);
+            setStatus("點地圖上任一位置可以重新查。");
+          })
+          .catch(function (e) {
+            setStatus("資料載入失敗，請重新整理再試一次。");
+            console.error(e);
+          });
+      }
+
+      function geocode() {
+        var q = (document.getElementById("addr").value || "").trim();
+        if (!q) { setStatus("請先輸入地址。"); return; }
+        setStatus("搜尋地址中…");
+        var url =
+          "https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=tw&q=" +
+          encodeURIComponent(q.indexOf("台中") === -1 && q.indexOf("臺中") === -1 ? "台中市 " + q : q);
+        fetch(url, { headers: { Accept: "application/json" } })
+          .then(function (r) { return r.json(); })
+          .then(function (arr) {
+            if (!arr || !arr.length) {
+              setStatus("查不到這個地址，可以改成路名（例：北屯區文心路四段），或直接在地圖上點。");
+              return;
+            }
+            check(Number(arr[0].lat), Number(arr[0].lon));
+          })
+          .catch(function () {
+            setStatus("地址搜尋暫時無法使用，請直接在地圖上點你要查的位置。");
+          });
+      }
+
+      function boot() {
+        if (typeof L === "undefined" || !mapEl) {
+          setStatus("地圖元件載入失敗，請重新整理再試一次。");
+          return;
+        }
+        initMap();
+        document.getElementById("go").addEventListener("click", geocode);
+        document.getElementById("addr").addEventListener("keydown", function (e) {
+          if (e.key === "Enter") { e.preventDefault(); geocode(); }
+        });
+        document.getElementById("here").addEventListener("click", function () {
+          if (!navigator.geolocation) { setStatus("這個瀏覽器不支援定位。"); return; }
+          setStatus("定位中…");
+          navigator.geolocation.getCurrentPosition(
+            function (pos) { check(pos.coords.latitude, pos.coords.longitude); },
+            function () { setStatus("拿不到位置（可能是沒給權限）。請輸入地址或在地圖上點。"); }
+          );
+        });
+        Array.prototype.forEach.call(document.querySelectorAll('input[name="r"]'), function (el) {
+          el.addEventListener("change", function () {
+            if (marker) { var ll = marker.getLatLng(); check(ll.lat, ll.lng); }
+          });
+        });
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", boot);
+      } else {
+        boot();
+      }
+    })();
+  </script>
+</Layout>
