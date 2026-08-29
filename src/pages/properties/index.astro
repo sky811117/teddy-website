@@ -313,7 +313,7 @@ const itemListSchema = {
   itemListElement: sortedProperties.slice(0, 30).map((p, i) => ({
     "@type": "ListItem",
     position: i + 1,
-    url: new URL(`/properties/${p.id}`, Astro.site).href,
+    url: new URL(`/properties/${p.id}/`, Astro.site).href,
     name: p.data.title,
   })),
 };
@@ -772,7 +772,7 @@ const breadcrumbSchema = {
               data-quick={[newListing ? "new" : "", dropPct ? "drop" : ""].filter(Boolean).join(" ")}
             >
               <a
-                href={`/properties/${property.id}`}
+                href={`/properties/${property.id}/`}
                 class="block no-underline"
                 data-track="property"
                 data-property-id={property.id}

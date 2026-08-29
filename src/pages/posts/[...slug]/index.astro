@@ -73,6 +73,7 @@ const {
   timezone,
   tags,
   hideEditPost,
+  faqSchema,
 } = post.data;
 
 const { Content, headings } = await render(post);
@@ -128,6 +129,7 @@ const timeRequired = `PT${timeRequiredMin}M`;
   tags={tags}
   wordCount={wordCount}
   timeRequired={timeRequired}
+  faqSchema={faqSchema}
 >
   <Header />
 

@@ -46,10 +46,13 @@ const canonicalHref = (() => {
 })();
 
 const socialImageURL = new URL(ogImage, Astro.site ?? Astro.url);
+// ⚠️ getRelativeLocaleUrl 會依 trailingSlash 設定在後面補一個斜線，
+//    產出 /rss.xml/ —— 那個網址實測回 404（正確的是 /rss.xml）。
+//    等於全站每一頁都在宣告一個壞掉的 RSS 位置，所以這裡把尾斜線去掉。
 const rssHref = getRelativeLocaleUrl(
   Astro.currentLocale ?? config.site.lang,
   "rss.xml"
-);
+).replace(/\/+$/, "");
 ---
 
 <!doctype html>
