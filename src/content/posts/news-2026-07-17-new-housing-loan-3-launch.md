@@ -2,6 +2,7 @@
 title: "青安3.0 拍板！8/1 接棒新青安 — 多了 3 道門檻，你還借得到嗎？"
 author: 陳景泰
 pubDatetime: 2026-07-17 08:00:00+08:00
+canonicalURL: "https://teddy-website-blog.pages.dev/posts/new-housing-loan-3-2026/"
 slug: news-2026-07-17-new-housing-loan-3-launch
 ogImage: /og/news-2026-07-17-new-housing-loan-3-launch.jpg
 featured: true
@@ -15,6 +16,8 @@ tags:
 description: "行政院 7/16 拍板青安3.0，8/1 接棒現行新青安（2.0）。額度婚育家庭最高加碼到 1500 萬，但新增年齡、排富、房價 3 道門檻。我用 800 萬 30 年算給你看差多少，並幫你判斷新舊制哪個對你划算。"
 timezone: "Asia/Taipei"
 ---
+
+> 🔗 **最新版請看 →** [青安 3.0 完整指南（2026-09 更新）](/posts/new-housing-loan-3-2026)。本文為當時的新聞紀錄，7/31 舊制已落日、青安 3.0 已於 8/1 上路，時效內容（趕 7/31 送件等）已不適用。
 
 > 📢 **2026/7/16** 行政院拍板「青安3.0」，8/1 接棒現行新青安（青安2.0）。額度加碼、補貼從「硬著陸」改成「3+3 緩降」，但同時新增**年齡、排富、房價 3 道門檻**。
 

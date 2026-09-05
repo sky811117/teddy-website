@@ -11,3 +11,7 @@
 #  合併成一篇完整文章，舊網址 301 把權重導到主頁)
 /posts/policy-05-escrow-system/ /posts/faq-09-escrow-guarantee/ 301
 /posts/faq-17-escrow-necessary/ /posts/faq-09-escrow-guarantee/ 301
+
+# 2026-09-06 第二戶成數文章事實錯誤（寫成「砍到 4 成」，實際是 5 成放寬到 6 成）：
+# 原文改 draft: true 下架，301 到同主題正確版
+/posts/2026-06-W02-rate-second-home-down-payment-40/ /posts/2026-08-W02-rate-second-home-60-percent-reality/ 301

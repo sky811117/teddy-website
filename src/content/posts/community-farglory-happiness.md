@@ -1,5 +1,5 @@
 ---
-title: 遠雄幸福成（梧棲）值不值得買？台中港特區新成屋的完整評估
+title: 遠雄幸福成評價・缺點：梧棲台中港特區新成屋值不值得買
 author: 陳景泰
 pubDatetime: 2026-04-30 14:00:00+08:00
 slug: community-farglory-happiness
@@ -121,7 +121,7 @@ timezone: Asia/Taipei
 
 歡迎私訊我聊聊。我可以陪你看實際樓層、聊行情、討論你的需求適不適合這個社區。
 
-- LINE：sky811117
+- [LINE 私訊景泰 sky811117](/go/line?src=post-body-community)
 - IG：@nov__817
 - 一品不動產（有巢氏房屋台中世界之心店）
 - 經紀人：黃永隆(113彰縣字324)

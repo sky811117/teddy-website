@@ -62,8 +62,6 @@ timezone: "Asia/Taipei"
 
 ---
 
-<!-- TEDDY-EXPERIENCE-START -->
-<!-- TEDDY-EXPERIENCE-END -->
 
 ## 如果你正在考慮這個社區
 

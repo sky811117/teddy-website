@@ -171,6 +171,9 @@ timezone: "Asia/Taipei"
 
 ## 延伸閱讀
 
+- [青安 3.0 完整指南（2026-09 更新，主文）](/posts/new-housing-loan-3-2026) — 三道門檻、額度分級、3+3 退場、額度不夠怎麼辦
+- [青安 3.0 上路：額度加碼到 1,500 萬，卻多了一條「80 條款」](/posts/2026-08-W02-news-qingan-3-launch-80-rule)
+- [青安 3.0 補貼「3 加 3」退場試算](/posts/2026-08-W03-rate-qingan3-subsidy-3plus3-calculation)
 - [青安3.0 拍板！8/1 接棒新青安 — 多了 3 道門檻，你還借得到嗎？](/posts/news-2026-07-17-new-housing-loan-3-launch)
 - [新青安 vs 一般房貸 — 30 年總利息差多少（實算）](/posts/week-02-new-housing-loan)
 - [台中買房 30 題 FAQ](/faq) — 仲介費、自備款、凶宅查詢、過戶稅務一次答

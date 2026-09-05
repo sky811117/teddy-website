@@ -129,8 +129,6 @@ BC11標只是藍線**其中一標**，而且是高架段的首件路線工程。
 
 ---
 
-<!-- TEDDY-EXPERIENCE-START -->
-<!-- TEDDY-EXPERIENCE-END -->
 
 ## 給你的下一步
 

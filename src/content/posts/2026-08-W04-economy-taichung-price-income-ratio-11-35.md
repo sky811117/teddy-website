@@ -131,8 +131,6 @@ timezone: "Asia/Taipei"
 
 ---
 
-<!-- TEDDY-EXPERIENCE-START -->
-<!-- TEDDY-EXPERIENCE-END -->
 
 ## 給你的下一步
 

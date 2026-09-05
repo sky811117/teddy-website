@@ -5,7 +5,7 @@ pubDatetime: 2026-06-08T09:00:00+08:00
 slug: 2026-06-W02-rate-second-home-down-payment-40
 ogImage: /og/2026-06-W02-rate-second-home-down-payment-40.jpg
 featured: false
-draft: false
+draft: true
 tags:
   - monthly-market
   - 房貸

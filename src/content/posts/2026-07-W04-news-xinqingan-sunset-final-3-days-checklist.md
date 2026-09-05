@@ -2,6 +2,7 @@
 title: 新青安 1.0 只剩 3 天：門票是 7/31 前「完成撥款」，不是送件——最後檢查清單
 author: 陳景泰
 pubDatetime: 2026-07-28T09:00:00+08:00
+canonicalURL: "https://teddy-website-blog.pages.dev/posts/new-housing-loan-3-2026/"
 slug: 2026-07-W04-news-xinqingan-sunset-final-3-days-checklist
 ogImage: /og/2026-07-W04-news-xinqingan-sunset-final-3-days-checklist.jpg
 featured: true
@@ -15,6 +16,8 @@ tags:
 description: "新青安1.0在2026/7/31落日，適用條件是「完成撥款」不是送件。給你最後3天檢查清單＋115年7月報對2.0三大限制的評析：排富200萬、總價三級上限、50歲年齡限制，先看你會不會被新制排除。"
 timezone: "Asia/Taipei"
 ---
+
+> 🔗 **最新版請看 →** [青安 3.0 完整指南（2026-09 更新）](/posts/new-housing-loan-3-2026)。本文為當時的新聞紀錄，7/31 舊制已落日、青安 3.0 已於 8/1 上路，時效內容（趕 7/31 送件等）已不適用。
 
 你以為 7/31 前把新青安申請送出去就趕得上？條件其實是「完成撥款」——你的案子現在走到哪一關了？
 

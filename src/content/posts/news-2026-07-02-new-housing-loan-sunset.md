@@ -2,6 +2,7 @@
 title: "新青安倒數本月落日！7/31 前沒申請，30 年多付 73 萬 — 2.0 換版還會變嚴"
 author: 陳景泰
 pubDatetime: 2026-07-02 09:00:00+08:00
+canonicalURL: "https://teddy-website-blog.pages.dev/posts/new-housing-loan-3-2026/"
 slug: news-2026-07-02-new-housing-loan-sunset
 ogImage: /og/news-2026-07-02-new-housing-loan-sunset.jpg
 featured: true
@@ -15,6 +16,8 @@ tags:
 description: "現行新青安補貼 2026/7/31 到期，申請只剩不到一個月。同樣借 800 萬、30 年，補貼消失後總利息差約 73 萬。而接棒的新青安 2.0 傳出要排富、限總價、限年齡、補貼分兩段退場 — 條件恐怕比現在嚴。這篇幫你算清楚、判斷該不該趕在月底前動手。"
 timezone: "Asia/Taipei"
 ---
+
+> 🔗 **最新版請看 →** [青安 3.0 完整指南（2026-09 更新）](/posts/new-housing-loan-3-2026)。本文為當時的新聞紀錄，7/31 舊制已落日、青安 3.0 已於 8/1 上路，時效內容（趕 7/31 送件等）已不適用。
 
 > 📢 **2026/7/31** 現行新青安的政府利率補貼正式落日，申請只剩不到一個月；接棒的「新青安 2.0」財政部還在研議，方向卻是**排富、限總價、限年齡**，條件恐怕比現在嚴。
 
