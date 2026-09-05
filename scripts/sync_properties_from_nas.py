@@ -1,8 +1,22 @@
 #!/usr/bin/env python3
-"""
+r"""
+⛔ 這是 2026-05 的規劃稿（stub），從來沒實作、也不在任何排程裡。不要改這裡。
+
+真正每晚 20:11 產生 src/content/properties/*.md 與 public/properties 照片的管線在 repo 外面：
+  - 排程入口：C:\Users\a0920\房仲工作站\450_上架巡檢\nightly_run.py（step 4–7：產 md → 標 stale → git commit/push）
+  - 同事物件：C:\Users\a0920\.claude\skills\properties-sync\scripts\apply_utrust.py  gen_md()（delta-only）
+  - 自家物件：C:\Users\a0920\.claude\skills\properties-sync\scripts\nas_generate.py
+  - 既有 md 重產：同目錄 finalize_mds.py（importlib 載入 apply_utrust 的 gen_md）
+要改文案清洗規則（門牌 / 同事電話 / 誇大詞 / 漲跌預測）去改 apply_utrust.py，不要手改 md；
+repo 這邊的閘門是 scripts/audit-properties.mjs（deploy 前有 ERROR 就擋）。
+詳見 scripts/README.md。
+
+--------------------------------------------------------------------------
+（以下為 2026-05 原規劃稿，保留當歷史紀錄）
+
 NAS → properties content collection ETL（草稿，等真實資料再啟用）
 
-從 NAS 個人格 `\\Hbnas\h&b共用\23.景泰\01.在售物件\` 讀物件資料夾，
+從 NAS 個人格（景泰個人格 23.景泰 / 01.在售物件）讀物件資料夾，
 產生 Astro content collection 的 markdown 檔到 `src/content/properties/`。
 
 ⚠️ 還沒實作 — 等以下準備好再動工：
@@ -59,10 +73,10 @@ import sys
 
 
 def main():
-    print("[stub] NAS → properties ETL 還沒實作。")
-    print("[stub] 路徑：\\\\Hbnas\\h&b共用\\23.景泰\\01.在售物件\\")
-    print("[stub] 輸出：src/content/properties/*.md")
-    print("[stub] 等景泰盤點完 NAS + 決定法規 audit 規則再開工。")
+    print("[stub] 這支從沒實作，也不在排程裡。")
+    print("[stub] 真正的產生器：~/.claude/skills/properties-sync/scripts/apply_utrust.py（同事）/ nas_generate.py（自家）")
+    print("[stub] 排程入口：房仲工作站/450_上架巡檢/nightly_run.py；閘門：scripts/audit-properties.mjs")
+    print("[stub] 詳見 scripts/README.md")
     return 0
 
 

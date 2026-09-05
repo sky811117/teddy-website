@@ -11,30 +11,81 @@
  *
  * 配對方式：文章 frontmatter 的 community 對 properties 的 community，
  * 要求一字不差（不做模糊比對，避免「陸府」「龍寶」這種同名社區配錯）。
+ *
+ * 2026-09-06：
+ * - 標題改用 cleanPropertyTitle（同事案名帶「賠售／稀有／專任」不該原樣上頁）
+ * - 首圖略過檔名看得出是平面圖的（首圖吸引買家、禁平面圖）
+ * - 該社區沒在售時不再整段消失：可傳 district（或 tags，會自動找「X區」）
+ *   fallback 成「同區這幾戶可以先看」，讀者不會讀完只剩 LINE 按鈕
  */
 import { getCollection } from "astro:content";
+import { areas } from "@/data/areas";
+import { cleanPropertyTitle } from "@/utils/cleanPropertyTitle";
+import { TAICHUNG_DISTRICTS } from "@/utils/isTaichung";
 
 interface Props {
   community?: string;
+  /** 文章所屬行政區（例「北區」）；沒給時從 tags 找「X區」或「X」 */
+  district?: string;
+  tags?: string[];
 }
 
-const { community } = Astro.props;
+const { community, district: districtProp, tags = [] } = Astro.props;
 
-const all = community ? await getCollection("properties") : [];
-const listings = all
-  .filter(p => p.data.status === "active" && p.data.community === community)
-  .sort((a, b) => {
-    // 有封面照的排前面，其次照總價由低到高
-    const cover = (a.data.coverImage ? 0 : 1) - (b.data.coverImage ? 0 : 1);
-    if (cover !== 0) return cover;
-    return (a.data.totalPrice ?? 0) - (b.data.totalPrice ?? 0);
-  })
-  .slice(0, 6);
+const communityName = community?.trim() || "";
 
+// 行政區：prop 優先，其次 tags 裡的「北屯區」或「北屯」（正規化成「北屯區」）
+const TAICHUNG_SET = new Set<string>(TAICHUNG_DISTRICTS);
+function resolveDistrict(): string {
+  if (districtProp && TAICHUNG_SET.has(districtProp)) return districtProp;
+  for (const tag of tags) {
+    if (TAICHUNG_SET.has(tag)) return tag;
+    const withSuffix = `${tag}區`;
+    if (TAICHUNG_SET.has(withSuffix)) return withSuffix;
+  }
+  return "";
+}
+const district = resolveDistrict();
+
+const all =
+  communityName || district ? await getCollection("properties") : [];
+const active = all.filter(p => p.data.status === "active");
+
+const byRank = (a: (typeof active)[number], b: (typeof active)[number]) => {
+  // 有封面照的排前面，其次照總價由低到高
+  const cover = (a.data.coverImage ? 0 : 1) - (b.data.coverImage ? 0 : 1);
+  if (cover !== 0) return cover;
+  return (a.data.totalPrice ?? 0) - (b.data.totalPrice ?? 0);
+};
+
+const communityListings = communityName
+  ? active.filter(p => p.data.community?.trim() === communityName).sort(byRank)
+  : [];
+
+// fallback：該社區沒在售 → 同區在售 3 筆
+const districtListings =
+  communityListings.length === 0 && district
+    ? active.filter(p => p.data.district === district).sort(byRank).slice(0, 3)
+    : [];
+
+const isFallback = communityListings.length === 0 && districtListings.length > 0;
+const listings = isFallback ? districtListings : communityListings.slice(0, 6);
+const districtTotal = district
+  ? active.filter(p => p.data.district === district).length
+  : 0;
+const area = district ? areas.find(a => a.districtMatch.includes(district)) : undefined;
+
+// 平面圖／格局圖當首圖點擊誘因最低（記憶鐵則「首圖吸引買家、禁平面圖」）；
+// 檔名看得出來的先略過，退而取下一張。檔名看不出的（photo_01.jpg 就是平面圖）這裡擋不了，
+// 要靠 properties-sync 選 coverImage 時排除。
+const PLAN_RE = /平面|格局|floor[-_]?plan|layout|plan\d*\./i;
 function coverOf(p: (typeof listings)[number]): string | null {
   const c = p.data.coverImage;
-  if (!c) return p.data.photos?.[0] ?? null;
-  return typeof c === "string" ? c : c.src;
+  const primary = c ? (typeof c === "string" ? c : c.src) : null;
+  const candidates = [primary, ...(p.data.photos ?? [])].filter(
+    (s): s is string => !!s
+  );
+  return candidates.find(s => !PLAN_RE.test(s)) ?? candidates[0] ?? null;
 }
 
 function fmtPrice(n?: number): string {
@@ -48,15 +99,25 @@ function fmtPrice(n?: number): string {
     <section class="mt-10" aria-labelledby="community-listings-heading">
       <hr class="my-8 border-dashed" />
       <h2 id="community-listings-heading" class="text-xl font-semibold">
-        {community}目前的在售物件（{listings.length} 筆）
+        {isFallback
+          ? `${communityName || "這個社區"}目前沒有在售，${district}這幾戶可以先看`
+          : `${communityName}目前的在售物件（${listings.length} 筆）`}
       </h2>
       <p class="text-muted-foreground mt-1 text-sm">
-        以下是我手上這個社區還在銷售的物件。點進去看完整資料與照片。
+        {isFallback
+          ? `站上 ${district}目前有 ${districtTotal} 筆在售（含同事聯賣），先列 ${listings.length} 筆。`
+          : "站上這個社區還在銷售的物件（含同事聯賣）。點進去看完整資料與照片。"}
       </p>
 
       <ul class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {listings.map(p => {
           const cover = coverOf(p);
+          const title = cleanPropertyTitle(
+            p.data.title,
+            [p.data.community?.trim() || p.data.district, p.data.layout]
+              .filter(Boolean)
+              .join(" ")
+          );
           return (
             <li class="border-border overflow-hidden rounded-lg border">
               <a
@@ -64,25 +125,29 @@ function fmtPrice(n?: number): string {
                 class="block no-underline"
                 data-track="property"
                 data-property-id={p.id}
-                data-property-title={p.data.title}
+                data-property-title={title}
                 data-property-price={String(p.data.totalPrice ?? "")}
                 data-property-district={p.data.district}
               >
-                {cover && (
+                {cover ? (
                   <div class="bg-muted aspect-[4/3] w-full overflow-hidden">
                     <img
                       src={cover}
-                      alt={`${community} ${p.data.layout ?? ""} 物件照片`}
+                      alt={`${p.data.community?.trim() || p.data.district} ${p.data.layout ?? ""} 物件照片`}
+                      width="800"
+                      height="600"
                       loading="lazy"
                       decoding="async"
                       class="h-full w-full object-cover"
                     />
                   </div>
+                ) : (
+                  <div class="bg-muted text-muted-foreground flex aspect-[4/3] w-full items-center justify-center text-sm">
+                    📷 照片整理中
+                  </div>
                 )}
                 <div class="p-3">
-                  <div class="text-foreground text-sm font-medium">
-                    {p.data.title}
-                  </div>
+                  <div class="text-foreground text-sm font-medium">{title}</div>
                   <div class="text-muted-foreground mt-1 text-xs">
                     {[
                       p.data.district,
@@ -103,11 +168,35 @@ function fmtPrice(n?: number): string {
       </ul>
 
       <p class="text-muted-foreground mt-4 text-xs">
-        物件狀態每天同步，成交或下架會自動移除。想看這個社區其他條件的物件，
-        <a href="/properties/" class="text-accent underline">
-          看全部在售物件
-        </a>
-        。
+        物件狀態每天同步，成交或下架會自動移除。
+        {isFallback && district ? (
+          <>
+            看
+            <a
+              href={`/properties/?district=${encodeURIComponent(district)}`}
+              class="text-accent underline"
+            >
+              全部 {district}在售
+            </a>
+            {area && (
+              <>
+                ，或先讀
+                <a href={`/areas/${area.slug}/`} class="text-accent underline">
+                  {area.shortName}買房指南
+                </a>
+              </>
+            )}
+            。
+          </>
+        ) : (
+          <>
+            想看這個社區其他條件的物件，
+            <a href="/properties/" class="text-accent underline">
+              看全部在售物件
+            </a>
+            。
+          </>
+        )}
       </p>
     </section>
   )

@@ -10,9 +10,9 @@ const canonicalURL = new URL("/buy", Astro.site).href;
 const siteOrigin = new URL("/", Astro.site).href;
 const realEstateAgentId = `${siteOrigin}#realestateagent`;
 
-const metaTitle = `台中買房 — 找房流程 + 議價協助 | ${config.site.title}`;
+const metaTitle = `台中買房 — 找房流程 + 出價陪同 | ${config.site.title}`;
 const metaDesc =
-  "台中買房太多眉角：行情、議價、貸款、屋況。景泰用工具幫你過濾物件、抓合理區間、跑銀行比較，從客需訪談到交屋全程陪同。LINE：sky811117。";
+  "台中買房太多眉角：行情、出價、貸款、屋況。景泰用工具幫你過濾物件、抓同社區實價登錄合理區間、跑銀行比較，從客需訪談到交屋全程陪同。LINE：sky811117。";
 
 // 買房 4 步流程
 const steps = [
@@ -28,7 +28,7 @@ const steps = [
   },
   {
     emoji: "🤝",
-    title: "3. 陪看 + 議價",
+    title: "3. 陪看 + 出價評估",
     desc: "現場一起看屋況、查嫌惡設施。出價前先抓同社區近 12 個月實價登錄的合理區間，用數據談、不是用喊的。",
   },
   {
@@ -41,15 +41,15 @@ const steps = [
 // 語料複用 services.astro 的 buy.whatYouGet
 const whatYouGet = [
   "客需訪談 → 過濾 30+ 物件 → 推薦 5-8 間",
-  "陪看 + 議價（用真實案例 + 數據）",
-  "貸款規劃（新青安 vs 一般、跑 2-3 家銀行比較）",
+  "陪看 + 出價評估（用同社區近 12 個月實價登錄）",
+  "貸款規劃（青安 3.0 vs 一般、跑 2-3 家銀行比較）",
   "簽約 / 過戶 / 點交全程陪同",
   "履約保證 + 漏水保固條款協助",
 ];
 
 // 語料複用 services.astro 的 buy.targetUsers
 const targetUsers = [
-  "首購族（新青安資格 + 自備款不夠）",
+  "首購族（青安 3.0 資格 + 自備款不夠）",
   "換屋族（要先賣 + 同步找新家）",
   "投資族（看 NPV 不看感覺）",
   "外地買家（給預算我幫你過濾）",
@@ -58,25 +58,25 @@ const targetUsers = [
 // 工具導引 4 卡
 const toolLinks = [
   {
-    href: "/tools",
+    href: "/tools/",
     emoji: "🧮",
     title: "買方試算工具",
-    desc: "一次性費用、月付金、新青安 vs 一般房貸怎麼選",
+    desc: "一次性費用、月付金、青安 3.0 vs 一般房貸怎麼選",
   },
   {
-    href: "/faq",
+    href: "/faq/",
     emoji: "❓",
-    title: "常見問題 30 題",
-    desc: "仲介費、新青安、凶宅、過戶 — 短答一次看完",
+    title: "常見問題",
+    desc: "仲介費、青安 3.0、凶宅、過戶 — 短答一次看完",
   },
   {
-    href: "/areas",
+    href: "/areas/",
     emoji: "📍",
     title: "台中各區買房指南",
     desc: "北屯 / 七期 / 南屯 / 太平 7 區行情與生活機能",
   },
   {
-    href: "/properties",
+    href: "/properties/",
     emoji: "🏠",
     title: "在售物件",
     desc: "北屯 / 西屯 / 南屯 / 七期 — 直接看有什麼在賣",
@@ -88,7 +88,7 @@ const serviceSchema = {
   "@type": "Service",
   "@id": `${canonicalURL}#service`,
   name: "台中買房協助",
-  description: "從客需訪談、過濾推薦、陪看議價到簽約交屋的全程買房協助。",
+  description: "從客需訪談、過濾推薦、陪看出價評估到簽約交屋的全程買房協助。",
   serviceType: "買房諮詢",
   provider: { "@id": realEstateAgentId },
   areaServed: {
@@ -179,7 +179,7 @@ const breadcrumbSchema = {
           🏠 我要找房（LINE 諮詢）
         </a>
         <a
-          href="/contact?type=buy"
+          href="/contact/"
           class="border-accent text-accent rounded-lg border-2 px-6 py-3 text-[17px] font-medium no-underline hover:bg-accent hover:text-accent-foreground"
         >
           📝 填表單給條件

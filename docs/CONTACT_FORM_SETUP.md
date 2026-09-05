@@ -1,60 +1,63 @@
-# 客戶詢價表單 — 設定指南
+# 客戶詢價表單 — 設定指南（2026-09-06 版）
 
-ContactForm.astro 上線後、要做兩件設定才會真的開始收信 + 推 TG。
-都做完約 10 分鐘。
+站上兩張表單：
+- **ContactForm**（買方 / 一般詢價）：`/contact/`、`/buy/`、`/services/`、`/faq/`、每一個 `/properties/{id}/`
+- **SellForm**（賣房行情評估）：`/sell/`、`/contact/?type=sell`
 
----
+兩張表單的主管道都是 **Cloudflare Pages Functions → Telegram**。
+Formspree（Email）是 ContactForm 的**選配副管道**。
 
-## 1. Formspree（Email 通知）— 必做
-
-### 步驟
-
-1. 到 <https://formspree.io/register> 註冊（free tier 50 submissions/月 夠用）
-2. 用 `a0920118756@gmail.com` 註冊
-3. 進 dashboard → 「+ New Form」
-   - Form name：`teddy-website 詢價`
-   - Send to：`a0920118756@gmail.com`
-4. 拿到 form ID（網址形如 `https://formspree.io/f/mzzznnnn`、ID 就是 `mzzznnnn`）
-5. 在 Cloudflare Pages → teddy-website-blog → Settings → Environment variables 新增：
-
-   | 名稱 | 值 | Environment |
-   |---|---|---|
-   | `PUBLIC_FORMSPREE_FORM_ID` | `mzzznnnn`（你的 ID） | Production + Preview |
-
-6. 觸發重新 deploy：`git commit --allow-empty -m "chore: trigger redeploy with formspree id" && git push`
-7. 在 Formspree dashboard 認證 email（會寄一封確認信）
-
-### 測試
-
-- 開 <https://teddy-website-blog.pages.dev/contact>
-- 填表單送出 → 應跳到 `/thank-you`
-- 等 30 秒 → gmail 應該收到信
-- Formspree dashboard 也會看到 submission
+> ⚠️ 2026-09-05 查證：從 2026-05-23 上線到現在，兩個後端變數都**沒設過**，
+> 而且 Formspree 的 ID 放錯地方（放 Cloudflare 後台、但 build 跑在 GitHub Actions 吃不到）。
+> 表單 3.5 個月來沒送出過任何一筆。下面是修正後的正確流程。
 
 ---
 
-## 2. Cloudflare Pages Functions（TG 即時推播）— 選做
+## 0. 先搞懂：哪個變數要放哪裡
 
-不設也能用、Formspree 一樣會寄 email。
-但設了之後手機 TG 會即時響、比 email 快很多 — 對「比同行快」很重要。
+這個站的架構是 **GitHub Actions 跑 `astro build` → wrangler 把 dist 直接上傳 Cloudflare Pages**。
+Cloudflare Pages 完全不參與 build，所以：
+
+| 變數 | 誰用 | 要放哪裡 | 放錯的下場 |
+|---|---|---|---|
+| `PUBLIC_FORMSPREE_FORM_ID` | `astro build` 烘進前端 HTML | **GitHub repo → Settings → Secrets and variables → Actions → Variables** | 放 Cloudflare 後台 = 前端永遠拿到空字串 |
+| `CONTACT_TG_TOKEN` | Pages Functions（執行期） | **Cloudflare Pages → teddy-website-blog → Settings → Environment variables** | 放 GitHub = Functions 讀不到 |
+| `CONTACT_TG_CHAT` | 同上 | 同上 | 同上 |
+| `NOTION_API_KEY` / `NOTION_SELL_DB_ID` | Pages Functions（賣方表單寫 Notion） | Cloudflare Pages 環境變數 | 沒設只是不寫 Notion，TG 照推 |
+
+`PUBLIC_*` 開頭的是 `astro:env/client` 變數，**build 時就決定值**，之後改 Cloudflare 後台沒用，要重新跑 GitHub Actions。
+
+---
+
+## 1. Telegram 推播（必做 — 這是主管道）
 
 ### 步驟
 
-1. 拿 TG bot token（建議用「泰迪的小聲音」bot — 已有 token 在 `teddy-voice-bot/.env` 的 `TELEGRAM_BOT_TOKEN`）
-2. 拿你的 chat_id（個人 chat — 已有 `TELEGRAM_CHAT_ID=305627471` 之類的、看 `.env`）
-3. 在 Cloudflare Pages → teddy-website-blog → Settings → Environment variables 新增：
+1. 拿 TG bot token（建議用「泰迪的小聲音」bot — token 在 `teddy-voice-bot/.env` 的 `TELEGRAM_BOT_TOKEN`）
+2. 拿 chat_id（同一個 `.env` 的 `TELEGRAM_CHAT_ID`）
+3. Cloudflare Dashboard → Workers & Pages → **teddy-website-blog** → Settings → Environment variables → Add：
 
    | 名稱 | 值 | Environment |
    |---|---|---|
-   | `CONTACT_TG_TOKEN` | bot token | Production + Preview |
+   | `CONTACT_TG_TOKEN` | bot token（勾 Encrypt） | Production + Preview |
    | `CONTACT_TG_CHAT` | chat_id | Production + Preview |
 
-4. 觸發重新 deploy（同上）
+4. **Functions 的環境變數要重新部署才生效**：GitHub → Actions → 「Deploy to Cloudflare Pages」→ Run workflow（或推一個空 commit）。
 
-### 測試
+### 驗證（不用真的填表單）
 
-- 填表單送出
-- 手機 TG 應該秒收到 `🔔 新詢價｜找房 ...` 訊息
+```bash
+curl -s -X POST https://teddy-website-blog.pages.dev/api/contact-tg \
+  -H "Origin: https://teddy-website-blog.pages.dev" \
+  -H "Content-Type: application/json" \
+  -d '{"姓名":"設定測試","手機":"0912345678","我想":"一般諮詢","_loaded_at":"1"}'
+```
+
+- 回 `{"ok":true}` + 手機 TG 響 → 設好了
+- 回 `{"ok":false,"degraded":true,"error":"backend_not_configured"}` → 變數沒設或沒重新部署
+- 回 `{"ok":false,"error":"Forbidden origin"}` → 少帶 `Origin` header（API 只收自家網域）
+
+同樣方式打 `/api/contact-sell`（欄位：`姓名` / `電話` / `物件地址` 必填，`坪數` / `期望總價(萬)` 選填）。
 
 ### TG 訊息範本
 
@@ -71,69 +74,69 @@ Email：xxx@gmail.com
 訊息：
 想看週六、可以嗎？
 
-來源：/properties/1187665
+來源：/properties/1187665/
 ```
 
 ---
 
-## 3. 表單在哪些頁面
+## 2. Formspree（Email 副管道）— 選做
 
-| 頁面 | 預填 |
-|---|---|
-| `/contact` | 無 |
-| `/services` | 無（用戶自選意圖） |
-| `/properties/[id]` | 物件編號 + 標題 + intent=buy |
+不設也能用：TG 是主管道。設了之後多一份 Email 存底（Formspree dashboard 可下載 CSV）。
 
----
+### 步驟
 
-## 4. spam 防護
+1. 到 <https://formspree.io/register> 註冊（free tier 50 submissions/月）— **這步要景泰本人做，AI 不代建帳號**
+2. 用 `a0920118756@gmail.com` 註冊，New Form → Send to 同一個信箱
+3. 拿到 form ID（網址 `https://formspree.io/f/mzzznnnn`、ID 就是 `mzzznnnn`）
+4. **GitHub** → sky811117/teddy-website → Settings → Secrets and variables → Actions → **Variables** tab → New repository variable：
 
-ContactForm 內建三層：
+   | Name | Value |
+   |---|---|
+   | `PUBLIC_FORMSPREE_FORM_ID` | `mzzznnnn` |
 
-1. **Honeypot `_gotcha` 欄位** — 隱藏、bot 才會填、填了直接吞掉
-2. **Time-check** — 表單載入 < 3 秒就送出 = bot、不送
-3. **必填驗證** — 姓名 + 我想 + (手機 or Email)
+5. `.github/workflows/deploy.yml` 的 Build step `env:` 加一行（目前還沒有）：
 
-如果還是有 spam 浪費 Formspree 配額：
-- Formspree dashboard → Settings → 開「reCAPTCHA」（free 版有）
-- 但會降低 UX、目前沒必要先開
+   ```yaml
+   PUBLIC_FORMSPREE_FORM_ID: ${{ vars.PUBLIC_FORMSPREE_FORM_ID }}
+   ```
 
----
-
-## 5. 配額管理
-
-- **Formspree free**：50 submissions / 月
-- 預估流量：個人網站第一年每月 < 20 submissions、安全範圍
-- 達到 80% 時 Formspree 會寄信通知、升 Gold $10/月 變 1000/月
-- 真要省、把 thank-you 頁加「我已收到、請等 30 分」減少重複送
+6. 推上 main 觸發 deploy；build 完後 `curl -s https://teddy-website-blog.pages.dev/contact/ | grep -o 'data-formspree-id="[^"]*"'` 應該看到 ID 而不是空字串
+7. Formspree 會寄一封確認信到 gmail，點了才開始收件
 
 ---
 
-## 6. 客戶資料保管
+## 3. 表單行為（前端）
 
-- Formspree dashboard 永久存 submission（可下載 CSV）
-- Gmail inbox 也存（label `teddy-website-contact` 自動標）
-- TG 訊息只當即時通知、不當 CRM
-- **正式 CRM 還是要進 Notion 客戶 DB**（手動或之後接 Zapier）
-
----
-
-## 7. 怎麼移除表單
-
-如果某個頁面不想要表單：
-- 找該 page 檔案
-- 刪掉 `import ContactForm from "@/components/ContactForm.astro";`
-- 刪掉 `<ContactForm ... />` 那段
-
-ContactForm 元件本身保留、其他頁面繼續用。
+- ContactForm 一律 POST `/api/contact-tg`；有 Formspree ID 才並行 POST Formspree
+- **任一條回 ok** → 導 `/thank-you/?form=contact&intent=找房`
+- **兩條都沒收到**（變數沒設 / TG 掛了 / 斷網）→ 表單**原地**顯示備援面板：
+  「已經把你的需求整理好了」+ 📋 複製訊息（把姓名 / 需求 / 物件編號組成一段文字進剪貼簿）+ LINE 鈕（`/go/line?src=form-fallback`）+ 撥電話鈕。
+  客戶永遠不會看到「後端沒設定」這類字。
+- SellForm 同樣邏輯（`/api/contact-sell`、備援 src=`sell-form-fallback`）
+- GA4 事件：表單送出 `lead_submit`（`status: ok|degraded`, `form: contact|sell`）；感謝頁 `generate_lead`（建議在 GA4 標成轉換）
 
 ---
 
-## 8. 法規
+## 4. 防護（Functions 端）
 
-表單收到的客戶資料受個資法保護：
+- Honeypot `_gotcha` + `_loaded_at` 3 秒偵測（client 自報、擋笨 bot）
+- **Origin / Referer 白名單**：只收 `https://teddy-website-blog.pages.dev`、`https://*.teddy-website-blog.pages.dev`（預覽）、`http://localhost:*`；其他回 403
+- 欄位長度上限（姓名 50 / 電話 20 / Email 120 / 地址 200 / 訊息 1000 …），body > 10KB 回 413
+- `/go/line` 同一 IP 5 分鐘只推一則 TG（in-memory）
+- 還沒做：Cloudflare Turnstile。若之後 spam 變多再加（要 fail-open：驗證服務掛了也要放行，不能把客戶擋在外面）
 
-- 不外流給同行
-- 不存到不受控的第三方
-- 客戶要求刪除時、Formspree dashboard 內手動刪
-- Privacy policy 之後要補（待）
+---
+
+## 5. 客戶資料保管
+
+- TG 訊息只當即時通知
+- 賣方 lead 進 Notion「賣房客戶名單」（`NOTION_SELL_DB_ID`）
+- 買方 lead 目前只有 TG（+ Formspree 若有設）；正式 CRM 要手動進 Notion 客戶 DB
+- 客戶要求刪除：Formspree dashboard 手動刪、Notion 手動刪
+- 隱私權政策頁還沒有（待）；表單文案已改成「資料只用來回覆你，存在景泰自己的客戶名單與手機通知裡，不轉賣、不做行銷名單」
+
+---
+
+## 6. 怎麼移除表單
+
+找該 page 檔案，刪掉 `import ContactForm ...` 與 `<ContactForm ... />` 那段。元件本身保留。

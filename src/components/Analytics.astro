@@ -52,39 +52,88 @@ const gtagId = PUBLIC_GA4_MEASUREMENT_ID;
     }
 
     // ── 3. Cookie consent banner ──────────────────────────────────────────
+    // ⚠️ 2026-09-06 修：原本 z-index:9999 貼底全寬，手機上把右下角 LINE 浮動鈕
+    //   與物件頁底部三鍵 CTA 整個蓋住（Playwright 390×844 實測 elementFromPoint
+    //   全部落在橫幅上）。現在：
+    //   - z-index 30（低於 CTA 的 40）
+    //   - 出現時在 <html> 加 data-consent-open，並把橫幅高度寫進 CSS 變數
+    //     --consent-h（px），貼底的固定元件用 bottom: calc(... + var(--consent-h, 0px))
+    //     往上讓位；橫幅移除時歸 0。
+    //   - 字 14px、按鈕高 44px（觸控目標）
+    //   - 桌機（≥640px）改成右下角小卡片，不佔全寬
     document.addEventListener('DOMContentLoaded', function () {
       if (_gaStored === 'granted' || _gaStored === 'denied') return;
 
-      // 動態建立 banner（放在 body，避免放進 <head> 非法）
-      // 單行貼底窄條（text-xs py-2）— 壓低高度、不遮擋表單互動元件
-      var banner = document.createElement('div');
-      banner.style.cssText = [
-        'position:fixed;bottom:0;left:0;right:0;z-index:9999',
-        'display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px',
-        'padding:8px 12px',
-        'background:var(--background,#fff)',
-        'border-top:1px solid var(--border,#e5e7eb)',
-        'box-shadow:0 -2px 12px rgba(0,0,0,.08)',
-        'font-size:0.75rem;line-height:1.4',
-      ].join(';');
-      banner.innerHTML =
-        '<span style="color:var(--foreground,#111);">' +
-          '本站會記錄不含 cookie、無法識別個人的匿名瀏覽數。按「接受」才會啟用 cookie（用來分辨回訪），協助改善內容品質。' +
-        '</span>' +
-        '<div style="display:flex;gap:8px;">' +
-          '<button id="ga-accept" style="height:32px;padding:0 12px;font-size:0.75rem;background:var(--accent);color:var(--accent-foreground,#fff);border:none;border-radius:6px;cursor:pointer;font-weight:500;">接受</button>' +
-          '<button id="ga-decline" style="height:32px;padding:0 12px;font-size:0.75rem;background:transparent;color:var(--muted-foreground);border:1px solid var(--border,#e5e7eb);border-radius:6px;cursor:pointer;">拒絕</button>' +
-        '</div>';
-      document.body.appendChild(banner);
+      var root = document.documentElement;
+      var style = document.createElement('style');
+      style.id = 'ga-consent-style';
+      style.textContent =
+        '#ga-consent{position:fixed;left:0;right:0;bottom:0;z-index:30;' +
+          'display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px;' +
+          'padding:10px 14px;background:var(--background,#fff);' +
+          'border-top:1px solid var(--border,#e5e7eb);box-shadow:0 -2px 12px rgba(0,0,0,.08);' +
+          'font-size:14px;line-height:1.5;color:var(--foreground,#111);}' +
+        '#ga-consent p{margin:0;flex:1 1 240px;}' +
+        '#ga-consent .ga-btns{display:flex;gap:8px;flex:0 0 auto;}' +
+        '#ga-consent button{min-height:44px;padding:0 16px;font-size:14px;border-radius:8px;cursor:pointer;font-weight:500;}' +
+        '#ga-accept{background:var(--accent);color:var(--accent-foreground,#fff);border:none;}' +
+        '#ga-decline{background:transparent;color:var(--muted-foreground,#555);border:1px solid var(--border,#e5e7eb);}' +
+        '@media (min-width:640px){#ga-consent{left:auto;right:16px;bottom:16px;max-width:380px;' +
+          'border:1px solid var(--border,#e5e7eb);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:14px 16px;}' +
+          '#ga-consent p{flex-basis:100%;}}';
+      document.head.appendChild(style);
 
-      document.getElementById('ga-accept').addEventListener('click', function () {
-        localStorage.setItem('ga_consent', 'granted');
+      var banner = document.createElement('div');
+      banner.id = 'ga-consent';
+      banner.setAttribute('role', 'region');
+      banner.setAttribute('aria-label', 'Cookie 使用說明');
+      banner.innerHTML =
+        '<p>本站會記錄不含 cookie、無法識別個人的匿名瀏覽數。按「接受」才會啟用 cookie（用來分辨回訪），協助改善內容品質。</p>' +
+        '<div class="ga-btns">' +
+          '<button type="button" id="ga-accept">接受</button>' +
+          '<button type="button" id="ga-decline">拒絕</button>' +
+        '</div>';
+
+      // 物件頁：桌機小卡要避開底部 sticky 價格列，手機由 --consent-h 推上去
+      var propertyBar = document.querySelector('[data-property-mobile-cta]');
+      if (propertyBar && window.matchMedia('(min-width:640px)').matches) {
+        banner.style.bottom = '96px';
+      }
+      document.body.appendChild(banner);
+      root.setAttribute('data-consent-open', '1');
+
+      // 橫幅高度 → --consent-h。手機全寬貼底才需要讓位；桌機小卡不佔底部整排、設 0。
+      function syncHeight() {
+        var full = !window.matchMedia('(min-width:640px)').matches;
+        var h = full && document.body.contains(banner) ? banner.offsetHeight : 0;
+        root.style.setProperty('--consent-h', h + 'px');
+      }
+      syncHeight();
+      if ('ResizeObserver' in window) {
+        try { new ResizeObserver(syncHeight).observe(banner); } catch (e) {}
+      }
+      window.addEventListener('resize', syncHeight);
+
+      // 物件頁手機底部三鍵 CTA（properties/[...slug].astro）也貼底，直接讓它吃同一個變數，
+      // 不必等那支檔案改 CSS；那邊若之後也寫了同樣的 bottom，值一致不衝突。
+      if (propertyBar && !propertyBar.style.bottom) {
+        propertyBar.style.bottom = 'var(--consent-h, 0px)';
+      }
+
+      function close() {
         banner.remove();
+        root.removeAttribute('data-consent-open');
+        root.style.setProperty('--consent-h', '0px');
+        window.removeEventListener('resize', syncHeight);
+      }
+      document.getElementById('ga-accept').addEventListener('click', function () {
+        try { localStorage.setItem('ga_consent', 'granted'); } catch (e) {}
+        close();
         _gaApplyGranted();
       });
       document.getElementById('ga-decline').addEventListener('click', function () {
-        localStorage.setItem('ga_consent', 'denied');
-        banner.remove();
+        try { localStorage.setItem('ga_consent', 'denied'); } catch (e) {}
+        close();
       });
     });
 

@@ -18,18 +18,33 @@ export const GET: APIRoute = ({ site }) => {
     description: config.site.description,
     start_url: "/",
     display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#0066cc",
+    background_color: "#f5f1eb", // theme.css --background
+    theme_color: "#8a6539", // 跟 theme.css --accent 同色（之前的 #0066cc 是模板殘值）
     lang: "zh-TW",
     dir: "ltr",
     orientation: "portrait-primary",
     categories: ["business", "lifestyle", "real_estate"],
+    // PWA / Android「加到主畫面」要 PNG 192 + 512；SVG 留著給支援的瀏覽器。
+    // PNG 由 favicon.svg 疊在站底色 #f5f1eb 上轉出（public/icon-192.png、icon-512.png、
+    // apple-touch-icon.png），改 favicon 時三張要一起重產。
     icons: [
+      {
+        src: new URL("icon-192.png", origin).href,
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: new URL("icon-512.png", origin).href,
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any maskable",
+      },
       {
         src: new URL("favicon.svg", origin).href,
         sizes: "any",
         type: "image/svg+xml",
-        purpose: "any maskable",
+        purpose: "any",
       },
     ],
     shortcuts: [

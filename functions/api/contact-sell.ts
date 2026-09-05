@@ -13,6 +13,9 @@
  *  - CONTACT_TG_TOKEN     Telegram bot token（reuse contact-tg）
  *  - CONTACT_TG_CHAT      Telegram chat_id
  *
+ * 2026-09-06：坪數 / 期望總價改選填（前端同步）；加 Origin/Referer 白名單、欄位長度上限、
+ * body 10KB 上限、escapeHtml 補雙引號。
+ *
  * 容錯收件策略（避免賣方 lead 遺失）：
  *  - Notion + TG 是兩條獨立送達管道，不論 Notion 成敗都會試 TG。
  *  - 只要任一條成功 → 回 200 { ok:true, stored, notified }。
@@ -40,7 +43,14 @@ const RICH_TEXT_MAX = 2000;
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "cache-control": "no-store",
+      // public/_headers 只套靜態檔，Functions 回應自己補
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+      "referrer-policy": "strict-origin-when-cross-origin",
+    },
   });
 }
 
@@ -48,7 +58,54 @@ function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+const MAX_BODY_BYTES = 10 * 1024;
+
+// 只收自家網域（正式站 + Cloudflare Pages 預覽網域）與本機 wrangler dev
+const ALLOWED_ORIGIN =
+  /^https:\/\/([a-z0-9-]+\.)?teddy-website-blog\.pages\.dev$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+
+function originAllowed(request: Request): boolean {
+  const origin = request.headers.get("origin");
+  if (origin) return ALLOWED_ORIGIN.test(origin);
+  const referer = request.headers.get("referer");
+  if (referer) {
+    try {
+      return ALLOWED_ORIGIN.test(new URL(referer).origin);
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+// 欄位長度上限（超過就截斷，不拒收 — 賣方 lead 寧可截也不要掉）
+const FIELD_MAX: Record<string, number> = {
+  "姓名": 50,
+  "電話": 20,
+  "Email": 120,
+  "物件地址": 200,
+  "坪數": 12,
+  "期望總價(萬)": 12,
+  "備註": 1000,
+  "來源頁": 200,
+};
+
+// 砍控制字元（保留換行）、去頭尾空白、限長；非字串一律當空
+function sanitize(payload: Payload): Payload {
+  const out: Payload = {};
+  for (const key of Object.keys(FIELD_MAX)) {
+    const raw = typeof payload[key] === "string" ? payload[key] : "";
+    const clean = raw.replace(/[\x00-\x09\x0b-\x1f\x7f]/g, "").trim();
+    const max = FIELD_MAX[key];
+    out[key] = clean.length > max ? clean.slice(0, max) + "…" : clean;
+  }
+  if (typeof payload._gotcha === "string") out._gotcha = payload._gotcha;
+  if (typeof payload._loaded_at === "string") out._loaded_at = payload._loaded_at;
+  return out;
 }
 
 function richText(content: string) {
@@ -149,8 +206,8 @@ async function pushTG(
     lines.push(`<b>Email</b>：<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>`);
   }
   lines.push(`<b>地址</b>：${escapeHtml(address)}`);
-  lines.push(`<b>坪數</b>：${escapeHtml(ping)} 坪`);
-  lines.push(`<b>期望</b>：${escapeHtml(price)} 萬`);
+  lines.push(`<b>坪數</b>：${ping ? `${escapeHtml(ping)} 坪` : "未填（先聽行情評估）"}`);
+  lines.push(`<b>期望</b>：${price ? `${escapeHtml(price)} 萬` : "未填（先聽行情評估）"}`);
   if (note) {
     lines.push("");
     lines.push(`<b>備註</b>：\n${escapeHtml(note)}`);
@@ -199,9 +256,26 @@ export const onRequestPost = async ({
   request,
   env,
 }: EventContext): Promise<Response> => {
+  if (!originAllowed(request)) {
+    return jsonResponse({ ok: false, error: "Forbidden origin" }, 403);
+  }
+
+  const len = parseInt(request.headers.get("content-length") || "0", 10);
+  if (len > MAX_BODY_BYTES) {
+    return jsonResponse({ ok: false, error: "Payload too large" }, 413);
+  }
+
   let payload: Payload = {};
   try {
-    payload = (await request.json()) as Payload;
+    const text = await request.text();
+    if (text.length > MAX_BODY_BYTES) {
+      return jsonResponse({ ok: false, error: "Payload too large" }, 413);
+    }
+    const parsed = JSON.parse(text);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return jsonResponse({ ok: false, error: "Invalid JSON" }, 400);
+    }
+    payload = sanitize(parsed as Payload);
   } catch {
     return jsonResponse({ ok: false, error: "Invalid JSON" }, 400);
   }
@@ -221,18 +295,23 @@ export const onRequestPost = async ({
     }
   }
 
-  // 必填驗證
+  // 必填驗證：只留姓名 / 電話 / 地址。坪數、期望總價選填（不確定的屋主先聽行情評估）
   const name = (payload["姓名"] || "").trim();
   const phone = (payload["電話"] || "").trim();
   const address = (payload["物件地址"] || "").trim();
-  const pingRaw = (payload["坪數"] || "").trim();
-  const priceRaw = (payload["期望總價(萬)"] || "").trim();
 
-  if (!name || !phone || !address || !pingRaw || !priceRaw) {
+  if (!name || !phone || !address) {
     return jsonResponse(
       { ok: false, error: "Missing required fields" },
       400
     );
+  }
+  if (!/^[\d\s+()-]{8,20}$/.test(phone)) {
+    return jsonResponse({ ok: false, error: "Invalid phone" }, 400);
+  }
+  const email = (payload["Email"] || "").trim();
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return jsonResponse({ ok: false, error: "Invalid email" }, 400);
   }
 
   // === 容錯收件：Notion + TG 兩條送達管道，只要一條成功就算收到 lead ===

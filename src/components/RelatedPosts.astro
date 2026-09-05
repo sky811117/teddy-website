@@ -3,6 +3,7 @@ import { getCollection, type CollectionEntry } from "astro:content";
 import { getPostUrl } from "@/utils/getPostPaths";
 import { postFilter } from "@/utils/postFilter";
 import { ogThumb } from "@/utils/ogThumb";
+import { areas } from "@/data/areas";
 import config from "@/config";
 import IconCamera from "@/assets/icons/IconCamera.svg";
 import IconNotes from "@/assets/icons/IconNotes.svg";
@@ -34,6 +35,7 @@ const SERIES_KEYWORDS = [
   "hot-",
   "district_focus-",
   "district_other-",
+  "district_presale-",
   "district-",
 ];
 
@@ -43,8 +45,70 @@ const getSeriesPrefix = (id: string): string | null => {
   return SERIES_PREFIXES.find(p => id.startsWith(p)) ?? null;
 };
 
+// ---------- 行政區推斷 ----------
+// 讀麗園道（北區）評價的人想比的是北區同價位社區，不是梧棲；所以推薦先看同區。
+// 文章 frontmatter 沒有 district 欄位，從三個地方推：
+//   1. tags 裡的「X區」（含短寫 北屯 / 西屯 / 南屯 / 七期）
+//   2. frontmatter community → src/data/areas.ts 的 hotCommunities（postSlug 對 id）
+//   3. 檔名裡的區名羅馬拼音（district_focus-district-beitun-… 這類月報）
+const SHORT_DISTRICT: Record<string, string> = {
+  北屯: "北屯區",
+  西屯: "西屯區",
+  南屯: "南屯區",
+  七期: "西屯區",
+  北區: "北區",
+  西區: "西區",
+  南區: "南區",
+  東區: "東區",
+  中區: "中區",
+};
+
+const ID_DISTRICT: Record<string, string> = {
+  beitun: "北屯區",
+  xitun: "西屯區",
+  nantun: "南屯區",
+  "north-district": "北區",
+  "central-district": "中區",
+  fengyuan: "豐原區",
+  taiping: "太平區",
+  tanzi: "潭子區",
+  wuri: "烏日區",
+  dali: "大里區",
+  wuqi: "梧棲區",
+  shalu: "沙鹿區",
+  daya: "大雅區",
+  wufeng: "霧峰區",
+  qingshui: "清水區",
+  longjing: "龍井區",
+};
+
+// postSlug（areas.ts 的值已含 community- 前綴，等於 post.id）→ 區
+const communityPostDistrict = new Map<string, string>();
+for (const area of areas) {
+  for (const c of area.hotCommunities) {
+    if (c.postSlug) communityPostDistrict.set(c.postSlug, area.shortName);
+  }
+}
+
+const inferDistrict = (p: CollectionEntry<"posts">): string | null => {
+  for (const raw of p.data.tags ?? []) {
+    const tag = raw.trim();
+    if (/^[一-鿿]{1,3}區$/.test(tag)) return tag;
+    if (SHORT_DISTRICT[tag]) return SHORT_DISTRICT[tag];
+  }
+  const byCommunity = communityPostDistrict.get(p.id);
+  if (byCommunity) return byCommunity;
+  const idLower = p.id.toLowerCase();
+  for (const [key, district] of Object.entries(ID_DISTRICT)) {
+    if (idLower.includes(key)) return district;
+  }
+  return null;
+};
+
 const currentSeries = getSeriesPrefix(currentPost.id);
 const currentTags = currentPost.data.tags ?? [];
+const currentDistrict = inferDistrict(currentPost);
+const currentIsCommunity = currentSeries === "community-";
 
 const allPosts = (await getCollection("posts")).filter(
   p => p.id !== currentPost.id && postFilter(p)
@@ -52,47 +116,37 @@ const allPosts = (await getCollection("posts")).filter(
 
 type Scored = {
   post: CollectionEntry<"posts">;
-  tagMatch: number;
-  sameSeries: boolean;
+  score: number;
   pubTime: number;
 };
 
+// 計分：同區 +3、同系列 +1、每個重合 tag +1；
+// 社區文 → 同區的社區文再 +2（同區社區互推是最有用的「比一比」）。
+// 之前是 tier1 要 tagMatch ≥ 2 才算，但 65% 的 tag 只掛 1 篇、平均每篇 2.1 個 tag，
+// tier1 幾乎永遠空，結果變成同系列按時間亂排（北區麗園道推西區、北屯推梧棲）。
 const scored: Scored[] = allPosts.map(p => {
-  const tagMatch = (p.data.tags ?? []).filter(t =>
-    currentTags.includes(t)
-  ).length;
+  const tagMatch = (p.data.tags ?? []).filter(t => currentTags.includes(t)).length;
   const series = getSeriesPrefix(p.id);
   const sameSeries = !!currentSeries && series === currentSeries;
+  const district = inferDistrict(p);
+  const sameDistrict = !!currentDistrict && district === currentDistrict;
+
+  let score = tagMatch;
+  if (sameDistrict) score += 3;
+  if (sameSeries) score += 1;
+  if (currentIsCommunity && sameSeries && sameDistrict) score += 2;
+
   return {
     post: p,
-    tagMatch,
-    sameSeries,
+    score,
     pubTime: p.data.pubDatetime?.getTime() ?? 0,
   };
 });
 
-const tier1 = scored
-  .filter(s => s.tagMatch >= 2)
-  .sort((a, b) => b.tagMatch - a.tagMatch || b.pubTime - a.pubTime);
-
-const tier1Ids = new Set(tier1.map(s => s.post.id));
-
-const tier2 = scored
-  .filter(s => !tier1Ids.has(s.post.id) && s.sameSeries)
-  .sort((a, b) => b.pubTime - a.pubTime);
-
-const tier2Ids = new Set(tier2.map(s => s.post.id));
-
-const tier3 = scored
-  .filter(s => !tier1Ids.has(s.post.id) && !tier2Ids.has(s.post.id))
-  .sort(
-    (a, b) =>
-      (b.tagMatch > 0 ? 1 : 0) - (a.tagMatch > 0 ? 1 : 0) ||
-      b.pubTime - a.pubTime
-  );
-
 const LIMIT = 6;
-const recommended = [...tier1, ...tier2, ...tier3].slice(0, LIMIT);
+const recommended = scored
+  .sort((a, b) => b.score - a.score || b.pubTime - a.pubTime)
+  .slice(0, LIMIT);
 
 const getCover = (data: CollectionEntry<"posts">["data"]): string | null => {
   const og = data.ogImage;
@@ -108,7 +162,9 @@ const getCover = (data: CollectionEntry<"posts">["data"]): string | null => {
       <h2 class="text-foreground text-xl font-bold sm:text-2xl">
         <IconNotes class="size-5 inline-block" aria-hidden="true" /> 相關文章
       </h2>
-      <p class="text-muted-foreground mt-2 text-sm">你可能也想看的</p>
+      <p class="text-muted-foreground mt-2 text-sm">
+        {currentDistrict ? `${currentDistrict}相關，你可能也想看的` : "你可能也想看的"}
+      </p>
       <ul class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {recommended.map(({ post }) => {
           const cover = getCover(post.data);

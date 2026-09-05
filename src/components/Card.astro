@@ -2,7 +2,6 @@
 import type { CollectionEntry } from "astro:content";
 import { getPostUrl } from "@/utils/getPostPaths";
 import { ogThumb } from "@/utils/ogThumb";
-import { slugifyStr } from "@/utils/slugify";
 import IconNotes from "@/assets/icons/IconNotes.svg";
 import Datetime from "./Datetime.astro";
 
@@ -75,7 +74,6 @@ const readingMin = Math.max(1, Math.round(rawBody.length / 350));
         )}
         <div class="p-4 sm:p-5">
           <h2
-            transition:name={slugifyStr(title.replaceAll(".", "-"))}
             class="text-accent text-2xl font-bold decoration-dashed underline-offset-4 group-hover:underline"
           >
             {title}
@@ -116,7 +114,6 @@ const readingMin = Math.max(1, Math.round(rawBody.length / 350));
         )}
         <div class="flex min-w-0 flex-col">
           <h2
-            transition:name={slugifyStr(title.replaceAll(".", "-"))}
             class="text-accent line-clamp-2 text-lg font-bold decoration-dashed underline-offset-4 group-hover:underline"
           >
             {title}

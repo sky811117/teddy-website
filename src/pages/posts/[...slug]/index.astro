@@ -78,6 +78,14 @@ const {
 
 const { Content, headings } = await render(post);
 
+// 文末 CTA 用：文章 slug（給 /go/line?p= 帶進 TG 通知，不再只靠 Referer）
+const postSlug = getPostSlug(post.id, post.filePath).replace(/^\/+/, "");
+const community = post.data.community?.trim() || "";
+// 賣方相關文章（稅務 / 過戶 / 政策 / 賣房）加第二顆「行情評估」鈕
+const SELLER_TAG = /賣方|稅務|policy|過戶|賣房/i;
+const isSellerTopic = tags.some(tag => SELLER_TAG.test(tag));
+const lineHref = `/go/line?src=post-end&p=${encodeURIComponent(postSlug)}`;
+
 // 文內目錄 — 只取 h2，數量 ≥ 4 才顯示摺疊 TOC
 const tocHeadings = headings.filter(({ depth }) => depth === 2);
 
@@ -139,6 +147,7 @@ const timeRequired = `PT${timeRequiredMin}M`;
     id="main-content"
     class:list={["app-layout", { "mt-8": !config.features.showBackButton }]}
     data-pagefind-body
+    data-pagefind-filter="type:文章"
   >
     <header>
       {
@@ -156,10 +165,7 @@ const timeRequired = `PT${timeRequiredMin}M`;
         )
       }
 
-      <h1
-        style={{ viewTransitionName: slugifyStr(title.replaceAll(".", "-")) }}
-        class="text-accent inline-block text-2xl font-bold sm:text-3xl"
-      >
+      <h1 class="text-accent inline-block text-2xl font-bold sm:text-3xl">
         {title}
       </h1>
 
@@ -208,7 +214,7 @@ const timeRequired = `PT${timeRequiredMin}M`;
 
     {
       tocHeadings.length >= 4 && (
-        <details class="card-surface mt-8 px-4 py-3">
+        <details class="card-surface mt-8 px-4 py-3" data-toc>
           <summary class="cursor-pointer font-bold select-none">目錄</summary>
           <ul class="mt-2 flex flex-col gap-1.5 text-sm">
             {tocHeadings.map(({ slug, text }) => (
@@ -237,25 +243,49 @@ const timeRequired = `PT${timeRequiredMin}M`;
       <Content />
     </article>
 
-    <!-- 文末 LINE CTA — 內文結束、分享列之前 -->
+    {/* 社區文章 → 該社區目前的在售物件，放在 CTA 之前：讀者看到「真的有一戶在賣」時旁邊就有動作鈕。
+        沒設 community 或該社區沒在售就整段不出現 */}
+    <CommunityListings community={post.data.community} tags={post.data.tags} />
+
+    <!-- 文末 LINE CTA — 內文結束、分享列之前。href 帶 p={slug}，/go/line 記得住是哪篇文章 -->
     <div
       class="card-surface mt-10 flex flex-col items-center gap-4 p-6 text-center sm:flex-row sm:justify-between sm:text-left"
     >
       <div>
-        <p class="text-lg font-bold">這篇有幫到你？</p>
-        <p class="text-muted-foreground mt-1">
-          台中買房賣房問題直接 LINE 泰迪
-        </p>
+        {
+          community ? (
+            <>
+              <p class="text-lg font-bold">想看 {community} 的實際樓層、行情？</p>
+              <p class="text-muted-foreground mt-1">
+                LINE 我「{community}」，我把手上的成交、在售資料整理給你
+              </p>
+            </>
+          ) : (
+            <>
+              <p class="text-lg font-bold">這篇有幫到你？</p>
+              <p class="text-muted-foreground mt-1">
+                台中買房賣房問題直接 LINE 泰迪
+              </p>
+            </>
+          )
+        }
       </div>
-      <a
-        href="/go/line?src=post"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="btn-line shrink-0"
-      >
-        <IconLine class="size-5" aria-hidden="true" />
-        LINE 泰迪
-      </a>
+      <div class="flex shrink-0 flex-col items-stretch gap-3 sm:items-end">
+        <a href={lineHref} target="_blank" rel="noopener" class="btn-line">
+          <IconLine class="size-5" aria-hidden="true" />
+          {community ? `LINE 我「${community}」` : "LINE 泰迪"}
+        </a>
+        {
+          isSellerTopic && (
+            <a
+              href="/sell/?src=post-end-sell#sell-form-section"
+              class="btn-outline text-center text-[15px] whitespace-normal"
+            >
+              想知道你的房子現在值多少？留屋況、24 小時內回行情評估區間
+            </a>
+          )
+        }
+      </div>
     </div>
 
     <hr class="my-8 border-dashed" />
@@ -265,9 +295,6 @@ const timeRequired = `PT${timeRequiredMin}M`;
     <BackToTopButton />
 
     <ShareLinks />
-
-    {/* 社區文章 → 該社區目前的在售物件。沒設 community 或該社區沒在售就整段不出現 */}
-    <CommunityListings community={post.data.community} />
 
     <hr class="my-8 border-dashed" />
 
@@ -314,15 +341,22 @@ const timeRequired = `PT${timeRequiredMin}M`;
   updateScrollProgress();
 
   function addHeadingLinks() {
+    // 只掛在文章正文內、而且真的有 id 的標題上。原本全頁掃描會把「相關文章」卡片、
+    // 在售物件區的 h3 也塞一顆 href="#" 的假錨點，手機上肉眼可見、點了還跳回頁首。
     const headings = Array.from(
-      document.querySelectorAll("h2, h3, h4, h5, h6")
+      document.querySelectorAll("#article h2[id], #article h3[id], #article h4[id]")
     );
     for (const heading of headings) {
+      if (heading.querySelector(".heading-link")) continue;
       heading.classList.add("group");
       const link = document.createElement("a");
       link.className =
         "heading-link ms-2 no-underline opacity-75 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100";
       link.href = "#" + heading.id;
+      link.setAttribute(
+        "aria-label",
+        "「" + (heading.textContent || "").trim() + "」段落連結"
+      );
 
       const span = document.createElement("span");
       span.ariaHidden = "true";
@@ -333,8 +367,16 @@ const timeRequired = `PT${timeRequiredMin}M`;
   }
   addHeadingLinks();
 
+  // 目錄：桌機預設展開（手機保留摺疊，避免把首屏推太下面）
+  (function openTocOnDesktop() {
+    const toc = document.querySelector("[data-toc]");
+    if (toc && window.matchMedia("(min-width: 768px)").matches) {
+      toc.setAttribute("open", "");
+    }
+  })();
+
   function attachCopyButtons() {
-    const copyButtonLabel = "Copy";
+    const copyButtonLabel = "複製";
     const codeBlocks = Array.from(document.querySelectorAll("pre"));
 
     for (const codeBlock of codeBlocks) {
@@ -369,7 +411,7 @@ const timeRequired = `PT${timeRequiredMin}M`;
 
       await navigator.clipboard.writeText(text ?? "");
 
-      button.innerText = "Copied";
+      button.innerText = "已複製";
 
       setTimeout(() => {
         button.innerText = copyButtonLabel;

@@ -7,6 +7,7 @@ import IconSunHigh from "@/assets/icons/IconSunHigh.svg";
 import IconSearch from "@/assets/icons/IconSearch.svg";
 import IconMoon from "@/assets/icons/IconMoon.svg";
 import IconX from "@/assets/icons/IconX.svg";
+import LineIcon from "@/assets/icons/socials/line.svg";
 import LinkButton from "./LinkButton.astro";
 import { stripBase, stripLocale } from "@/utils/withBase";
 import { useTranslations } from "@/i18n";
@@ -69,39 +70,51 @@ const isActive = (path: string) => {
     </a>
     <nav
       id="nav-menu"
+      aria-label="主選單"
       class="flex w-full flex-col items-center xl:w-auto xl:flex-row xl:justify-end xl:space-x-4 xl:py-0"
     >
-      {
-        features.search !== false && (
-          <a
-            href={getRelativeLocaleUrl(locale, "search")}
-            class:list={[
-              "focus-outline relative size-8 self-end xl:hidden",
-              { "text-accent": isActive("/search") },
-            ]}
-            title="搜尋"
-            aria-label="搜尋文章"
-          >
-            <IconSearch class="absolute top-1/2 left-1/2 size-6 -translate-x-1/2 -translate-y-1/2" />
-            <span class="sr-only">搜尋</span>
-          </a>
-        )
-      }
-      <button
-        id="menu-btn"
-        class="focus-outline self-end p-2 xl:hidden"
-        aria-label={t.a11y.openMenu}
-        aria-expanded="false"
-        aria-controls="menu-items"
-        data-label-open={t.a11y.openMenu}
-        data-label-close={t.a11y.closeMenu}
-      >
-        <IconX id="close-icon" class="hidden" />
-        <IconMenuDeep id="menu-icon" />
-      </button>
+      {/* 手機控制列：搜尋 / LINE / 漢堡 同一排（原本上下堆疊，header 多吃 45px） */}
+      <div class="flex items-center gap-1 self-end xl:hidden">
+        {
+          features.search !== false && (
+            <a
+              href={getRelativeLocaleUrl(locale, "search")}
+              class:list={[
+                "focus-outline relative size-10",
+                { "text-accent": isActive("/search") },
+              ]}
+              title="搜尋"
+              aria-label="搜尋文章"
+            >
+              <IconSearch class="absolute top-1/2 left-1/2 size-6 -translate-x-1/2 -translate-y-1/2" />
+              <span class="sr-only">搜尋</span>
+            </a>
+          )
+        }
+        <a
+          href="/go/line?src=header"
+          class="bg-line hover:bg-line-hover focus-outline relative flex size-10 items-center justify-center rounded-full text-white no-underline"
+          title="LINE 私訊景泰 sky811117"
+          aria-label="LINE 私訊景泰"
+        >
+          <LineIcon class="size-5" aria-hidden="true" />
+        </a>
+        <button
+          id="menu-btn"
+          class="focus-outline p-2"
+          aria-label={t.a11y.openMenu}
+          aria-expanded="false"
+          aria-controls="menu-items"
+          data-label-open={t.a11y.openMenu}
+          data-label-close={t.a11y.closeMenu}
+        >
+          <IconX id="close-icon" class="hidden" />
+          <IconMenuDeep id="menu-icon" />
+        </button>
+      </div>
       <ul
         id="menu-items"
-        class="[&>li>a]:hover:text-accent [&>li>a]:whitespace-nowrap mt-4 hidden w-44 grid-cols-2 place-content-center gap-2 xl:mt-0 xl:flex xl:w-auto xl:gap-x-2 xl:gap-y-0 xl:[&>li]:h-8 [&>li>a]:block [&>li>a]:px-4 [&>li>a]:py-3 [&>li>a]:text-center [&>li>a]:font-medium xl:[&>li>a]:px-1 xl:[&>li>a]:py-1"
+        class="[&>li>a]:hover:text-accent [&>li>a]:whitespace-nowrap mt-4 hidden max-h-[calc(100dvh-7rem)] w-44 grid-cols-2 place-content-center gap-2 overflow-y-auto overscroll-contain xl:mt-0 xl:flex xl:max-h-none xl:w-auto xl:gap-x-2 xl:gap-y-0 xl:overflow-visible xl:[&>li]:h-8 [&>li>a]:block [&>li>a]:px-4 [&>li>a]:py-3 [&>li>a]:text-center [&>li>a]:font-medium xl:[&>li>a]:px-1 xl:[&>li>a]:py-1"
       >
         <li class="col-span-2">
           <a
@@ -113,10 +126,26 @@ const isActive = (path: string) => {
         </li>
         <li class="col-span-2">
           <a
-            href={getRelativeLocaleUrl(locale, "tags/ai筆記")}
-            class:list={{ "active-nav": isActive("/tags/ai筆記") }}
+            href={getRelativeLocaleUrl(locale, "properties")}
+            class:list={{ "active-nav": isActive("/properties") }}
           >
-            AI 筆記
+            在售物件
+          </a>
+        </li>
+        <li class="col-span-2">
+          <a
+            href={getRelativeLocaleUrl(locale, "areas")}
+            class:list={{ "active-nav": isActive("/areas") }}
+          >
+            台中各區
+          </a>
+        </li>
+        <li class="col-span-2">
+          <a
+            href={getRelativeLocaleUrl(locale, "sell")}
+            class:list={{ "active-nav": isActive("/sell") }}
+          >
+            賣房
           </a>
         </li>
         <li class="col-span-2">
@@ -137,14 +166,6 @@ const isActive = (path: string) => {
         </li>
         <li class="col-span-2">
           <a
-            href={getRelativeLocaleUrl(locale, "areas")}
-            class:list={{ "active-nav": isActive("/areas") }}
-          >
-            台中各區
-          </a>
-        </li>
-        <li class="col-span-2">
-          <a
             href={getRelativeLocaleUrl(locale, "services")}
             class:list={{ "active-nav": isActive("/services") }}
           >
@@ -153,18 +174,10 @@ const isActive = (path: string) => {
         </li>
         <li class="col-span-2">
           <a
-            href={getRelativeLocaleUrl(locale, "properties")}
-            class:list={{ "active-nav": isActive("/properties") }}
-          >
-            在售物件
-          </a>
-        </li>
-        <li class="col-span-2">
-          <a
             href={getRelativeLocaleUrl(locale, "media")}
             class:list={{ "active-nav": isActive("/media") }}
           >
-            大看板
+            影音
           </a>
         </li>
         <li class="col-span-2">
@@ -258,8 +271,8 @@ const isActive = (path: string) => {
 
     if (!menuBtn || !menuItems || !menuIcon || !closeIcon) return;
 
-    const openLabel = menuBtn.dataset.labelOpen ?? "Open menu";
-    const closeLabel = menuBtn.dataset.labelClose ?? "Close menu";
+    const openLabel = menuBtn.dataset.labelOpen ?? "開啟選單";
+    const closeLabel = menuBtn.dataset.labelClose ?? "關閉選單";
 
     menuBtn.addEventListener("click", () => {
       const openMenu = menuBtn.getAttribute("aria-expanded") === "true";

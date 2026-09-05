@@ -6,11 +6,16 @@ import Main from "@/components/Main.astro";
 import config from "@/config";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 
+// 青安 3.0 文案集中成一個常數：可見文字與 JSON-LD 共用，避免再次漂移
+// 📌 資料來源：財政部國庫署 青安 3.0 方案懶人包 / 2026-07-16（updated: 2026-09-06）
+const QINGAN_NOTE =
+  "青安 3.0 自 2026/8/1 受理（至 2029/7/31）：補貼後 1.775% 機動利率、前 3 年全額補貼、第 4 年起逐年退場；台中房屋總價上限 2,000 萬、額度 1,000-1,500 萬。這個工具幫你比青安 vs 一般房貸 30 年差多少。📌 資料來源：財政部國庫署 / 2026-07-16";
+
 const buyerTools = [
   {
     icon: "🧮",
-    name: "買方費用試算（新青安 vs 一般房貸）",
-    desc: "一次性費用 + 月付金。新青安 2026/7/31 前申辦能拿 0.375% 政府補貼，這個工具幫你看 30 年差多少",
+    name: "買方費用試算（青安 3.0 vs 一般房貸）",
+    desc: `一次性費用 + 月付金。${QINGAN_NOTE}`,
     url: "https://teddy-share-app.vercel.app/buyer-fee2/index.html",
     external: true,
     status: "上線",
@@ -18,7 +23,7 @@ const buyerTools = [
   {
     icon: "🅿️",
     name: "拆車位 ‧ 真實房屋單價試算",
-    desc: "廣告單價＝總價÷總坪，被便宜的車位拉低了。輸入總價、總坪、車位價、車位坪，一秒算出拆車位後的真實房屋單價，再對照實價登錄行情、反推合理總價。帶看、談價直接掏出來算。",
+    desc: "廣告單價＝總價÷總坪，被便宜的車位拉低了。輸入總價、總坪、車位價、車位坪，一秒算出拆車位後的真實房屋單價，再對照實價登錄行情、反推合理總價。帶看、出價前直接掏出來算。",
     url: "https://teddy-share-app.vercel.app/unit-price/index.html",
     external: true,
     status: "上線",
@@ -64,7 +69,7 @@ const sellerTools = [
   {
     icon: "💵",
     name: "定價參考分析",
-    desc: "輸入區域、建物型態、坪數，查周邊實價成交區間當開價的參考錨點。精準定價仍建議找我免費專業評估。",
+    desc: "輸入區域、建物型態、坪數，查周邊實價成交區間當開價的參考錨點。精準定價可以再找我做一次免費行情評估。",
     url: "https://teddy-share-app.vercel.app/pricing-analysis/index.html",
     external: true,
     status: "上線",
@@ -72,7 +77,7 @@ const sellerTools = [
   {
     icon: "📑",
     name: "賣屋流程懶人包",
-    desc: "從委託到交屋完整 9 步驟圖解：委託、估價、上架、帶看、議價、簽約、用印、完稅、交屋，每一步該準備什麼一次看完。",
+    desc: "從委託到交屋完整 9 步驟圖解：委託、行情評估、上架、帶看、出價協調、簽約、用印、完稅、交屋，每一步該準備什麼一次看完。",
     url: "https://teddy-share-app.vercel.app/selling-guide/index.html",
     external: true,
     status: "上線",
@@ -84,8 +89,8 @@ const softwareSchemas = [
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    name: "買方費用試算（新青安 vs 一般房貸）",
-    description: "計算買房一次性費用 + 月付金。新青安 2026/7/31 前申辦能拿 0.375% 政府補貼，工具幫你看 30 年總共差多少。",
+    name: "買方費用試算（青安 3.0 vs 一般房貸）",
+    description: `計算買房一次性費用 + 月付金。${QINGAN_NOTE}`,
     url: "https://teddy-share-app.vercel.app/buyer-fee2/index.html",
     applicationCategory: "FinanceApplication",
     operatingSystem: "Any (Web)",
@@ -148,9 +153,9 @@ const externalResources = [
   },
   {
     icon: "🏦",
-    name: "財政部新青安貸款說明",
-    desc: "2026/7/31 補貼到期前申辦能拿 0.375%",
-    url: "https://www.mof.gov.tw/",
+    name: "財政部國庫署 青安 3.0 說明",
+    desc: "2026/8/1 起受理，官方條件、額度、利率階梯都在這",
+    url: "https://www.nta.gov.tw/singlehtml/108",
   },
   {
     icon: "📍",
@@ -175,7 +180,7 @@ const externalResources = [
 
 <Layout
   title={`給客戶的工具 | ${config.site.title}`}
-  description="買房、賣房用得到的工具 + 政府/民間公開資源整合 — 買方一次性費用試算、看屋 checklist、新青安計算機等。"
+  description="買房、賣房用得到的工具 + 政府/民間公開資源整合 — 買方費用試算（青安 3.0 vs 一般房貸）、拆車位單價、看屋 checklist、嫌惡設施地圖。部分工具為外部連結。"
   canonicalURL={new URL("/tools", Astro.site).href}
   ogImage="/og/page-tools.jpg"
 >
@@ -230,6 +235,11 @@ const externalResources = [
                     {t.status}
                   </span>
                 </div>
+                {t.external && (
+                  <p class="text-muted-foreground mt-2 text-xs">
+                    外部工具（另開分頁）
+                  </p>
+                )}
                 <h3
                   class:list={[
                     "mt-3 text-lg font-bold",
@@ -289,6 +299,11 @@ const externalResources = [
                     {t.status}
                   </span>
                 </div>
+                {t.external && (
+                  <p class="text-muted-foreground mt-2 text-xs">
+                    外部工具（另開分頁）
+                  </p>
+                )}
                 <h3
                   class:list={[
                     "mt-3 text-lg font-bold",
@@ -320,7 +335,7 @@ const externalResources = [
     {/* ===== 工具說明 CTA ===== */}
     <div class="text-muted-foreground mt-6 text-center text-sm">
       以上工具都是我做給客戶免費用的，不用登入、手機就能開。用起來有問題、或想要其他工具，隨時 <a
-        href="/go/line?src=tools"
+        href="/go/line?src=tools-top"
         class="text-accent font-medium hover:underline"
       >LINE 問景泰：sky811117</a>
     </div>
@@ -367,7 +382,7 @@ const externalResources = [
       </p>
       <div class="mt-4 flex flex-col items-center justify-center gap-3 sm:flex-row">
         <a
-          href="/go/line?src=tools"
+          href="/go/line?src=tools-bottom"
           class="bg-accent text-accent-foreground inline-block rounded px-6 py-2 font-medium no-underline"
         >
           💬 LINE 私訊 sky811117

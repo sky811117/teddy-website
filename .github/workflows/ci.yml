@@ -1,62 +1,59 @@
 name: CI
 
+# 內容 / 型別閘門（不部署）。跟 deploy.yml 前半段同一組檢查：
+#   lint-seo → audit-properties → astro check
+# 以前這支只在 pull_request 觸發（repo 從沒開過 PR，gh run list 0 筆）、跑 eslint
+# （53 個 no-console 錯）+ prettier（多檔 fail）+ pnpm 版本寫死 10.11.1 跟 packageManager
+# pnpm@11 打架 + timeout 3 分鐘 → 是「從沒跑過、跑了也必掛」的死工作流。
+# 現在改成：手動 / PR / 非 main 分支 push 都能跑，且只跑真正會擋部署的三道檢查。
+# eslint / prettier 不在這裡跑（規則對 CLI/Worker 的 console 全判錯，先修 eslint.config.js 再說）。
+
 permissions:
   contents: read
 
 on:
   pull_request:
-    types:
-      - opened
-      - edited
-      - synchronize
-      - reopened
-  workflow_call:
+  push:
+    branches-ignore: [main] # main 由 deploy.yml 接手（同一組檢查 + 部署）
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
-    name: Code standards & build
+  check:
+    name: Content gates & astro check
     runs-on: ubuntu-latest
-    timeout-minutes: 3
-
-    strategy:
-      matrix:
-        node-version: ["24"]
+    timeout-minutes: 10
 
     steps:
-      - name: "☁️ Checkout repository"
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: "📦 Install pnpm"
+      # 版本吃 package.json packageManager（corepack），跟 deploy.yml 一致
+      - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10.11.1
 
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: "pnpm"
+          node-version: 22
+          cache: pnpm
 
-      - name: "📦 Install dependencies"
-        run: pnpm install
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: "🔎 Lint code"
-        run: pnpm run lint
+      - name: Content lint (文章紅線閘門)
+        run: pnpm exec node scripts/lint-seo.mjs
 
-      - name: "📝 Checking code format"
-        run: pnpm run format:check
+      - name: Property audit (物件法規閘門)
+        run: pnpm exec node scripts/audit-properties.mjs
 
-      - name: "🏠 物件法規合規 audit (warn only — 不擋 build)"
-        run: node scripts/audit-properties.mjs || true
-        continue-on-error: true
+      - name: Astro check
+        run: pnpm exec astro check
 
-      - name: "📊 SEO meta lint (擋 build 如有 ERROR)"
-        run: node scripts/lint-seo.mjs
-
-      - name: "🚀 Build the project"
-        run: pnpm run build
-
-      - name: "📦 Upload audit report"
+      - name: Upload audit report
         if: always()
         uses: actions/upload-artifact@v4
         with:

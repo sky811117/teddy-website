@@ -47,3 +47,12 @@ lighthouse-reports/
 
 # Backups of resized assets
 public/logos/yochaoshi-original.png
+
+# IG 圖卡：_unused_ 開頭的資料夾是規劃時作廢的題目，IG 從沒引用過，不進 repo
+public/cards/_unused_*
+
+# audit-properties.mjs 每次跑都會寫報告，CI 用 artifact 收，不進 repo
+audit/
+
+# Windows 誤把 `> NUL` 當檔名建出來的空檔
+NUL

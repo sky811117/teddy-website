@@ -2,14 +2,21 @@
 /**
  * SellForm — 賣房專用詢價表單
  *
- * 路徑：/contact?type=sell 時顯示。
+ * 出現位置：/sell/ 底部、/contact/?type=sell（contact.astro 用 client 端切換顯示）。
  * 後端：Cloudflare Pages Functions `/api/contact-sell`
  *   - 寫入 Notion DB「賣房客戶名單」
  *   - 推 TG 通知到「泰迪的小聲音」
+ *   - 任一條收到 → 導 /thank-you；兩條都沒收到 → 表單原地顯示備援面板
+ *     （複製訊息 + LINE + 電話），客戶不會看到任何「後端」字眼。
  *
  * 跟 ContactForm 分離的理由：賣房欄位差異大（地址 / 坪數 / 期望總價），
  * 共用表單會讓買方客戶看到不必要欄位。
+ *
+ * 2026-09-06：坪數 / 期望總價改選填 —— 最需要行情評估的屋主，往往就是還不知道
+ * 該開多少、或不確定權狀坪數的人，硬要必填只會把他們擋在門外。
  */
+import IconPhone from "@/assets/icons/IconPhone.svg";
+import LineIcon from "@/assets/icons/socials/line.svg";
 
 type Props = {
   title?: string;
@@ -18,7 +25,7 @@ type Props = {
 
 const {
   title = "想賣房？留 3 分鐘給景泰",
-  subtitle = "把屋況基本資訊留下、24 小時內回你估價區間。",
+  subtitle = "把屋況基本資訊留下、24 小時內回你行情評估區間。",
 } = Astro.props;
 ---
 
@@ -37,6 +44,7 @@ const {
 
   <form
     data-sell-form
+    action="/api/contact-sell"
     method="POST"
     novalidate
     class="mt-6 space-y-5"
@@ -66,6 +74,7 @@ const {
         type="text"
         name="姓名"
         required
+        maxlength="50"
         autocomplete="name"
         placeholder="陳先生 / 王小姐"
         class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 mt-2 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2"
@@ -87,6 +96,7 @@ const {
           type="tel"
           name="電話"
           required
+          maxlength="20"
           autocomplete="tel"
           inputmode="tel"
           placeholder="0912-345-678"
@@ -110,6 +120,7 @@ const {
           id="sf-email"
           type="email"
           name="Email"
+          maxlength="120"
           autocomplete="email"
           inputmode="email"
           placeholder="you@example.com"
@@ -135,29 +146,29 @@ const {
         type="text"
         name="物件地址"
         required
+        maxlength="200"
         placeholder="北屯區 / 文心路四段 附近"
         class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 mt-2 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2"
       />
       <p data-error-for="物件地址" class="mt-1 hidden text-[14px] text-red-500"></p>
     </div>
 
-    {/* === 坪數 + 期望總價 === */}
+    {/* === 坪數 + 期望總價（都選填：不確定就空著、先聽行情評估也可以） === */}
     <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
       <div>
         <label
           for="sf-ping"
           class="text-foreground block text-[17px] font-medium"
         >
-          坪數 <span class="text-red-500">*</span>
+          坪數
           <span class="text-muted-foreground text-[13px] font-normal">
-            （權狀坪數）
+            （選填、權狀坪數、大約就好）
           </span>
         </label>
         <input
           id="sf-ping"
           type="number"
           name="坪數"
-          required
           inputmode="decimal"
           step="0.01"
           min="1"
@@ -173,16 +184,15 @@ const {
           for="sf-price"
           class="text-foreground block text-[17px] font-medium"
         >
-          期望總價 <span class="text-red-500">*</span>
+          期望總價
           <span class="text-muted-foreground text-[13px] font-normal">
-            （萬元）
+            （選填、萬元；還沒想法就空著，先聽行情評估）
           </span>
         </label>
         <input
           id="sf-price"
           type="number"
           name="期望總價(萬)"
-          required
           inputmode="numeric"
           step="1"
           min="1"
@@ -209,6 +219,7 @@ const {
         id="sf-note"
         name="備註"
         rows="4"
+        maxlength="1000"
         placeholder="例：屋齡 8 年 / 3房 2衛 / 12 樓 / 目前自住、6 個月內想賣"
         class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 mt-2 block w-full rounded-md border px-4 py-3 text-[17px] leading-relaxed outline-none focus:ring-2"
       ></textarea>
@@ -230,8 +241,54 @@ const {
         role="alert"
       ></p>
 
+      {/* 備援面板 — 後端暫時收不到件時原地出現 */}
+      <div
+        data-form-fallback
+        hidden
+        class="border-accent/40 bg-background mt-5 rounded-lg border-2 border-dashed p-5"
+        role="status"
+        aria-live="polite"
+      >
+        <p class="text-foreground text-[18px] font-bold">
+          已經把你的屋況資料整理好了
+        </p>
+        <p class="text-muted-foreground mt-2 text-[15px] leading-relaxed">
+          這邊剛好沒把訊息送出去。不用重填，按「複製訊息」再貼到 LINE
+          給景泰，或直接撥電話，一樣 24 小時內回你行情評估區間。
+        </p>
+        <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <button
+            type="button"
+            data-fallback-copy
+            class="btn-outline w-full text-[16px]"
+          >
+            📋 複製訊息
+          </button>
+          <a
+            href="/go/line?src=sell-form-fallback"
+            target="_blank"
+            rel="noopener"
+            class="btn-line w-full text-[16px]"
+          >
+            <LineIcon class="size-5" aria-hidden="true" />
+            LINE 景泰
+          </a>
+          <a href="tel:+886920118756" class="btn-outline w-full text-[16px]">
+            <IconPhone class="size-5" aria-hidden="true" />
+            0920-118-756
+          </a>
+        </div>
+        <textarea
+          data-fallback-text
+          readonly
+          rows="6"
+          aria-label="整理好的屋況資料"
+          class="border-border bg-card text-foreground mt-4 block w-full rounded-md border px-3 py-2 text-[15px] leading-relaxed"
+        ></textarea>
+      </div>
+
       <p class="text-muted-foreground mt-4 text-[14px] leading-relaxed">
-        資料只進景泰個人 CRM、不會給第三方。
+        資料只用來回覆你的行情評估，存在景泰自己的客戶名單與手機通知裡，不轉賣、不做行銷名單。
         如果你急 — LINE
         <a
           href="/go/line?src=sell-form"
@@ -262,13 +319,28 @@ const {
     const form: HTMLFormElement = formRaw;
 
     const submitBtn = form.querySelector<HTMLButtonElement>("[data-submit-btn]");
+    const submitLabel = submitBtn?.textContent?.trim() || "送出 → 24 小時內回你";
     const formError = form.querySelector<HTMLElement>("[data-form-error]");
+    const fallbackPanel = form.querySelector<HTMLElement>("[data-form-fallback]");
+    const fallbackText = form.querySelector<HTMLTextAreaElement>("[data-fallback-text]");
+    const fallbackCopyBtn = form.querySelector<HTMLButtonElement>("[data-fallback-copy]");
     const loadedAtInput = form.querySelector<HTMLInputElement>("[data-loaded-at]");
     const sourceInput = form.querySelector<HTMLInputElement>("[data-source-page]");
 
     const loadedAt = Date.now();
     if (loadedAtInput) loadedAtInput.value = String(loadedAt);
     if (sourceInput) sourceInput.value = window.location.pathname + window.location.search;
+
+    function track(name: string, params: Record<string, string>) {
+      try {
+        const w = window as unknown as { gtag?: (...args: unknown[]) => void };
+        if (typeof w.gtag === "function") {
+          w.gtag("event", name, { ...params, page_path: location.pathname });
+        }
+      } catch {
+        /* 量測失敗不影響表單 */
+      }
+    }
 
     function showError(field: string, msg: string) {
       const el = form.querySelector<HTMLElement>(`[data-error-for="${field}"]`);
@@ -294,6 +366,11 @@ const {
       formError.textContent = "";
       formError.classList.add("hidden");
     }
+    function resetSubmitBtn(label = submitLabel) {
+      if (!submitBtn) return;
+      submitBtn.disabled = false;
+      submitBtn.textContent = label;
+    }
 
     function getValue(name: string): string {
       return (
@@ -302,6 +379,53 @@ const {
         )?.value || ""
       ).trim();
     }
+
+    function composeMessage(payload: Record<string, string>): string {
+      const lines: string[] = ["【賣房行情評估】"];
+      const push = (label: string, key: string, suffix = "") => {
+        const v = (payload[key] || "").trim();
+        if (v) lines.push(`${label}：${v}${suffix}`);
+      };
+      push("姓名", "姓名");
+      push("電話", "電話");
+      push("Email", "Email");
+      push("地址", "物件地址");
+      push("坪數", "坪數", " 坪");
+      push("期望總價", "期望總價(萬)", " 萬");
+      push("備註", "備註");
+      const src = (payload["來源頁"] || "").trim();
+      if (src) lines.push(`來源頁：${location.origin}${src}`);
+      return lines.join("\n");
+    }
+
+    function showFallback(payload: Record<string, string>) {
+      if (!fallbackPanel) return;
+      if (fallbackText) fallbackText.value = composeMessage(payload);
+      fallbackPanel.hidden = false;
+      fallbackPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    fallbackCopyBtn?.addEventListener("click", async () => {
+      const text = fallbackText?.value || "";
+      if (!text) return;
+      let copied = false;
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+          copied = true;
+        }
+      } catch {
+        copied = false;
+      }
+      if (!copied && fallbackText) {
+        fallbackText.focus();
+        fallbackText.select();
+      }
+      fallbackCopyBtn.textContent = copied ? "✅ 已複製，貼到 LINE 就好" : "已選取，長按複製";
+      setTimeout(() => {
+        fallbackCopyBtn.textContent = "📋 複製訊息";
+      }, 2500);
+    });
 
     function validatePhone(): boolean {
       const phone = getValue("電話");
@@ -332,15 +456,16 @@ const {
       return true;
     }
 
-    function validateNumber(name: string, min: number, max: number, label: string): boolean {
+    // 選填數字：空著放行，有填才檢查範圍
+    function validateOptionalNumber(name: string, min: number, max: number, label: string): boolean {
       const raw = getValue(name);
       if (!raw) {
-        showError(name, `${label}是必填的`);
-        return false;
+        clearError(name);
+        return true;
       }
       const n = parseFloat(raw);
       if (isNaN(n) || n < min || n > max) {
-        showError(name, `${label}範圍：${min} ~ ${max}`);
+        showError(name, `${label}範圍：${min} ~ ${max}，不確定可以先空著`);
         return false;
       }
       clearError(name);
@@ -374,8 +499,8 @@ const {
         showError("物件地址", "物件地址是必填的");
         ok = false;
       } else clearError("物件地址");
-      if (!validateNumber("坪數", 1, 999, "坪數")) ok = false;
-      if (!validateNumber("期望總價(萬)", 1, 999999, "期望總價")) ok = false;
+      if (!validateOptionalNumber("坪數", 1, 999, "坪數")) ok = false;
+      if (!validateOptionalNumber("期望總價(萬)", 1, 999999, "期望總價")) ok = false;
       return ok;
     }
 
@@ -390,7 +515,7 @@ const {
       const honeypot =
         form.querySelector<HTMLInputElement>("[name='_gotcha']")?.value || "";
       if (honeypot) {
-        window.location.href = "/thank-you?intent=" + encodeURIComponent("賣房");
+        window.location.href = "/thank-you/?intent=" + encodeURIComponent("賣房");
         return;
       }
 
@@ -415,54 +540,36 @@ const {
         submitBtn.textContent = "送出中...";
       }
 
+      let ok = false;
       try {
         const res = await fetch("/api/contact-sell", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-
-        // 容錯解析後端 JSON（解析失敗不要炸、走下方 !res.ok 分支）
-        let data: { ok?: boolean; degraded?: boolean } = {};
-        try {
-          data = await res.clone().json();
-        } catch {}
-
-        // 成功（Notion 或 TG 任一條收到）→ 導 thank-you
-        if (data.ok) {
-          window.location.href =
-            "/thank-you?intent=" + encodeURIComponent("賣房");
-          return;
-        }
-
-        // 系統暫時收不到件（兩條管道都失敗）→ 引導客戶改 LINE / 電話、不漏 lead
-        if (data.degraded) {
-          showFormError(
-            "系統暫時無法收件、為了不漏掉你的訊息、請直接 LINE sky811117 或撥 0920-118-756、景泰會立刻處理"
-          );
-          if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = "送出 → 24 小時內回你";
+        if (res.ok) {
+          try {
+            const data = (await res.json()) as { ok?: boolean };
+            ok = data.ok === true;
+          } catch {
+            ok = false;
           }
-          return;
         }
-
-        // 其餘非 2xx（驗證失敗 / 伺服器錯誤）→ 落到 catch 顯示通用錯誤
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
-        }
-        throw new Error("Unexpected response");
-      } catch (err) {
-        console.error("Sell form submit failed:", err);
-        showFormError(
-          "送出失敗了、再試一次。或直接 LINE sky811117 / 撥 0920-118-756"
-        );
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = "送出 → 24 小時內回你";
-        }
+      } catch {
+        ok = false;
       }
+
+      if (ok) {
+        track("lead_submit", { status: "ok", form: "sell", intent: "賣房" });
+        window.location.href =
+          "/thank-you/?form=sell&intent=" + encodeURIComponent("賣房");
+        return;
+      }
+
+      // 沒收到（後端沒設定 / 兩條管道都失敗 / 網路錯誤）→ 原地備援，不漏 lead
+      track("lead_submit", { status: "degraded", form: "sell", intent: "賣房" });
+      showFallback(payload);
+      resetSubmitBtn("再送一次");
     });
   }
 

@@ -5,8 +5,18 @@ import config from "@/config";
 
 export const BLOG_PATH = "src/content/posts";
 
+// 三個 collection 共用的檔案樣式：
+// - `[^_]*` 只擋「底線開頭的檔案」（_faq-17-… 這種暫存稿）
+// - `!**/_*/**` 才擋「底線開頭的資料夾」。2026-09-05 教訓：AstroPaper 範本的
+//   src/content/posts/_color-schemes/predefined-color-schemes.mdx 被當正式文章 build，
+//   英文示範文上線、進 sitemap、還長出 /tags/color-schemes/。
+// ⚠️ 不要改成 `**/!(_*)/[^_]*`：文章與物件全放在根層，那個寫法會讓三個 collection 命中 0 筆，
+//   build 只 warn 不報錯，CI 綠燈直接上空站（tinyglobby 實測過）。
+// glob loader 沒有 ignore 選項，只能靠 pattern 陣列的負向樣式（tinyglobby 支援）。
+const CONTENT_PATTERN = ["**/[^_]*.{md,mdx}", "!**/_*/**"];
+
 const posts = defineCollection({
-  loader: glob({ pattern: "**/[^_]*.{md,mdx}", base: `./${BLOG_PATH}` }),
+  loader: glob({ pattern: CONTENT_PATTERN, base: `./${BLOG_PATH}` }),
   schema: ({ image }) =>
     z.object({
       author: z.string().default(config.site.author),
@@ -35,7 +45,7 @@ const posts = defineCollection({
 });
 
 const pages = defineCollection({
-  loader: glob({ pattern: "**/[^_]*.{md,mdx}", base: "./src/content/pages" }),
+  loader: glob({ pattern: CONTENT_PATTERN, base: "./src/content/pages" }),
   schema: z.object({
     title: z.string(),
     description: z.string().optional(),
@@ -49,7 +59,7 @@ const pages = defineCollection({
 // 屋主資訊、建案案名、門牌號 → 絕對不放
 const properties = defineCollection({
   loader: glob({
-    pattern: "**/[^_]*.{md,mdx}",
+    pattern: CONTENT_PATTERN,
     base: "./src/content/properties",
     // 保留檔名原始大小寫當作頁面 id。委編 UG/UA 全大寫，預設 generateId 會
     // slugify 成小寫 → 大寫委編網址 /properties/UG1187667 變 404，分享到

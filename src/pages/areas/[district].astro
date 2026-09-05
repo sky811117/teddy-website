@@ -7,6 +7,8 @@ import Main from "@/components/Main.astro";
 import config from "@/config";
 import { areas, type Area } from "@/data/areas";
 import { safeJsonLd } from "@/utils/safeJsonLd";
+import { postFilter } from "@/utils/postFilter";
+import { cleanPropertyTitle } from "@/utils/cleanPropertyTitle";
 import IconAlertTriangle from "@/assets/icons/IconAlertTriangle.svg";
 import IconNotes from "@/assets/icons/IconNotes.svg";
 
@@ -33,28 +35,106 @@ const previewProperties = allProperties
   .sort((a, b) => b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime())
   .slice(0, 6);
 
-// 取該區 community post (有 postSlug 的) — 並讀 post 的 title/description
-const allPosts = await getCollection(
-  "posts",
-  ({ data }) => !data.draft && data.tags?.includes("community-review")
+// 全站在售（算「熱門社區」每個社區有幾戶在售用）
+const activeProperties = await getCollection(
+  "properties",
+  ({ data }) => data.status === "active"
 );
-const communityPostMap = new Map(allPosts.map(p => [p.id, p]));
+const normalizeName = (s: string) => s.replace(/\s+/g, "").trim();
+const listingCountByCommunity = new Map<string, number>();
+for (const p of activeProperties) {
+  const c = p.data.community?.trim();
+  if (!c) continue;
+  const key = normalizeName(c);
+  listingCountByCommunity.set(key, (listingCountByCommunity.get(key) ?? 0) + 1);
+}
 
-const hotCommunitiesWithLink = area.hotCommunities.map(c => {
-  if (!c.postSlug) return { ...c, post: null };
-  const post = communityPostMap.get(c.postSlug);
-  return { ...c, post };
+// 文章：排掉草稿與未到發布時間的（postFilter），社區文用 frontmatter community 自動配對，
+// 不再只靠 areas.ts 的人工 postSlug（每寫一篇新社區文就要回來改 areas.ts，供文管線沒這一步）
+const allPosts = (await getCollection("posts")).filter(postFilter);
+const communityPosts = allPosts.filter(
+  p => p.data.tags?.includes("community-review") || !!p.data.community
+);
+const postById = new Map(communityPosts.map(p => [p.id, p]));
+const postByCommunity = new Map<string, (typeof communityPosts)[number]>();
+for (const p of communityPosts) {
+  const c = p.data.community?.trim();
+  if (!c) continue;
+  const key = normalizeName(c);
+  const prev = postByCommunity.get(key);
+  if (!prev || p.data.pubDatetime > prev.data.pubDatetime) postByCommunity.set(key, p);
+}
+
+// 該區 tag 的正規化：文章 tag 有「北屯區」也有「北屯」，都算
+const districtKey = area.shortName.replace(/區$/, "");
+const tagMatchesArea = (tag: string) =>
+  tag === area.shortName ||
+  tag === area.relatedTag ||
+  tag.replace(/區$/, "") === districtKey;
+
+type HotCommunity = {
+  name: string;
+  note?: string;
+  post: (typeof communityPosts)[number] | null;
+  listings: number;
+};
+
+// 熱門社區：areas.ts 人工清單當排序／補充，postSlug 優先、再用 community 一字不差配對；
+// 再把「tag 含該區」的社區文自動補進來
+const hotCommunities: HotCommunity[] = area.hotCommunities.map(c => {
+  const key = normalizeName(c.name);
+  const post =
+    (c.postSlug ? postById.get(c.postSlug) : undefined) ??
+    postByCommunity.get(key) ??
+    null;
+  return {
+    name: c.name,
+    note: c.note,
+    post,
+    listings: listingCountByCommunity.get(key) ?? 0,
+  };
 });
+const listedKeys = new Set(hotCommunities.map(c => normalizeName(c.name)));
+for (const post of communityPosts) {
+  const c = post.data.community?.trim();
+  if (!c) continue;
+  const key = normalizeName(c);
+  if (listedKeys.has(key)) continue;
+  if (hotCommunities.some(h => h.post?.id === post.id)) continue;
+  if (!(post.data.tags ?? []).some(tagMatchesArea)) continue;
+  listedKeys.add(key);
+  hotCommunities.push({
+    name: c,
+    post,
+    listings: listingCountByCommunity.get(key) ?? 0,
+  });
+}
+// 有深度文或有在售才列；「車站周邊老公寓翻新案」這種佔位名兩者都沒有就不出現
+const hotCommunitiesShown = hotCommunities.filter(c => c.post || c.listings > 0);
+const hotPostIds = new Set(
+  hotCommunitiesShown.map(c => c.post?.id).filter((id): id is string => !!id)
+);
+
+// 該區相關文章：tag 含該區名的最新 5 篇（社區文已在上面列過的排除）
+const relatedPosts = allPosts
+  .filter(p => !hotPostIds.has(p.id))
+  .filter(p => (p.data.tags ?? []).some(tagMatchesArea))
+  .sort((a, b) => b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime())
+  .slice(0, 5);
 
 const formatPrice = (price: number) => {
   if (price >= 10000) return `${(price / 10000).toFixed(2)} 億`;
   return `${price.toLocaleString()} 萬`;
 };
 
+// 數據期間：areas.ts 的數字目前是合泰建經 2026 Q1，標題不綁季度（免得 SERP 標題看起來過期），
+// 內文標明資料期間
+const DATA_PERIOD = "2026 Q1";
+
 // SEO + JSON-LD
-const pageTitle = `${area.name}買房指南 — 2026 Q1 行情、熱門社區、適合誰買`;
-const pageDescription = `${area.name} ${area.headline}。${area.summary} 含 2026 Q1 關鍵數據、熱門社區、常見問題 — 景泰實戰整理。`;
-const canonicalURL = new URL(`/areas/${area.slug}`, Astro.site).href;
+const pageTitle = `${area.name}買房指南 — 行情、熱門社區、適合誰買`;
+const pageDescription = `${area.name} ${area.headline}。${area.summary} 含關鍵數據（資料期間 ${DATA_PERIOD}）、熱門社區、常見問題與在售物件。`;
+const canonicalURL = new URL(`/areas/${area.slug}/`, Astro.site).href;
 
 const breadcrumbSchema = {
   "@context": "https://schema.org",
@@ -70,7 +150,7 @@ const breadcrumbSchema = {
       "@type": "ListItem",
       position: 2,
       name: "台中各區",
-      item: new URL("/areas", Astro.site).href,
+      item: new URL("/areas/", Astro.site).href,
     },
     {
       "@type": "ListItem",
@@ -101,7 +181,7 @@ const areaServedSchema = {
     `${area.shortName}賣房`,
     `${area.shortName}房價`,
     `${area.shortName}行情`,
-    ...area.hotCommunities.map(c => c.name),
+    ...hotCommunitiesShown.map(c => c.name),
     ...(area.seoSections?.map(s => s.heading) ?? []),
   ],
   hasCredential: [
@@ -162,7 +242,7 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
           <span class="mx-1">›</span>
         </li>
         <li>
-          <a href="/areas" class="hover:text-accent">台中各區</a>
+          <a href="/areas/" class="hover:text-accent">台中各區</a>
           <span class="mx-1">›</span>
         </li>
         <li class="text-foreground" aria-current="page">{area.shortName}</li>
@@ -212,10 +292,10 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
       )
     }
 
-    {/* 2026 Q1 數據表 */}
+    {/* 關鍵數據表 */}
     <section class="mt-10">
       <h2 class="text-foreground text-xl font-bold sm:text-2xl">
-        📊 2026 Q1 關鍵數據
+        📊 關鍵數據（資料期間 {DATA_PERIOD}）
       </h2>
       <div class="border-border bg-card mt-4 overflow-hidden rounded-lg border">
         <table class="w-full text-sm sm:text-base">
@@ -247,45 +327,63 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
         </table>
       </div>
       <p class="text-muted-foreground mt-3 text-xs">
-        資料來源：合泰建經 2026 Q1 台中市不動產市場分析、實價登錄。數字僅供參考、實際成交以個案為準。
+        📌 資料來源：合泰建經 {DATA_PERIOD} 台中市不動產市場分析、內政部實價登錄。數字僅供參考、實際成交以個案為準。
       </p>
     </section>
 
-    {/* 熱門社區 */}
+    {/* 熱門社區：有深度文就連文章、沒有就顯示在售筆數 */}
     <section class="mt-10">
       <h2 class="text-foreground text-xl font-bold sm:text-2xl">
         🏘️ {area.shortName}熱門社區
       </h2>
-      <p class="text-muted-foreground mt-2 text-sm">
-        我帶看過、寫過深度文的社區（點進去看完整評估）
-      </p>
-      <ul class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {
-          hotCommunitiesWithLink.map(c => (
-            <li class="border-border bg-card rounded-lg border p-4">
-              {c.post ? (
-                <a
-                  href={`/posts/${c.post.id}`}
-                  class="block no-underline"
-                >
-                  <div class="text-foreground font-bold">🔺 {c.name}</div>
-                  <div class="text-muted-foreground mt-1 line-clamp-2 text-sm">
-                    {c.post.data.description}
-                  </div>
-                  <div class="text-accent mt-2 text-xs">看深度文 →</div>
-                </a>
-              ) : (
-                <div>
-                  <div class="text-foreground font-bold">🔺 {c.name}</div>
-                  <div class="text-muted-foreground mt-1 text-sm">
-                    深度文整理中、想聊這個社區先 LINE 我
-                  </div>
-                </div>
-              )}
-            </li>
-          ))
-        }
-      </ul>
+      {
+        hotCommunitiesShown.length > 0 ? (
+          <>
+            <p class="text-muted-foreground mt-2 text-sm">
+              有深度文整理的社區點進去看實價登錄與優缺點；還沒寫的先看在售物件。
+            </p>
+            <ul class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {hotCommunitiesShown.map(c => (
+                <li class="border-border bg-card rounded-lg border p-4">
+                  {c.post ? (
+                    <a href={`/posts/${c.post.id}/`} class="block no-underline">
+                      <div class="text-foreground font-bold">🔺 {c.name}</div>
+                      <div class="text-muted-foreground mt-1 line-clamp-2 text-sm">
+                        {c.post.data.description}
+                      </div>
+                      <div class="text-accent mt-2 text-xs">
+                        看深度文 →
+                        {c.listings > 0 && (
+                          <span class="text-muted-foreground ml-2">在售 {c.listings} 戶</span>
+                        )}
+                      </div>
+                    </a>
+                  ) : (
+                    <a
+                      href={`/properties/?community=${encodeURIComponent(c.name)}`}
+                      class="block no-underline"
+                    >
+                      <div class="text-foreground font-bold">🔺 {c.name}</div>
+                      <div class="text-muted-foreground mt-1 text-sm">
+                        深度文整理中，目前站上有 {c.listings} 戶在售
+                      </div>
+                      <div class="text-accent mt-2 text-xs">看在售物件 →</div>
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p class="text-muted-foreground mt-2 text-sm">
+            這區的社區深度文還在整理。想問哪個社區，先
+            <a href="/go/line?src=area" class="text-accent underline">
+              LINE 問景泰
+            </a>
+            。
+          </p>
+        )
+      }
     </section>
 
     {/* 適合 / 不建議 */}
@@ -329,7 +427,7 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
       </div>
       <p class="text-muted-foreground mt-4 text-sm">
         更多買賣房通用問題 →{" "}
-        <a href="/faq" class="text-accent underline">
+        <a href="/faq/" class="text-accent underline">
           常見問題 30 題
         </a>
       </p>
@@ -346,55 +444,71 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
             目前公開的 {area.shortName}案件（含同事聯賣）
           </p>
           <ul class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {previewProperties.map(property => (
-              <li class="border-border bg-card overflow-hidden rounded-lg border transition-shadow hover:shadow-lg">
-                <a
-                  href={`/properties/${property.id}/`}
-                  class="block no-underline"
-                >
-                  {property.data.coverImage ? (
-                    <div class="bg-muted aspect-[4/3] w-full overflow-hidden">
-                      <img
-                        src={
-                          typeof property.data.coverImage === "string"
-                            ? property.data.coverImage
-                            : property.data.coverImage.src
-                        }
-                        alt={property.data.title}
-                        class="h-full w-full object-cover"
-                        loading="lazy"
-                      />
+            {previewProperties.map(property => {
+              const title = cleanPropertyTitle(
+                property.data.title,
+                [property.data.community?.trim() || property.data.district, property.data.layout]
+                  .filter(Boolean)
+                  .join(" ")
+              );
+              return (
+                <li class="border-border bg-card overflow-hidden rounded-lg border transition-shadow hover:shadow-lg">
+                  <a
+                    href={`/properties/${property.id}/`}
+                    class="block no-underline"
+                    data-track="property"
+                    data-property-id={property.id}
+                    data-property-title={title}
+                    data-property-price={String(property.data.totalPrice)}
+                    data-property-district={property.data.district}
+                  >
+                    {property.data.coverImage ? (
+                      <div class="bg-muted aspect-[4/3] w-full overflow-hidden">
+                        <img
+                          src={
+                            typeof property.data.coverImage === "string"
+                              ? property.data.coverImage
+                              : property.data.coverImage.src
+                          }
+                          alt={title}
+                          width="800"
+                          height="600"
+                          class="h-full w-full object-cover"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
+                    ) : (
+                      <div class="bg-muted text-muted-foreground flex aspect-[4/3] w-full items-center justify-center">
+                        <span>📷 照片整理中</span>
+                      </div>
+                    )}
+                    <div class="p-4">
+                      <h3 class="text-foreground line-clamp-2 text-base font-bold">
+                        {title}
+                      </h3>
+                      <p class="text-muted-foreground mt-1 text-sm">
+                        📍 {property.data.district}
+                        {property.data.streetArea
+                          ? `・${property.data.streetArea}`
+                          : ""}
+                      </p>
+                      <div class="text-accent mt-2 text-xl font-bold">
+                        {formatPrice(property.data.totalPrice)}
+                      </div>
+                      <div class="text-muted-foreground mt-1 text-sm">
+                        {property.data.layout} ・ {property.data.area} 坪
+                      </div>
                     </div>
-                  ) : (
-                    <div class="bg-muted text-muted-foreground flex aspect-[4/3] w-full items-center justify-center">
-                      <span>📷 照片整理中</span>
-                    </div>
-                  )}
-                  <div class="p-4">
-                    <h3 class="text-foreground line-clamp-2 text-base font-bold">
-                      {property.data.title}
-                    </h3>
-                    <p class="text-muted-foreground mt-1 text-sm">
-                      📍 {property.data.district}
-                      {property.data.streetArea
-                        ? `・${property.data.streetArea}`
-                        : ""}
-                    </p>
-                    <div class="text-accent mt-2 text-xl font-bold">
-                      {formatPrice(property.data.totalPrice)}
-                    </div>
-                    <div class="text-muted-foreground mt-1 text-sm">
-                      {property.data.layout} ・ {property.data.area} 坪
-                    </div>
-                  </div>
-                </a>
-              </li>
-            ))}
+                  </a>
+                </li>
+              );
+            })}
           </ul>
           {allProperties.length > 6 && (
             <p class="mt-4 text-center">
               <a
-                href={`/properties?district=${encodeURIComponent(area.shortName)}`}
+                href={`/properties/?district=${encodeURIComponent(area.shortName)}`}
                 class="text-accent underline"
               >
                 看完整 {allProperties.length} 筆 {area.shortName}物件 →
@@ -405,21 +519,42 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
       )
     }
 
-    {/* 同區其他資源 */}
+    {/* 該區相關文章：月報／新聞／教學文，tag 含該區名的最新 5 篇 */}
     {
-      area.relatedTag && (
+      (relatedPosts.length > 0 || area.relatedTag) && (
         <section class="mt-10">
           <h2 class="text-foreground text-xl font-bold sm:text-2xl">
             <IconNotes class="size-5 inline-block" aria-hidden="true" /> {area.shortName}相關文章
           </h2>
-          <p class="text-muted-foreground mt-2 text-sm">
-            <a
-              href={`/tags/${encodeURIComponent(area.relatedTag)}`}
-              class="text-accent underline"
-            >
-              看所有 #{area.relatedTag} 文章 →
-            </a>
-          </p>
+          {relatedPosts.length > 0 && (
+            <ul class="mt-4 space-y-3">
+              {relatedPosts.map(post => (
+                <li class="border-border bg-card rounded-lg border p-4">
+                  <a href={`/posts/${post.id}/`} class="group block no-underline">
+                    <div class="text-foreground font-bold group-hover:underline">
+                      {post.data.title}
+                    </div>
+                    <div class="text-muted-foreground mt-1 line-clamp-2 text-sm">
+                      {post.data.description}
+                    </div>
+                    <div class="text-muted-foreground mt-2 text-xs">
+                      {post.data.pubDatetime.toISOString().slice(0, 10)}
+                    </div>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+          {area.relatedTag && (
+            <p class="text-muted-foreground mt-4 text-sm">
+              <a
+                href={`/tags/${encodeURIComponent(area.relatedTag)}/`}
+                class="text-accent underline"
+              >
+                看所有 #{area.relatedTag} 文章 →
+              </a>
+            </p>
+          )}
         </section>
       )
     }
@@ -434,7 +569,7 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
           otherAreas.map(a => (
             <li>
               <a
-                href={`/areas/${a.slug}`}
+                href={`/areas/${a.slug}/`}
                 class="border-border bg-card hover:border-accent inline-block rounded-full border px-4 py-2 text-sm no-underline transition-colors"
               >
                 {a.emoji} {a.name}
@@ -453,8 +588,8 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
         想問{area.shortName}的物件、或想要這區的成交實價清單？
       </p>
       <p class="text-muted-foreground mt-3 leading-relaxed">
-        我整理了{area.shortName}近 6 個月實價登錄 + 我手上未公開的物件名單，<br />
-        LINE 我「{area.shortName}」就傳給你。
+        {area.shortName}近 6 個月實價登錄整理 + 站上還沒公開的物件名單，<br />
+        LINE 傳「{area.shortName}」就回給你。
       </p>
       <div class="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
         <a
@@ -464,7 +599,7 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
           💬 LINE 私訊 sky811117
         </a>
         <a
-          href={`/contact?type=buy&area=${encodeURIComponent(area.shortName)}`}
+          href="/contact/"
           class="border-accent text-accent inline-block rounded border-2 px-6 py-2 font-medium no-underline hover:bg-accent hover:text-accent-foreground transition-colors"
         >
           📝 用表單留聯絡方式 →

@@ -22,10 +22,16 @@ import {
   buildThinTagSlugs,
 } from "./scripts/sitemap-lastmod.mjs";
 
-const lastmodMap = buildLastmodMap(config.site.url);
-const sectionLastmod = buildSectionLastmod(config.site.url);
-// 只掛 1 篇文章的 tag 聚合頁（實測 121 個）— 不送進 sitemap，見該函式的說明
-const thinTagSlugs = buildThinTagSlugs();
+// 排程文（pubDatetime 還沒到）與草稿不能算進 lastmod，門檻跟 src/utils/postFilter.ts 同一個值
+const sitemapOpts = {
+  scheduledPostMargin: config.posts?.scheduledPostMargin ?? 15 * 60 * 1000,
+};
+const lastmodMap = buildLastmodMap(config.site.url, sitemapOpts);
+const sectionLastmod = buildSectionLastmod(config.site.url, sitemapOpts);
+// 掛不到 3 篇文章的 tag 聚合頁（薄內容）— 不送進 sitemap，見該函式的說明
+const thinTagSlugs = buildThinTagSlugs(sitemapOpts);
+// build 當下時間：lastmod 絕不能晚於它（Google 看到未來日期會整份不信 lastmod）
+const buildNow = new Date();
 
 export default defineConfig({
   site: config.site.url,
@@ -41,10 +47,14 @@ export default defineConfig({
         if (page.endsWith("/robots.txt/")) return false;
         if (page.endsWith("/rss.xml/")) return false;
         if (config.features?.showArchives === false && page.endsWith("/archives/")) return false;
-        // 薄 tag 頁（只掛 1 篇文章）不送進 sitemap。頁面本身照樣存在、照樣可爬，
+        // 薄 tag 頁（掛不到 3 篇文章）不送進 sitemap。頁面本身照樣存在、照樣可爬，
         // 只是不主動把爬取預算花在跟單篇文章幾乎重複的聚合頁上。
-        const tagMatch = page.match(/\/tags\/([^/]+)\/?$/);
-        if (tagMatch && thinTagSlugs.has(decodeURIComponent(tagMatch[1]))) return false;
+        // tag 分頁 /tags/<slug>/2/ 一律不進 sitemap（第 1 頁已代表整個聚合頁）。
+        const tagMatch = page.match(/\/tags\/([^/]+)\/?(\d+\/?)?$/);
+        if (tagMatch) {
+          if (tagMatch[2]) return false;
+          if (thinTagSlugs.has(decodeURIComponent(tagMatch[1]))) return false;
+        }
         return true;
       },
       // 物件頁、文章頁優先級高、列表頁次之
@@ -73,6 +83,8 @@ export default defineConfig({
           else if (item.url.includes("/properties") || item.url.includes("/areas"))
             lm = sectionLastmod.properties ?? undefined;
         }
+        // 保險：任何 lastmod 都不得晚於 build 時間（排程文、時區誤差都可能超前）
+        if (lm && lm > buildNow) lm = buildNow;
         if (lm) item.lastmod = lm.toISOString();
         return item;
       },
@@ -104,18 +116,22 @@ export default defineConfig({
   },
   fonts: [
     {
+      // 等寬字：只給程式碼區塊用。只留 400/700 normal（之前 5 weights × 2 styles
+      // × 2 formats = 20 個檔宣告、線上實際只抓 1 個），不指定 formats → 預設 woff2。
       name: "Google Sans Code",
       cssVariable: "--font-google-sans-code",
       provider: fontProviders.google(),
       fallbacks: ["monospace"],
-      weights: [300, 400, 500, 600, 700],
-      styles: ["normal", "italic"],
-      formats: ["woff", "ttf"],
+      weights: [400, 700],
+      styles: ["normal"],
     },
     {
-      // 中文字體 — 給動態 OG 圖渲染 zh-TW 標題用
-      // 沒這個，satori 渲染中文 = 豆腐方塊（社群分享預覽爛掉）
-      // 900 給網頁標題層（Layout.astro 有渲染 <Font>，內文維持系統字控載量）
+      // 網頁標題層中文字體（theme.css --font-heading），內文走系統字。
+      // ⚠️ 不要加 formats：Astro 預設 woff2 → unifont 用 Chrome UA 向 Google 要 CSS，
+      // Google 才會回 unicode-range 切片（每片 10–30KB、只抓標題用到的字塊）。
+      // 2026-09 教訓：之前寫 formats: ["woff","ttf"]（為了 satori）害 Google 回單一
+      // 整檔（每個 weight 4.1–4.2MB、無 unicode-range），首頁光字型就下載 4.2MB。
+      // typography.css：h1/h2 寫 900、h3/h4 700，但只留 700 一個 weight（每個 weight 約 100 個切片 @font-face 會內嵌進每頁 HTML）。
       name: "Noto Sans TC",
       cssVariable: "--font-noto-sans-tc",
       provider: fontProviders.google(),
@@ -125,9 +141,21 @@ export default defineConfig({
         "Microsoft JhengHei",
         "sans-serif",
       ],
-      weights: [400, 700, 900],
+      weights: [700], // 只留 700：每個字重約 100 個 unicode-range 切片 @font-face 會內嵌進每一頁 HTML（約 30KB gzip/字重），h1/h2 的 900 由瀏覽器用 700 字面渲染
       styles: ["normal"],
-      formats: ["woff", "ttf"],
+    },
+    {
+      // OG 圖專用（satori 只吃 ttf/otf/woff，不吃 woff2）。
+      // 只給 src/pages/og.png.ts、src/pages/posts/[...slug]/index.png.ts 透過
+      // fontData["--font-noto-sans-tc-og"] 讀；Layout.astro 絕對不要 render 這個 <Font>，
+      // 否則整檔 ttf 又會被送到瀏覽器。
+      name: "Noto Sans TC",
+      cssVariable: "--font-noto-sans-tc-og",
+      provider: fontProviders.google(),
+      fallbacks: ["sans-serif"],
+      weights: [400, 700],
+      styles: ["normal"],
+      formats: ["ttf"],
     },
   ],
   env: {

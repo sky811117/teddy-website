@@ -4,57 +4,91 @@ import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import config from "@/config";
 
-// 從 URL 帶入 intent，給不同意圖客戶不同的「等我回前先做」建議
-const intent = Astro.url.searchParams.get("intent") ?? "";
-
+// 純靜態站：build 時讀不到 ?intent=，所以五組提示全部輸出（預設顯示「一般諮詢」），
+// 由頁尾 inline script 依 location.search 切換，並送一筆 GA4 generate_lead。
 type Intent = "找房" | "賣房" | "換屋" | "投資諮詢" | "一般諮詢";
 
-const intentTips: Record<Intent, { title: string; tips: string[] }> = {
+type Tip = { text: string; href?: string; label?: string };
+
+const intentTips: Record<Intent, { title: string; tips: Tip[] }> = {
   找房: {
     title: "等我回覆前、你可以做這 3 件事",
     tips: [
-      "看在售物件、把感興趣的 2-3 戶截圖丟給我，我直接約看屋",
-      "想清楚自備款大概多少 — 我可以提早幫你算貸款方案",
-      "如果有指定區段，把區段名先寫好（北屯機捷？七期？太平？）",
+      {
+        text: "看在售物件、把感興趣的 2-3 戶截圖丟給我，我直接約看屋",
+        href: "/properties/",
+        label: "看在售物件 →",
+      },
+      {
+        text: "想清楚自備款大概多少 — 我可以提早幫你算貸款方案",
+        href: "/tools/",
+        label: "先用房貸試算 →",
+      },
+      {
+        text: "如果有指定區段，把區段名先寫好（北屯機捷？七期？太平？）",
+        href: "/areas/",
+        label: "看台中各區 →",
+      },
     ],
   },
   賣房: {
     title: "等我回覆前、先想清楚 3 件事",
     tips: [
-      "什麼時候想拿到錢 —— 1 個月內、3 個月內、半年內？",
-      "心中目標價 —— 不一定要對外講、但要有底",
-      "目前住誰 —— 空屋？自住？租客？影響帶看時間",
+      { text: "什麼時候想拿到錢 —— 1 個月內、3 個月內、半年內？" },
+      { text: "心中目標價 —— 不一定要對外講、但要有底" },
+      {
+        text: "目前住誰 —— 空屋？自住？租客？影響帶看時間",
+        href: "/sell/",
+        label: "先看委託流程 4 步 →",
+      },
     ],
   },
   換屋: {
     title: "等我回覆前、先想清楚 2 件事",
     tips: [
-      "「先賣再買」還是「先買再賣」？這決定整個流程跟資金壓力",
-      "舊屋大概想拿多少錢 → 新屋預算大概多少",
+      { text: "「先賣再買」還是「先買再賣」？這決定整個流程跟資金壓力" },
+      {
+        text: "舊屋大概想拿多少錢 → 新屋預算大概多少",
+        href: "/sell/",
+        label: "舊屋先拿行情評估區間 →",
+      },
     ],
   },
   投資諮詢: {
     title: "等我回覆前、先準備 3 個數字",
     tips: [
-      "自備款大概多少（決定能進場的物件區間）",
-      "想多久看到 ROI（短線轉手 vs 長期收租策略不同）",
-      "純收租、賺價差、還是兩個都要",
+      { text: "自備款大概多少（決定能進場的物件區間）" },
+      { text: "想多久看到 ROI（短線轉手 vs 長期收租策略不同）" },
+      {
+        text: "純收租、賺價差、還是兩個都要",
+        href: "/properties/",
+        label: "看在售物件 →",
+      },
     ],
   },
   一般諮詢: {
     title: "等我回覆前、可以先看這些",
     tips: [
-      "常見問題 30 題 —— 涵蓋簽約、貸款、過戶、稅務",
-      "台中各區房市分析 —— 7 大重點區段月度動態",
-      "AI 工具集 —— 試算房貸、坪數、議價空間",
+      {
+        text: "常見問題 30 題 —— 涵蓋簽約、貸款、過戶、稅務",
+        href: "/faq/",
+        label: "看常見問題 →",
+      },
+      {
+        text: "台中各區房市分析 —— 7 大重點區段月度動態",
+        href: "/areas/",
+        label: "看台中各區 →",
+      },
+      {
+        text: "AI 工具集 —— 試算房貸、坪數換算、稅費",
+        href: "/tools/",
+        label: "用工具集 →",
+      },
     ],
   },
 };
 
-const isIntent = (s: string): s is Intent =>
-  ["找房", "賣房", "換屋", "投資諮詢", "一般諮詢"].includes(s);
-
-const tipData = isIntent(intent) ? intentTips[intent] : intentTips["一般諮詢"];
+const intentList = Object.keys(intentTips) as Intent[];
 ---
 
 <Layout
@@ -87,13 +121,9 @@ const tipData = isIntent(intent) ? intentTips[intent] : intentTips["一般諮詢
         簡單問題秒回、複雜需求要查資料、最久不會超過 30 分鐘。
       </p>
 
-      {
-        intent && (
-          <p class="text-muted-foreground mt-3 text-[16px]">
-            （已標記為「{intent}」需求）
-          </p>
-        )
-      }
+      <p class="text-muted-foreground mt-3 text-[16px]" data-intent-badge hidden>
+        （已標記為「<span data-intent-name></span>」需求）
+      </p>
     </div>
 
     {/* 急的話 — LINE / 電話 */}
@@ -104,7 +134,7 @@ const tipData = isIntent(intent) ? intentTips[intent] : intentTips["一般諮詢
         如果你急、用這兩條最快
       </h2>
       <p class="text-muted-foreground mt-2 text-[16px]">
-        Email + TG 通知已經送到、但如果你 30 分鐘內要動 —
+        訊息已經推到景泰手機、但如果你 30 分鐘內要動 —
       </p>
 
       <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -127,53 +157,75 @@ const tipData = isIntent(intent) ? intentTips[intent] : intentTips["一般諮詢
       </div>
     </section>
 
-    {/* 等回覆前先做這幾件事（資源型 CTA） */}
-    <section class="mt-10">
-      <h2 class="text-foreground text-xl font-bold sm:text-2xl">
-        {tipData.title}
-      </h2>
-      <ul class="mt-4 space-y-3">
-        {
-          tipData.tips.map((tip, i) => (
-            <li class="border-border bg-card flex gap-4 rounded-lg border p-4">
-              <span class="bg-accent text-accent-foreground flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[15px] font-bold">
-                {i + 1}
-              </span>
-              <p class="text-foreground text-[17px] leading-relaxed">
-                {tip}
-              </p>
-            </li>
-          ))
-        }
-      </ul>
-    </section>
+    {/* 等回覆前先做這幾件事（資源型 CTA）— 五組都輸出，script 依 intent 顯示一組 */}
+    {
+      intentList.map(name => (
+        <section
+          class="mt-10"
+          data-intent-tips={name}
+          hidden={name !== "一般諮詢"}
+        >
+          <h2 class="text-foreground text-xl font-bold sm:text-2xl">
+            {intentTips[name].title}
+          </h2>
+          <ul class="mt-4 space-y-3">
+            {intentTips[name].tips.map((tip, i) => (
+              <li class="border-border bg-card flex gap-4 rounded-lg border p-4">
+                <span class="bg-accent text-accent-foreground flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[15px] font-bold">
+                  {i + 1}
+                </span>
+                <div class="min-w-0">
+                  <p class="text-foreground text-[17px] leading-relaxed">
+                    {tip.text}
+                  </p>
+                  {tip.href && (
+                    <a
+                      href={tip.href}
+                      class="text-accent mt-1 inline-block text-[16px] font-medium"
+                    >
+                      {tip.label}
+                    </a>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    }
 
     {/* 站內導覽 */}
     <section
       class="border-border mt-10 rounded-lg border border-dashed p-6 sm:p-8"
     >
-      <h3 class="text-foreground text-lg font-bold">站內可以先翻翻</h3>
-      <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <h2 class="text-foreground text-lg font-bold">站內可以先翻翻</h2>
+      <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
         <a
-          href="/properties"
+          href="/properties/"
           class="text-foreground hover:text-accent hover:bg-card rounded-md p-3 text-center text-[16px] no-underline transition-colors"
         >
           🏠 在售物件
         </a>
         <a
-          href="/areas"
+          href="/sell/"
+          class="text-foreground hover:text-accent hover:bg-card rounded-md p-3 text-center text-[16px] no-underline transition-colors"
+        >
+          🏷️ 我要賣房
+        </a>
+        <a
+          href="/areas/"
           class="text-foreground hover:text-accent hover:bg-card rounded-md p-3 text-center text-[16px] no-underline transition-colors"
         >
           📊 台中各區
         </a>
         <a
-          href="/faq"
+          href="/faq/"
           class="text-foreground hover:text-accent hover:bg-card rounded-md p-3 text-center text-[16px] no-underline transition-colors"
         >
           ❓ 常見問題
         </a>
         <a
-          href="/tools"
+          href="/tools/"
           class="text-foreground hover:text-accent hover:bg-card rounded-md p-3 text-center text-[16px] no-underline transition-colors"
         >
           🛠️ 工具集
@@ -183,7 +235,7 @@ const tipData = isIntent(intent) ? intentTips[intent] : intentTips["一般諮詢
 
     {/* 法規揭露 */}
     <p
-      class="text-muted-foreground mt-10 text-center text-[13px] leading-relaxed"
+      class="text-muted-foreground mt-10 text-center text-[14px] leading-relaxed"
     >
       一品不動產 有巢氏房屋 台中世界之心加盟店<br />
       經紀人 黃永隆 113彰縣字324 ・ 營業員 陳景泰 114登字488296
@@ -192,3 +244,41 @@ const tipData = isIntent(intent) ? intentTips[intent] : intentTips["一般諮詢
 
   <Footer />
 </Layout>
+
+<script is:inline>
+  // 靜態站讀不到 query string：在瀏覽器端依 ?intent= 切提示，並記一筆 GA4 轉換
+  (function () {
+    var params = new URLSearchParams(location.search);
+    var intent = (params.get("intent") || "").trim();
+    var form = (params.get("form") || "").trim();
+    var known = ["找房", "賣房", "換屋", "投資諮詢", "一般諮詢"];
+    if (!form && intent === "賣房") form = "sell";
+    if (!form) form = "contact";
+
+    if (known.indexOf(intent) !== -1) {
+      document.querySelectorAll("[data-intent-tips]").forEach(function (el) {
+        el.hidden = el.getAttribute("data-intent-tips") !== intent;
+      });
+      var badge = document.querySelector("[data-intent-badge]");
+      var name = document.querySelector("[data-intent-name]");
+      if (badge && name) {
+        name.textContent = intent;
+        badge.hidden = false;
+      }
+    }
+
+    // GA4 轉換事件（Analytics.astro 有掛 gtag 才送）。
+    // 同一次瀏覽只送一次，避免客戶重新整理感謝頁被重複計數。
+    try {
+      var key = "lead_sent:" + form + ":" + intent;
+      if (typeof window.gtag === "function" && !sessionStorage.getItem(key)) {
+        window.gtag("event", "generate_lead", {
+          form: form,
+          intent: intent || "一般諮詢",
+          page_path: location.pathname,
+        });
+        sessionStorage.setItem(key, "1");
+      }
+    } catch (e) {}
+  })();
+</script>

@@ -37,6 +37,14 @@ sortedVideos.forEach(v => {
 
 const hasVideos = sortedVideos.length > 0;
 
+// 「議價心法」「客戶見證」兩個分類目前 0 支影片：
+// 沒有真實素材（真實客戶授權 / 真實出價案例）前不在頁面上宣稱，
+// 有影片進來才自動顯示。分類定義本身在 src/data/videos.ts，這裡只控制顯示。
+const HIDE_WHEN_EMPTY: readonly string[] = ["議價心法", "客戶見證"];
+const shownCategories = categories.filter(
+  c => !(HIDE_WHEN_EMPTY.includes(c) && categoryCount[c] === 0)
+);
+
 const siteOrigin = new URL("/", Astro.site).href;
 const canonicalURL = new URL("/shorts", Astro.site).href;
 const realEstateAgentId = `${siteOrigin}#realestateagent`;
@@ -49,7 +57,7 @@ const collectionSchema = {
   url: canonicalURL,
   name: "景泰的房仲短影音",
   description:
-    "景泰跨 YouTube / TikTok / Instagram 三平台的房仲短影音作品集 — 看屋開箱、政策快訊、議價心法、客戶見證、AI 工作流。",
+    "景泰跨 YouTube / TikTok / Instagram 三平台的房仲短影音作品集 — 看屋開箱、政策快訊、AI 工作流。",
   mainEntity: { "@id": realEstateAgentId },
   inLanguage: "zh-TW",
 };
@@ -110,7 +118,7 @@ function formatDate(d: Date): string {
 
 <Layout
   title={`短影音作品集 | ${config.site.title}`}
-  description="景泰跨 YouTube / TikTok / Instagram 三平台房仲短影音 — 看屋開箱、政策快訊、議價心法、客戶見證、AI 工作流。台中買賣房，看影片比讀文章快。"
+  description="景泰跨 YouTube / TikTok / Instagram 三平台房仲短影音 — 看屋開箱、政策快訊、AI 工作流。台中買賣房，看影片比讀文章快。"
   canonicalURL={canonicalURL}
 >
   <Fragment slot="head">
@@ -167,7 +175,7 @@ function formatDate(d: Date): string {
               <p class="text-accent mt-1 text-sm font-medium">{info.handle}</p>
               <p class="text-muted-foreground mt-3 text-xs leading-relaxed">
                 {p === "youtube" &&
-                  "比較完整的看屋影片、議價解析 — 5-10 分鐘那種。適合認真挑房子的人。"}
+                  "比較完整的看屋影片、政策解析 — 5-10 分鐘那種。適合認真挑房子的人。"}
                 {p === "tiktok" &&
                   "30 秒看完一間房。一鏡到底、快剪、現場氛圍。台中房市快訊也在這。"}
                 {p === "instagram" &&
@@ -191,7 +199,7 @@ function formatDate(d: Date): string {
         房仲業務的影音內容、我盡量做到「客人想知道的、我才拍」— 不是純粹炫物件。
       </p>
       <ul class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {categories.map(c => {
+        {shownCategories.map(c => {
           const info = categoryInfo[c];
           const count = categoryCount[c];
           return (
@@ -388,7 +396,7 @@ function formatDate(d: Date): string {
               <h3 class="text-foreground mt-3 text-lg font-bold">YouTube</h3>
               <p class="text-accent mt-1 text-sm font-medium">@泰迪001</p>
               <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
-                完整看屋影片、議價解析、社區介紹。5-10 分鐘帶你走進物件現場。
+                完整看屋影片、政策解析、社區介紹。5-10 分鐘帶你走進物件現場。
               </p>
               <p class="text-accent mt-4 text-sm font-medium group-hover:underline">
                 → 前往 YouTube 頻道
@@ -439,7 +447,7 @@ function formatDate(d: Date): string {
         想看特定物件的影片？LINE 問景泰
       </p>
       <p class="text-muted-foreground mt-3 leading-relaxed">
-        想看某社區的開箱、某個政策的解析、議價的實戰 —<br />
+        想看某社區的開箱、某個政策的解析、出價前該看的數字 —<br />
         LINE 我說一聲、我直接拍給你看。
       </p>
       <div class="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">

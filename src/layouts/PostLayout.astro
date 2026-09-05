@@ -2,6 +2,7 @@
 import Layout from "./Layout.astro";
 import config from "@/config";
 import { safeJsonLd } from "@/utils/safeJsonLd";
+import { normalizeFaqSchema } from "@/utils/faqSchema";
 
 type Props = {
   title?: string;
@@ -13,6 +14,9 @@ type Props = {
   tags?: string[];
   wordCount?: number;
   timeRequired?: string; // ISO 8601 duration (e.g. PT5M)
+  // 文章 frontmatter 的 faqSchema（content.config.ts 是 z.unknown()，
+  // 結構沒被驗過，所以這裡也收 unknown，交給 normalizeFaqSchema 把關）
+  faqSchema?: unknown;
 };
 
 const { site } = config;
@@ -27,17 +31,18 @@ const {
   tags = [],
   wordCount,
   timeRequired,
+  faqSchema: rawFaqSchema,
 } = Astro.props;
 
 // GA4 post tracking props
-const postSlug = canonicalURL
-  ? new URL(canonicalURL).pathname.replace(/\/$/, "").split("/").pop() ?? ""
-  : Astro.url.pathname.replace(/\/$/, "").split("/").pop() ?? "";
+// canonicalURL 只餵 <link rel="canonical">（Layout 處理）；GA4 slug 與 BlogPosting @id
+// 一律用頁面自身路徑，否則被 canonical 到主文的 7 篇舊青安新聞會把事件與 @id 全部記到主文名下。
+const postSlug = Astro.url.pathname.replace(/\/$/, "").split("/").pop() ?? "";
 const postTitle = title ?? "";
 const postTags = tags.join(",");
 
 // 強化 BlogPosting schema — 加 publisher / mainEntityOfPage / keywords / articleSection
-const articleURL = canonicalURL ?? new URL(Astro.url.pathname, site.url).href;
+const articleURL = new URL(Astro.url.pathname, site.url).href;
 const blogPosting = {
   "@type": "BlogPosting",
   "@id": `${articleURL}#article`,
@@ -100,6 +105,14 @@ const structuredData = {
   "@context": "https://schema.org",
   "@graph": [blogPosting, breadcrumbList],
 };
+
+// FAQPage — 文章 frontmatter 有 faqSchema 才輸出。
+// 走跟 faq.astro / areas/[district].astro 一樣的模式：獨立一段 ld+json。
+// 格式不合法就靜默跳過（全有全無）：格式錯誤的告警交給 scripts/lint-seo.mjs 在
+// deploy 閘門點名檔案，這裡不 console.warn（eslint no-console）也不 throw
+// （不值得為一個 Google 2026-05 已停用 rich result 的 schema 卡整條 deploy）。
+// schema 本身無害且 Bing / AI 答案引擎仍會讀，所以保留輸出。
+const faqSchema = normalizeFaqSchema(rawFaqSchema);
 ---
 
 <Layout {title} {description} {ogImage} {canonicalURL}>
@@ -130,6 +143,16 @@ const structuredData = {
       is:inline
       set:html={safeJsonLd(structuredData)}
     />
+
+    {
+      faqSchema && (
+        <script
+          type="application/ld+json"
+          is:inline
+          set:html={safeJsonLd(faqSchema)}
+        />
+      )
+    }
 
     <!-- GA4: 文章閱讀 + 停留時間追蹤 -->
     <script is:inline define:vars={{ postSlug, postTitle, postTags }}>

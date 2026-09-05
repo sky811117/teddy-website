@@ -13,11 +13,15 @@
   --color-inverse-foreground: var(--surface-inverse-foreground);
   --color-inverse-muted: var(--surface-inverse-muted);
   --color-inverse-accent: var(--surface-inverse-accent);
-  /* LINE 官方品牌綠 — 全站 LINE CTA 統一用這組 */
-  --color-line: #06c755;
-  --color-line-hover: #05b34c;
+  /* LINE CTA 綠 — 全站 LINE 按鈕統一用這組。
+   * LINE 官方品牌綠 #06c755 配白字對比只有 2.26:1（axe 全站 16/17 頁 color-contrast fail），
+   * 主力客群年紀偏大、又多在戶外用手機看，所以底色加深到 #0c8540（白字對比 4.72:1，
+   * 過 WCAG AA 小字 4.5:1）；hover 再深一階 #0a7a38（5.45:1）。icon / 淡底（bg-line/10）
+   * 同組色，深一點反而更清楚。⚠️ 不要改回 #06c755 除非把字改成深色。 */
+  --color-line: #0c8540;
+  --color-line-hover: #0a7a38;
   --font-app: var(--font-app-cjk), var(--font-google-sans-code);
-  /* 標題字體：Noto Sans TC（webfont）→ 系統字 fallback */
+  /* 標題字體：Noto Sans TC（webfont，700/900、woff2 unicode-range 切片）→ 系統字 fallback */
   --font-heading: var(--font-noto-sans-tc), var(--font-app-cjk);
   /* elevation 三層（暖棕色調陰影，不用 Tailwind 預設冷灰） */
   --shadow-card: var(--elev-1);

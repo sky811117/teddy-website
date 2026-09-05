@@ -4,51 +4,58 @@ import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import ContactForm from "@/components/ContactForm.astro";
-import config from "@/config";
+import config, { loan } from "@/config";
+import { areas } from "@/data/areas";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 import { resolveDefaultOgImagePath } from "@/utils/resolveDefaultOgImagePath";
 import { cleanStreetArea } from "@/utils/cleanStreetArea";
+import { getCounty, OTHER_COUNTY } from "@/utils/isTaichung";
+import { postFilter } from "@/utils/postFilter";
+import {
+  cleanPropertyTitle,
+  sanitizeCopy,
+  sanitizeHighlights,
+} from "@/utils/cleanPropertyTitle";
 import IconMapPin from "@/assets/icons/IconMapPin.svg";
-import IconBuildingCommunity from "@/assets/icons/IconBuildingCommunity.svg";
 import IconPhone from "@/assets/icons/IconPhone.svg";
 import IconClipboardList from "@/assets/icons/IconClipboardList.svg";
 import IconLine from "@/assets/icons/socials/line.svg";
 
-// 縣市對照（與 index.astro 同步）
-const TAICHUNG = new Set([
-  "北屯區","西屯區","南屯區","北區","南區","東區","西區","中區","太平區","大里區",
-  "霧峰區","烏日區","大肚區","沙鹿區","梧棲區","清水區","大甲區","外埔區","大安區",
-  "龍井區","潭子區","大雅區","神岡區","豐原區","后里區","東勢區","和平區","新社區","石岡區",
-]);
-const NANTOU = new Set(["南投市","草屯鎮","埔里鎮","竹山鎮","集集鎮","名間鄉","中寮鄉","水里鄉","魚池鄉","國姓鄉","信義鄉","仁愛鄉","鹿谷鄉"]);
-const CHANGHUA = new Set(["彰化市","和美鎮","田中鎮","二林鎮","北斗鎮","員林市","溪湖鎮","鹿港鎮","大村鄉","田尾鄉","秀水鄉","花壇鄉","芬園鄉","福興鄉","線西鄉","伸港鄉","埔鹽鄉","埔心鄉","永靖鄉","社頭鄉","二水鄉","竹塘鄉","溪州鄉","大城鄉","芳苑鄉"]);
-const MIAOLI = new Set(["苗栗市","竹南鎮","頭份市","卓蘭鎮","苑裡鎮","通霄鎮","後龍鎮","獅潭鄉","泰安鄉","銅鑼鄉","三義鄉","西湖鄉","造橋鄉","公館鄉","三灣鄉","南庄鄉","頭屋鄉"]);
-
-function getCounty(d: string): string {
-  if (TAICHUNG.has(d)) return "台中市";
-  if (NANTOU.has(d)) return "南投縣";
-  if (CHANGHUA.has(d)) return "彰化縣";
-  if (MIAOLI.has(d)) return "苗栗縣";
-  for (const [p, c] of [["南投","南投縣"],["彰化","彰化縣"],["苗栗","苗栗縣"],["台中","台中市"],["臺中","台中市"]] as const) {
-    if (d.startsWith(p)) return c;
-  }
-  return "其他";
-}
-
 export async function getStaticPaths() {
-  const properties = await getCollection("properties", ({ data }) => data.status === "active");
-  return properties.map(property => ({
-    params: { slug: property.id },
-    props: { property, properties },
-  }));
+  const properties = await getCollection(
+    "properties",
+    ({ data }) => data.status === "active"
+  );
+  // 社區文（frontmatter community 跟物件的 community 一字不差才配對；
+  // 用 postFilter 排掉草稿與未到發布時間的，避免連到沒 build 的 404）
+  const posts = (await getCollection("posts")).filter(postFilter);
+  const postsByCommunity = new Map<string, CollectionEntry<"posts">[]>();
+  for (const post of posts) {
+    const c = post.data.community?.trim();
+    if (!c) continue;
+    const bucket = postsByCommunity.get(c) ?? [];
+    bucket.push(post);
+    postsByCommunity.set(c, bucket);
+  }
+  return properties.map(property => {
+    const comm = property.data.community?.trim();
+    const communityPosts = (comm ? (postsByCommunity.get(comm) ?? []) : [])
+      .slice()
+      .sort((a, b) => b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime());
+    return {
+      params: { slug: property.id },
+      props: { property, properties, communityPosts },
+    };
+  });
 }
 
 type Props = {
   property: CollectionEntry<"properties">;
   properties: CollectionEntry<"properties">[];
+  communityPosts: CollectionEntry<"posts">[];
 };
 
-const { property, properties } = Astro.props;
+const { property, properties, communityPosts } = Astro.props;
 const { Content } = await render(property);
 
 const formatPrice = (price: number) => {
@@ -88,26 +95,47 @@ const streetAreaClean = cleanStreetArea(
 // 委編 / 專任 badge：
 // - 完整委編（含 UT/UG/HG 前綴）藏在 markdown body 的「> 委編：XXX」blockquote，
 //   build-time 從 body 撈出來，fallback frontmatter listingCode
-// - 「本店專任」依標題是否含「專任」判定
+// - 「本店專任」依「原始」標題是否含「專任」判定（顯示用標題會把這個字清掉）
 const bodyCodeMatch = property.body?.match(/委編：([A-Z0-9]+)/);
 const fullListingCode = bodyCodeMatch?.[1] ?? property.data.listingCode;
-const isExclusive = property.data.title.includes("專任");
+const rawTitle = property.data.title || "";
+const isExclusive = rawTitle.includes("專任");
+
+// ── 對外顯示的標題／賣點／文案：渲染層防線（src/utils/cleanPropertyTitle.ts）──
+// 委託書案名是寫給同事看的，帶「賠售」「稀有」「專任」與 emoji；H1、sticky bar、
+// 麵包屑、JSON-LD、圖片 alt 一律用清過的版本。清到剩不到 4 字就退回「社區 格局」。
+const titleFallback = [
+  property.data.community?.trim() || property.data.district,
+  property.data.layout,
+]
+  .filter(Boolean)
+  .join(" ");
+const displayTitle = cleanPropertyTitle(rawTitle, titleFallback);
+const highlights = sanitizeHighlights(property.data.highlights);
 
 // 類型（給規格卡用）：優先撈 markdown body 的「**類型**：XXX」，最準
 const bodyTypeMatch = property.body?.match(/\*\*類型\*\*：\s*([^\n\r]+)/);
 const propertyType = bodyTypeMatch?.[1]?.trim();
 
-// 月付試算（build-time 靜態值）：8 成 30 年本利均攤、利率 2.306%（/tools 每月底更新）
-const LOAN_RATIO = 0.8;
-const LOAN_YEARS = 30;
-const LOAN_RATE = 0.02306;
-const monthlyRate = LOAN_RATE / 12;
-const totalMonths = LOAN_YEARS * 12;
-const loanPrincipal = property.data.totalPrice * LOAN_RATIO; // 單位：萬
+// 住宅型才顯示月付試算：土地／店面／廠房／商辦／農舍的貸款成數與年限依銀行鑑價而定，
+// 用 8 成 30 年算出來的數字對買方是錯的（實例：69,990 萬農建地印出「月付約 215.6 萬」）
+const RESIDENTIAL_RE = /大樓|華廈|公寓|透天|別墅|套房/;
+const NON_RESIDENTIAL_RE = /土地|農地|建地|林地|店面|廠房|商辦|辦公|農舍|倉儲|商場/;
+const isResidential = propertyType
+  ? RESIDENTIAL_RE.test(propertyType)
+  : !NON_RESIDENTIAL_RE.test(`${rawTitle} ${property.data.layout || ""}`) &&
+    property.data.layout !== "—";
+
+// 月付試算（build-time 靜態值；參數在 src/config.ts 的 loan，每月底更新）
+const monthlyRate = loan.rate / 12;
+const totalMonths = loan.years * 12;
+const loanPrincipal = property.data.totalPrice * loan.ratio; // 單位：萬
 const monthlyPayment =
   (loanPrincipal * monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) /
   (Math.pow(1 + monthlyRate, totalMonths) - 1); // 單位：萬/月
 const monthlyPaymentText = monthlyPayment.toFixed(1);
+const loanRatePct = (loan.rate * 100).toFixed(3).replace(/0+$/, "").replace(/\.$/, "");
+const loanRatioText = `${Math.round(loan.ratio * 10)} 成`;
 
 // 照片 collage（桌面、照片 ≥3 張才啟用）：主圖 + 副圖最多 4 張
 const photos = property.data.photos;
@@ -116,10 +144,42 @@ const collageSide = photos.slice(1, 5);
 // 沒露出的張數（疊在最後一格的「+N 張」遮罩）
 const collageHiddenCount = photos.length - 1 - collageSide.length;
 
-// 找同縣市其他物件（最多 6 筆）
+// ── 內鏈：同社區 → 社區文 → 區域頁 → 同縣市 ────────────────────────────
+// ⚠️ community 沒填的物件（約 45%）兩邊都是 undefined，直接 === 會把整站當同社區，先 guard
+const communityName = property.data.community?.trim() || "";
+const sameCommunity = communityName
+  ? properties
+      .filter(p => p.id !== property.id && p.data.community?.trim() === communityName)
+      .sort((a, b) => {
+        const coverDiff = (a.data.coverImage ? 0 : 1) - (b.data.coverImage ? 0 : 1);
+        if (coverDiff !== 0) return coverDiff;
+        return a.data.totalPrice - b.data.totalPrice;
+      })
+  : [];
+const sameCommunityIds = new Set(sameCommunity.map(p => p.id));
+
+// 區域頁（src/data/areas.ts 只有 7 區，對不到的 district 就不連，別硬連 /areas/undefined/）
+const area = areas.find(a => a.districtMatch.includes(property.data.district));
+
+// 社區名要連去哪：有社區文連社區文；沒有但同社區還有別戶 → 列表頁帶 community 篩選
+const communityListUrl = communityName
+  ? `/properties/?community=${encodeURIComponent(communityName)}`
+  : null;
+const communityHref = communityPosts[0]
+  ? `/posts/${communityPosts[0].id}/`
+  : sameCommunity.length > 0
+    ? communityListUrl
+    : null;
+
+// 同縣市其他物件（最多 6 筆；同社區已另列，這裡去重）
 const thisCounty = getCounty(property.data.district);
 const sameCounty = properties
-  .filter(p => p.id !== property.id && getCounty(p.data.district) === thisCounty)
+  .filter(
+    p =>
+      p.id !== property.id &&
+      !sameCommunityIds.has(p.id) &&
+      getCounty(p.data.district) === thisCounty
+  )
   // 有照片優先 > 同區域 > 價格相近
   .sort((a, b) => {
     const coverDiff = (a.data.coverImage ? 0 : 1) - (b.data.coverImage ? 0 : 1);
@@ -131,8 +191,43 @@ const sameCounty = properties
   })
   .slice(0, 6);
 
+// 「其他物件」區塊：同社區先、同縣市後（一套卡片版型跑兩次）
+const relatedSections = [
+  {
+    key: "community",
+    heading: `${communityName}同社區其他在售`,
+    count: sameCommunity.length,
+    countLabel: "戶",
+    list: sameCommunity,
+    moreHref: communityListUrl,
+    moreText: `看全部 ${communityName} 在售 →`,
+  },
+  {
+    key: "county",
+    heading: thisCounty === OTHER_COUNTY ? "更多在售物件" : `${thisCounty}其他物件`,
+    count: sameCounty.length,
+    countLabel: "筆精選",
+    list: sameCounty,
+    moreHref: "/properties/",
+    moreText: "看全部在售物件 →",
+  },
+].filter(s => s.list.length > 0);
+
+// ── 內文：body 的「## 物件介紹」段落 build-time 抽出來清洗後自己排版 ──────
+// properties-sync 產的 body 固定是「## 物件介紹 → ## 物件規格 → --- → 委編 → 證號」，
+// 規格與委編在頁面上方已有規格卡／badge，證號段落頁尾另有；這裡只要介紹段。
+// 抽不到（格式跑掉）就退回 <Content />，下方 client script 會把重複段落拿掉。
+const introMatch = property.body?.match(/## 物件介紹\s*\n([\s\S]*?)(?=\n## |\n---|$)/);
+const introLines = introMatch
+  ? sanitizeCopy(introMatch[1].replace(/\*\*/g, ""))
+      .split("\n")
+      .map(l => l.trim())
+      .filter(Boolean)
+  : null;
+
 // ============ SEO + JSON-LD ============
-const canonicalURL = new URL(`/properties/${property.id}`, Astro.site).href;
+// 尾斜線：Cloudflare Pages 會 308 到帶尾斜線的網址，canonical / Offer.url / breadcrumb 都要一致
+const canonicalURL = new URL(`/properties/${property.id}/`, Astro.site).href;
 
 // description: 優先 frontmatter description，沒有則組合基本資訊
 // smartTruncate: 在 max chars 內找最後一個中文句末標點 (。！？) 切斷，避免斷句中間
@@ -159,32 +254,13 @@ function smartTruncate(s: string, max: number): string {
   return head + "…";
 }
 
-// ── SEO 標題與描述（2026-08-28 重寫）──────────────────────────────
-// 委託書的案名與賣點文字是寫給同事看的，不是寫給搜尋者的：
-//   - 標題帶「專任」「賠售」「稀有」等內部用語與誇大字眼（實測 359 筆裡約 50 筆）
-//   - 描述是賣點原文，63 筆含 ⭐❤ 之類 emoji，沒有任何結構化事實
+// ── SEO 標題與描述（2026-08-28 重寫、2026-09-06 改用共用清洗）──────────
 // 買方實際會搜的是「北屯 三房 1500萬」這種組合，所以把行政區、格局、坪數、
 // 總價補進標題，並把誇大字眼濾掉（也避免踩不實廣告與 lint-seo 的誇大詞檢查）。
-
-// 誇大／最高級用語 — 房仲廣告踩公平交易法第 21 條的風險字
-const EXAGGERATED_RE =
-  /賠售|稀有|絕美|絕版|最便宜|最低價|最低|最強|最優|超值|搶手|完美無缺|無敵|急售|割愛|甜甜價|破盤|俗俗賣|全市場最低|千載難逢/g;
-// 委託類型是內部資訊，不該出現在搜尋結果標題上
-const INTERNAL_RE = /^\s*[（(【]?\s*(專任|一般|獨家)\s*[）)】]?\s*[｜|、,，\-—\s]*/;
-
-const cleanTitle = (property.data.title || "")
-  .replace(INTERNAL_RE, "")
-  .replace(EXAGGERATED_RE, "")
-  .replace(/[｜|]\s*[｜|]/g, "｜")
-  .replace(/^[｜|、,，\-—\s]+|[｜|、,，\-—\s]+$/g, "")
-  .replace(/\s{2,}/g, " ")
-  .trim();
-
-// 結構化事實 — 這才是買方打進 Google 的字
 const areaNum = Number(property.data.area);
 // 案名裡若已經有行政區（例如「北區｜麗園道｜…」）就不要再重複一次
 const districtInTitle =
-  !!property.data.district && cleanTitle.includes(property.data.district);
+  !!property.data.district && displayTitle.includes(property.data.district);
 const seoFacts = [
   districtInTitle ? "" : property.data.district,
   property.data.layout,
@@ -196,12 +272,11 @@ const seoFacts = [
 
 // 物件頁不掛站名後綴 —— 後綴要 19 個字，等於把買方搜的詞擠出 SERP 可見範圍。
 // 頁面本身與 JSON-LD 都有景泰的身分資訊，品牌訊號不靠標題後綴。
-const seoTitle = [cleanTitle, seoFacts].filter(Boolean).join("｜");
+const seoTitle = [displayTitle, seoFacts].filter(Boolean).join("｜");
 
-// 描述：先給事實，再接乾淨的賣點（去 emoji、去誇大、壓掉連續空白）
-const cleanBlurb = (property.data.description || "")
-  .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{2190}-\u{21FF}\u{2700}-\u{27BF}]/gu, "")
-  .replace(EXAGGERATED_RE, "")
+// 描述：先給事實，再接乾淨的賣點（去 emoji、去誇大句、去第三人聯絡、門牌砍到路段）
+const cleanBlurb = sanitizeCopy(property.data.description || "")
+  .replace(/\n+/g, " ")
   .replace(/\s{2,}/g, " ")
   .replace(/^[\s，、。!！?？]+/, "")
   .trim();
@@ -247,21 +322,17 @@ const priceValidUntil = new Date(
   Date.now() + 90 * 24 * 60 * 60 * 1000
 ).toISOString().slice(0, 10);
 
-// 物件類型 → schema.org type 對應
-function getSchemaType(p: typeof property): string {
-  // 對中文 .toLowerCase() 無作用，但對混合英文標題仍有用
-  const t = (p.data.title + " " + (p.data.layout || "")).toLowerCase();
-  if (t.includes("透天") || t.includes("別墅")) return "SingleFamilyResidence";
-  if (t.includes("公寓")) return "Apartment";
-  if (t.includes("套房")) return "Apartment";
-  if (t.includes("店面") || t.includes("商辦") || t.includes("廠房"))
-    return "LocalBusiness";
-  if (t.includes("土地") || t.includes("農地") || t.includes("建地"))
-    return "Place";
+// 物件類型 → schema.org 的「about」型別。
+// 廠房／店面以前標 LocalBusiness，會被當成一家營業中的商家（可能餵進 Maps），改回 Place。
+function getSchemaType(): string {
+  const t = `${propertyType || ""} ${rawTitle} ${property.data.layout || ""}`;
+  if (/透天|別墅/.test(t)) return "SingleFamilyResidence";
+  if (/公寓|套房|大樓|華廈/.test(t)) return "Apartment";
+  if (/店面|商辦|廠房|土地|農地|建地|林地|農舍|辦公/.test(t)) return "Place";
   // 預設大樓/華廈
   return "Apartment";
 }
-const schemaType = getSchemaType(property);
+const schemaType = getSchemaType();
 
 // 證號前綴防雙重 (frontmatter 若已含 "經紀人 X" / "營業員 X" 就不加)
 function withPrefix(prefix: string, value: string): string {
@@ -276,18 +347,43 @@ const schemaImages = property.data.photos.length > 0
       .map(p => new URL(p, Astro.site).href)
   : [ogImagePath];
 
-// 主 schema: RealEstateListing 風格（用 schema.org 標準 Place + Product/Offer 雙標）
-const propertySchema = {
+// 主 schema：RealEstateListing（schema.org 有這個型別；不動產不是 Product，
+// 標 Product 拿不到 rich result 還可能被當實體商品）。住宅型別放在 about。
+// addressRegion 只在 county 為已知縣市時輸出 (避免出現 "其他" 怪詞)
+const aboutSchema = {
+  "@type": schemaType,
+  name: displayTitle,
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: property.data.district,
+    ...(thisCounty !== OTHER_COUNTY ? { addressRegion: thisCounty } : {}),
+    addressCountry: "TW",
+    ...(property.data.streetArea ? { streetAddress: property.data.streetArea } : {}),
+  },
+  ...(property.data.area
+    ? {
+        floorSize: {
+          "@type": "QuantitativeValue",
+          value: property.data.area,
+          unitText: "坪",
+        },
+      }
+    : {}),
+  ...(numberOfRooms ? { numberOfRooms } : {}),
+  // yearBuilt 故意不輸出 — age 是 build-time 快照、跨年會 stale；schema 沒設 yearBuilt 比 stale 好
+};
+
+const listingSchema = {
   "@context": "https://schema.org",
-  "@type": "Product",
-  name: property.data.title,
+  "@type": "RealEstateListing",
+  "@id": `${canonicalURL}#listing`,
+  url: canonicalURL,
+  name: displayTitle,
   description: seoDescription,
   image: schemaImages,
-  category: "Real Estate",
-  brand: {
-    "@type": "Organization",
-    name: "有巢氏房屋 台中世界之心加盟店",
-  },
+  inLanguage: "zh-TW",
+  datePosted: property.data.pubDatetime.toISOString().slice(0, 10),
+  about: aboutSchema,
   offers: {
     "@type": "Offer",
     price: priceInNTD,
@@ -309,7 +405,7 @@ const propertySchema = {
       ],
     },
   },
-  // 額外 Residence 屬性（Google 認 additionalProperty）
+  // 額外屬性（Google 認 additionalProperty）
   additionalProperty: [
     {
       "@type": "PropertyValue",
@@ -336,33 +432,7 @@ const propertySchema = {
   ],
 };
 
-// 第二層：Place schema 標地址（給 Google Maps + Local Search）
-// addressRegion 只在 county 為已知縣市時輸出 (避免出現 "其他" 怪詞)
-const placeSchema = {
-  "@context": "https://schema.org",
-  "@type": schemaType,
-  name: property.data.title,
-  address: {
-    "@type": "PostalAddress",
-    addressLocality: property.data.district,
-    ...(thisCounty !== "其他" ? { addressRegion: thisCounty } : {}),
-    addressCountry: "TW",
-    ...(property.data.streetArea ? { streetAddress: property.data.streetArea } : {}),
-  },
-  ...(property.data.area
-    ? {
-        floorSize: {
-          "@type": "QuantitativeValue",
-          value: property.data.area,
-          unitText: "坪",
-        },
-      }
-    : {}),
-  ...(numberOfRooms ? { numberOfRooms } : {}),
-  // yearBuilt 故意不輸出 — age 是 build-time 快照、跨年會 stale；schema 沒設 yearBuilt 比 stale 好
-};
-
-// Breadcrumb
+// Breadcrumb（item 一律帶尾斜線，跟 canonical 一致）
 const breadcrumbSchema = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
@@ -377,16 +447,20 @@ const breadcrumbSchema = {
       "@type": "ListItem",
       position: 2,
       name: "在售物件",
-      item: new URL("/properties", Astro.site).href,
+      item: new URL("/properties/", Astro.site).href,
     },
     {
       "@type": "ListItem",
       position: 3,
-      name: property.data.title,
+      name: displayTitle,
       item: canonicalURL,
     },
   ],
 };
+
+// 底部 CTA bar 的 bottom：cookie 同意橫幅出現時 Analytics.astro 會把橫幅高度寫進
+// --consent-h，CTA 就往上讓開；沒橫幅時是 0px。
+const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
 ---
 
 <Layout
@@ -400,12 +474,7 @@ const breadcrumbSchema = {
     <script
       type="application/ld+json"
       is:inline
-      set:html={safeJsonLd(propertySchema)}
-    />
-    <script
-      type="application/ld+json"
-      is:inline
-      set:html={safeJsonLd(placeSchema)}
+      set:html={safeJsonLd(listingSchema)}
     />
     <script
       type="application/ld+json"
@@ -416,16 +485,19 @@ const breadcrumbSchema = {
 
   <Header />
 
-  {/* 桌面版 sticky CTA bar — 滾動超過 600px 才出現，常駐在視窗底部直到看完 */}
+  {/* 桌面版 sticky CTA bar — 滾動超過 600px 才出現，常駐在視窗底部直到看完。
+      隱藏時同時掛 inert，aria-hidden 內才不會有可聚焦的按鈕 */}
   <div
     data-property-sticky
     class="border-border bg-card/95 fixed inset-x-0 bottom-0 z-30 hidden translate-y-full border-t shadow-lg backdrop-blur transition-transform duration-300 sm:block"
+    style={ctaBottomStyle}
     aria-hidden="true"
+    inert
   >
     <div class="app-layout max-w-app flex flex-wrap items-center justify-between gap-4 py-3">
       <div class="min-w-0 flex-1">
         <p class="text-foreground line-clamp-1 text-sm font-semibold">
-          {property.data.title}
+          {displayTitle}
         </p>
         <p class="text-muted-foreground flex items-center gap-1 text-xs">
           <IconMapPin class="size-3.5 shrink-0" aria-hidden="true" />
@@ -448,7 +520,7 @@ const breadcrumbSchema = {
           <IconPhone class="size-4" aria-hidden="true" />
           撥打
         </a>
-        <a href="/go/line?src=property" class="btn-line text-sm">
+        <a href="/go/line?src=property-sticky" class="btn-line text-sm">
           <IconLine class="size-4" aria-hidden="true" />
           LINE 景泰
         </a>
@@ -457,29 +529,34 @@ const breadcrumbSchema = {
   </div>
 
   {/* 手機版常駐底部 CTA bar — 細價格列 + 三鍵、純 CSS、只在手機出現 */}
-  <div class="border-border bg-card/95 fixed inset-x-0 bottom-0 z-40 border-t shadow-lg backdrop-blur sm:hidden" data-property-mobile-cta>
+  <div
+    class="border-border bg-card/95 fixed inset-x-0 bottom-0 z-40 border-t shadow-lg backdrop-blur sm:hidden"
+    style={ctaBottomStyle}
+    data-property-mobile-cta
+  >
     <div class="border-border flex h-8 min-w-0 items-center justify-between gap-2 border-b px-3">
-      <p class="text-foreground line-clamp-1 min-w-0 flex-1 text-xs">{property.data.title}</p>
+      <p class="text-foreground line-clamp-1 min-w-0 flex-1 text-xs">{displayTitle}</p>
       <span class="text-accent shrink-0 text-base font-bold">{formatPrice(property.data.totalPrice)}</span>
     </div>
     <div class="grid grid-cols-3">
       <a href="tel:+886920118756" class="text-accent flex min-h-11 flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-medium no-underline"><IconPhone class="size-5" aria-hidden="true" />撥電話</a>
-      <a href="/go/line?src=property" class="bg-line flex min-h-11 flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-medium text-white no-underline"><IconLine class="size-5" aria-hidden="true" />LINE 景泰</a>
+      <a href="/go/line?src=property-bar" class="bg-line flex min-h-11 flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-medium text-white no-underline"><IconLine class="size-5" aria-hidden="true" />LINE 景泰</a>
       <a href="#contact-form-section" class="text-accent flex min-h-11 flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-medium no-underline"><IconClipboardList class="size-5" aria-hidden="true" />詢問</a>
     </div>
   </div>
 
   <main id="main-content" class="app-layout max-w-app py-8 pb-24 sm:pb-24">
     <a
-      href="/properties"
+      href="/properties/"
       class="text-muted-foreground hover:text-accent mb-4 inline-block text-sm no-underline"
     >
       ← 返回在售物件列表
     </a>
 
-    <article>
-      <h1 class="text-accent text-2xl font-bold sm:text-3xl">
-        {property.data.title}
+    {/* Pagefind：只索引 article；站內搜尋才找得到物件（結果可用「物件」filter 分開） */}
+    <article data-pagefind-body data-pagefind-filter="type:物件">
+      <h1 class="text-accent text-2xl font-bold sm:text-3xl" data-pagefind-meta="title">
+        {displayTitle}
       </h1>
 
       <p class="text-muted-foreground mt-2 flex items-center gap-1 text-sm">
@@ -487,7 +564,16 @@ const breadcrumbSchema = {
         <span>
           {property.data.district}
           {streetAreaClean ? `・${streetAreaClean}` : ""}
-          {property.data.community ? `・${property.data.community}` : ""}
+          {communityName && "・"}
+          {
+            communityName && communityHref ? (
+              <a href={communityHref} class="text-accent underline decoration-dotted underline-offset-4">
+                {communityName}
+              </a>
+            ) : (
+              communityName
+            )
+          }
         </span>
       </p>
 
@@ -533,13 +619,27 @@ const breadcrumbSchema = {
         }
       </div>
 
-      {/* 月付試算（build-time 靜態值，公式見 frontmatter）*/}
-      <p class="text-muted-foreground mt-2 text-sm">
-        8 成 30 年・利率 2.306% 試算 → 月付約 {monthlyPaymentText} 萬
-        <a href="/tools" class="text-accent ml-1 no-underline hover:underline">
-          試算工具 →
-        </a>
-      </p>
+      {/* 月付試算（住宅型才顯示；參數在 src/config.ts 的 loan）*/}
+      {
+        isResidential ? (
+          <p class="text-muted-foreground mt-2 text-sm">
+            {loanRatioText} {loan.years} 年・利率 {loanRatePct}% 試算 → 月付約 {monthlyPaymentText} 萬
+            <span class="text-muted-foreground/80 ml-1 text-xs">
+              （{loan.note}，{loan.asOf} 更新）
+            </span>
+            <a href="/tools/" class="text-accent ml-1 no-underline hover:underline">
+              試算工具 →
+            </a>
+          </p>
+        ) : (
+          <p class="text-muted-foreground mt-2 text-sm">
+            這類物件的貸款成數與年限依銀行鑑價而定，要試算月付
+            <a href="/go/line?src=property" class="text-accent ml-1 no-underline hover:underline">
+              LINE 問景泰 →
+            </a>
+          </p>
+        )
+      }
 
       {
         photos.length > 0 ? (
@@ -558,13 +658,14 @@ const breadcrumbSchema = {
                 >
                   <img
                     src={photos[0]}
-                    alt={`${property.data.title}（第 1 張，共 ${photos.length} 張）`}
+                    alt={`${displayTitle}（第 1 張，共 ${photos.length} 張）`}
                     width="800"
                     height="600"
                     class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     loading="eager"
                     fetchpriority="high"
                     decoding="sync"
+                    data-pagefind-meta="image[src]"
                   />
                 </button>
                 {collageSide.map((p, i) => {
@@ -576,23 +677,28 @@ const breadcrumbSchema = {
                         ? "col-span-2"
                         : "";
                   const isLastTile = i === collageSide.length - 1;
+                  const showMore = isLastTile && collageHiddenCount > 0;
                   return (
                     <button
                       type="button"
                       data-collage-index={i + 1}
                       class={`bg-muted group relative cursor-zoom-in overflow-hidden rounded-lg ${spanClass}`}
-                      aria-label={`查看第 ${i + 2} 張`}
+                      aria-label={
+                        showMore
+                          ? `查看第 ${i + 2} 張，還有 +${collageHiddenCount} 張`
+                          : `查看第 ${i + 2} 張`
+                      }
                     >
                       <img
                         src={p}
-                        alt={`${property.data.title}（第 ${i + 2} 張，共 ${photos.length} 張）`}
+                        alt={`${displayTitle}（第 ${i + 2} 張，共 ${photos.length} 張）`}
                         width="400"
                         height="300"
                         class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        loading="eager"
+                        loading="lazy"
                         decoding="async"
                       />
-                      {isLastTile && collageHiddenCount > 0 && (
+                      {showMore && (
                         <span class="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/55 text-xl font-bold text-white">
                           +{collageHiddenCount} 張
                         </span>
@@ -603,18 +709,18 @@ const breadcrumbSchema = {
               </div>
             )}
 
-            {/* 主圖 + 縮圖列（手機維持現狀；<3 張時桌面也用這套） */}
+            {/* 主圖 + 縮圖列（手機維持現狀；<3 張時桌面也用這套）。
+                有可見文字（計數／點擊放大）就不另掛 aria-label，避免 label 與可見文字不一致 */}
             <div class={useCollage ? "sm:hidden" : ""}>
               {/* 主圖（點擊開 lightbox） */}
               <button
                 type="button"
                 data-gallery-main-btn
                 class="bg-muted group relative block aspect-[4/3] w-full cursor-zoom-in overflow-hidden rounded-lg"
-                aria-label="點擊放大查看"
               >
                 <img
                   src={photos[0]}
-                  alt={`${property.data.title}（第 1 張，共 ${photos.length} 張）`}
+                  alt={`${displayTitle}（第 1 張，共 ${photos.length} 張）`}
                   width="800"
                   height="600"
                   class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -622,6 +728,7 @@ const breadcrumbSchema = {
                   fetchpriority="high"
                   decoding="sync"
                   data-gallery-main
+                  data-pagefind-meta={useCollage ? undefined : "image[src]"}
                 />
                 <span
                   class="pointer-events-none absolute right-3 bottom-3 rounded bg-black/60 px-2 py-1 font-mono text-xs text-white"
@@ -654,7 +761,7 @@ const breadcrumbSchema = {
                     >
                       <img
                         src={p}
-                        alt={`${property.data.title} 縮圖 ${i + 1}`}
+                        alt={`${displayTitle} 縮圖 ${i + 1}`}
                         width="120"
                         height="90"
                         loading="lazy"
@@ -669,12 +776,9 @@ const breadcrumbSchema = {
           </div>
         ) : (
           <div class="bg-muted rounded-card my-6 flex h-48 w-full flex-col items-center justify-center gap-3 sm:h-56">
-            <IconBuildingCommunity
-              class="text-muted-foreground/50 size-14"
-              aria-hidden="true"
-            />
+            <p class="text-foreground text-base font-medium">📷 照片整理中</p>
             <p class="text-muted-foreground text-sm">
-              照片整理中 — 想先看實照/影片？
+              想先看實照／影片？
             </p>
             <a href="/go/line?src=property" class="btn-line text-sm">
               <IconLine class="size-4" aria-hidden="true" />
@@ -699,7 +803,7 @@ const breadcrumbSchema = {
               <img
                 data-gallery-lightbox-img
                 src={property.data.photos[0]}
-                alt={property.data.title}
+                alt={displayTitle}
                 loading="lazy"
                 decoding="async"
                 class="max-h-[92vh] max-w-[96vw] object-contain"
@@ -809,12 +913,60 @@ const breadcrumbSchema = {
         }
       </div>
 
+      {/* 社區深度文 + 區域頁：物件頁的內容出口（沒有就整段不出現） */}
       {
-        property.data.highlights.length > 0 && (
+        (communityPosts.length > 0 || area) && (
+          <div class="mt-6 space-y-3" data-pagefind-ignore>
+            {communityPosts.length > 0 && (
+              <div class="card-surface p-5">
+                <h2 class="text-lg font-bold">
+                  {communityName} 評價／實價登錄整理
+                </h2>
+                <p class="text-muted-foreground mt-1 text-sm">
+                  看這戶之前，先看這個社區的實價登錄、優缺點、適合誰。
+                </p>
+                <ul class="mt-3 space-y-3">
+                  {communityPosts.slice(0, 3).map(post => (
+                    <li>
+                      <a
+                        href={`/posts/${post.id}/`}
+                        class="group block no-underline"
+                        data-track="post"
+                        data-post-id={post.id}
+                      >
+                        <span class="text-accent font-medium group-hover:underline">
+                          {post.data.title} →
+                        </span>
+                        <span class="text-muted-foreground mt-0.5 line-clamp-2 block text-sm">
+                          {post.data.description}
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {area && (
+              <p class="text-muted-foreground text-sm">
+                想先看{area.shortName}整體行情、哪些人適合買？
+                <a
+                  href={`/areas/${area.slug}/`}
+                  class="text-accent ml-1 no-underline hover:underline"
+                >
+                  {area.shortName}買房指南 →
+                </a>
+              </p>
+            )}
+          </div>
+        )
+      }
+
+      {
+        highlights.length > 0 && (
           <div class="mt-6">
             <h2 class="text-lg font-bold">物件亮點</h2>
             <ul class="mt-2 list-disc space-y-1 ps-6">
-              {property.data.highlights.map(h => (
+              {highlights.map(h => (
                 <li>{h}</li>
               ))}
             </ul>
@@ -822,92 +974,118 @@ const breadcrumbSchema = {
         )
       }
 
-      <div
-        class="app-prose max-w-app prose-pre:bg-(--shiki-light-bg) dark:prose-pre:bg-(--shiki-dark-bg) mt-8"
-        data-property-content
-      >
-        <Content />
-      </div>
-
       {
-        sameCounty.length > 0 && (
-          <div class="mt-12">
-            <h2 class="text-lg font-bold">
-              {thisCounty}其他物件
-              <span class="text-muted-foreground ml-2 text-sm font-normal">
-                ({sameCounty.length} 筆精選)
-              </span>
-            </h2>
-            <ul class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {sameCounty.map(p => (
-                <li class="card-interactive overflow-hidden">
-                  <a
-                    href={`/properties/${p.id}/`}
-                    class="block no-underline"
-                    data-track="property"
-                    data-property-id={p.id}
-                    data-property-title={p.data.title}
-                    data-property-price={p.data.totalPrice}
-                    data-property-district={p.data.district}
-                  >
-                    {p.data.coverImage ? (
-                      <div class="bg-muted aspect-[4/3] w-full overflow-hidden">
-                        <img
-                          src={
-                            typeof p.data.coverImage === "string"
-                              ? p.data.coverImage
-                              : p.data.coverImage.src
-                          }
-                          alt={p.data.title}
-                          width="400"
-                          height="300"
-                          class="h-full w-full object-cover"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      </div>
-                    ) : (
-                      <div class="bg-muted flex aspect-[4/3] w-full flex-col items-center justify-center gap-1 overflow-hidden">
-                        <IconBuildingCommunity
-                          class="text-muted-foreground/50 size-10"
-                          aria-hidden="true"
-                        />
-                        <p class="text-muted-foreground text-xs">
-                          想看實照？LINE 問景泰
-                        </p>
-                      </div>
-                    )}
-                    {/* price-first：價格在上、標題在下 */}
-                    <div class="p-3">
-                      <div class="text-accent text-lg font-bold">
-                        {formatPrice(p.data.totalPrice)}
-                      </div>
-                      <h3 class="text-foreground mt-1 line-clamp-1 text-xs font-medium">
-                        {p.data.title}
-                      </h3>
-                      <p class="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
-                        <IconMapPin class="size-3.5 shrink-0" aria-hidden="true" />
-                        {p.data.district}
-                      </p>
-                      <div class="text-muted-foreground mt-1 text-xs">
-                        {p.data.layout} · {p.data.area} 坪
-                      </div>
-                    </div>
-                  </a>
-                </li>
-              ))}
-            </ul>
+        introLines ? (
+          introLines.length > 0 && (
+            <div class="mt-8" data-property-intro>
+              <h2 class="text-lg font-bold">物件介紹</h2>
+              <div class="text-foreground mt-2 space-y-1.5 leading-relaxed">
+                {introLines.map(line => (
+                  <p>{line}</p>
+                ))}
+              </div>
+            </div>
+          )
+        ) : (
+          <div
+            class="app-prose max-w-app prose-pre:bg-(--shiki-light-bg) dark:prose-pre:bg-(--shiki-dark-bg) mt-8"
+            data-property-content
+          >
+            <Content />
           </div>
         )
       }
 
+      {/* 同社區其他在售 → 同縣市其他物件（同一套卡片，先社區後縣市） */}
+      {
+        relatedSections.map(section => (
+          <div class="mt-12" data-pagefind-ignore data-related={section.key}>
+            <h2 class="text-lg font-bold">
+              {section.heading}
+              <span class="text-muted-foreground ml-2 text-sm font-normal">
+                ({section.count} {section.countLabel})
+              </span>
+            </h2>
+            <ul class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {section.list.map(p => {
+                const cardTitle = cleanPropertyTitle(
+                  p.data.title,
+                  [p.data.community?.trim() || p.data.district, p.data.layout]
+                    .filter(Boolean)
+                    .join(" ")
+                );
+                return (
+                  <li class="card-interactive overflow-hidden">
+                    <a
+                      href={`/properties/${p.id}/`}
+                      class="block no-underline"
+                      data-track="property"
+                      data-property-id={p.id}
+                      data-property-title={cardTitle}
+                      data-property-price={p.data.totalPrice}
+                      data-property-district={p.data.district}
+                    >
+                      {p.data.coverImage ? (
+                        <div class="bg-muted aspect-[4/3] w-full overflow-hidden">
+                          <img
+                            src={
+                              typeof p.data.coverImage === "string"
+                                ? p.data.coverImage
+                                : p.data.coverImage.src
+                            }
+                            alt={cardTitle}
+                            width="400"
+                            height="300"
+                            class="h-full w-full object-cover"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        </div>
+                      ) : (
+                        <div class="bg-muted flex aspect-[4/3] w-full flex-col items-center justify-center gap-1 overflow-hidden">
+                          <p class="text-muted-foreground text-sm">📷 照片整理中</p>
+                        </div>
+                      )}
+                      {/* price-first：價格在上、標題在下 */}
+                      <div class="p-3">
+                        <div class="text-accent text-lg font-bold">
+                          {formatPrice(p.data.totalPrice)}
+                        </div>
+                        <h3 class="text-foreground mt-1 line-clamp-1 text-xs font-medium">
+                          {cardTitle}
+                        </h3>
+                        <p class="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
+                          <IconMapPin class="size-3.5 shrink-0" aria-hidden="true" />
+                          {p.data.district}
+                        </p>
+                        <div class="text-muted-foreground mt-1 text-xs">
+                          {p.data.layout} · {p.data.area} 坪
+                        </div>
+                      </div>
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+            {section.moreHref && (
+              <p class="mt-3 text-sm">
+                <a href={section.moreHref} class="text-accent no-underline hover:underline">
+                  {section.moreText}
+                </a>
+              </p>
+            )}
+          </div>
+        ))
+      }
+
       <hr class="my-8 border-dashed" />
 
-      {/* 主表單 — 預填物件編號 + 標題（id 給 sticky CTA 錨點用） */}
-      <div id="contact-form-section" class="scroll-mt-20">
+      {/* 主表單 — 預填物件編號 + 標題（id 給 sticky CTA 錨點用）。
+          表單把 23 個行政區、預算選項全印在頁上，不能進 Pagefind 索引 */}
+      <div id="contact-form-section" class="scroll-mt-20" data-pagefind-ignore>
         <ContactForm
           propertyId={property.data.listingCode}
-          propertyTitle={property.data.title}
+          propertyTitle={displayTitle}
           defaultIntent="buy"
           title="想看這戶？留你的聯絡方式"
           subtitle="物件編號已幫你預填、補完聯絡方式就送出。30 分鐘內回。"
@@ -917,6 +1095,7 @@ const breadcrumbSchema = {
       {/* 快速 LINE / 電話通道 — 給急的人 */}
       <div
         class="border-border rounded-lg border border-dashed p-6 text-center"
+        data-pagefind-ignore
       >
         <p class="text-foreground text-[17px] font-medium">
           想直接聊、不想填表單？
@@ -924,7 +1103,7 @@ const breadcrumbSchema = {
         <div
           class="mt-4 flex flex-col items-center justify-center gap-3 sm:flex-row"
         >
-          <a href="/go/line?src=property" class="btn-line text-[17px]">
+          <a href="/go/line?src=property-bottom" class="btn-line text-[17px]">
             <IconLine class="size-5" aria-hidden="true" />
             LINE sky811117
           </a>
@@ -949,7 +1128,7 @@ const breadcrumbSchema = {
   is:inline
   define:vars={{
     photos: property.data.photos,
-    title: property.data.title,
+    title: displayTitle,
     total: property.data.photos.length,
   }}
 >
@@ -1069,7 +1248,8 @@ const breadcrumbSchema = {
 </script>
 
 <script is:inline>
-  // 桌面版 sticky CTA bar 滑入/滑出：滾過 600px 出現、靠近 ContactForm 時收回
+  // 桌面版 sticky CTA bar 滑入/滑出：滾過 600px 出現、靠近 ContactForm 時收回。
+  // 收起時 aria-hidden + inert 一起掛，鍵盤不會 tab 進看不見的按鈕。
   (function () {
     const sticky = document.querySelector("[data-property-sticky]");
     if (!sticky) return;
@@ -1088,6 +1268,7 @@ const breadcrumbSchema = {
       const show = scrolled && !nearForm;
       sticky.classList.toggle("translate-y-full", !show);
       sticky.setAttribute("aria-hidden", show ? "false" : "true");
+      sticky.inert = !show;
     }
     function onScroll() {
       if (raf === null) raf = requestAnimationFrame(update);
@@ -1099,8 +1280,9 @@ const breadcrumbSchema = {
 </script>
 
 <script is:inline>
-  // 內文去重：markdown body 由 properties-sync 批次產出，固定帶「## 物件規格」
-  // bullet 段落（與上方規格卡重複）+「> 委編：…」blockquote（已改成標題下 badge）。
+  // 內文去重（只在 <Content /> fallback 路徑會有東西可刪）：markdown body 由
+  // properties-sync 批次產出，固定帶「## 物件規格」bullet 段落（與上方規格卡重複）
+  // +「> 委編：…」blockquote（已改成標題下 badge）。
   // .md 內容不能動（sync 會整批覆寫），改在 client 端把這兩段從渲染移除；
   // 無 JS 時 fallback 維持完整內文，資訊不會缺。
   (function () {
@@ -1127,7 +1309,7 @@ const breadcrumbSchema = {
   is:inline
   define:vars={{
     quickCode: property.data.listingCode ?? "",
-    quickTitle: property.data.title,
+    quickTitle: displayTitle,
   }}
 >
   // 表單瘦身（漸進增強）：ContactForm 是全站共用元件不能動，改在本頁把

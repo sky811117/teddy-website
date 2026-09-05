@@ -7,7 +7,9 @@ import config from "@/config";
 
 export const GET: APIRoute = async context => {
   // 用 Noto Sans TC 渲染中文標題（Google Sans Code 不支援中文 → 豆腐方塊）
-  const ntcFonts = fontData["--font-noto-sans-tc"];
+  // 讀 OG 專用 entry（astro.config.ts `--font-noto-sans-tc-og`，formats: ["ttf"]）：
+  // satori 只吃 ttf/otf/woff，網頁用的 `--font-noto-sans-tc` 是 woff2 切片，拿不到整檔。
+  const ntcFonts = fontData["--font-noto-sans-tc-og"];
   const regularFontPath = getFontPathByWeight(ntcFonts, 400);
   const boldFontPath = getFontPathByWeight(ntcFonts, 700);
 

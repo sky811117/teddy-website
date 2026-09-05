@@ -8,7 +8,7 @@ import Breadcrumb from "@/components/Breadcrumb.astro";
 import Card from "@/components/Card.astro";
 import Footer from "@/components/Footer.astro";
 import Pagination from "@/components/Pagination.astro";
-import { getUniqueTags } from "@/utils/getUniqueTags";
+import { getUniqueTags, THIN_TAG_MIN_POSTS } from "@/utils/getUniqueTags";
 import { getSortedPosts } from "@/utils/getSortedPosts";
 import { slugifyAll } from "@/utils/slugify";
 import { useTranslations } from "@/i18n";
@@ -18,20 +18,20 @@ export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
   const posts = await getCollection("posts", ({ data }) => !data.draft);
   const tags = getUniqueTags(posts);
 
-  return tags.flatMap(({ tag, tagName }) => {
+  return tags.flatMap(({ tag, tagName, count }) => {
     const tagPosts = getSortedPosts(
       posts.filter(({ data }) => slugifyAll(data.tags).includes(tag))
     );
 
     return paginate(tagPosts, {
       params: { tag },
-      props: { tagName },
+      props: { tagName, tagCount: count },
       pageSize: config.posts.perPage,
     });
   });
 }
 
-const { page, tagName } = Astro.props;
+const { page, tagName, tagCount } = Astro.props;
 
 const locale = Astro.currentLocale ?? config.site.lang;
 const t = useTranslations(locale);
@@ -42,21 +42,32 @@ const prevURL = page.url.prev
 const nextURL = page.url.next
   ? new URL(page.url.next, Astro.site).href
   : undefined;
+
+// 薄 tag（掛不到 3 篇，跟 sitemap-lastmod.mjs THIN_TAG_MIN_POSTS 同門檻）與第 2 頁以後
+// 一律 noindex,follow：頁面保留給站內導覽、連結照樣讓爬蟲跟，只是不要進索引
+// 跟單篇文章打架。sitemap 端 astro.config.ts 同一批頁也不收。
+const isThin = tagCount < THIN_TAG_MIN_POSTS;
+const noindex = isThin || page.currentPage > 1;
+
+// 分頁 title 要帶頁碼，否則同一個 tag 的 N 個分頁 title 完全重複（GSC「重複標題」）
+const pageSuffix = page.currentPage > 1 ? `（第 ${page.currentPage} 頁）` : "";
+const total = page.total; // 該 tag 的總篇數（page.data.length 只是本頁篇數）
 ---
 
 <Layout
-  title={`${t.pages.tagTitle}: ${tagName} | ${config.site.title}`}
-  description={`#${tagName} 主題下景泰房市筆記文章列表 — 共 ${page.data.length} 篇 (第 ${page.currentPage}/${page.lastPage} 頁)。`}
+  title={`${t.pages.tagTitle}: ${tagName} ${total} 篇${pageSuffix} | ${config.site.title}`}
+  description={`#${tagName} 相關文章，共 ${total} 篇${page.lastPage > 1 ? `（第 ${page.currentPage}/${page.lastPage} 頁）` : ""}。景泰台中房市筆記依主題整理。`}
   prevURL={prevURL}
   nextURL={nextURL}
+  noindex={noindex}
 >
   <Header />
 
   <Breadcrumb />
 
   <Main
-    pageTitle={`${t.pages.tagTitle}: ${tagName}`}
-    pageDesc={`${t.pages.tagDesc} "${tagName}".`}
+    pageTitle={`${t.pages.tagTitle}: ${tagName}${pageSuffix}`}
+    pageDesc={`#${tagName} 相關文章，共 ${total} 篇`}
   >
     <ul>
       {page.data.map(data => <Card {...data} />)}

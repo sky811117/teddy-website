@@ -2,13 +2,18 @@
 /**
  * ContactForm — 客戶詢價 / 預約看屋表單
  *
- * 後端：Formspree（email）+ Cloudflare Pages Functions `/api/contact-tg`（TG 通知）
- * 表單同時 POST 兩個 endpoint、互不依賴。
+ * 後端（2026-09-06 改）：
+ *   主管道：Cloudflare Pages Functions `/api/contact-tg`（推 TG 到景泰手機）— 一律 POST
+ *   副管道：Formspree（email）— 只有 build 時有 PUBLIC_FORMSPREE_FORM_ID 才並行送
+ *   任一條回 ok → 導 /thank-you；兩條都收不到 → 表單原地顯示「備援面板」
+ *   （LINE 鈕 + 複製訊息 + 撥電話），客戶永遠不會看到「後端沒設定好」這種字。
  *
  * Props 用來讓不同入口頁面預填欄位（詳情頁帶物件編號、服務頁帶意圖）。
  */
 import { PUBLIC_FORMSPREE_FORM_ID } from "astro:env/client";
 import IconMapPin from "@/assets/icons/IconMapPin.svg";
+import IconPhone from "@/assets/icons/IconPhone.svg";
+import LineIcon from "@/assets/icons/socials/line.svg";
 
 type Props = {
   /** 預填物件編號（詳情頁帶入） */
@@ -31,10 +36,7 @@ const {
   subtitle = "30 秒到 30 分鐘內回你，看你的需求複雜程度。",
 } = Astro.props;
 
-const formspreeId = PUBLIC_FORMSPREE_FORM_ID;
-const formspreeEndpoint = formspreeId
-  ? `https://formspree.io/f/${formspreeId}`
-  : "";
+const formspreeId = PUBLIC_FORMSPREE_FORM_ID || "";
 
 const TAICHUNG_AREAS = [
   "北屯區", "西屯區", "南屯區", "北區", "南區", "東區", "西區", "中區",
@@ -75,11 +77,11 @@ const defaultDescription = propertyId
 
   <form
     data-contact-form
-    action={formspreeEndpoint || "#"}
+    action="/api/contact-tg"
     method="POST"
     novalidate
     class="mt-6 space-y-5"
-    data-formspree-id={formspreeId || ""}
+    data-formspree-id={formspreeId}
   >
     {/* honeypot — bot 才會填，人類看不到 */}
     <input
@@ -123,6 +125,7 @@ const defaultDescription = propertyId
         type="text"
         name="姓名"
         required
+        maxlength="50"
         autocomplete="name"
         placeholder="陳先生 / 王小姐"
         class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 mt-2 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2"
@@ -149,6 +152,7 @@ const defaultDescription = propertyId
           id="cf-phone"
           type="tel"
           name="手機"
+          maxlength="20"
           autocomplete="tel"
           inputmode="tel"
           placeholder="0912-345-678"
@@ -172,6 +176,7 @@ const defaultDescription = propertyId
           id="cf-email"
           type="email"
           name="Email"
+          maxlength="120"
           autocomplete="email"
           inputmode="email"
           placeholder="you@example.com"
@@ -257,6 +262,7 @@ const defaultDescription = propertyId
             id="cf-listing-code"
             type="text"
             name="物件編號或描述"
+            maxlength="200"
             placeholder="UG1234567 / 看到您 IG 的某一戶 / 北屯機捷 2 房"
             class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 mt-2 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2"
           />
@@ -265,13 +271,13 @@ const defaultDescription = propertyId
     }
 
     {/* === 第五排：區域偏好（多選 checkbox） === */}
-    <div>
-      <label class="text-foreground block text-[17px] font-medium">
+    <fieldset class="min-w-0 border-0 p-0">
+      <legend class="text-foreground block text-[17px] font-medium">
         區域偏好
         <span class="text-muted-foreground text-[13px] font-normal">
           （多選、選填）
         </span>
-      </label>
+      </legend>
       <details class="border-border bg-background mt-2 rounded-md border">
         <summary
           class="text-muted-foreground cursor-pointer list-none px-4 py-3 text-[16px] select-none [&::-webkit-details-marker]:hidden"
@@ -298,7 +304,7 @@ const defaultDescription = propertyId
           ))}
         </div>
       </details>
-    </div>
+    </fieldset>
 
     {/* === 第六排：訊息 === */}
     <div>
@@ -315,6 +321,7 @@ const defaultDescription = propertyId
         id="cf-message"
         name="訊息"
         rows="4"
+        maxlength="1000"
         placeholder={
           defaultIntent === "sell"
             ? "目前住的地址 / 想賣的時程 / 心中目標價..."
@@ -340,8 +347,54 @@ const defaultDescription = propertyId
         role="alert"
       ></p>
 
+      {/* 備援面板 — 後端暫時收不到件時原地出現，客戶照樣有三條路把需求交給景泰 */}
+      <div
+        data-form-fallback
+        hidden
+        class="border-accent/40 bg-background mt-5 rounded-lg border-2 border-dashed p-5"
+        role="status"
+        aria-live="polite"
+      >
+        <p class="text-foreground text-[18px] font-bold">
+          已經把你的需求整理好了
+        </p>
+        <p class="text-muted-foreground mt-2 text-[15px] leading-relaxed">
+          這邊剛好沒把訊息送出去。不用重填，按「複製訊息」再貼到 LINE
+          給景泰，或直接撥電話，一樣 30 分鐘內回你。
+        </p>
+        <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <button
+            type="button"
+            data-fallback-copy
+            class="btn-outline w-full text-[16px]"
+          >
+            📋 複製訊息
+          </button>
+          <a
+            href="/go/line?src=form-fallback"
+            target="_blank"
+            rel="noopener"
+            class="btn-line w-full text-[16px]"
+          >
+            <LineIcon class="size-5" aria-hidden="true" />
+            LINE 景泰
+          </a>
+          <a href="tel:+886920118756" class="btn-outline w-full text-[16px]">
+            <IconPhone class="size-5" aria-hidden="true" />
+            0920-118-756
+          </a>
+        </div>
+        <textarea
+          data-fallback-text
+          readonly
+          rows="5"
+          aria-label="整理好的需求內容"
+          class="border-border bg-card text-foreground mt-4 block w-full rounded-md border px-3 py-2 text-[15px] leading-relaxed"
+        ></textarea>
+      </div>
+
       <p class="text-muted-foreground mt-4 text-[14px] leading-relaxed">
-        送出後直接寄到景泰個人 Email + TG 通知。
+        送出後直接推到景泰手機。
         如果你急 — LINE
         <a
           href="/go/line?src=contact-form"
@@ -358,7 +411,7 @@ const defaultDescription = propertyId
         >
           0920-118-756
         </a>
-        最快。
+        最快。資料只用來回覆你，不轉賣、不做行銷名單。
       </p>
     </div>
   </form>
@@ -377,7 +430,15 @@ const defaultDescription = propertyId
     const submitBtn = form.querySelector<HTMLButtonElement>(
       "[data-submit-btn]"
     );
+    const submitLabel = submitBtn?.textContent?.trim() || "送出 → 等景泰回你";
     const formError = form.querySelector<HTMLElement>("[data-form-error]");
+    const fallbackPanel = form.querySelector<HTMLElement>("[data-form-fallback]");
+    const fallbackText = form.querySelector<HTMLTextAreaElement>(
+      "[data-fallback-text]"
+    );
+    const fallbackCopyBtn = form.querySelector<HTMLButtonElement>(
+      "[data-fallback-copy]"
+    );
     const loadedAtInput = form.querySelector<HTMLInputElement>(
       "[data-loaded-at]"
     );
@@ -398,6 +459,20 @@ const defaultDescription = propertyId
 
     // 來源頁
     if (sourceInput) sourceInput.value = window.location.pathname;
+
+    // GA4 事件（Analytics.astro 有掛 gtag 才送；沒有就靜默）
+    function track(name: string, params: Record<string, string>) {
+      try {
+        const w = window as unknown as {
+          gtag?: (...args: unknown[]) => void;
+        };
+        if (typeof w.gtag === "function") {
+          w.gtag("event", name, { ...params, page_path: location.pathname });
+        }
+      } catch {
+        /* 量測失敗不影響表單 */
+      }
+    }
 
     // 預設 subject — 客戶送出後景泰 email 一眼看出意圖
     function updateSubject() {
@@ -455,6 +530,64 @@ const defaultDescription = propertyId
       formError.textContent = "";
       formError.classList.add("hidden");
     }
+    function resetSubmitBtn() {
+      if (!submitBtn) return;
+      submitBtn.disabled = false;
+      submitBtn.textContent = submitLabel;
+    }
+
+    // 把表單內容組成一段可以直接貼到 LINE 的文字（備援用）
+    function composeMessage(payload: Record<string, string>): string {
+      const lines: string[] = ["【網站詢價】"];
+      const push = (label: string, key: string) => {
+        const v = (payload[key] || "").trim();
+        if (v) lines.push(`${label}：${v}`);
+      };
+      push("姓名", "姓名");
+      push("手機", "手機");
+      push("Email", "Email");
+      push("我想", "我想");
+      push("預算", "預算");
+      push("物件編號", "物件編號");
+      push("物件", "物件標題");
+      push("物件 / 描述", "物件編號或描述");
+      push("區域", "區域偏好");
+      push("訊息", "訊息");
+      const src = (payload["來源頁"] || "").trim();
+      if (src) lines.push(`來源頁：${location.origin}${src}`);
+      return lines.join("\n");
+    }
+
+    function showFallback(payload: Record<string, string>) {
+      if (!fallbackPanel) return;
+      const text = composeMessage(payload);
+      if (fallbackText) fallbackText.value = text;
+      fallbackPanel.hidden = false;
+      fallbackPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    fallbackCopyBtn?.addEventListener("click", async () => {
+      const text = fallbackText?.value || "";
+      if (!text) return;
+      let copied = false;
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(text);
+          copied = true;
+        }
+      } catch {
+        copied = false;
+      }
+      if (!copied && fallbackText) {
+        // 舊瀏覽器 / 非 https：退回選取文字，讓客戶自己長按複製
+        fallbackText.focus();
+        fallbackText.select();
+      }
+      fallbackCopyBtn.textContent = copied ? "✅ 已複製，貼到 LINE 就好" : "已選取，長按複製";
+      setTimeout(() => {
+        fallbackCopyBtn.textContent = "📋 複製訊息";
+      }, 2500);
+    });
 
     // 個別欄位 blur 驗證
     form
@@ -526,13 +659,14 @@ const defaultDescription = propertyId
     form.addEventListener("submit", async e => {
       e.preventDefault();
       clearFormError();
+      if (submitBtn?.disabled) return;
 
       // honeypot
       const honeypot =
         form.querySelector<HTMLInputElement>("[name='_gotcha']")?.value || "";
       if (honeypot) {
         // bot 中招、靜默 fail（直接導 thank-you 讓 bot 以為成功）
-        window.location.href = "/thank-you";
+        window.location.href = "/thank-you/";
         return;
       }
 
@@ -547,13 +681,6 @@ const defaultDescription = propertyId
         return;
       }
 
-      if (!formspreeId) {
-        showFormError(
-          "表單後端還沒設定好，請直接 LINE sky811117 或撥 0920-118-756"
-        );
-        return;
-      }
-
       // 收集 FormData
       const fd = new FormData(form);
 
@@ -564,62 +691,70 @@ const defaultDescription = propertyId
         fd.append("區域偏好", areas.join("、"));
       }
 
+      const payload: Record<string, string> = {};
+      fd.forEach((v, k) => {
+        payload[k] = String(v);
+      });
+
       // disable 按鈕
       if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.textContent = "送出中...";
       }
 
-      // 並行 POST 兩個 endpoint
-      const formspreeUrl = `https://formspree.io/f/${formspreeId}`;
+      // 1. 主管道：TG（一律送）
+      const tgTask: Promise<boolean> = fetch("/api/contact-tg", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+        .then(async res => {
+          if (!res.ok) return false;
+          try {
+            const data = (await res.json()) as { ok?: boolean };
+            return data.ok === true;
+          } catch {
+            return false;
+          }
+        })
+        .catch(() => false);
 
-      // Formspree 用 JSON、要 Accept: application/json 才不會 redirect
-      const payload: Record<string, string> = {};
-      fd.forEach((v, k) => {
-        payload[k] = String(v);
-      });
+      // 2. 副管道：Formspree（有 ID 才送；Accept: application/json 才不會 redirect）
+      const formspreeTask: Promise<boolean> = formspreeId
+        ? fetch(`https://formspree.io/f/${formspreeId}`, {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          })
+            .then(res => res.ok)
+            .catch(() => false)
+        : Promise.resolve(false);
 
-      const tasks: Promise<unknown>[] = [
-        // 1. Formspree（email）
-        fetch(formspreeUrl, {
-          method: "POST",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }),
-        // 2. TG 通知（Pages Functions、失敗不影響主流程）
-        fetch("/api/contact-tg", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }).catch(() => null),
-      ];
+      const [tgOk, formspreeOk] = await Promise.all([tgTask, formspreeTask]);
+      const intent = String(payload["我想"] || "");
 
-      try {
-        const [formspreeRes] = await Promise.all(tasks);
-        const res = formspreeRes as Response;
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(`Formspree HTTP ${res.status}: ${text.slice(0, 100)}`);
-        }
+      if (tgOk || formspreeOk) {
+        track("lead_submit", { status: "ok", form: "contact", intent });
+        const qs = new URLSearchParams({ form: "contact" });
+        if (intent) qs.set("intent", intent);
+        window.location.href = `/thank-you/?${qs.toString()}`;
+        return;
+      }
 
-        // 成功 → 導向 thank-you 頁
-        const intent = String(payload["我想"] || "");
-        const intentQs = intent ? `?intent=${encodeURIComponent(intent)}` : "";
-        window.location.href = `/thank-you${intentQs}`;
-      } catch (err) {
-        console.error("Contact form submit failed:", err);
-        showFormError(
-          "送出失敗了、再試一次。或直接 LINE sky811117 / 撥 0920-118-756"
-        );
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = "送出 → 等景泰回你";
-        }
+      // 兩條都沒收到 → 原地備援：不讓客戶看到「後端」這種字，需求照樣交得出去
+      track("lead_submit", { status: "degraded", form: "contact", intent });
+      showFallback(payload);
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "再送一次";
       }
     });
+
+    // 讓 contact.astro 這類頁面能從外部重設按鈕文字（保留 hook、目前未用）
+    form.addEventListener("reset", resetSubmitBtn);
   }
 
   initContactForm();

@@ -12,8 +12,9 @@
     font-family: var(--font-app-cjk);
   }
 
-  /* 標題層吃 Noto Sans TC webfont（Google provider unicode-range 切片，
-     只下載標題實際出現的字）；內文維持系統字 */
+  /* 標題層吃 Noto Sans TC webfont（astro.config.ts 網頁 entry 不指定 formats →
+     woff2 + Google unicode-range 切片，只下載標題實際出現的字塊）；內文維持系統字。
+     只宣告 700 一個 weight（900 由瀏覽器用 700 字面渲染），這裡的 font-weight 不要用到別的值，否則會合成粗細 */
   h1,
   h2,
   h3,

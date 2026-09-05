@@ -87,6 +87,22 @@ export const onRequest = async ({
 
   let html = await upstream.text();
 
+  // 注入 noindex / no-referrer（雙保險，2026-09-06）：
+  //   - 上游 sky811117.github.io 是公開 repo、頁面標題含客戶稱謂與找房需求，
+  //     proxy 回應的 x-robots-tag 只保護 /share/ 路徑；這裡再往 <head> 補一顆 meta，
+  //     頁面被複製 / 轉存到別處也帶著 noindex。
+  //   - 客戶頁內有大量外連（永慶物件頁、LINE），no-referrer 讓 /share/{id}/ 網址不進對方 log。
+  if (html.includes("<head>")) {
+    let inject = "";
+    if (!/<meta[^>]+name=["']robots["']/i.test(html)) {
+      inject += '<meta name="robots" content="noindex,nofollow">';
+    }
+    if (!/<meta[^>]+name=["']referrer["']/i.test(html)) {
+      inject += '<meta name="referrer" content="no-referrer">';
+    }
+    if (inject) html = html.replace("<head>", "<head>" + inject);
+  }
+
   // 注入 GA4 — 讓個人網站 GA 也算到這次造訪（頁面本身原本沒有 gtag）
   if (!html.includes(GA4_ID) && html.includes("</head>")) {
     // ⚠️ 2026-08-27 修：原本這裡是無 consent、無告知直接注入 gtag，
@@ -121,6 +137,10 @@ export const onRequest = async ({
       // 雙保險：客戶頁不進搜尋引擎（頁面 meta 也有 noindex）
       "x-robots-tag": "noindex, nofollow",
       "cache-control": "public, max-age=30",
+      // public/_headers 只套靜態檔，Functions 回應要自己補
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "SAMEORIGIN",
+      "referrer-policy": "no-referrer",
     },
   });
 };

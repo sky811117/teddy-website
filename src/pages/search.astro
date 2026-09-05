@@ -1,5 +1,6 @@
 ---
 import { getRelativeLocaleUrl } from "astro:i18n";
+import { getCollection } from "astro:content";
 import "@pagefind/default-ui/css/ui.css";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
@@ -8,6 +9,7 @@ import Main from "@/components/Main.astro";
 import Footer from "@/components/Footer.astro";
 import { getAssetPath } from "@/utils/withBase";
 import { useTranslations } from "@/i18n";
+import { postFilter } from "@/utils/postFilter";
 import config from "@/config";
 
 const locale = Astro.currentLocale ?? config.site.lang;
@@ -25,12 +27,19 @@ const backUrl = config.features.showBackButton
 const pagefindBundlePath = getAssetPath("pagefind/");
 
 const t = useTranslations(locale);
+
+// 描述講真實的內容：篇數動態帶入，主題用站上真的有的（沒有「議價」這個 tag，也不教議價）
+const postCount = (await getCollection("posts")).filter(postFilter).length;
+const propertyCount = (
+  await getCollection("properties", ({ data }) => data.status === "active")
+).length;
+const pageDescription = `搜尋站內 ${postCount} 篇文章與 ${propertyCount} 筆在售物件：社區評價、實價登錄、新青安、政策、稅務、嫌惡設施，輸入社區名或行政區就找得到。`;
 ---
 
 <Layout
   title={`${t.pages.searchTitle} | ${config.site.title}`}
-  description="搜尋景泰房市筆記 — 100+ 篇關於台中買房賣房、新青安、議價、嫌惡設施、稅務、政策的實戰文章。"
-  canonicalURL={new URL("/search", Astro.site).href}
+  description={pageDescription}
+  canonicalURL={new URL("/search/", Astro.site).href}
   noindex={true}
 >
   <Header />
@@ -38,6 +47,9 @@ const t = useTranslations(locale);
   <Breadcrumb />
 
   <Main pageTitle={t.pages.searchTitle} pageDesc={t.pages.searchDesc}>
+    <p class="text-muted-foreground mb-4 text-sm" data-search-hint>
+      可以搜社區名（例：麗園道）、行政區（例：北屯）或主題（例：新青安）。搜尋結果可用「type」勾選只看文章或只看物件。
+    </p>
     <div
       id="pagefind-search"
       transition:persist
@@ -84,6 +96,24 @@ const t = useTranslations(locale);
         bundlePath,
         showImages: true, // 2026-08-26 開啟：全站文章都有 ogImage，Pagefind 抓得到
         showSubResults: true,
+        // 文章／物件 filter：物件頁 data-pagefind-filter="type:物件"、文章頁 "type:文章"，
+        // 索引裡有這個 filter 時 Pagefind UI 會自動長出勾選框，這裡讓它預設展開
+        openFilters: ["type"],
+        showEmptyFilters: false,
+        // 介面全繁中（預設是英文的「4 results for …」「Clear」）
+        translations: {
+          placeholder: "搜尋社區名、行政區、新青安、政策…",
+          clear_search: "清除",
+          load_more: "載入更多結果",
+          search_label: "站內搜尋",
+          filters_label: "篩選",
+          zero_results: "找不到「[SEARCH_TERM]」相關內容",
+          many_results: "「[SEARCH_TERM]」共 [COUNT] 筆結果",
+          one_result: "「[SEARCH_TERM]」共 1 筆結果",
+          alt_search: "找不到「[SEARCH_TERM]」，改顯示「[DIFFERENT_TERM]」的結果",
+          search_suggestion: "找不到「[SEARCH_TERM]」，試試：",
+          searching: "搜尋「[SEARCH_TERM]」中…",
+        },
         processTerm: function (term: string) {
           params.set("q", term); // Update the `q` parameter in the URL
           history.replaceState(history.state, "", "?" + params.toString()); // Push the new URL without reloading
@@ -174,6 +204,11 @@ const t = useTranslations(locale);
 
     .pagefind-ui__result-nested .pagefind-ui__result-link:before {
       font-family: system-ui;
+    }
+
+    /* filter 名稱是 index 裡的 key（type），顯示成中文 */
+    .pagefind-ui__filter-name {
+      text-transform: none;
     }
   }
 </style>

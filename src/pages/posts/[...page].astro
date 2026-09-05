@@ -38,14 +38,16 @@ const nextURL = page.url.next
   : undefined;
 
 // 列表頂部入口卡 — emoji 全面換成 Tabler outline SVG icon
+const pageSuffix = page.currentPage > 1 ? `（第 ${page.currentPage} 頁）` : "";
+
 const quickLinks = [
-  { Icon: IconHelpCircle, label: "常見問題 30 題", href: "/faq/" },
+  { Icon: IconHelpCircle, label: "常見問題", href: "/faq/" },
   {
     Icon: IconBuildingCommunity,
     label: "社區深度評測",
     href: "/tags/community-review/",
   },
-  { Icon: IconFileDescription, label: "政策解析", href: "/tags/政策解析/" },
+  { Icon: IconFileDescription, label: "政策解讀", href: "/tags/政策解讀/" },
   { Icon: IconTool, label: "買房工具", href: "/tools/" },
   { Icon: IconNotes, label: "房地產詞典", href: "/tags/房地產詞典/" },
   { Icon: IconMapPin, label: "台中各區行情", href: "/areas/" },
@@ -53,8 +55,8 @@ const quickLinks = [
 ---
 
 <Layout
-  title={`${t.pages.postsTitle} | ${config.site.title}`}
-  description={`景泰房市筆記 — 100+ 篇台中買房賣房實戰文章。新青安、議價、嫌惡設施、政策、社區評估、區域指南。(第 ${page.currentPage}/${page.lastPage} 頁)`}
+  title={`${t.pages.postsTitle}${pageSuffix} | ${config.site.title}`}
+  description={`景泰房市筆記 — ${page.total} 篇台中買房賣房文章：社區評價、實價登錄、青安 3.0、政策、稅務、嫌惡設施、台中各區指南。（第 ${page.currentPage}/${page.lastPage} 頁）`}
   ogImage="/og/page-posts.jpg"
   prevURL={prevURL}
   nextURL={nextURL}

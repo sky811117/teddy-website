@@ -6,12 +6,18 @@ import Breadcrumb from "@/components/Breadcrumb.astro";
 import Main from "@/components/Main.astro";
 import Footer from "@/components/Footer.astro";
 import Tag from "@/components/Tag.astro";
-import { getUniqueTags } from "@/utils/getUniqueTags";
+import { getUniqueTags, THIN_TAG_MIN_POSTS } from "@/utils/getUniqueTags";
 import { useTranslations } from "@/i18n";
 import config from "@/config";
 
 const posts = await getCollection("posts", ({ data }) => !data.draft);
-const tags = getUniqueTags(posts);
+const tags = getUniqueTags(posts); // 已依篇數多→少排序
+
+// 主要主題（≥3 篇）攤開；掛不到 3 篇的收進「更多」摺疊，免得 /tags/ 前排被
+// 年份 / 平台名 / 只用過一次的 tag 佔滿（之前依 slug 排：2026 / 5168 / 591 / AI…）
+const mainTags = tags.filter(t => t.count >= THIN_TAG_MIN_POSTS);
+const minorTags = tags.filter(t => t.count < THIN_TAG_MIN_POSTS);
+const publishedCount = new Set(posts.map(p => p.id)).size;
 
 const locale = Astro.currentLocale ?? config.site.lang;
 const t = useTranslations(locale);
@@ -19,7 +25,7 @@ const t = useTranslations(locale);
 
 <Layout
   title={`${t.pages.tagsTitle} | ${config.site.title}`}
-  description={`景泰房市筆記所有標籤 — ${tags.length} 個主題（新青安 / 議價 / 嫌惡設施 / 七期 / 北屯 / 政策 ...），按主題找你要的文章。`}
+  description={`景泰房市筆記 ${publishedCount} 篇文章的主題索引 — ${mainTags.length} 個主要主題（社區評價、實價登錄、新青安、政策、稅務、嫌惡設施、各行政區…），按主題找你要的文章。`}
   canonicalURL={new URL("/tags", Astro.site).href}
 >
   <Header />
@@ -27,9 +33,27 @@ const t = useTranslations(locale);
   <Breadcrumb />
 
   <Main pageTitle={t.pages.tagsTitle} pageDesc={t.pages.tagsDesc}>
+    <p class="text-muted-foreground mb-4 text-sm">
+      括號內是該主題的文章篇數；主要主題 {mainTags.length} 個，其餘 {minorTags.length} 個收在下方「更多主題」。
+    </p>
     <ul class="flex flex-wrap gap-6">
-      {tags.map(({ tag, tagName }) => <Tag {tag} {tagName} />)}
+      {mainTags.map(({ tag, tagName, count }) => <Tag {tag} {tagName} {count} />)}
     </ul>
+
+    {
+      minorTags.length > 0 && (
+        <details class="mt-10">
+          <summary class="text-accent cursor-pointer text-lg font-bold">
+            更多主題（{minorTags.length} 個，各 1–{THIN_TAG_MIN_POSTS - 1} 篇）
+          </summary>
+          <ul class="mt-6 flex flex-wrap gap-4">
+            {minorTags.map(({ tag, tagName, count }) => (
+              <Tag {tag} {tagName} {count} size="sm" />
+            ))}
+          </ul>
+        </details>
+      )
+    }
   </Main>
 
   <Footer />

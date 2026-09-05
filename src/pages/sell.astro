@@ -10,16 +10,16 @@ const canonicalURL = new URL("/sell", Astro.site).href;
 const siteOrigin = new URL("/", Astro.site).href;
 const realEstateAgentId = `${siteOrigin}#realestateagent`;
 
-const metaTitle = `台中賣房委託 — AI 修圖 + 多平台曝光 | ${config.site.title}`;
+const metaTitle = `台中賣房委託 — 免費行情評估 + 多平台曝光 | ${config.site.title}`;
 const metaDesc =
-  "台中賣房委託景泰：AI 修圖讓物件照更好看、591 / 樂屋 / 5168 多平台同步、公司自媒體 BigKanBan 跨平台曝光。先給你一個合理估價區間，再決定要不要委託。LINE：sky811117。";
+  "台中賣房委託景泰：先用同社區近一年實價登錄 + 在售戶數給你合理行情區間，再決定要不要委託。委託後 591 / 樂屋 / 5168 同步上架、公司自媒體 BigKanBan 跨平台曝光。LINE：sky811117。";
 
 // 為什麼委託景泰（三點，勿誇大）
 const reasons = [
   {
     emoji: "🤖",
-    title: "AI 修圖，物件照更好看",
-    desc: "同一間房，照片拍得好不好，買家點不點進來差很多。我用 AI 工具把物件照調亮、調正，讓你的房子在一排縮圖裡更容易被點開。",
+    title: "物件照調亮調正，縮圖更清楚",
+    desc: "同一間房，照片拍得好不好，買家點不點進來差很多。我用工具把物件照統一調亮、調正（只調光線角度、不美化屋況），讓你的房子在一排縮圖裡更容易被點開。",
   },
   {
     emoji: "📡",
@@ -37,17 +37,17 @@ const reasons = [
 const steps = [
   {
     emoji: "📊",
-    title: "1. 免費估價",
+    title: "1. 免費行情評估",
     desc: "看實價登錄成交 + 同社區在售 + 屋況加減項，給你一個合理區間（不是單一價、是區間）。沒委託壓力，先看數字再說。",
   },
   {
     emoji: "🖼️",
-    title: "2. AI 修圖上架",
-    desc: "物件照 AI 修圖、寫文案，591 / 樂屋 / 5168 多平台同步上架，公司自媒體一起幫你推。",
+    title: "2. 修圖上架",
+    desc: "物件照調亮調正、寫文案，591 / 樂屋 / 5168 多平台同步上架，公司自媒體一起幫你推。",
   },
   {
     emoji: "🤝",
-    title: "3. 看屋議價",
+    title: "3. 帶看 + 出價評估",
     desc: "幫你篩掉純看熱鬧的、安排有意願的買家。出價進來，用同社區行情幫你判斷該守還是該放。",
   },
   {
@@ -71,7 +71,7 @@ const serviceSchema = {
   "@id": `${canonicalURL}#service`,
   name: "台中賣房委託",
   description:
-    "AI 修圖、591 / 樂屋 / 5168 多平台同步、公司自媒體曝光，從免費估價區間到簽約過戶的全程賣房協助。",
+    "免費行情評估區間、591 / 樂屋 / 5168 多平台同步、公司自媒體曝光，從行情評估到簽約過戶的全程賣房協助。",
   serviceType: "賣房協助",
   provider: { "@id": realEstateAgentId },
   areaServed: {
@@ -86,11 +86,11 @@ const serviceSchema = {
     "@type": "OfferCatalog",
     name: "賣房協助內容",
     itemListElement: [
-      "免費估價（給合理區間、不是單一價）",
-      "物件照 AI 修圖",
+      "免費行情評估（給合理區間、不是單一價）",
+      "物件照調亮調正",
       "591 / 樂屋 / 5168 多平台同步上架",
       "公司自媒體 BigKanBan 跨平台曝光",
-      "看屋議價 + 簽約過戶全程協助",
+      "帶看、出價評估 + 簽約過戶全程協助",
     ].map((item, idx) => ({
       "@type": "Offer",
       position: idx + 1,
@@ -148,14 +148,14 @@ const breadcrumbSchema = {
     <section class="border-border border-b py-12 text-center sm:py-16">
       <h1 class="text-3xl font-bold sm:text-4xl">
         想賣房，<br />
-        <span class="text-accent">先看一個合理的估價區間</span>
+        <span class="text-accent">先看一個合理的行情區間</span>
       </h1>
       <p
         class="text-muted-foreground mx-auto mt-6 max-w-xl text-[17px] leading-relaxed"
       >
         賣房怕兩件事：賣太便宜虧到，或掛太高賣不掉。
         我先用實價登錄 + 同社區在售，給你一個合理區間，你看完數字再決定要不要委託。
-        要委託的話，AI 修圖、多平台同步、公司自媒體曝光一起上，讓對的買家看到你的房子。
+        要委託的話，照片調亮調正、多平台同步、公司自媒體曝光一起上，讓對的買家看到你的房子。
       </p>
 
       <div
@@ -171,7 +171,7 @@ const breadcrumbSchema = {
           href="#sell-form-section"
           class="border-accent text-accent rounded-lg border-2 px-6 py-3 text-[17px] font-medium no-underline hover:bg-accent hover:text-accent-foreground"
         >
-          📝 填表單拿估價 ↓
+          📝 填表單拿行情區間 ↓
         </a>
       </div>
     </section>
@@ -204,7 +204,7 @@ const breadcrumbSchema = {
       <div class="text-center">
         <p class="text-muted-foreground text-sm">委託流程</p>
         <h2 class="text-foreground mt-2 text-2xl font-bold sm:text-3xl">
-          從估價到過戶，4 步
+          從行情評估到過戶，4 步
         </h2>
       </div>
       <ul class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -237,7 +237,7 @@ const breadcrumbSchema = {
     {/* ============ 底部表單 ============ */}
     <div id="sell-form-section">
       <SellForm
-        title="留屋況給景泰，24 小時內回估價區間"
+        title="留屋況給景泰，24 小時內回行情評估區間"
         subtitle="區 + 路段 + 坪數 + 期望總價就好，巷弄門牌可暫時不寫。資料只進景泰個人 CRM、不會給第三方。"
       />
     </div>

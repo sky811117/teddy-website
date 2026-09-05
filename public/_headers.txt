@@ -3,7 +3,8 @@
 # 設計原則：
 # - 圖片 / 字型 / built CSS-JS：immutable (1 年)、Cloudflare hash 在 filename 已天然 cache-busting
 # - HTML：no-cache (每次 revalidate、新 deploy 立刻生效)
-# - OG 圖 / 物件照：1 個月 (頻繁更新但不會 hash bust)
+# - OG 圖：1 個月；物件照：1 天 + stale-while-revalidate 7 天（同路徑覆寫、不會 hash bust）
+# - ⚠️ 一條規則只能有一個 `*`（Cloudflare Pages 限制），雙 splat 會整條被忽略
 # - robots / sitemap：1 天
 #
 # 注意：本檔 build 後會由 scripts/postbuild-headers.mjs rename 為 dist/_headers
@@ -13,15 +14,20 @@
 /og/*
   Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
 
-# 物件照 (1 個月)
-/properties/*/*.jpg
-  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+# 物件照 — 一條規則只能有一個 splat（Cloudflare 官方限制，`/properties/*/*.jpg`
+# 雙 splat 整條被忽略，線上實測 2,982 張照片全是 max-age=0）。`*` 會跨越 `/`，
+# 所以 `/properties/*.jpg` 同時吃到 /properties/0066565/photo_03.jpg，
+# 帶副檔名也不會誤中 /properties/0066565/ 的 HTML。
+# 物件照是每晚「同路徑覆寫」（不是 hash 檔名），所以只鎖 1 天 + 背景更新 7 天，
+# 換首圖 / 補拍重傳最晚隔天就會換過來，而不是黏 30 天。
+/properties/*.jpg
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
-/properties/*/*.png
-  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+/properties/*.png
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
-/properties/*/*.webp
-  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+/properties/*.webp
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
 
 # 圖卡 / 社群素材 (1 個月)
 /cards/*

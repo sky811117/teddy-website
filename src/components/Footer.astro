@@ -2,7 +2,7 @@
 /**
  * Footer — 深色三欄品牌頁腳（bg-inverse 深咖啡底、米字、暖金 hover）
  * ① 品牌欄：名稱 + 公司 + 證號（內容一字不動）
- * ② 站內連結欄：六個主要頁面
+ * ② 站內連結欄：八個主要頁面（2026-09-06 補「我要買房 / 我要賣房」— /buy/ /sell/ 原本全站只有首頁一個入口）
  * ③ 聯絡欄：電話 / LINE 按鈕 + 社群 icon 列
  * 手機單欄堆疊、版權列最底（border-t border-white/10）
  */
@@ -22,10 +22,12 @@ const currentYear = new Date().getFullYear();
 // 站內主要頁面連結
 const siteLinks = [
   { label: "在售物件", href: "/properties/" },
+  { label: "我要買房", href: "/buy/" },
+  { label: "我要賣房", href: "/sell/" },
+  { label: "台中各區", href: "/areas/" },
   { label: "房市筆記", href: "/posts/" },
   { label: "客戶工具", href: "/tools/" },
   { label: "常見問題", href: "/faq/" },
-  { label: "台中各區", href: "/areas/" },
   { label: "關於景泰", href: "/about/" },
 ];
 
@@ -65,10 +67,10 @@ const socialItems = await Promise.all(
         />
         <p class="font-heading text-lg font-bold">陳景泰｜台中房仲</p>
       </div>
-      <p class="text-inverse-muted mt-4 text-sm leading-relaxed">
+      <p class="text-inverse-muted mt-4 text-[15px] leading-relaxed">
         一品不動產 有巢氏房屋 台中世界之心加盟店
       </p>
-      <p class="text-inverse-muted text-sm leading-relaxed">
+      <p class="text-inverse-muted text-[15px] leading-relaxed">
         經紀人 黃永隆 113彰縣字324 ・ 營業員 陳景泰 114登字488296 ・
         0920-118-756
       </p>
@@ -77,7 +79,7 @@ const socialItems = await Promise.all(
     {/* ② 站內連結欄 */}
     <nav aria-label="站內連結">
       <p class="font-heading font-bold">站內連結</p>
-      <ul class="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm">
+      <ul class="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 text-[15px]">
         {
           siteLinks.map(({ label, href }) => (
             <li>

@@ -66,7 +66,9 @@ const rssHref = getRelativeLocaleUrl(
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href={getAssetPath("favicon.svg")} />
     <link rel="icon" href={getAssetPath("favicon.ico")} />
-    <link rel="apple-touch-icon" href={getAssetPath("favicon.svg")} />
+    {/* iOS 不吃 SVG 的 apple-touch-icon，要 180×180 PNG（public/apple-touch-icon.png，
+        由 favicon.svg 疊在站底色上轉出；manifest.json.ts 的 192/512 也是同一批） */}
+    <link rel="apple-touch-icon" sizes="180x180" href={getAssetPath("apple-touch-icon.png")} />
     <link rel="manifest" href={getAssetPath("manifest.json")} />
     <link rel="canonical" href={canonicalHref} />
     {prevURL && <link rel="prev" href={prevURL} />}
@@ -87,9 +89,13 @@ const rssHref = getRelativeLocaleUrl(
       cssVariable="--font-google-sans-code"
       preload={[{ subset: "latin", weight: 400, style: "normal" }]}
     />
-    {/* 標題層中文字體：Google provider 保留 unicode-range 切片，瀏覽器只抓
-        標題實際用到的字塊；不 preload（CJK 切片多、preload 反而搶頻寬）。
-        內文走系統字（--font-app-cjk 不含 Noto），載量只發生在 font-heading 元素 */}
+    {/* 標題層中文字體（700/900）。astro.config.ts 這個 entry 沒指定 formats →
+        預設 woff2，Google provider 才會回 unicode-range 切片，瀏覽器只抓標題實際
+        用到的字塊；不 preload（CJK 切片上百個、preload 反而搶頻寬）。
+        內文走系統字（--font-app-cjk 不含 Noto），載量只發生在 font-heading 元素。
+        ⛔ 絕對不要在這裡 render `--font-noto-sans-tc-og`：那是 OG 圖用的整檔 ttf
+        （每個 weight 7MB），只給 og.png.ts / index.png.ts 的 satori 讀。
+        驗收：curl 首頁 | grep -c unicode-range 要 > 0，dist/_astro/fonts 不該再有 .woff/.ttf 的 Noto 整檔給網頁用。 */}
     <Font cssVariable="--font-noto-sans-tc" />
 
     <!-- Primary meta -->
@@ -130,7 +136,6 @@ const rssHref = getRelativeLocaleUrl(
     <!-- Theme color：對 light / dark mode 各設 default，theme.ts runtime 會覆蓋成精確值 -->
     <meta name="theme-color" content="#f5f1eb" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#1f1b17" media="(prefers-color-scheme: dark)" />
-    <meta name="theme-color" content="" />
 
     <!-- JSON-LD: 多 schema @graph（影響 Google 搜尋呈現） -->
     <script

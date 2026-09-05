@@ -3,8 +3,8 @@ import { defineAstroPaperConfig } from "./src/types/config";
 export default defineAstroPaperConfig({
   site: {
     url: "https://teddy-website-blog.pages.dev/",
-    title: "陳景泰｜台中房仲 × AI 自動化",
-    description: "台中房仲陳景泰（短影音叫泰迪 / Teddy，房仲大看板 BigKanBan 團隊）。用 AI 工具幫客戶買房賣房：新青安試算、嫌惡設施查詢、實價登錄分析、定價分析、多平台曝光。LINE：sky811117。",
+    title: "陳景泰｜台中房仲",
+    description: "台中買房賣房找陳景泰（泰迪）：社區評價、實價登錄、青安 3.0 試算、稅費一次算清楚，在售物件每天更新。一品不動產有巢氏世界之心店，LINE：sky811117。",
     author: "陳景泰",
     profile: "https://teddy-website-blog.pages.dev/",
     ogImage: "default-og.jpg",
@@ -13,7 +13,7 @@ export default defineAstroPaperConfig({
     dir: "ltr",
   },
   posts: {
-    perPage: 4,
+    perPage: 12,
     perIndex: 4,
     scheduledPostMargin: 15 * 60 * 1000,
   },

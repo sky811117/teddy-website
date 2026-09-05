@@ -16,7 +16,7 @@ const itemListSchema = {
     "@type": "ListItem",
     position: idx + 1,
     name: `${a.name}買房指南`,
-    url: new URL(`/areas/${a.slug}`, Astro.site).href,
+    url: new URL(`/areas/${a.slug}/`, Astro.site).href,
   })),
 };
 
@@ -35,7 +35,7 @@ const breadcrumbSchema = {
       "@type": "ListItem",
       position: 2,
       name: "台中各區",
-      item: new URL("/areas", Astro.site).href,
+      item: new URL("/areas/", Astro.site).href,
     },
   ],
 };
@@ -43,8 +43,8 @@ const breadcrumbSchema = {
 
 <Layout
   title={`台中 7 區買房指南 | ${config.site.title}`}
-  description="台中 7 大行政區（北屯 / 西屯七期 / 南屯 / 北區 / 中區 / 太平 / 大里）2026 Q1 行情、熱門社區、適合誰買、要避開什麼 — 一個房仲的實戰觀察，每區獨立深度頁。"
-  canonicalURL={new URL("/areas", Astro.site).href}
+  description="北屯／西屯七期／南屯／北區／中區／太平／大里 7 區行情：中位單價、熱門社區、適合誰買、要避開什麼（資料期間 2026 Q1，合泰建經＋實價登錄）。每區一頁，附該區在售物件與社區深度文。"
+  canonicalURL={new URL("/areas/", Astro.site).href}
 >
   <Fragment slot="head">
     <script
@@ -63,14 +63,14 @@ const breadcrumbSchema = {
 
   <Main
     pageTitle="台中 7 區買房指南"
-    pageDesc="不同區房價走勢差很多。我把 2026 Q1 各區行情、熱門社區、適合誰買整理出來。你看哪區順手點哪區進去看深度頁。"
+    pageDesc="不同區房價走勢差很多。各區行情（資料期間 2026 Q1）、熱門社區、適合誰買都整理在各自的深度頁，你看哪區順手點哪區。"
   >
     {/* 7 區卡片網格 */}
     <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {
         areas.map(area => (
           <a
-            href={`/areas/${area.slug}`}
+            href={`/areas/${area.slug}/`}
             class="border-border bg-card hover:border-accent group flex flex-col overflow-hidden rounded-lg border no-underline transition-colors"
           >
             {/* 2026-08-26 補：原本 7 張卡片零縮圖，整頁只有 emoji 撐版面 */}
@@ -125,7 +125,7 @@ const breadcrumbSchema = {
       <p class="text-foreground font-medium">想看其他區？</p>
       <p class="text-muted-foreground mt-3 leading-relaxed">
         東區 / 南區 / 西區 / 烏日 / 大雅 / 豐原 / 海線（梧棲 / 沙鹿 / 龍井 / 清水）
-        — 整個台中我都跑。LINE 我說你想看哪、我給你最近 3 個月當區行情 + 推薦物件。
+        — 台中全區都有在跑。LINE 說你想看哪一區，回你最近 3 個月當區實價整理 + 站上在售物件。
       </p>
       <a
         href="/go/line?src=areas"

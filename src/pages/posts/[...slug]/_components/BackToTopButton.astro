@@ -4,13 +4,17 @@ import IconArrowNarrowUp from "@/assets/icons/IconArrowNarrowUp.svg";
 import { useTranslations } from "@/i18n";
 
 const t = useTranslations(Astro.currentLocale);
+
+// 手機：抬到右下角 LINE 浮動鈕（FloatingCTA：bottom 1rem + 約 44px 高）上方，
+// 兩顆不再疊在同一個角落；cookie 橫幅出現時跟著 --consent-h 一起往上。
+// 桌機維持 sticky bottom-8 不變。
 ---
 
 <div
   id="btt-btn-container"
   class:list={[
-    "fixed inset-e-4 bottom-8 z-50",
-    "md:sticky md:inset-e-auto md:float-end md:me-1",
+    "fixed inset-e-4 z-40 max-md:bottom-[calc(5rem+var(--consent-h,0px))]",
+    "md:sticky md:bottom-8 md:inset-e-auto md:float-end md:me-1",
     "translate-y-14 opacity-0 transition duration-500",
   ]}
 >

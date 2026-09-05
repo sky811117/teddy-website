@@ -5,13 +5,26 @@ on:
     branches: [main]
   workflow_dispatch:
   schedule:
-    # 每天 03:00 UTC = 台灣 11:00 自動 rebuild，讓當天到期的 scheduled post 上線
-    # GitHub Actions cron 自然 delay 5-15 分鐘，實際上線約 11:05-11:20 +08
-    - cron: "0 3 * * *"
+    # 排程文的門檻是 pubDatetime − 15 分鐘（postFilter），月報 / 新聞文都排台灣 09:00，
+    # 所以 rebuild 要落在 00:45Z 之後才有意義。
+    # ⚠️ 實測（gh run list --event schedule，2026-08-27 起）：GitHub 對 "0 3 * * *" 這種
+    # 整點 cron 的延遲是 4–11 小時（實際 07:11Z–14:41Z 才跑，= 台灣 15:11–22:41），
+    # 不是文件寫的「5–15 分鐘」。改成非整點分鐘數 + 兩班，只能降低機率、不保證準時；
+    # 真要準點請在家用機 Windows 排程 11:00 跑 `gh workflow run deploy.yml`。
+    - cron: "23 2 * * *" # 台灣 10:23 起排隊
+    - cron: "41 4 * * *" # 台灣 12:41 起排隊（第一班被延遲時的補班）
+
+# 夜間物件 sync push 與 IG 圖卡 push 撞在一起時，兩條 deploy 平行跑、Cloudflare 以
+# 最後完成者為 production，可能舊蓋新。同一時間只跑一條、後到的排隊（不取消，每次
+# push 都要部署到）。
+concurrency:
+  group: cf-pages-deploy
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       deployments: write
@@ -19,10 +32,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # pnpm 版本一律吃 package.json 的 packageManager（corepack），不要在這裡再寫死
+      # version —— ci.yml 以前寫 10.11.1 跟 packageManager pnpm@11 打架。
       - name: Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 10
+        uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -33,35 +46,61 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 2026-08-26 補：這步以前漏掉，導致 Card/RelatedPosts 指向的
-      # /og/thumbs/*.webp 在 CI 從沒產出、線上一路 404（列表卡片破圖）。
-      # package.json 的 build 腳本本來就有這步，但下面跑的是 `astro build`
-      # 而不是 `pnpm run build`，整條前綴被繞過。
-      - name: Generate OG thumbnails
-        run: pnpm exec node scripts/generate-og-thumbs.mjs
+      # ===== 以下步驟順序 = package.json `build`（唯一真相），兩邊要一起改 =====
+      # lint-seo → audit-properties → og-thumbs → astro check → astro build → pagefind → postbuild
 
       # 2026-08-27 補：內容紅線閘門。景泰 2026-06 清過 51 篇 AI 編造的客戶故事，
       # 兩個月後又長回 23 篇（供文管線沒有防呆），這一步就是防第三次。
       # 擋：編造的第一人稱客戶故事 / 同業品牌比較 / 教議價殺價。
       # 要暫時放行（例如誤判擋住緊急更新）就把這步註解掉，修完再打開。
-      - name: Content lint (紅線閘門)
+      - name: Content lint (文章紅線閘門)
         run: pnpm exec node scripts/lint-seo.mjs
 
+      # 2026-09-06 補：物件法規閘門。以前只掛在從沒跑過的 ci.yml 而且 `|| true`，
+      # 結果完整門牌 / 同事手機 / 「經紀人：柯百聲」/ 誇大詞 / 漲跌預測 全部直接上線。
+      # 有 ERROR 就 exit 1 擋部署。物件 md 是每晚自動產生的，不要手改 md ——
+      # 要修 ~/.claude/skills/properties-sync/scripts/apply_utrust.py 的清洗規則。
+      - name: Property audit (物件法規閘門)
+        run: pnpm exec node scripts/audit-properties.mjs
+
+      # 2026-08-26 補：這步以前漏掉，導致 Card/RelatedPosts 指向的
+      # /og/thumbs/*.webp 在 CI 從沒產出、線上一路 404（列表卡片破圖）。
+      - name: Generate OG thumbnails
+        run: pnpm exec node scripts/generate-og-thumbs.mjs
+
+      # 型別 / 模板錯誤以前不擋部署（只有本機 pnpm run build 會跑）
+      - name: Astro check
+        run: pnpm exec astro check
+
+      # PUBLIC_* 是 build 時烘進 HTML 的（astro:env/client），Cloudflare Pages 後台的
+      # 環境變數對這裡的 build 完全不可見（wrangler 直接上傳 dist，Pages 不參與 build）。
+      # 所以任何 PUBLIC_* 都要在這裡給值。
+      # PUBLIC_FORMSPREE_FORM_ID：到 GitHub repo → Settings → Secrets and variables →
+      # Actions → Variables 設 PUBLIC_FORMSPREE_FORM_ID（Formspree 表單 id，景泰自己註冊）；
+      # 沒設 = 空字串 = 維持現狀（ContactForm 走 /api/contact-tg 或顯示 LINE 備援）。
       - name: Build site
         run: pnpm exec astro build
         env:
           PUBLIC_GA4_MEASUREMENT_ID: G-WMQCYK4L88
           PUBLIC_GOOGLE_SITE_VERIFICATION: lPDHY5HIn0TAj0hw4A5WRqk_6FUu9hSuqazn9YcjxCY
+          PUBLIC_FORMSPREE_FORM_ID: ${{ vars.PUBLIC_FORMSPREE_FORM_ID }}
 
+      # 以前掛 continue-on-error，pagefind 失敗會靜默上線一個空白的 /search/。
+      # package.json build 是 && 串接（失敗就停），這裡對齊。
       - name: Build search index (Pagefind)
         run: pnpm exec pagefind --site dist
-        continue-on-error: true
 
       # 2026-08-26 補：同一個根因漏掉的第二步。dist/_headers.txt 沒被改名成
       # dist/_headers，Cloudflare 完全不吃 public/_headers.txt 的快取規則
       # （實測線上圖片回 max-age=0, must-revalidate，等於每次都回源）。
-      - name: Postbuild (_headers rename + pagefind copy)
+      - name: Postbuild (_headers rename + pagefind copy + 尾斜線)
         run: pnpm exec node scripts/postbuild-headers.mjs
+
+      - name: Verify build output
+        run: |
+          test -f dist/_headers || (echo "dist/_headers missing" && exit 1)
+          test -f dist/pagefind/pagefind.js || (echo "dist/pagefind/pagefind.js missing" && exit 1)
+          test -f dist/index.html || (echo "dist/index.html missing" && exit 1)
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3

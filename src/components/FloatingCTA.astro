@@ -5,6 +5,8 @@
  * 首屏先隱藏（hero 內已有 LINE CTA，且會壓到搜尋按鈕）——
  * 滑過 hero 後才淡入；找不到 #hero 時 fallback 直接顯示
  * LINE 官方綠 + 品牌 SVG icon（全站 LINE CTA 統一視覺）
+ * bottom 吃 --consent-h：cookie 橫幅出現時（Analytics.astro 會設這個變數）往上讓位，
+ * 不再被橫幅蓋住（2026-09-06 修）。
  */
 import LineIcon from "@/assets/icons/socials/line.svg";
 ---
@@ -12,7 +14,8 @@ import LineIcon from "@/assets/icons/socials/line.svg";
 <a
   href="/go/line?src=float"
   data-floating-cta
-  class="bg-line hover:bg-line-hover shadow-cta pointer-events-none fixed end-4 bottom-4 z-40 flex min-h-11 translate-y-2 items-center gap-2 rounded-full px-4 py-3 font-medium text-white no-underline opacity-0 transition-[opacity,transform] duration-300 hover:scale-105 sm:hidden"
+  class="bg-line hover:bg-line-hover shadow-cta pointer-events-none fixed end-4 z-40 flex min-h-11 translate-y-2 items-center gap-2 rounded-full px-4 py-3 font-medium text-white no-underline opacity-0 transition-[opacity,transform,bottom] duration-300 hover:scale-105 sm:hidden"
+  style="bottom: calc(1rem + var(--consent-h, 0px));"
   title="LINE 私訊景泰 sky811117"
 >
   <LineIcon class="size-5" aria-hidden="true" />
