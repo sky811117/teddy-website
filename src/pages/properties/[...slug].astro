@@ -9,7 +9,7 @@ import { areas } from "@/data/areas";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 import { resolveDefaultOgImagePath } from "@/utils/resolveDefaultOgImagePath";
 import { cleanStreetArea } from "@/utils/cleanStreetArea";
-import { getCounty, OTHER_COUNTY } from "@/utils/isTaichung";
+import { getCounty, getDistrictListUrl, OTHER_COUNTY } from "@/utils/isTaichung";
 import { postFilter } from "@/utils/postFilter";
 import {
   cleanPropertyTitle,
@@ -158,8 +158,13 @@ const sameCommunity = communityName
   : [];
 const sameCommunityIds = new Set(sameCommunity.map(p => p.id));
 
-// 區域頁（src/data/areas.ts 只有 7 區，對不到的 district 就不連，別硬連 /areas/undefined/）
+// 區域頁（src/data/areas.ts 目前 11 區，對不到的 district 就不連，別硬連 /areas/undefined/）
 const area = areas.find(a => a.districtMatch.includes(property.data.district));
+// 分區靜態列表頁 /properties/{slug}/：台中 29 區都有；外縣市退回 ?district= 篩選
+const districtListUrl = getDistrictListUrl(property.data.district);
+const districtActiveCount = properties.filter(
+  p => p.id !== property.id && p.data.district === property.data.district
+).length;
 
 // 社區名要連去哪：有社區文連社區文；沒有但同社區還有別戶 → 列表頁帶 community 篩選
 const communityListUrl = communityName
@@ -954,6 +959,16 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
                   class="text-accent ml-1 no-underline hover:underline"
                 >
                   {area.shortName}買房指南 →
+                </a>
+              </p>
+            )}
+            {districtActiveCount > 0 && (
+              <p class="text-muted-foreground text-sm">
+                <a
+                  href={districtListUrl}
+                  class="text-accent no-underline hover:underline"
+                >
+                  看{property.data.district}全部 {districtActiveCount + 1} 筆在售 →
                 </a>
               </p>
             )}

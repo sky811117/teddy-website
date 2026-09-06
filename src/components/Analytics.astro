@@ -74,6 +74,7 @@ const gtagId = PUBLIC_GA4_MEASUREMENT_ID;
           'border-top:1px solid var(--border,#e5e7eb);box-shadow:0 -2px 12px rgba(0,0,0,.08);' +
           'font-size:14px;line-height:1.5;color:var(--foreground,#111);}' +
         '#ga-consent p{margin:0;flex:1 1 240px;}' +
+        '#ga-consent p a{color:var(--accent);text-decoration:underline;text-underline-offset:2px;}' +
         '#ga-consent .ga-btns{display:flex;gap:8px;flex:0 0 auto;}' +
         '#ga-consent button{min-height:44px;padding:0 16px;font-size:14px;border-radius:8px;cursor:pointer;font-weight:500;}' +
         '#ga-accept{background:var(--accent);color:var(--accent-foreground,#fff);border:none;}' +
@@ -88,7 +89,7 @@ const gtagId = PUBLIC_GA4_MEASUREMENT_ID;
       banner.setAttribute('role', 'region');
       banner.setAttribute('aria-label', 'Cookie 使用說明');
       banner.innerHTML =
-        '<p>本站會記錄不含 cookie、無法識別個人的匿名瀏覽數。按「接受」才會啟用 cookie（用來分辨回訪），協助改善內容品質。</p>' +
+        '<p>本站會記錄不含 cookie、無法識別個人的匿名瀏覽數。按「接受」才會啟用 cookie（用來分辨回訪），協助改善內容品質。詳見<a href="/privacy/">隱私權政策</a>。</p>' +
         '<div class="ga-btns">' +
           '<button type="button" id="ga-accept">接受</button>' +
           '<button type="button" id="ga-decline">拒絕</button>' +

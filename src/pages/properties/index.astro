@@ -6,9 +6,15 @@ import Footer from "@/components/Footer.astro";
 import Main from "@/components/Main.astro";
 import config from "@/config";
 import { safeJsonLd } from "@/utils/safeJsonLd";
-import { cleanStreetArea } from "@/utils/cleanStreetArea";
-import { cleanPropertyTitle } from "@/utils/cleanPropertyTitle";
-import { isTaichung, getCounty, COUNTY_ORDER } from "@/utils/isTaichung";
+import { isTaichung, getCounty, getDistrictSlug, COUNTY_ORDER } from "@/utils/isTaichung";
+import PropertyCard from "./_components/PropertyCard.astro";
+import PropertyCardIcons from "./_components/PropertyCardIcons.astro";
+import {
+  ROOM_ORDER,
+  sortRecommended,
+  buildCardMeta,
+  shouldShowNewBadge,
+} from "./_components/propertyMeta";
 import IconChevronDown from "@/assets/icons/IconChevronDown.svg";
 import IconSearch from "@/assets/icons/IconSearch.svg";
 import IconCheck from "@/assets/icons/IconCheck.svg";
@@ -20,69 +26,8 @@ const allProperties = await getCollection(
   ({ data }) => data.status === "active"
 );
 
-// 從 title / layout 推類型（純字串 keyword 法）
-const TYPE_KEYWORDS: Array<[string, string]> = [
-  ["透天", "透天"],
-  ["別墅", "別墅"],
-  ["店面", "店面"],
-  ["套房", "套房"],
-  ["農地", "農地"],
-  ["建地", "土地"],
-  ["土地", "土地"],
-  ["林地", "土地"],
-  ["商辦", "商辦"],
-  ["廠房", "廠房"],
-  ["公寓", "公寓"],
-  ["華廈", "華廈"],
-  ["大樓", "大樓"],
-];
-
-function getType(p: (typeof allProperties)[number]): string {
-  const t = p.data.title + " " + (p.data.layout || "");
-  for (const [kw, label] of TYPE_KEYWORDS) {
-    if (t.includes(kw)) return label;
-  }
-  // 沒命中 → 從格局推：含「房」當大樓 / 公寓
-  if (/\d房/.test(p.data.layout || "")) return "大樓";
-  return "其他";
-}
-
-// 從 layout 抽房數（例「3房2廳2衛」→ 3）
-function getRoomBucket(layout: string | undefined): string {
-  if (!layout) return "";
-  const m = layout.match(/(\d+)\s*房/);
-  if (!m) return "";
-  const n = parseInt(m[1], 10);
-  if (n >= 5) return "5房+";
-  return `${n}房`;
-}
-const ROOM_ORDER = ["1房", "2房", "3房", "4房", "5房+"];
-
-// 推薦排序（複合）：有圖優先 > 台中市優先 > featured > 最新上架。缺圖卡沉到後面。
-const sortedProperties = allProperties.sort((a, b) => {
-  const coverDiff = (a.data.coverImage ? 0 : 1) - (b.data.coverImage ? 0 : 1);
-  if (coverDiff !== 0) return coverDiff;
-  const tcDiff =
-    (isTaichung(a.data.district) ? 0 : 1) - (isTaichung(b.data.district) ? 0 : 1);
-  if (tcDiff !== 0) return tcDiff;
-  const featDiff = (a.data.featured ? 0 : 1) - (b.data.featured ? 0 : 1);
-  if (featDiff !== 0) return featDiff;
-  return b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime();
-});
-
-// 標籤判斷
-const NEW_LISTING_DAYS = 7;
-const now = Date.now();
-function isNewListing(p: (typeof allProperties)[number]): boolean {
-  if (!p.data.pubDatetime) return false;
-  return (now - p.data.pubDatetime.getTime()) / 86400000 <= NEW_LISTING_DAYS;
-}
-function priceDropPct(p: (typeof allProperties)[number]): number | null {
-  if (!p.data.lastPrice || p.data.lastPrice <= p.data.totalPrice) return null;
-  return Math.round(
-    ((p.data.lastPrice - p.data.totalPrice) / p.data.lastPrice) * 100
-  );
-}
+// 類型／房型／推薦排序／badge 判定都在 _components/propertyMeta.ts（跟分區列表頁共用）
+const sortedProperties = sortRecommended(allProperties);
 
 // 統計 chip 選項 + 數量
 const districtCount: Record<string, number> = {};
@@ -92,25 +37,16 @@ let newCount = 0;
 let dropCount = 0;
 let nonTaichungCount = 0;
 
+const now = Date.now();
 const propertyMeta = sortedProperties.map((p, idx) => {
-  const district = p.data.district || "未分類";
-  const type = getType(p);
-  const rooms = getRoomBucket(p.data.layout);
-  const newListing = isNewListing(p);
-  const dropPct = priceDropPct(p);
-  const community = p.data.community?.trim() || "";
-  // 對外顯示標題：清誇大詞／內部用語／emoji（src/utils/cleanPropertyTitle.ts）
-  const title = cleanPropertyTitle(
-    p.data.title,
-    [community || district, p.data.layout].filter(Boolean).join(" ")
-  );
-  districtCount[district] = (districtCount[district] || 0) + 1;
-  typeCount[type] = (typeCount[type] || 0) + 1;
-  if (rooms) roomCount[rooms] = (roomCount[rooms] || 0) + 1;
-  if (newListing) newCount++;
-  if (dropPct) dropCount++;
+  const m = buildCardMeta(p, idx, now);
+  districtCount[m.district] = (districtCount[m.district] || 0) + 1;
+  typeCount[m.type] = (typeCount[m.type] || 0) + 1;
+  if (m.rooms) roomCount[m.rooms] = (roomCount[m.rooms] || 0) + 1;
+  if (m.newListing) newCount++;
+  if (m.dropPct) dropCount++;
   if (!isTaichung(p.data.district)) nonTaichungCount++;
-  return { p, idx, title, community, district, type, rooms, newListing, dropPct };
+  return m;
 });
 
 // 首屏只渲染前 FIRST_CHUNK 張卡；其餘每 CHUNK_SIZE 張包成一個 <template data-chunk>，
@@ -134,10 +70,7 @@ const deferredCount = propertyMeta.length - firstCards.length;
 // 若全列表超過 30% 物件都判定為「新上架」，代表是同步日 artifact 不是真的新
 // → 整批不顯示新上架 badge（含快選 chip）。
 // 等 properties-sync 補 firstSeen 欄位後才能恢復精準判定。
-const NEW_BADGE_MAX_RATIO = 0.3;
-const showNewBadge =
-  sortedProperties.length > 0 &&
-  newCount / sortedProperties.length <= NEW_BADGE_MAX_RATIO;
+const showNewBadge = shouldShowNewBadge(propertyMeta);
 
 // district 按 county group（縣市對照在 src/utils/isTaichung.ts，與物件頁共用）
 const districtsByCounty: Record<string, Array<[string, number]>> = {};
@@ -159,16 +92,18 @@ const taichungTop = taichungDistricts.slice(0, TOP_DISTRICTS);
 const taichungRest = taichungDistricts.slice(TOP_DISTRICTS);
 const otherCounties = counties.filter(c => c !== "台中市");
 
+// 2026-09-06：台中各區 chip 改成連分區靜態頁 /properties/{slug}/（Google 才有一頁一區可收錄），
+// 髒值（「台中北屯」）與外縣市沒有分區頁，維持 client-side 篩選 chip；?district= 深連結照舊可用。
+const districtChipHref = (d: string): string | undefined => {
+  const slug = getDistrictSlug(d);
+  return slug ? `/properties/${slug}/` : undefined;
+};
+
 const types = Object.entries(typeCount).sort((a, b) => b[1] - a[1]);
 
 const rooms = ROOM_ORDER.filter(r => roomCount[r]).map(
   r => [r, roomCount[r]] as [string, number]
 );
-
-const formatPrice = (price: number) => {
-  if (price >= 10000) return `${(price / 10000).toFixed(2)} 億`;
-  return `${price.toLocaleString()} 萬`;
-};
 
 // ============ SEO + JSON-LD ============
 const canonicalURL = new URL("/properties/", Astro.site).href;
@@ -239,17 +174,7 @@ const breadcrumbSchema = {
     pageDesc={`${sortedProperties.length} 筆精選物件以台中為主，含本店跨縣市聯賣案件。`}
   >
     {/* 共用圖示：每張卡的 map-pin 以前各自 inline 一顆 svg（384 顆、150KB），改成只定義一次、卡片用 <use> */}
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      class="hidden"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <symbol id="icon-map-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
-        <path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z"></path>
-      </symbol>
-    </svg>
+    <PropertyCardIcons />
 
     <!-- 篩選列 -->
     <div class="card-surface mb-6 space-y-3 p-4">
@@ -328,11 +253,21 @@ const breadcrumbSchema = {
                 全部 ({sortedProperties.length})
               </button>
               {
-                taichungTop.map(([d, n]) => (
-                  <button type="button" data-filter-value={d} class="filter-chip">
-                    {d} ({n})
-                  </button>
-                ))
+                taichungTop.map(([d, n]) =>
+                  districtChipHref(d) ? (
+                    <a
+                      href={districtChipHref(d)}
+                      class="filter-chip district-link no-underline"
+                      data-district-link={d}
+                    >
+                      {d} ({n})
+                    </a>
+                  ) : (
+                    <button type="button" data-filter-value={d} class="filter-chip">
+                      {d} ({n})
+                    </button>
+                  )
+                )
               }
             </div>
             {
@@ -351,15 +286,25 @@ const breadcrumbSchema = {
                         <span class="text-muted-foreground w-14 shrink-0 text-xs font-medium">
                           台中市
                         </span>
-                        {taichungRest.map(([d, n]) => (
-                          <button
-                            type="button"
-                            data-filter-value={d}
-                            class="filter-chip"
-                          >
-                            {d} ({n})
-                          </button>
-                        ))}
+                        {taichungRest.map(([d, n]) =>
+                          districtChipHref(d) ? (
+                            <a
+                              href={districtChipHref(d)}
+                              class="filter-chip district-link no-underline"
+                              data-district-link={d}
+                            >
+                              {d} ({n})
+                            </a>
+                          ) : (
+                            <button
+                              type="button"
+                              data-filter-value={d}
+                              class="filter-chip"
+                            >
+                              {d} ({n})
+                            </button>
+                          )
+                        )}
                       </div>
                     )}
                     {otherCounties.map(c => (
@@ -662,128 +607,9 @@ const breadcrumbSchema = {
           data-total={sortedProperties.length}
         >
           {cardGroups.map(group => {
-            const cards = group.items.map(
-              ({ p: property, idx, title, community, district, type, rooms, newListing, dropPct }) => (
-                <li
-                  class="card-interactive overflow-hidden"
-                  data-district={district}
-                  data-community={community}
-                  data-type={type}
-                  data-rooms={rooms}
-                  data-price={property.data.totalPrice}
-                  data-age={property.data.age ?? ""}
-                  data-pub={property.data.pubDatetime.getTime()}
-                  data-order={idx}
-                  data-quick={[newListing ? "new" : "", dropPct ? "drop" : ""].filter(Boolean).join(" ")}
-                >
-                  <a
-                    href={`/properties/${property.id}/`}
-                    class="block no-underline"
-                    data-track="property"
-                    data-property-id={property.id}
-                    data-property-title={title}
-                    data-property-price={String(property.data.totalPrice)}
-                    data-property-district={district}
-                  >
-                    {property.data.coverImage ? (
-                      <div class="bg-muted aspect-[4/3] w-full overflow-hidden">
-                        <img
-                          src={
-                            typeof property.data.coverImage === "string"
-                              ? property.data.coverImage
-                              : property.data.coverImage.src
-                          }
-                          alt={title}
-                          width="800"
-                          height="600"
-                          class="h-full w-full object-cover"
-                          loading={idx < 3 ? "eager" : "lazy"}
-                          fetchpriority={idx === 0 ? "high" : undefined}
-                          decoding={idx < 3 ? "sync" : "async"}
-                        />
-                      </div>
-                    ) : (
-                      <div class="bg-muted flex aspect-[4/3] w-full flex-col items-center justify-center gap-1 overflow-hidden">
-                        <p class="text-muted-foreground text-sm">📷 照片整理中</p>
-                      </div>
-                    )}
-
-                    <div class="p-4">
-                      <div class="mb-2 flex flex-wrap gap-1">
-                        {property.data.featured && (
-                          <span class="bg-accent text-accent-foreground inline-block rounded-full px-2 py-0.5 text-xs">
-                            精選
-                          </span>
-                        )}
-                        {showNewBadge && newListing && (
-                          <span class="inline-block rounded-full bg-emerald-700 px-2 py-0.5 text-xs text-white">
-                            新上架
-                          </span>
-                        )}
-                        {dropPct && (
-                          <span class="inline-block rounded-full bg-rose-700 px-2 py-0.5 text-xs text-white">
-                            降價 {dropPct}%
-                          </span>
-                        )}
-                        <span class="bg-muted text-muted-foreground inline-block rounded-full px-2 py-0.5 text-xs">
-                          {type}
-                        </span>
-                      </div>
-
-                      <h2 class="text-foreground line-clamp-2 text-lg font-bold">
-                        {title}
-                      </h2>
-
-                      <p class="text-muted-foreground mt-1 flex items-center gap-1 text-sm">
-                        <svg class="size-4 shrink-0" aria-hidden="true">
-                          <use href="#icon-map-pin" />
-                        </svg>
-                        <span class="line-clamp-1">
-                          {property.data.district}
-                          {cleanStreetArea(property.data.streetArea, property.data.district)
-                            ? `・${cleanStreetArea(property.data.streetArea, property.data.district)}`
-                            : ""}
-                        </span>
-                      </p>
-
-                      <div class="mt-3 flex items-baseline gap-2">
-                        <span class="text-accent text-2xl font-extrabold">
-                          {formatPrice(property.data.totalPrice)}
-                        </span>
-                        {dropPct && property.data.lastPrice && (
-                          <span class="text-muted-foreground text-sm line-through">
-                            {formatPrice(property.data.lastPrice)}
-                          </span>
-                        )}
-                        {property.data.pricePerPing && (
-                          <span class="text-muted-foreground ml-auto text-xs">
-                            {property.data.pricePerPing.toFixed(1)} 萬/坪
-                          </span>
-                        )}
-                      </div>
-
-                      <div class="text-muted-foreground mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm">
-                        <span>{property.data.layout}</span>
-                        <span>·</span>
-                        <span>{property.data.area} 坪</span>
-                        {property.data.floor && (
-                          <>
-                            <span>·</span>
-                            <span>{property.data.floor}</span>
-                          </>
-                        )}
-                        {property.data.age !== undefined && (
-                          <>
-                            <span>·</span>
-                            <span>屋齡 {property.data.age} 年</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </a>
-                </li>
-              )
-            );
+            const cards = group.items.map(meta => (
+              <PropertyCard meta={meta} showNewBadge={showNewBadge} />
+            ));
             return group.deferred ? (
               <template data-chunk data-count={group.items.length}>
                 {cards}
@@ -1086,6 +912,8 @@ const breadcrumbSchema = {
 
     function setChipActive(group, value) {
       group.querySelectorAll(".filter-chip").forEach(b => {
+        // 連分區頁的 <a>（沒有 data-filter-value）不參與 active 切換，避免被當成「全部」
+        if (b.dataset.filterValue === undefined) return;
         const match = (b.dataset.filterValue || "") === value;
         b.classList.toggle("filter-chip-active", match);
         b.setAttribute("aria-pressed", match ? "true" : "false");
@@ -1129,7 +957,8 @@ const breadcrumbSchema = {
       setChipActive(g, state[key] || "");
       g.addEventListener("click", e => {
         const btn = e.target.closest(".filter-chip");
-        if (!btn) return;
+        // 連分區頁的 <a> 沒有 data-filter-value，交給瀏覽器導頁，不當篩選
+        if (!btn || btn.dataset.filterValue === undefined) return;
         const v = btn.dataset.filterValue || "";
         state[key] = v;
         setChipActive(g, v);
@@ -1212,10 +1041,17 @@ const breadcrumbSchema = {
 
     apply();
 
+    // 台中各區 chip 是連分區頁的 <a>（沒有 data-filter-value），?district= 深連結進來時也標 active
+    document.querySelectorAll("[data-district-link]").forEach(a => {
+      const match = !!state.district && a.dataset.districtLink === state.district;
+      a.classList.toggle("filter-chip-active", match);
+      if (match) a.setAttribute("aria-current", "page");
+    });
+
     // 深連結進來時，active chip 若藏在 <details>（更多區域 / 更多條件）裡 → 自動展開
     // 注意：data-filter-value 為空字串 =「全部」chip（預設 active）→ 跳過，避免每次載入都展開
     document.querySelectorAll(".filter-chip-active").forEach(chip => {
-      if (!chip.dataset.filterValue) return;
+      if (!chip.dataset.filterValue && !chip.dataset.districtLink) return;
       const det = chip.closest("details");
       if (det) det.open = true;
     });

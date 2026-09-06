@@ -7,11 +7,14 @@ import config from "@/config";
 import { areas } from "@/data/areas";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 
-// JSON-LD: 7 區總覽頁的 ItemList
+// 區數跟 areas.ts 走（2026-09-06 從 7 區補到 11 區：西區／梧棲區／烏日區／南區）
+const areaCount = areas.length;
+
+// JSON-LD: 各區總覽頁的 ItemList
 const itemListSchema = {
   "@context": "https://schema.org",
   "@type": "ItemList",
-  name: "台中 7 區買房指南",
+  name: `台中 ${areaCount} 區買房指南`,
   itemListElement: areas.map((a, idx) => ({
     "@type": "ListItem",
     position: idx + 1,
@@ -42,8 +45,8 @@ const breadcrumbSchema = {
 ---
 
 <Layout
-  title={`台中 7 區買房指南 | ${config.site.title}`}
-  description="北屯／西屯七期／南屯／北區／中區／太平／大里 7 區行情：中位單價、熱門社區、適合誰買、要避開什麼（資料期間 2026 Q1，合泰建經＋實價登錄）。每區一頁，附該區在售物件與社區深度文。"
+  title={`台中 ${areaCount} 區買房指南 | ${config.site.title}`}
+  description={`北屯／西屯七期／南屯／北區／西區／南區／中區／太平／大里／烏日／梧棲 ${areaCount} 區買房指南：行情（有合泰建經分區數字的區標資料期間 2026 Q1）、生活圈、熱門社區、適合誰買、要避開什麼。每區一頁，附該區站上在售物件與社區深度文。`}
   canonicalURL={new URL("/areas/", Astro.site).href}
 >
   <Fragment slot="head">
@@ -62,10 +65,10 @@ const breadcrumbSchema = {
   <Header />
 
   <Main
-    pageTitle="台中 7 區買房指南"
-    pageDesc="不同區房價走勢差很多。各區行情（資料期間 2026 Q1）、熱門社區、適合誰買都整理在各自的深度頁，你看哪區順手點哪區。"
+    pageTitle={`台中 ${areaCount} 區買房指南`}
+    pageDesc="不同區的生活圈與產品型態差很多。各區行情（有分區數字的標資料期間 2026 Q1）、熱門社區、適合誰買都整理在各自的深度頁，你看哪區順手點哪區。"
   >
-    {/* 7 區卡片網格 */}
+    {/* 各區卡片網格 */}
     <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {
         areas.map(area => (
@@ -100,7 +103,7 @@ const breadcrumbSchema = {
             </p>
 
             <ul class="text-muted-foreground mt-4 space-y-1 text-sm">
-              {area.stats.slice(0, 3).map(s => (
+              {(area.stats ?? []).slice(0, 3).map(s => (
                 <li class="flex items-baseline gap-2">
                   <span class="text-foreground/70 shrink-0">・{s.label}</span>
                   <span class="text-foreground font-medium">{s.value}</span>
@@ -124,7 +127,7 @@ const breadcrumbSchema = {
     >
       <p class="text-foreground font-medium">想看其他區？</p>
       <p class="text-muted-foreground mt-3 leading-relaxed">
-        東區 / 南區 / 西區 / 烏日 / 大雅 / 豐原 / 海線（梧棲 / 沙鹿 / 龍井 / 清水）
+        東區 / 潭子 / 大雅 / 豐原 / 霧峰 / 海線（沙鹿 / 龍井 / 清水）
         — 台中全區都有在跑。LINE 說你想看哪一區，回你最近 3 個月當區實價整理 + 站上在售物件。
       </p>
       <a

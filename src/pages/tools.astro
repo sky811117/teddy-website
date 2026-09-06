@@ -3,8 +3,15 @@ import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Main from "@/components/Main.astro";
-import config from "@/config";
+import config, { loan } from "@/config";
 import { safeJsonLd } from "@/utils/safeJsonLd";
+
+// 一般房貸參考利率：跟物件頁「月付試算」共用 src/config.ts 的 loan，改那邊兩處就同步。
+// 2.306% → "2.306"；0.021 → "2.1"（去掉尾端 0）
+const loanRatePct = (loan.rate * 100)
+  .toFixed(3)
+  .replace(/0+$/, "")
+  .replace(/\.$/, "");
 
 // 青安 3.0 文案集中成一個常數：可見文字與 JSON-LD 共用，避免再次漂移
 // 📌 資料來源：財政部國庫署 青安 3.0 方案懶人包 / 2026-07-16（updated: 2026-09-06）
@@ -266,6 +273,9 @@ const externalResources = [
           })
         }
       </ul>
+      <p class="text-muted-foreground mt-4 text-sm leading-relaxed">
+        站內物件頁的「月付試算」統一用一般房貸參考利率 <strong class="text-foreground">{loanRatePct}%</strong>、貸 {Math.round(loan.ratio * 10)} 成、{loan.years} 年（{loan.note}，{loan.asOf} 更新）。外部試算工具請以工具內顯示的利率為準。
+      </p>
     </section>
 
     {/* ===== 給賣方 ===== */}

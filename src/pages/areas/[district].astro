@@ -9,6 +9,7 @@ import { areas, type Area } from "@/data/areas";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 import { postFilter } from "@/utils/postFilter";
 import { cleanPropertyTitle } from "@/utils/cleanPropertyTitle";
+import { getDistrictListUrl } from "@/utils/isTaichung";
 import IconAlertTriangle from "@/assets/icons/IconAlertTriangle.svg";
 import IconNotes from "@/assets/icons/IconNotes.svg";
 
@@ -127,13 +128,30 @@ const formatPrice = (price: number) => {
   return `${price.toLocaleString()} 萬`;
 };
 
+// 站上在售筆數與總價帶（build 期從 properties 算；2026-09-06 補的 4 區沒有合泰建經數字，這是唯一的數據列）
+const listingPrices = allProperties
+  .map(p => p.data.totalPrice)
+  .filter(n => Number.isFinite(n) && n > 0);
+const listingPriceBand =
+  listingPrices.length === 0
+    ? ""
+    : Math.min(...listingPrices) === Math.max(...listingPrices)
+      ? formatPrice(listingPrices[0])
+      : `${formatPrice(Math.min(...listingPrices))}～${formatPrice(Math.max(...listingPrices))}`;
+const listingMonth = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Taipei" }).slice(0, 7);
+// 分區靜態列表頁 /properties/{slug}/（slug 表在 isTaichung.ts，跟 areas.ts 一致）
+const districtListUrl = getDistrictListUrl(area.districtMatch[0]);
+const hasStats = !!area.stats && area.stats.length > 0;
+
 // 數據期間：areas.ts 的數字目前是合泰建經 2026 Q1，標題不綁季度（免得 SERP 標題看起來過期），
 // 內文標明資料期間
 const DATA_PERIOD = "2026 Q1";
 
 // SEO + JSON-LD
 const pageTitle = `${area.name}買房指南 — 行情、熱門社區、適合誰買`;
-const pageDescription = `${area.name} ${area.headline}。${area.summary} 含關鍵數據（資料期間 ${DATA_PERIOD}）、熱門社區、常見問題與在售物件。`;
+const pageDescription = hasStats
+  ? `${area.name} ${area.headline}。${area.summary} 含關鍵數據（資料期間 ${DATA_PERIOD}）、熱門社區、常見問題與在售物件。`
+  : `${area.name} ${area.headline}。${area.summary} 含站上在售 ${allProperties.length} 筆${listingPriceBand ? `（總價 ${listingPriceBand}）` : ""}、熱門社區、常見問題。`;
 const canonicalURL = new URL(`/areas/${area.slug}/`, Astro.site).href;
 
 const breadcrumbSchema = {
@@ -203,7 +221,7 @@ const faqSchema = {
   })),
 };
 
-// 其他 6 區（同頁底部互連，分散 SEO 權重）
+// 其他區（同頁底部互連，分散 SEO 權重）
 const otherAreas = areas.filter(a => a.slug !== area.slug);
 ---
 
@@ -271,6 +289,17 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
       class={`border-border bg-card rounded-lg border p-6 sm:p-8 ${area.heroImage ? "mt-6" : ""}`}
     >
       <p class="text-foreground text-lg leading-relaxed">{area.summary}</p>
+      {
+        allProperties.length > 0 && (
+          <p class="text-muted-foreground mt-4 text-sm">
+            站上{area.shortName}在售
+            <a href={districtListUrl} class="text-accent mx-1 font-semibold underline">
+              {allProperties.length} 筆
+            </a>
+            {listingPriceBand ? `・總價 ${listingPriceBand}` : ""}（站上在售，{listingMonth}，含同事聯賣）
+          </p>
+        )
+      }
     </section>
 
     {/* SEO 敘述內文 (長尾關鍵字) */}
@@ -292,7 +321,9 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
       )
     }
 
-    {/* 關鍵數據表 */}
+    {/* 關鍵數據表：只有合泰建經有分區數字的區才渲染；2026-09-06 補的 4 區沒有 → 整段不出現，不編數字 */}
+    {
+      hasStats && (
     <section class="mt-10">
       <h2 class="text-foreground text-xl font-bold sm:text-2xl">
         📊 關鍵數據（資料期間 {DATA_PERIOD}）
@@ -301,11 +332,11 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
         <table class="w-full text-sm sm:text-base">
           <tbody>
             {
-              area.stats.map((s, i) => (
+              (area.stats ?? []).map((s, i) => (
                 <tr
                   class:list={[
                     "border-border",
-                    i !== area.stats.length - 1 ? "border-b" : "",
+                    i !== (area.stats ?? []).length - 1 ? "border-b" : "",
                   ]}
                 >
                   <th
@@ -330,6 +361,8 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
         📌 資料來源：合泰建經 {DATA_PERIOD} 台中市不動產市場分析、內政部實價登錄。數字僅供參考、實際成交以個案為準。
       </p>
     </section>
+      )
+    }
 
     {/* 熱門社區：有深度文就連文章、沒有就顯示在售筆數 */}
     <section class="mt-10">
@@ -507,10 +540,7 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
           </ul>
           {allProperties.length > 6 && (
             <p class="mt-4 text-center">
-              <a
-                href={`/properties/?district=${encodeURIComponent(area.shortName)}`}
-                class="text-accent underline"
-              >
+              <a href={districtListUrl} class="text-accent underline">
                 看完整 {allProperties.length} 筆 {area.shortName}物件 →
               </a>
             </p>

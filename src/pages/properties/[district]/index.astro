@@ -1,0 +1,294 @@
+---
+/**
+ * 分區靜態列表頁 /properties/{district-slug}/（2026-09-06 新增）
+ *
+ * 為什麼要有：總列表 /properties/ 只有一頁、靠 client-side ?district= 篩選，
+ * Google 收錄不到「北屯區在售物件」這種一頁一區的入口；區域 hub /areas/{slug}/
+ * 只列 6 筆預覽。這頁 build 期就依 district 切好，標題、描述、ItemList JSON-LD
+ * 都帶當區筆數與價格帶，卡片沿用總列表的元件（_components/PropertyCard.astro）。
+ *
+ * 只做台中各區（slug 表在 src/utils/isTaichung.ts TAICHUNG_DISTRICT_SLUGS）；
+ * 外縣市與髒 district 沒有分區頁，仍走 /properties/?district=。
+ */
+import { getCollection } from "astro:content";
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import Main from "@/components/Main.astro";
+import config from "@/config";
+import { areas } from "@/data/areas";
+import { safeJsonLd } from "@/utils/safeJsonLd";
+import { TAICHUNG_DISTRICT_SLUGS, getDistrictSlug } from "@/utils/isTaichung";
+import IconLine from "@/assets/icons/socials/line.svg";
+import PropertyCard from "../_components/PropertyCard.astro";
+import PropertyCardIcons from "../_components/PropertyCardIcons.astro";
+import {
+  sortRecommended,
+  buildCardMeta,
+  shouldShowNewBadge,
+  formatPrice,
+  type PropertyEntry,
+} from "../_components/propertyMeta";
+
+export async function getStaticPaths() {
+  const active = await getCollection(
+    "properties",
+    ({ data }) => data.status === "active"
+  );
+  // 依 district 分組；只做台中 29 區的精確名（髒值「台中北屯」對不到 slug → 不產頁）
+  const byDistrict = new Map<string, PropertyEntry[]>();
+  for (const p of active) {
+    const d = p.data.district;
+    if (!getDistrictSlug(d)) continue;
+    (byDistrict.get(d) ?? byDistrict.set(d, []).get(d)!).push(p);
+  }
+  // 各區筆數（頁尾「看其他區」chip 用）
+  const counts = [...byDistrict.entries()]
+    .map(([district, list]) => ({ district, slug: getDistrictSlug(district)!, count: list.length }))
+    .sort((a, b) => b.count - a.count);
+
+  return [...byDistrict.entries()].map(([district, list]) => {
+    const slug = getDistrictSlug(district)!;
+    // hub 的 slug 跟 isTaichung.ts 的表要一致，不一致就讓 build 停下來（兩份表各走各的會出兩個網址）
+    const area = areas.find(a => a.districtMatch.includes(district));
+    if (area && area.slug !== slug) {
+      throw new Error(
+        `[properties/[district]] areas.ts slug「${area.slug}」跟 TAICHUNG_DISTRICT_SLUGS「${slug}」對不上（${district}）`
+      );
+    }
+    return {
+      params: { district: slug },
+      props: { district, list, counts },
+    };
+  });
+}
+
+interface Props {
+  district: string;
+  list: PropertyEntry[];
+  counts: { district: string; slug: string; count: number }[];
+}
+
+const { district, list, counts } = Astro.props;
+const slug = TAICHUNG_DISTRICT_SLUGS[district as keyof typeof TAICHUNG_DISTRICT_SLUGS];
+const area = areas.find(a => a.districtMatch.includes(district));
+
+// 跟總列表同一套推薦排序與 badge 判定
+const sorted = sortRecommended([...list]);
+const now = Date.now();
+const metas = sorted.map((p, idx) => buildCardMeta(p, idx, now));
+const showNewBadge = shouldShowNewBadge(metas);
+const total = metas.length;
+
+// 價格帶（站上在售，build 當下）
+const prices = sorted.map(p => p.data.totalPrice).filter(n => Number.isFinite(n) && n > 0);
+const minPrice = prices.length ? Math.min(...prices) : 0;
+const maxPrice = prices.length ? Math.max(...prices) : 0;
+const priceBand =
+  prices.length === 0
+    ? ""
+    : minPrice === maxPrice
+      ? formatPrice(minPrice)
+      : `${formatPrice(minPrice)}～${formatPrice(maxPrice)}`;
+// 類型分布（描述用，例「大樓 12・華廈 4・店面 3」）
+const typeCount: Record<string, number> = {};
+for (const m of metas) typeCount[m.type] = (typeCount[m.type] || 0) + 1;
+const typeSummary = Object.entries(typeCount)
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 4)
+  .map(([t, n]) => `${t} ${n}`)
+  .join("・");
+// 有社區名的物件數（描述用）
+const communities = [...new Set(metas.map(m => m.community).filter(Boolean))];
+
+// 資料期：build 當月（標「站上在售，YYYY-MM」，不假裝是實價登錄統計）
+const dataMonth = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Taipei" }).slice(0, 7);
+
+// 頁尾其他區 chip（排掉自己）
+const otherDistricts = counts.filter(c => c.district !== district);
+
+// 薄頁：只有 1-2 筆的區（后里、大肚、大安、大甲這種）跟單一物件頁幾乎重複，
+// 比照 tag 聚合頁的 THIN_TAG_MIN_POSTS=3 出 noindex,follow（頁面照樣存在、內鏈照樣可爬）。
+// ⚠️ sitemap 那邊還會把它列進去（astro.config.ts 的 filter 不在這頁能改的範圍），要另外排除。
+const THIN_MIN_LISTINGS = 3;
+const noindex = total < THIN_MIN_LISTINGS;
+
+// ============ SEO + JSON-LD ============
+const canonicalURL = new URL(`/properties/${slug}/`, Astro.site).href;
+const pageTitle = `${district}在售物件 ${total} 筆`;
+const seoDescription = [
+  `台中${district}目前站上在售 ${total} 筆物件`,
+  priceBand ? `總價 ${priceBand}` : "",
+  typeSummary ? `（${typeSummary}）` : "",
+  communities.length > 0 ? `，含 ${communities.slice(0, 3).join("、")}${communities.length > 3 ? " 等社區" : ""}` : "",
+  `。每筆附總價、坪數、格局與照片，含本店同事聯賣案件，狀態每天同步（站上在售，${dataMonth}）。`,
+].join("");
+
+const itemListSchema = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "@id": `${canonicalURL}#listing`,
+  name: `${district}在售物件`,
+  description: seoDescription,
+  numberOfItems: total,
+  itemListElement: metas.map((m, i) => ({
+    "@type": "ListItem",
+    position: i + 1,
+    url: new URL(`/properties/${m.p.id}/`, Astro.site).href,
+    name: m.title,
+  })),
+};
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "首頁", item: new URL("/", Astro.site).href },
+    { "@type": "ListItem", position: 2, name: "在售物件", item: new URL("/properties/", Astro.site).href },
+    { "@type": "ListItem", position: 3, name: district, item: canonicalURL },
+  ],
+};
+---
+
+<Layout
+  title={`${pageTitle}（台中） | ${config.site.title}`}
+  description={seoDescription}
+  canonicalURL={canonicalURL}
+  ogImage={area?.heroImage ?? "/og/page-properties.jpg"}
+  noindex={noindex}
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(itemListSchema)} />
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(breadcrumbSchema)} />
+  </Fragment>
+
+  <Header />
+
+  <Main
+    pageTitle={pageTitle}
+    pageDesc={
+      priceBand
+        ? `台中${district}站上在售 ${total} 筆，總價 ${priceBand}${typeSummary ? `，${typeSummary}` : ""}（站上在售，${dataMonth}）。`
+        : `台中${district}站上在售 ${total} 筆（站上在售，${dataMonth}）。`
+    }
+  >
+    {/* Breadcrumb */}
+    <nav class="text-muted-foreground mt-2 mb-6 text-sm" aria-label="breadcrumb">
+      <ol class="flex flex-wrap gap-2">
+        <li>
+          <a href="/" class="hover:text-accent">首頁</a>
+          <span class="mx-1">›</span>
+        </li>
+        <li>
+          <a href="/properties/" class="hover:text-accent">在售物件</a>
+          <span class="mx-1">›</span>
+        </li>
+        <li class="text-foreground" aria-current="page">{district}</li>
+      </ol>
+    </nav>
+
+    {/* 區域 hub 入口＋回總列表篩選：先講清楚這頁是什麼、還能去哪 */}
+    <div class="card-surface mb-6 flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
+      <div class="text-foreground">
+        顯示 <span class="text-accent text-lg font-extrabold">{total}</span> 筆
+        {priceBand && <span class="text-muted-foreground ml-2">總價 {priceBand}</span>}
+      </div>
+      <div class="flex flex-wrap gap-2">
+        {
+          area && (
+            <a
+              href={`/areas/${area.slug}/`}
+              class="border-border bg-card hover:border-accent inline-block rounded-full border px-4 py-2 no-underline transition-colors"
+            >
+              {area.emoji} {area.shortName}買房指南 →
+            </a>
+          )
+        }
+        <a
+          href={`/properties/?district=${encodeURIComponent(district)}`}
+          class="border-border bg-card hover:border-accent inline-block rounded-full border px-4 py-2 no-underline transition-colors"
+        >
+          再篩總價・房型・屋齡 →
+        </a>
+      </div>
+    </div>
+
+    <PropertyCardIcons />
+
+    {
+      total === 0 ? (
+        <p class="text-muted-foreground py-12 text-center">
+          {district}目前沒有開放公開的物件，
+          <a href="/go/line?src=properties-district" class="text-accent underline">
+            LINE 私訊
+          </a>
+          了解未公開物件。
+        </p>
+      ) : (
+        <ul class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" data-property-list data-total={total}>
+          {metas.map(meta => (
+            <PropertyCard meta={meta} showNewBadge={showNewBadge} />
+          ))}
+        </ul>
+      )
+    }
+
+    {/* 其他台中分區 */}
+    {
+      otherDistricts.length > 0 && (
+        <section class="mt-12">
+          <h2 class="text-foreground text-xl font-bold sm:text-2xl">看台中其他區在售</h2>
+          <ul class="mt-4 flex flex-wrap gap-2">
+            {otherDistricts.map(d => (
+              <li>
+                <a
+                  href={`/properties/${d.slug}/`}
+                  class="border-border bg-card hover:border-accent inline-block rounded-full border px-4 py-2 text-sm no-underline transition-colors"
+                >
+                  {d.district} ({d.count})
+                </a>
+              </li>
+            ))}
+            <li>
+              <a
+                href="/properties/"
+                class="border-accent text-accent inline-block rounded-full border px-4 py-2 text-sm no-underline transition-colors"
+              >
+                全部在售物件 →
+              </a>
+            </li>
+          </ul>
+        </section>
+      )
+    }
+
+    {/* CTA + 證號（廣告頁法規揭露） */}
+    <div class="border-border mt-12 rounded-card border border-dashed p-6 text-center">
+      <p class="text-muted-foreground mb-3 text-sm">
+        {district}想看的條件站上沒有？或想看還沒公開的物件？
+      </p>
+      <a href="/go/line?src=properties-district" class="btn-line">
+        <IconLine class="size-5" aria-hidden="true" />
+        LINE 私訊 sky811117
+      </a>
+      <p class="text-muted-foreground mt-3 text-sm">
+        傳「{district}」＋預算，回你站上還沒公開的{district}物件名單。
+        {area && (
+          <>
+            想先看整體行情與哪些人適合買，讀
+            <a href={`/areas/${area.slug}/`} class="text-accent underline">
+              {area.shortName}買房指南
+            </a>
+            。
+          </>
+        )}
+      </p>
+      <p class="text-muted-foreground mt-4 text-xs">
+        一品不動產 有巢氏房屋 台中世界之心加盟店<br />
+        經紀人 黃永隆 113彰縣字324 ・ 營業員 陳景泰 114登字488296
+      </p>
+    </div>
+  </Main>
+
+  <Footer />
+</Layout>

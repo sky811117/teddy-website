@@ -1,0 +1,156 @@
+---
+/**
+ * 在售物件卡（總列表 /properties/ 與分區列表 /properties/{district}/ 共用）
+ *
+ * 2026-09-06 從 properties/index.astro 原樣抽出來，markup 一字不改：
+ *   - <li> 上的 data-* 是總列表篩選／排序用的（district / community / type / rooms / price / age / pub / order / quick）
+ *     分區頁沒有篩選 script，這些屬性留著無害，兩頁 HTML 才一致。
+ *   - 頁面要先放一次 <PropertyCardIcons /> 才有 #icon-map-pin 可 <use>。
+ *   - 前 3 張卡 eager 載圖、第 1 張 fetchpriority=high（LCP），由 idx 決定。
+ */
+import { cleanStreetArea } from "@/utils/cleanStreetArea";
+import { formatPrice, type PropertyCardMeta } from "./propertyMeta";
+
+interface Props {
+  meta: PropertyCardMeta;
+  /** 整頁是否顯示「新上架」badge（防通膨判定，見 propertyMeta.shouldShowNewBadge） */
+  showNewBadge: boolean;
+}
+
+const { meta, showNewBadge } = Astro.props;
+const { p: property, idx, title, community, district, type, rooms, newListing, dropPct } = meta;
+const streetArea = cleanStreetArea(property.data.streetArea, property.data.district);
+---
+
+<li
+  class="card-interactive overflow-hidden"
+  data-district={district}
+  data-community={community}
+  data-type={type}
+  data-rooms={rooms}
+  data-price={property.data.totalPrice}
+  data-age={property.data.age ?? ""}
+  data-pub={property.data.pubDatetime.getTime()}
+  data-order={idx}
+  data-quick={[newListing ? "new" : "", dropPct ? "drop" : ""].filter(Boolean).join(" ")}
+>
+  <a
+    href={`/properties/${property.id}/`}
+    class="block no-underline"
+    data-track="property"
+    data-property-id={property.id}
+    data-property-title={title}
+    data-property-price={String(property.data.totalPrice)}
+    data-property-district={district}
+  >
+    {
+      property.data.coverImage ? (
+        <div class="bg-muted aspect-[4/3] w-full overflow-hidden">
+          <img
+            src={
+              typeof property.data.coverImage === "string"
+                ? property.data.coverImage
+                : property.data.coverImage.src
+            }
+            alt={title}
+            width="800"
+            height="600"
+            class="h-full w-full object-cover"
+            loading={idx < 3 ? "eager" : "lazy"}
+            fetchpriority={idx === 0 ? "high" : undefined}
+            decoding={idx < 3 ? "sync" : "async"}
+          />
+        </div>
+      ) : (
+        <div class="bg-muted flex aspect-[4/3] w-full flex-col items-center justify-center gap-1 overflow-hidden">
+          <p class="text-muted-foreground text-sm">📷 照片整理中</p>
+        </div>
+      )
+    }
+
+    <div class="p-4">
+      <div class="mb-2 flex flex-wrap gap-1">
+        {
+          property.data.featured && (
+            <span class="bg-accent text-accent-foreground inline-block rounded-full px-2 py-0.5 text-xs">
+              精選
+            </span>
+          )
+        }
+        {
+          showNewBadge && newListing && (
+            <span class="inline-block rounded-full bg-emerald-700 px-2 py-0.5 text-xs text-white">
+              新上架
+            </span>
+          )
+        }
+        {
+          dropPct && (
+            <span class="inline-block rounded-full bg-rose-700 px-2 py-0.5 text-xs text-white">
+              降價 {dropPct}%
+            </span>
+          )
+        }
+        <span class="bg-muted text-muted-foreground inline-block rounded-full px-2 py-0.5 text-xs">
+          {type}
+        </span>
+      </div>
+
+      <h2 class="text-foreground line-clamp-2 text-lg font-bold">
+        {title}
+      </h2>
+
+      <p class="text-muted-foreground mt-1 flex items-center gap-1 text-sm">
+        <svg class="size-4 shrink-0" aria-hidden="true">
+          <use href="#icon-map-pin"></use>
+        </svg>
+        <span class="line-clamp-1">
+          {property.data.district}
+          {streetArea ? `・${streetArea}` : ""}
+        </span>
+      </p>
+
+      <div class="mt-3 flex items-baseline gap-2">
+        <span class="text-accent text-2xl font-extrabold">
+          {formatPrice(property.data.totalPrice)}
+        </span>
+        {
+          dropPct && property.data.lastPrice && (
+            <span class="text-muted-foreground text-sm line-through">
+              {formatPrice(property.data.lastPrice)}
+            </span>
+          )
+        }
+        {
+          property.data.pricePerPing && (
+            <span class="text-muted-foreground ml-auto text-xs">
+              {property.data.pricePerPing.toFixed(1)} 萬/坪
+            </span>
+          )
+        }
+      </div>
+
+      <div class="text-muted-foreground mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm">
+        <span>{property.data.layout}</span>
+        <span>·</span>
+        <span>{property.data.area} 坪</span>
+        {
+          property.data.floor && (
+            <>
+              <span>·</span>
+              <span>{property.data.floor}</span>
+            </>
+          )
+        }
+        {
+          property.data.age !== undefined && (
+            <>
+              <span>·</span>
+              <span>屋齡 {property.data.age} 年</span>
+            </>
+          )
+        }
+      </div>
+    </div>
+  </a>
+</li>

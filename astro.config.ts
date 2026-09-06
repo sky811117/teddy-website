@@ -16,6 +16,7 @@ import {
 } from "@shikijs/transformers";
 import { transformerFileName } from "./src/utils/transformers/fileName";
 import config from "./astro-paper.config";
+import { TAICHUNG_DISTRICT_SLUGS } from "./src/utils/isTaichung";
 import {
   buildLastmodMap,
   buildSectionLastmod,
@@ -30,6 +31,37 @@ const lastmodMap = buildLastmodMap(config.site.url, sitemapOpts);
 const sectionLastmod = buildSectionLastmod(config.site.url, sitemapOpts);
 // 掛不到 3 篇文章的 tag 聚合頁（薄內容）— 不送進 sitemap，見該函式的說明
 const thinTagSlugs = buildThinTagSlugs(sitemapOpts);
+// /properties/{區 slug}/ 分區靜態列表頁（2026-09-06 新增）— 是列表頁不是物件明細頁
+const districtSlugs = new Set(Object.values(TAICHUNG_DISTRICT_SLUGS));
+// 分區頁在售 <3 筆的區（頁面本身輸出 noindex）不進 sitemap，避免「列在 sitemap 又 noindex」的矛盾
+import { readdirSync, readFileSync } from "node:fs";
+const thinDistrictSlugs = (() => {
+  const counts = new Map<string, number>();
+  try {
+    for (const f of readdirSync("./src/content/properties")) {
+      if (!/\.mdx?$/.test(f) || f.startsWith("_")) continue;
+      const txt = readFileSync(`./src/content/properties/${f}`, "utf8");
+      const fm = txt.split(/^---\s*$/m)[1] ?? "";
+      const status = /^status:\s*"?(\w+)"?/m.exec(fm)?.[1] ?? "active";
+      if (status !== "active") continue;
+      const district = /^district:\s*"?([^"\n]+)"?/m.exec(fm)?.[1]?.trim();
+      if (!district) continue;
+      counts.set(district, (counts.get(district) ?? 0) + 1);
+    }
+  } catch {
+    /* 讀不到就不排除 */
+  }
+  const thin = new Set<string>();
+  for (const [district, slug] of Object.entries(TAICHUNG_DISTRICT_SLUGS)) {
+    if ((counts.get(district) ?? 0) < 3) thin.add(slug);
+  }
+  return thin;
+})();
+
+const isDistrictListPage = (url: string) => {
+  const m = url.match(/\/properties\/([a-z0-9-]+)\/$/);
+  return Boolean(m && districtSlugs.has(m[1]));
+};
 // build 當下時間：lastmod 絕不能晚於它（Google 看到未來日期會整份不信 lastmod）
 const buildNow = new Date();
 
@@ -50,6 +82,8 @@ export default defineConfig({
         // 薄 tag 頁（掛不到 3 篇文章）不送進 sitemap。頁面本身照樣存在、照樣可爬，
         // 只是不主動把爬取預算花在跟單篇文章幾乎重複的聚合頁上。
         // tag 分頁 /tags/<slug>/2/ 一律不進 sitemap（第 1 頁已代表整個聚合頁）。
+        const dm = page.match(/\/properties\/([a-z0-9-]+)\/$/);
+        if (dm && thinDistrictSlugs.has(dm[1])) return false;
         const tagMatch = page.match(/\/tags\/([^/]+)\/?(\d+\/?)?$/);
         if (tagMatch) {
           if (tagMatch[2]) return false;
@@ -59,7 +93,10 @@ export default defineConfig({
       },
       // 物件頁、文章頁優先級高、列表頁次之
       serialize(item) {
-        if (item.url.includes("/properties/") && !item.url.endsWith("/properties/")) {
+        if (isDistrictListPage(item.url)) {
+          item.priority = 0.8; // 分區列表頁
+          item.changefreq = "daily" as never;
+        } else if (item.url.includes("/properties/") && !item.url.endsWith("/properties/")) {
           item.priority = 0.9; // 物件詳細頁
           item.changefreq = "weekly" as never;
         } else if (item.url.includes("/posts/") && !item.url.endsWith("/posts/")) {

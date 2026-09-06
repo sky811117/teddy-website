@@ -137,9 +137,16 @@ const socialItems = await Promise.all(
   {/* 版權列 */}
   <div class="border-t border-white/10">
     <div
-      class="app-layout-wide text-inverse-muted flex items-center justify-center py-4 text-xs"
+      class="app-layout-wide text-inverse-muted flex flex-wrap items-center justify-center gap-x-3 gap-y-1 py-4 text-xs"
     >
       <p>&#169; {currentYear} 陳景泰 / 泰迪</p>
+      <span aria-hidden="true">・</span>
+      <a
+        href="/privacy/"
+        class="text-inverse-muted hover:text-inverse-accent no-underline transition-colors"
+      >
+        隱私權政策
+      </a>
     </div>
   </div>
 </footer>

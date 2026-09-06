@@ -113,3 +113,57 @@ export function getCounty(district: string | undefined): string {
   }
   return OTHER_COUNTY;
 }
+
+/**
+ * 台中各行政區 → 網址 slug（分區靜態列表頁 /properties/{slug}/ 用；2026-09-06 補）
+ *
+ * ⚠️ 有區域 hub（src/data/areas.ts）的區，slug 必須跟 areas.ts 一字不差：
+ *    north-tun / west-tun / south-tun / north-district / central-district / taiping / dali /
+ *    west-district / wuqi / wuri / south-district
+ *    分區列表頁 getStaticPaths 會比對，對不上直接讓 build 失敗，別讓兩份表各走各的。
+ * 其他沒 hub 的區用拼音；台北同名的「大安區」在 TAICHUNG_DISTRICTS 已是台中優先。
+ */
+export const TAICHUNG_DISTRICT_SLUGS: Record<(typeof TAICHUNG_DISTRICTS)[number], string> = {
+  北屯區: "north-tun",
+  西屯區: "west-tun",
+  南屯區: "south-tun",
+  北區: "north-district",
+  南區: "south-district",
+  東區: "east-district",
+  西區: "west-district",
+  中區: "central-district",
+  太平區: "taiping",
+  大里區: "dali",
+  霧峰區: "wufeng",
+  烏日區: "wuri",
+  大肚區: "dadu",
+  沙鹿區: "shalu",
+  梧棲區: "wuqi",
+  清水區: "qingshui",
+  大甲區: "dajia",
+  外埔區: "waipu",
+  大安區: "daan",
+  龍井區: "longjing",
+  潭子區: "tanzi",
+  大雅區: "daya",
+  神岡區: "shengang",
+  豐原區: "fengyuan",
+  后里區: "houli",
+  東勢區: "dongshi",
+  和平區: "heping",
+  新社區: "xinshe",
+  石岡區: "shigang",
+};
+
+/** 「北屯區」→ "north-tun"；不是台中 29 區的精確名（含髒值「台中北屯」）回 undefined */
+export function getDistrictSlug(district: string | undefined): string | undefined {
+  if (!district) return undefined;
+  return (TAICHUNG_DISTRICT_SLUGS as Record<string, string>)[district];
+}
+
+/** 分區列表頁網址；對不到 slug 的 district（外縣市、髒值）退回總列表帶 ?district= 篩選 */
+export function getDistrictListUrl(district: string | undefined): string {
+  const slug = getDistrictSlug(district);
+  if (slug) return `/properties/${slug}/`;
+  return district ? `/properties/?district=${encodeURIComponent(district)}` : "/properties/";
+}

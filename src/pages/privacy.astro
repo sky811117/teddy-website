@@ -1,0 +1,197 @@
+---
+/**
+ * /privacy — 隱私權政策（個人資料保護法第 8 條告知格式）
+ *
+ * 2026-09-06 新增。內容照本站實際資料流寫，不寫沒做的事：
+ *   表單 → Cloudflare Pages Functions → Telegram 通知景泰手機；
+ *   賣房表單另外寫進 Notion「賣房客戶名單」；
+ *   GA4 走 Consent Mode v2（未按接受只有匿名瀏覽數、無 cookie）；
+ *   /go/line 轉址時記錄按鈕位置與來源頁。
+ * 改了資料流（換後端、加第三方、加追蹤）要同步改這頁，這是對外承諾。
+ */
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import Main from "@/components/Main.astro";
+import config from "@/config";
+
+const updatedAt = "2026-09-06";
+const contactEmail = "a0920118756@gmail.com";
+
+// 個資法第 8 條要求告知的八件事，照順序排
+const sections = [
+  {
+    id: "purpose",
+    title: "一、為什麼要收你的資料（蒐集目的）",
+    body: [
+      "回覆你在表單或 LINE 上提出的問題、安排看屋、做行情評估、跟你聯絡後續進度。",
+      "統計網站哪些頁有人看、從哪裡來，用來改善內容。這部分不會識別你是誰。",
+    ],
+  },
+  {
+    id: "categories",
+    title: "二、會收哪些資料（個人資料類別）",
+    body: [
+      "你在表單填的：姓名、電話、Email、LINE ID、想買或想賣的需求、留言內容。賣房表單另外有物件的區與路段、坪數、期望總價、屋況描述。",
+      "你瀏覽網站時：頁面瀏覽數、來源頁、裝置與瀏覽器類型。未按「接受」前不寫 cookie、不建立跨頁識別。",
+      "你按站上任一 LINE 按鈕時：按鈕位置代碼、所在頁面、時間，以及來源地區（只在非台灣時記）。IP 只用來在 5 分鐘內擋重複送出，不長期保存。",
+    ],
+  },
+  {
+    id: "period",
+    title: "三、資料留多久（利用期間）",
+    body: [
+      "表單資料留到蒐集目的消失、或你來信要求刪除為止。",
+      "瀏覽統計依 Google Analytics 4 預設保存期限保存，且只有彙總數字。",
+    ],
+  },
+  {
+    id: "region",
+    title: "四、資料在哪裡處理（利用地區）",
+    body: [
+      "景泰本人在台灣看你的資料。",
+      "傳送與保存用到的服務商（Cloudflare、Telegram、Notion、Google）伺服器在台灣以外的地區，資料會經過或存放在這些服務商的機房。",
+    ],
+  },
+  {
+    id: "recipients",
+    title: "五、誰會看到（利用對象）",
+    body: [
+      "景泰本人。",
+      "你進一步委託買賣時，景泰所屬的經紀業「一品不動產（有巢氏房屋台中世界之心加盟店）」會依交易需要處理你的資料。",
+      "不轉賣、不交給第三方做行銷、不加進任何名單。",
+    ],
+  },
+  {
+    id: "method",
+    title: "六、怎麼用（利用方式）",
+    body: [
+      "用電話、LINE 或 Email 跟你聯絡。",
+      "以電腦處理與保存，不做自動化決策、不做行為側寫。",
+    ],
+  },
+  {
+    id: "rights",
+    title: "七、你可以要求什麼（當事人權利）",
+    body: [
+      "依個人資料保護法第 3 條，你可以要求查詢或閱覽、複製、補充或更正、停止蒐集處理利用、刪除你的資料。",
+      `寫信到 ${contactEmail}，說明你要行使哪一項，景泰會在 15 日內處理並回覆（依個資法第 13 條）。`,
+    ],
+  },
+  {
+    id: "impact",
+    title: "八、不給資料會怎樣（不提供之影響）",
+    body: [
+      "表單沒有填電話或 Email，景泰就沒辦法回覆你，其他沒有影響。",
+      "瀏覽網站不需要提供任何資料；按「拒絕」cookie 也可以正常使用全站功能。",
+    ],
+  },
+];
+
+// 資料流細節：表單、統計、LINE 轉址，照實寫
+const flows = [
+  {
+    title: "表單送出後資料去哪裡",
+    body: [
+      "買方詢問表單與賣房表單送出後，由本站的 Cloudflare Pages Functions 接收，推一則 Telegram 通知到景泰的手機。",
+      "賣房表單另外寫進景泰個人的 Notion「賣房客戶名單」，方便追蹤回覆進度。",
+      "買方表單若有啟用 Email 備份管道（Formspree），會同時寄一封副本到景泰的信箱，內容跟 Telegram 通知相同。",
+      "後端收不到時，表單會顯示 LINE 與電話讓你改用其他方式聯絡，你填的內容不會被送到別處。",
+    ],
+  },
+  {
+    title: "瀏覽統計與 cookie",
+    body: [
+      "本站用 Google Analytics 4，並啟用 Consent Mode v2。你沒按「接受」之前，只送不含識別碼的匿名瀏覽數，不寫任何 cookie。",
+      "按「接受」後才會啟用 cookie，用來分辨新訪客與回訪；按「拒絕」則持續維持匿名模式。",
+      "想改變選擇：清除瀏覽器裡本站的網站資料，重新開啟網站時橫幅會再出現一次。",
+    ],
+  },
+  {
+    title: "LINE 按鈕轉址",
+    body: [
+      "站上的 LINE 按鈕會先經過本站的 /go/line 再轉到 LINE，目的是知道你是從哪一頁、哪個按鈕來的，方便景泰接話。",
+      "記錄的內容是按鈕位置代碼、所在頁面、時間；不記錄你的 LINE 帳號，加不加好友由你在 LINE 裡決定。",
+    ],
+  },
+  {
+    title: "外部連結",
+    body: [
+      "站上連到刊登平台、政府網站、社群平台的連結，各自適用該網站的隱私權政策，本頁不涵蓋。",
+    ],
+  },
+];
+---
+
+<Layout
+  title={`隱私權政策 | ${config.site.title}`}
+  description="陳景泰台中房仲官網的隱私權政策：表單資料只用來回覆你、送到景泰手機與個人客戶名單；瀏覽統計採匿名、按接受才用 cookie；不轉賣、不做行銷名單。依個資法第 8 條告知。"
+  canonicalURL={new URL("/privacy/", Astro.site).href}
+>
+  <Header />
+
+  <Main
+    pageTitle="隱私權政策"
+    pageDesc={`最後更新：${updatedAt}。這頁照本站實際的資料流寫，沒做的事不會寫上來。`}
+  >
+    <p class="text-foreground leading-relaxed">
+      你在這個網站留下的每一筆資料，都只有一個用途：讓景泰能回覆你。
+      下面依個人資料保護法第 8 條，把該告訴你的八件事一次講清楚。
+    </p>
+
+    {
+      sections.map(s => (
+        <section class="mt-8" id={s.id}>
+          <h2 class="text-foreground border-accent border-b-2 pb-2 text-xl font-bold">
+            {s.title}
+          </h2>
+          <ul class="mt-4 space-y-2">
+            {s.body.map(line => (
+              <li class="text-foreground leading-relaxed">・{line}</li>
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+
+    <h2 class="text-foreground border-accent mt-12 border-b-2 pb-2 text-2xl font-bold">
+      資料實際怎麼流
+    </h2>
+    <p class="text-muted-foreground mt-3 text-sm">
+      這段是給想知道細節的人看的，也是景泰對自己的約束：資料流變了，這一段要同步改。
+    </p>
+
+    {
+      flows.map(f => (
+        <section class="border-border bg-card mt-6 rounded-lg border p-5">
+          <h3 class="text-foreground text-lg font-bold">{f.title}</h3>
+          <ul class="mt-3 space-y-2">
+            {f.body.map(line => (
+              <li class="text-muted-foreground leading-relaxed">・{line}</li>
+            ))}
+          </ul>
+        </section>
+      ))
+    }
+
+    <section
+      class="border-border mt-12 rounded-lg border border-dashed p-6"
+      id="contact"
+    >
+      <h2 class="text-foreground text-xl font-bold">要查詢、更正或刪除資料</h2>
+      <p class="text-muted-foreground mt-3 leading-relaxed">
+        寫信到
+        <a
+          href={`mailto:${contactEmail}`}
+          class="text-accent font-medium hover:underline">{contactEmail}</a
+        >，寫明你當初留的姓名或電話、要行使哪一項權利。15 日內回覆。
+      </p>
+      <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
+        資料管理者：陳景泰（一品不動產 有巢氏房屋台中世界之心加盟店 ・ 經紀人
+        黃永隆 113彰縣字324 ・ 營業員 陳景泰 114登字488296）。本政策修改時會更新頁首的日期，不另行通知。
+      </p>
+    </section>
+  </Main>
+
+  <Footer />
+</Layout>
