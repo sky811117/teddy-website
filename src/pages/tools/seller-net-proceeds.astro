@@ -248,8 +248,12 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
       <div class="lg:col-span-2">
         <div class="lg:sticky lg:top-4">
           <section id="result" class="card-surface p-4 sm:p-5" aria-live="polite">
-            <p class="text-muted-foreground text-sm">屋主實際拿到（扣稅、扣費用、還完貸款）</p>
+            <p class="text-muted-foreground text-sm">屋主大約拿到（扣稅、扣費用、還完貸款）</p>
             <p id="res-cash" class="text-accent mt-1 text-4xl font-extrabold tabular-nums">—</p>
+            {/* 固定顯示，螢幕＋列印都在：屋主不能把這個數字當成一毛不少的實拿（2026-09-20 景泰） */}
+            <p class="text-muted-foreground mt-1 text-xs leading-relaxed">
+              ⚠️ 這是<strong>試算，不是保證</strong>。稅額以國稅局、地方稅務局核定為準，還有幾項沒算進去（見下方「這張表沒算進去的」），實際到手通常會比這個數字再少一點。
+            </p>
             <p id="res-flag" class="text-muted-foreground mt-2 text-xs leading-relaxed"></p>
 
             <table class="mt-5 w-full text-sm">
@@ -287,7 +291,7 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
                   <td id="res-loan" class="py-2 text-right tabular-nums">—</td>
                 </tr>
                 <tr>
-                  <td class="py-2 text-base font-bold">＝ 實拿現金</td>
+                  <td class="py-2 text-base font-bold">＝ 實拿現金（約）</td>
                   <td id="res-cash2" class="text-accent py-2 text-right text-base font-bold tabular-nums">—</td>
                 </tr>
               </tbody>
@@ -360,6 +364,21 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
         </div>
       </div>
     </form>
+
+    {/* 沒算進去的項目一定要講清楚（2026-09-20 景泰：「沒辦法算也要備註」「不然屋主以為到手真的就是這麼多一毛不少」）；
+        放表單下方全寬，列印時自動展開、排兩欄小字才塞得進一頁 A4 */}
+    <details id="not-included" class="card-surface mt-4 p-4 text-sm sm:p-5">
+      <summary class="cursor-pointer font-medium">這張表沒算進去的（先講清楚，實際到手會再少一點）</summary>
+      <ul id="not-included-list" class="text-muted-foreground mt-2 space-y-1 ps-4 text-xs leading-relaxed" style="list-style:disc;">
+        <li><strong>契稅、印花稅、過戶代書費</strong>：買方繳的，賣方不用付，所以不扣（簽約手續費有時買賣各半、幾千元，填「其他費用」）。</li>
+        <li><strong>抵押權塗銷代辦費</strong>：有貸款才有，代書收幾千元，填「其他費用」。</li>
+        <li><strong>貸款提前清償違約金</strong>：貸款還在綁約期內才有，金額問銀行，加到「其他費用」。</li>
+        <li><strong>交屋前的地價稅、房屋稅分攤、水電瓦斯管理費結清、搬家清潔</strong>：金額不大，自己估一個數字填「其他費用」。</li>
+        <li><strong>舊制的房屋財產交易所得稅</strong>：104/12/31 以前取得才有，併入隔年綜所稅，這裡沒算。</li>
+        <li><strong>土地增值稅留白時</strong>：結果沒含土增稅，會在上面標示。</li>
+        <li>買進時繳過的契稅、印花稅、代書費不是這次要付的錢，但可以填進「可認列費用」，房地合一的課稅所得會少一點。</li>
+      </ul>
+    </details>
 
     {/* 手機底部固定條：捲到下面填資料時還看得到結果 */}
     {/* bottom 吃 --consent-h：手機 cookie 橫幅全寬貼底時往上讓位（跟 FloatingCTA 同一套）。
@@ -465,7 +484,7 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
     @media print {
       header, footer, nav, .no-print, .hint, #main-content > h1 + p { display: none !important; }
       .print-only { display: block !important; }
-      main { max-width: 100% !important; padding: 0 !important; zoom: 0.88; }
+      main { max-width: 100% !important; padding: 0 !important; zoom: 0.8; }
       body { font-size: 10.5pt; }
       h1 { font-size: 16pt !important; }
       h2 { font-size: 12pt !important; }
@@ -483,7 +502,10 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
       }
       #calc input::placeholder { color: transparent !important; }
       #hl-details { border: 0 !important; padding: 0 !important; }
-      #hl-details summary { list-style: none; }
+      #hl-details summary, #not-included summary { list-style: none; }
+      #not-included { margin-top: 8px !important; padding: 8px 10px !important; font-size: 9.5pt; }
+      #not-included-list { columns: 2; column-gap: 16px; font-size: 8.5pt; line-height: 1.35; margin-top: 4px !important; }
+      #not-included-list > li { break-inside: avoid; margin: 0 0 3px !important; }
       details > summary::-webkit-details-marker { display: none; }
     }
   </style>
@@ -679,7 +701,7 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
           showSticky(false);
           return;
         }
-        set("res-cash", wan(r.cash)); set("res-cash2", wan(r.cash)); set("sticky-cash", wan(r.cash));
+        set("res-cash", "約 " + wan(r.cash)); set("res-cash2", "約 " + wan(r.cash)); set("sticky-cash", "約 " + wan(r.cash));
         set("res-sale", wan(r.sale));
         set("res-fee", wan(r.fee)); set("res-fee-pct", "(" + pct(inp.feePct) + ")");
         set("res-escrow", wan(r.escrow));
@@ -833,6 +855,7 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
         window.addEventListener("beforeprint", function () {
           $("print-date").textContent = "民國 " + todayRoc();
           $("hl-details").open = true;
+          $("not-included").open = true;
         });
         $("print-date").textContent = "民國 " + todayRoc();
         render();
