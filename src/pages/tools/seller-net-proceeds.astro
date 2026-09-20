@@ -326,8 +326,10 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
     </form>
 
     {/* 手機底部固定條：捲到下面填資料時還看得到結果 */}
-    {/* bottom 吃 --consent-h：cookie 橫幅在時往上讓位，不蓋住接受／拒絕鈕（跟 FloatingCTA 同一套） */}
-    <div id="sticky" class="no-print bg-card border-border fixed inset-x-0 z-40 border-t px-4 py-2.5 shadow-lg lg:hidden" style="bottom: var(--consent-h, 0px);" hidden>
+    {/* bottom 吃 --consent-h：手機 cookie 橫幅全寬貼底時往上讓位（跟 FloatingCTA 同一套）。
+        640～1023px 橫幅是右下角小卡、--consent-h 為 0，所以 z 放 20（低於橫幅的 30）：
+        讓可以關掉的橫幅蓋在實拿條上面，而不是實拿條把「接受／拒絕」鈕蓋住（2026-09-20 線上實測平板寬度會撞） */}
+    <div id="sticky" class="no-print bg-card border-border fixed inset-x-0 z-20 border-t px-4 py-2.5 shadow-lg lg:hidden" style="bottom: var(--consent-h, 0px);" hidden>
       <div class="mx-auto flex max-w-3xl items-center justify-between gap-3">
         <span class="text-muted-foreground text-sm">屋主實拿約</span>
         <span id="sticky-cash" class="text-accent text-2xl font-extrabold tabular-nums">—</span>
