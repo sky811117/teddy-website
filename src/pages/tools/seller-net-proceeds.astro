@@ -109,10 +109,18 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
     pageTitle="賣方售出實拿試算"
     pageDesc="開價這樣，扣掉房地合一稅、土增稅、仲介費、履保費、還掉貸款，屋主到底拿多少？填幾個數字，當場算給你看。"
   >
-    {/* 列印時才出現的抬頭 */}
+    {/* 列印時才出現的抬頭：左邊日期＋物件名，右邊兩個品牌 LOGO（2026-09-20 景泰：LOGO 也要坐進去） */}
     <div class="print-only mb-4">
-      <p class="text-sm">試算日期：<span id="print-date"></span></p>
-      <p id="print-name" class="mt-1 text-lg font-bold"></p>
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <p class="text-sm">試算日期：<span id="print-date"></span></p>
+          <p id="print-name" class="mt-1 text-lg font-bold"></p>
+        </div>
+        <div class="flex shrink-0 items-center gap-4">
+          <img src="/logos/utrust-wordmark.png" alt="有巢氏房屋" width="800" height="240" style="height:40px;width:auto" />
+          <img src="/logos/bigkanban-wordmark.png" alt="房仲大看板 Big KanBan" width="800" height="262" style="height:40px;width:auto" />
+        </div>
+      </div>
     </div>
 
     <form id="calc" class="grid grid-cols-1 gap-6 lg:grid-cols-5" autocomplete="off" novalidate>
@@ -374,6 +382,16 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
     </section>
 
     <hr class="my-8 border-dashed" />
+
+    {/* 螢幕版的品牌列（列印版 LOGO 在最上面的抬頭，這裡就不重複印） */}
+    <div class="no-print mb-4 flex flex-wrap items-center gap-3">
+      <span class="inline-flex items-center rounded-md bg-white px-3 py-2">
+        <img src="/logos/utrust-wordmark.png" alt="有巢氏房屋" width="800" height="240" class="h-9 w-auto" loading="lazy" />
+      </span>
+      <span class="inline-flex items-center rounded-md bg-white px-3 py-2">
+        <img src="/logos/bigkanban-wordmark.png" alt="房仲大看板 Big KanBan" width="800" height="262" class="h-9 w-auto" loading="lazy" />
+      </span>
+    </div>
 
     <p class="text-muted-foreground text-sm">
       <strong>陳景泰 — 一品不動產（有巢氏房屋台中世界之心加盟店）</strong><br />
