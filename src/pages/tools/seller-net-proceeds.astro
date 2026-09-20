@@ -14,7 +14,8 @@
  *
  * 計算依據（全部在頁面下方「怎麼算的」段落再講一次）：
  *  - 房地合一 2.0：所得稅法第 4 條之 4（適用範圍）、第 4 條之 5（自住免稅）、第 14 條之 4（稅率）
- *    2021-07-01 施行；2016-01-01 以後取得才適用。
+ *    2021-07-01 施行；2016-01-01（民國 105/1/1）以後取得才適用。
+ *  - 日期欄位一律民國（謄本、權狀都是民國；2026-09-20 景泰），民國／西元／點／斜線／純數字都吃。
  *    持有 ≤2 年 45%、>2～5 年 35%、>5～10 年 20%、>10 年 15%；
  *    自住（設籍居住連續滿 6 年、無出租營業）課稅所得 400 萬免稅、超過部分 10%。
  *    課稅所得可減除「取得、改良及移轉」的費用 → 這次出售付的仲介費是移轉費用，程式自動扣
@@ -75,7 +76,7 @@ const faqs = [
   },
   {
     q: "2016 年以前買的房子也適用房地合一嗎？",
-    a: "不適用。2015 年 12 月 31 日以前取得的房地是「舊制」：土地部分只課土地增值稅，房屋部分的財產交易所得併入隔年綜合所得稅申報。這個工具遇到舊制會把房地合一稅顯示為 0，並提醒你另外估房屋部分的綜所稅。",
+    a: "不適用。民國 104 年 12 月 31 日（2015 年）以前取得的房地是「舊制」：土地部分只課土地增值稅，房屋部分的財產交易所得併入隔年綜合所得稅申報。這個工具遇到舊制會把房地合一稅顯示為 0，並提醒你另外估房屋部分的綜所稅。",
   },
 ];
 
@@ -164,15 +165,11 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
         <section class="card-surface p-4 sm:p-5">
           <h2 class="text-lg font-bold">② 當初怎麼買的（算房地合一稅用）</h2>
           <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label class={labelCls} for="acqDate">取得日期（所有權登記日）</label>
-              <input id="acqDate" type="date" class={inputCls} />
-              <p class={hintCls}>看謄本「登記日期」或權狀。2015/12/31 以前取得＝舊制，不算房地合一。</p>
-            </div>
-            <div>
-              <label class={labelCls} for="saleDate">預計出售日期（所有權移轉登記日）</label>
-              <input id="saleDate" type="date" class={inputCls} />
-              <p class={hintCls}>以「完成所有權移轉登記日」為準，不是簽約日（成屋簽約後大約 1～2 個月才登記）。預設今天，持有期間差一天就可能差一個稅率級距。</p>
+            <div class="sm:col-span-2">
+              <label class={labelCls} for="acqDate">取得日期（謄本上的登記日期，民國）</label>
+              <input id="acqDate" type="text" inputmode="numeric" class={inputCls} placeholder="例：108/03/15" />
+              <p class={hintCls}>照謄本「登記日期」或權狀抄（打 108.3.15、1080315 或西元也認得）。104/12/31 以前取得＝舊制，不算房地合一。
+                持有期間算到今天；真正過戶登記通常再晚 1～2 個月，剛好卡在 2／5／10 年邊界時稅率可能再降一級。</p>
             </div>
             <div>
               <label class={labelCls} for="cost">取得成本：當初買價（萬）</label>
@@ -351,7 +348,7 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
           出售費用沒單據，國稅局按成交價 3% 推計、上限 30 萬。
         </li>
         <li>
-          <strong>2015/12/31 以前取得＝舊制</strong>：土地只課土增稅，房屋部分的財產交易所得併入隔年綜所稅，這頁不算那一段。
+          <strong>民國 104/12/31（2015）以前取得＝舊制</strong>：土地只課土增稅，房屋部分的財產交易所得併入隔年綜所稅，這頁不算那一段。
         </li>
         <li>
           <strong>土地增值稅</strong>：自用住宅用地 10%（一生一次／一生一屋有條件）、一般 20／30／40% 累進，要看地號的前次移轉現值與公告現值，屋主通常不知道，所以留白就先不計。
@@ -433,7 +430,7 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
       .space-y-6 > * + * { margin-top: 10px !important; }
       .card-surface { box-shadow: none !important; break-inside: avoid; padding: 10px !important; }
       .lg\:sticky { position: static !important; }
-      #calc input[type="text"], #calc input[type="date"] {
+      #calc input[type="text"] {
         border: 0 !important;
         border-bottom: 1px solid #999 !important;
         border-radius: 0 !important;
@@ -441,7 +438,6 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
         background: transparent !important;
       }
       #calc input::placeholder { color: transparent !important; }
-      #calc input[type="date"]::-webkit-calendar-picker-indicator { display: none !important; }
       #hl-details { border: 0 !important; padding: 0 !important; }
       #hl-details summary { list-style: none; }
       details > summary::-webkit-details-marker { display: none; }
@@ -451,7 +447,7 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
   <script is:inline>
     (function () {
       var $ = function (id) { return document.getElementById(id); };
-      var ids = ["name", "ask", "discount", "sale", "acqDate", "saleDate", "cost", "expense", "selfUse",
+      var ids = ["name", "ask", "discount", "sale", "acqDate", "cost", "expense", "selfUse",
                  "lvt", "lvtSelf", "fee", "other", "loan", "target"];
       var el = {};
       for (var i = 0; i < ids.length; i++) el[ids[i]] = $(ids[i]);
@@ -468,24 +464,44 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
         return r.toLocaleString("zh-TW", { minimumFractionDigits: 0, maximumFractionDigits: 1 }) + " 萬";
       }
       function pct(n) { return (Math.round(n * 100) / 100) + "%"; }
+      // 日期欄位是民國文字（謄本、權狀都是民國）：108/03/15、108.3.15、1080315、108 3 15 都吃；
+      // 打西元（2019/03/15、20190315）也自動轉。年份 < 1911 一律當民國。
       function toDate(s) {
+        s = String(s == null ? "" : s).trim();
         if (!s) return null;
-        var p = s.split("-");
-        if (p.length !== 3) return null;
-        var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
-        return isNaN(d.getTime()) ? null : d;
+        var parts = s.match(/\d+/g);
+        if (!parts) return null;
+        var y, m, d;
+        if (parts.length === 1) {
+          var p = parts[0];
+          if (p.length === 8) { y = +p.slice(0, 4); m = +p.slice(4, 6); d = +p.slice(6, 8); }
+          else if (p.length === 7) { y = +p.slice(0, 3); m = +p.slice(3, 5); d = +p.slice(5, 7); }
+          else if (p.length === 6) { y = +p.slice(0, 2); m = +p.slice(2, 4); d = +p.slice(4, 6); }
+          else return null;
+        } else if (parts.length >= 3) {
+          y = +parts[0]; m = +parts[1]; d = +parts[2];
+        } else {
+          return null;
+        }
+        if (y < 1911) y += 1911;
+        if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+        var dt = new Date(y, m - 1, d);
+        // 2/30 這種不存在的日期 JS 會自動進位，這裡當成看不懂
+        if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return null;
+        return dt;
       }
+      function rocStr(dt) {
+        var m = dt.getMonth() + 1, d = dt.getDate();
+        return (dt.getFullYear() - 1911) + "/" + (m < 10 ? "0" : "") + m + "/" + (d < 10 ? "0" : "") + d;
+      }
+      function today() { var n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); }
+      function todayRoc() { return rocStr(today()); }
       function addYears(d, n) {
         var r = new Date(d.getTime());
         r.setFullYear(r.getFullYear() + n);
         // 2/29 取得、目標年沒有 2/29 時 JS 會進位成 3/1，退回該月最後一天（民法 121 條）
         if (r.getMonth() !== d.getMonth()) r.setDate(0);
         return r;
-      }
-      function todayStr() {
-        var d = new Date();
-        var m = d.getMonth() + 1, day = d.getDate();
-        return d.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (day < 10 ? "0" : "") + day;
       }
       function holdingText(a, b) {
         var y = b.getFullYear() - a.getFullYear();
@@ -512,7 +528,7 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
         }
         if (acq < new Date(2016, 0, 1)) {
           out.regime = "old";
-          out.notes.push("2015/12/31 以前取得＝舊制，不適用房地合一；房屋部分的財產交易所得要併入隔年綜所稅，這裡沒算。");
+          out.notes.push("民國 104/12/31 以前取得＝舊制，不適用房地合一；房屋部分的財產交易所得要併入隔年綜所稅，這裡沒算。");
           return out;
         }
         // 持有期間：「超過 N 年」= 出售日在取得日加 N 年之後（同日仍算 N 年以內）
@@ -521,7 +537,7 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
         var taxable = sale - cost - expense - transferFee - landGain;
         if (taxable < 0) taxable = 0;
         out.taxable = taxable;
-        out.notes.push("持有 " + holdingText(acq, sold) + "。");
+        out.notes.push("持有 " + holdingText(acq, sold) + "（算到今天 民國 " + rocStr(sold) + "）。");
         out.notes.push("課稅所得 ＝ " + wan(sale) + " − 成本 " + wan(cost) + " − 費用 " + wan(expense) +
           " − 本次仲介費 " + wan(transferFee) +
           (landGain > 0 ? " − 土地漲價總數額 " + wan(landGain) : "") + " ＝ " + wan(taxable) + "。");
@@ -558,7 +574,7 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
           other: num(el.other.value),
           loan: num(el.loan.value),
           acq: toDate(el.acqDate.value),
-          sold: toDate(el.saleDate.value),
+          sold: today(), // 出售日不另外填（2026-09-20 景泰），持有期間算到今天
         };
       }
 
@@ -616,6 +632,7 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
         if (r.hl.regime === "old") flags.push("⚠️ 舊制：房屋部分綜所稅另計");
         if (r.hl.regime === "unknown") flags.push("⚠️ 尚未含房地合一稅（沒填取得日期）");
         if (r.hl.regime === "invalid") flags.push("⚠️ 出售日早於取得日，房地合一稅未計，請檢查日期");
+        if (has(el.acqDate.value) && !inp.acq) flags.push("⚠️ 取得日期看不懂，請用民國 年/月/日（例 108/03/15）");
         if (!has(el.cost.value) && r.hl.regime === "new") flags.push("⚠️ 取得成本填 0，房地合一稅會偏高");
         if (r.cash < 0) flags.push("⚠️ 賣了還不夠還貸款和費用，要自己補差額");
         $("res-flag").textContent = flags.join("　");
@@ -661,7 +678,11 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
 
       function boot() {
         if (!el.sale) return;
-        if (!el.saleDate.value) el.saleDate.value = todayStr();
+        // 日期欄離開時把「108.3.15」「1080315」整理成 108/03/15，印出來整齊
+        el.acqDate.addEventListener("change", function () {
+          var dt = toDate(el.acqDate.value);
+          if (dt) el.acqDate.value = rocStr(dt);
+        });
 
         el.ask.addEventListener("input", function () { fromAsk(); render(); });
         el.discount.addEventListener("input", function () { fromAsk(); render(); });
@@ -672,7 +693,7 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
             fromAsk(); render();
           });
         });
-        ["acqDate", "saleDate", "cost", "expense", "selfUse", "lvt", "lvtSelf", "fee", "other", "loan", "target"]
+        ["acqDate", "cost", "expense", "selfUse", "lvt", "lvtSelf", "fee", "other", "loan", "target"]
           .forEach(function (id) {
             el[id].addEventListener("input", render);
             el[id].addEventListener("change", render);
@@ -687,15 +708,14 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
             else e.value = "";
           }
           el.fee.value = "4";
-          el.saleDate.value = todayStr();
           $("print-name").textContent = "";
           render();
         });
         window.addEventListener("beforeprint", function () {
-          $("print-date").textContent = todayStr().replace(/-/g, "/");
+          $("print-date").textContent = "民國 " + todayRoc();
           $("hl-details").open = true;
         });
-        $("print-date").textContent = todayStr().replace(/-/g, "/");
+        $("print-date").textContent = "民國 " + todayRoc();
         render();
       }
 
