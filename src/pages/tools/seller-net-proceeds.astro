@@ -303,12 +303,12 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
             </div>
           </section>
 
-          {/* 反推：想拿多少 → 要賣多少 */}
+          {/* 反推：屋主希望實拿多少 → 至少要成交多少、建議開價、其他數字全部回推（2026-09-20 景泰） */}
           <section class="card-surface mt-4 p-4 sm:p-5">
-            <h2 class="text-base font-bold">反過來算：屋主想實拿多少？</h2>
+            <h2 class="text-base font-bold">反過來算：屋主希望實拿多少？</h2>
             <div class="mt-3 flex items-end gap-3">
               <div class="flex-1">
-                <label class={labelCls} for="target">想實拿（萬）</label>
+                <label class={labelCls} for="target">希望實拿（萬）</label>
                 <input id="target" type="text" inputmode="decimal" class={inputCls} placeholder="例：1000" />
               </div>
               <div class="flex-1 text-right">
@@ -316,7 +316,45 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
                 <p id="target-out" class="text-xl font-bold tabular-nums">—</p>
               </div>
             </div>
-            <p class={hintCls}>用上面同一組成本、費用、貸款條件反算，成交價一動稅率級距不變。</p>
+            <p id="target-ask" class="mt-2 text-sm font-medium"></p>
+            <table id="target-table" class="no-print mt-3 w-full text-sm" hidden>
+              <tbody>
+                <tr class="border-border border-b">
+                  <td class="py-1.5">成交價</td>
+                  <td id="t-sale" class="py-1.5 text-right font-semibold tabular-nums"></td>
+                </tr>
+                <tr class="border-border/50 border-b">
+                  <td class="py-1.5 ps-3">− 仲介服務費 <span id="t-fee-pct" class="text-muted-foreground"></span></td>
+                  <td id="t-fee" class="py-1.5 text-right tabular-nums"></td>
+                </tr>
+                <tr class="border-border/50 border-b">
+                  <td class="py-1.5 ps-3">− 履約保證費</td>
+                  <td id="t-escrow" class="py-1.5 text-right tabular-nums"></td>
+                </tr>
+                <tr class="border-border/50 border-b">
+                  <td class="py-1.5 ps-3">− 其他費用</td>
+                  <td id="t-other" class="py-1.5 text-right tabular-nums"></td>
+                </tr>
+                <tr class="border-border/50 border-b">
+                  <td class="py-1.5 ps-3">− 土地增值稅</td>
+                  <td id="t-lvt" class="py-1.5 text-right tabular-nums"></td>
+                </tr>
+                <tr class="border-border/50 border-b">
+                  <td class="py-1.5 ps-3">− 房地合一稅 <span id="t-hl-rate" class="text-muted-foreground"></span></td>
+                  <td id="t-hl" class="py-1.5 text-right tabular-nums"></td>
+                </tr>
+                <tr class="border-border/50 border-b">
+                  <td class="py-1.5 ps-3">− 清償貸款餘額</td>
+                  <td id="t-loan" class="py-1.5 text-right tabular-nums"></td>
+                </tr>
+                <tr>
+                  <td class="py-1.5 font-bold">＝ 實拿</td>
+                  <td id="t-cash" class="text-accent py-1.5 text-right font-bold tabular-nums"></td>
+                </tr>
+              </tbody>
+            </table>
+            <button type="button" id="target-apply" class="btn-outline no-print mt-3 w-full" hidden>↑ 帶入上面試算</button>
+            <p class={hintCls}>用上面同一組成本、費用、貸款條件反算。按「帶入」會把成交價、開價填回上面，所有數字跟著更新。</p>
           </section>
         </div>
       </div>
@@ -646,19 +684,50 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
         return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
       }
 
-      // 反推：二分法找「實拿 ≥ 目標」的最低成交價（實拿對成交價單調遞增）
+      // 反推：二分法找「實拿 ≥ 目標」的最低成交價（實拿對成交價單調遞增），
+      // 再用那個成交價把仲介費、履保、稅、貸款整張明細回推出來，並依議價空間給建議開價
+      var lastTarget = null; // 給「帶入上面試算」用
       function renderTarget(inp) {
         var t = num(el.target.value);
-        if (!(t > 0)) { $("target-out").textContent = "—"; return; }
+        var clear = function (msg) {
+          $("target-out").textContent = msg;
+          $("target-ask").textContent = "";
+          $("target-table").hidden = true;
+          $("target-apply").hidden = true;
+          lastTarget = null;
+        };
+        if (!(t > 0)) { clear("—"); return; }
         var lo = 0, hi = Math.max(t * 4, 100);
         // 稅率最高 45%、仲介費最高 6%，實拿至少是成交價的一半左右，hi 夠用；保險再放大
         for (var g = 0; g < 8 && compute(inp, hi).cash < t; g++) hi *= 2;
-        if (compute(inp, hi).cash < t) { $("target-out").textContent = "算不出來"; return; }
+        if (compute(inp, hi).cash < t) { clear("算不出來"); return; }
         for (var i = 0; i < 60; i++) {
           var mid = (lo + hi) / 2;
           if (compute(inp, mid).cash >= t) hi = mid; else lo = mid;
         }
-        $("target-out").textContent = wan(Math.ceil(hi));
+        var sale = Math.ceil(hi);
+        var r = compute(inp, sale);
+        var d = num(el.discount.value);
+        var hasDisc = d > 0 && d < 100;
+        var ask = hasDisc ? Math.ceil(sale / (1 - d / 100)) : sale;
+        lastTarget = { sale: sale, ask: ask };
+
+        $("target-out").textContent = wan(sale);
+        $("target-ask").textContent = hasDisc
+          ? "留 " + pct(d) + " 議價空間的話，建議開價 " + wan(ask)
+          : "沒填議價空間，開價就是 " + wan(sale) + "（上面填了議價空間會自動算建議開價）";
+        var set = function (id, v) { $(id).textContent = v; };
+        set("t-sale", wan(sale));
+        set("t-fee", wan(r.fee)); set("t-fee-pct", "(" + pct(inp.feePct) + ")");
+        set("t-escrow", wan(r.escrow));
+        set("t-other", wan(r.other));
+        set("t-lvt", inp.lvt === null ? "未計" : wan(r.lvt));
+        set("t-hl", r.hl.regime === "new" ? wan(r.hl.tax) : (r.hl.regime === "old" ? "舊制 0" : "未計"));
+        set("t-hl-rate", r.hl.rate !== null ? "(" + r.hl.rate + "%)" : "");
+        set("t-loan", wan(inp.loan));
+        set("t-cash", wan(r.cash));
+        $("target-table").hidden = false;
+        $("target-apply").hidden = false;
       }
 
       // 開價 × 議價空間 ↔ 成交價 雙向聯動
@@ -700,6 +769,14 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
           });
         el.name.addEventListener("input", function () { $("print-name").textContent = el.name.value; });
 
+        $("target-apply").addEventListener("click", function () {
+          if (!lastTarget) return;
+          el.ask.value = String(lastTarget.ask);
+          el.sale.value = String(lastTarget.sale);
+          fromSale(); // 由開價、成交價反算議價空間
+          render();
+          $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+        });
         $("print").addEventListener("click", function () { window.print(); });
         $("reset").addEventListener("click", function () {
           for (var i = 0; i < ids.length; i++) {
