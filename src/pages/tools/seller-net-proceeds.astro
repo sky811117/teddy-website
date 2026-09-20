@@ -167,8 +167,9 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
           <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div class="sm:col-span-2">
               <label class={labelCls} for="acqDate">取得日期（謄本上的登記日期，民國）</label>
-              <input id="acqDate" type="text" inputmode="numeric" class={inputCls} placeholder="例：108/03/15" />
-              <p class={hintCls}>照謄本「登記日期」或權狀抄（打 108.3.15、1080315 或西元也認得）。104/12/31 以前取得＝舊制，不算房地合一。
+              <input id="acqDate" type="text" inputmode="numeric" class={inputCls} placeholder="例：114321 或 114/03/21" />
+              <p id="acq-preview" class="text-accent mt-1 min-h-5 text-sm" aria-live="polite"></p>
+              <p class={hintCls}>照謄本「登記日期」或權狀抄，直接連著打就好（114321、1140321、114.3.21 都認得，西元也會自動轉）。104/12/31 以前取得＝舊制，不算房地合一。
                 持有期間算到今天；真正過戶登記通常再晚 1～2 個月，剛好卡在 2／5／10 年邊界時稅率可能再降一級。</p>
             </div>
             <div>
@@ -502,31 +503,51 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
         return r.toLocaleString("zh-TW", { minimumFractionDigits: 0, maximumFractionDigits: 1 }) + " 萬";
       }
       function pct(n) { return (Math.round(n * 100) / 100) + "%"; }
-      // 日期欄位是民國文字（謄本、權狀都是民國）：108/03/15、108.3.15、1080315、108 3 15 都吃；
-      // 打西元（2019/03/15、20190315）也自動轉。年份 < 1911 一律當民國。
+      // 西元 y/m/d → Date；月日不合法或 2/30 這種不存在的日期回 null（JS 會自動進位，要擋）
+      function mkDate(y, m, d) {
+        if (!(y > 1911 && y < 2200) || m < 1 || m > 12 || d < 1 || d > 31) return null;
+        var dt = new Date(y, m - 1, d);
+        if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return null;
+        return dt;
+      }
+      // 純數字連著打（2026-09-20 景泰：「114321 就會變 114 年 3/21 日」）：
+      // 民國年先抓 3 碼（現在 115 年），剩下的月日 允許 1～2 碼月、1～2 碼日，挑第一個合法的；
+      // 3 碼年不合理（例 990315 → 990 年）再退回 2 碼年。8 碼且 19/20 開頭當西元。
+      function parseDigits(p) {
+        if (p.length === 8 && /^(19|20)/.test(p)) return mkDate(+p.slice(0, 4), +p.slice(4, 6), +p.slice(6, 8));
+        var tries = [];
+        [3, 2].forEach(function (yl) {
+          if (p.length <= yl) return;
+          // 2 碼年只在前 3 碼當年份不合理時才試（990315 → 99 年）；不然打到一半的 1143 會被當成 11 年 4 月 3 日
+          if (yl === 2 && +p.slice(0, 3) <= 200) return;
+          var y = +p.slice(0, yl), r = p.slice(yl);
+          if (y < 1 || y > 200) return;
+          if (r.length === 4) tries.push([y, +r.slice(0, 2), +r.slice(2)]);
+          else if (r.length === 3) { tries.push([y, +r.slice(0, 1), +r.slice(1)]); tries.push([y, +r.slice(0, 2), +r.slice(2)]); }
+          else if (r.length === 2) tries.push([y, +r.slice(0, 1), +r.slice(1)]);
+        });
+        for (var i = 0; i < tries.length; i++) {
+          var dt = mkDate(tries[i][0] + 1911, tries[i][1], tries[i][2]);
+          if (dt) return dt;
+        }
+        return null;
+      }
+      // 日期欄位是民國文字（謄本、權狀都是民國）：114321、1140321、114/3/21、114.03.21 都吃；
+      // 打西元（2025/03/21、20250321）也自動轉。年份 < 1911 一律當民國。
       function toDate(s) {
         s = String(s == null ? "" : s).trim();
         if (!s) return null;
         var parts = s.match(/\d+/g);
         if (!parts) return null;
-        var y, m, d;
-        if (parts.length === 1) {
-          var p = parts[0];
-          if (p.length === 8) { y = +p.slice(0, 4); m = +p.slice(4, 6); d = +p.slice(6, 8); }
-          else if (p.length === 7) { y = +p.slice(0, 3); m = +p.slice(3, 5); d = +p.slice(5, 7); }
-          else if (p.length === 6) { y = +p.slice(0, 2); m = +p.slice(2, 4); d = +p.slice(4, 6); }
-          else return null;
-        } else if (parts.length >= 3) {
-          y = +parts[0]; m = +parts[1]; d = +parts[2];
-        } else {
-          return null;
-        }
+        if (parts.length === 1) return parseDigits(parts[0]);
+        if (parts.length < 3) return null;
+        var y = +parts[0], m = +parts[1], d = +parts[2];
         if (y < 1911) y += 1911;
-        if (m < 1 || m > 12 || d < 1 || d > 31) return null;
-        var dt = new Date(y, m - 1, d);
-        // 2/30 這種不存在的日期 JS 會自動進位，這裡當成看不懂
-        if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return null;
-        return dt;
+        return mkDate(y, m, d);
+      }
+      function rocLong(dt) {
+        var y = dt.getFullYear(), m = dt.getMonth() + 1, d = dt.getDate();
+        return "民國 " + (y - 1911) + " 年 " + m + " 月 " + d + " 日（西元 " + y + "/" + (m < 10 ? "0" : "") + m + "/" + (d < 10 ? "0" : "") + d + "）";
       }
       function rocStr(dt) {
         var m = dt.getMonth() + 1, d = dt.getDate();
@@ -747,11 +768,26 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
 
       function boot() {
         if (!el.sale) return;
-        // 日期欄離開時把「108.3.15」「1080315」整理成 108/03/15，印出來整齊
-        el.acqDate.addEventListener("change", function () {
+        // 取得日期：一邊打一邊在下面顯示「→ 民國 114 年 3 月 21 日」；
+        // 純數字打滿 7 碼（yyymmdd）或西元 8 碼就直接整理成 114/03/21，其他情況等離開欄位再整理
+        // （6 碼像 114032 可能還在打 1140321 的一半，不能急著改）
+        var normalizeAcq = function () {
           var dt = toDate(el.acqDate.value);
           if (dt) el.acqDate.value = rocStr(dt);
+        };
+        // showError：打到一半看不懂很正常，只有離開欄位還看不懂才提示
+        var previewAcq = function (showError) {
+          var v = el.acqDate.value.trim();
+          var dt = toDate(v);
+          $("acq-preview").textContent = dt ? "→ " + rocLong(dt) : (v && showError ? "看不懂，請打民國 年月日，例 114321 或 114/03/21" : "");
+        };
+        el.acqDate.addEventListener("input", function () {
+          var v = el.acqDate.value.trim();
+          if (/^\d{7}$/.test(v) || /^(19|20)\d{6}$/.test(v)) normalizeAcq();
+          previewAcq(false);
         });
+        el.acqDate.addEventListener("change", function () { normalizeAcq(); previewAcq(true); });
+        el.acqDate.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); el.acqDate.blur(); } });
 
         el.ask.addEventListener("input", function () { fromAsk(); render(); });
         el.discount.addEventListener("input", function () { fromAsk(); render(); });
@@ -785,6 +821,7 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
             else e.value = "";
           }
           el.fee.value = "4";
+          $("acq-preview").textContent = "";
           $("print-name").textContent = "";
           render();
         });
