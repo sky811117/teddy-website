@@ -1,0 +1,684 @@
+---
+/**
+ * 賣方售出實拿試算 — /tools/seller-net-proceeds/
+ *
+ * 為什麼做這頁：跟屋主談委託、談底價時，最常被問的就是「開價這樣，扣掉稅跟費用
+ * 我到底拿多少？」。原本要開 Excel 手算房地合一，現在手機掏出來當場算給屋主看，
+ * 也能直接列印／存 PDF 留給屋主帶回去想。
+ *
+ * 設計原則（2026-09-20 景泰）：
+ *  - 認列成本（當初買價、可列舉費用）一律屋主自己填，不用推定值當預設。
+ *  - 土增稅屋主常常不知道 → 留白就「先不計」，明白標示未含，附官方試算入口。
+ *  - 手機優先：數字鍵盤、單位用「萬」、輸入即算不用按按鈕、底部固定顯示實拿。
+ *  - 可列印：隱藏導覽與說明，只留輸入摘要 + 明細 + 證號。
+ *
+ * 計算依據（全部在頁面下方「怎麼算的」段落再講一次）：
+ *  - 房地合一 2.0：所得稅法第 14 條之 4（2021-07-01 施行；2016-01-01 以後取得才適用）
+ *    持有 ≤2 年 45%、>2～5 年 35%、>5～10 年 20%、>10 年 15%；
+ *    自住（設籍居住連續滿 6 年、無出租營業）課稅所得 400 萬免稅、超過部分 10%。
+ *    費用未提示：成交價 3%、上限 30 萬（財政部 110 年 6 月 11 日令）。
+ *  - 土地增值稅：土地稅法第 33、34 條（自用住宅 10%；一般 20／30／40% 累進）。
+ *  - 仲介服務費：不動產經紀業報酬計收標準（買賣雙方合計不得超過成交價 6%）。
+ *  - 履約保證：市場常見服務費萬分之 6、買賣各半（各家履保公司費率略有不同）。
+ *
+ * ⚠️ 這是試算，不是稅務申報。繼承／受贈取得、預售換約、合建分屋、非自願因素
+ *    交易等特殊情形不在這頁範圍，頁面上有寫。
+ */
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import Main from "@/components/Main.astro";
+import config from "@/config";
+import { safeJsonLd } from "@/utils/safeJsonLd";
+
+const canonicalURL = new URL("/tools/seller-net-proceeds", Astro.site).href;
+
+const appSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "賣方售出實拿試算（房地合一稅＋土增稅＋仲介費）",
+  applicationCategory: "FinanceApplication",
+  operatingSystem: "Web",
+  url: canonicalURL,
+  description:
+    "輸入開價或預估成交價、當初買價、取得日期，一秒算出賣房後扣掉房地合一稅、土地增值稅、仲介服務費、履約保證費與貸款餘額之後，屋主實際拿到多少。手機可用、可列印。",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "TWD" },
+  provider: { "@id": `${config.site.url}#realestateagent` },
+};
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "首頁", item: config.site.url },
+    { "@type": "ListItem", position: 2, name: "客戶工具", item: `${config.site.url}tools/` },
+    { "@type": "ListItem", position: 3, name: "賣方售出實拿試算", item: canonicalURL },
+  ],
+};
+
+const faqs = [
+  {
+    q: "賣房子要繳哪些稅和費用？",
+    a: "賣方常見的支出有：仲介服務費（買賣雙方合計不超過成交價 6%，賣方常見 4%）、土地增值稅、房地合一稅（2016 年 1 月 1 日以後取得的房地才適用）、履約保證服務費（常見萬分之 6，買賣各半）、抵押權塗銷等代辦費，以及交屋日前的地價稅、房屋稅分攤。如果房子還有貸款，成交款要先清償貸款餘額，剩下的才是實拿。",
+  },
+  {
+    q: "房地合一稅怎麼算？",
+    a: "課稅所得 = 成交價 − 取得成本 − 可列舉的費用 − 土地漲價總數額。稅率看持有期間：2 年以內 45%、超過 2 年到 5 年 35%、超過 5 年到 10 年 20%、超過 10 年 15%。本人、配偶或未成年子女設籍並實際居住連續滿 6 年、期間沒有出租或營業，可以用自住優惠：課稅所得 400 萬以內免稅、超過的部分 10%，6 年內只能用一次。",
+  },
+  {
+    q: "我不知道土增稅是多少，怎麼辦？",
+    a: "土地增值稅要看這筆土地前次移轉現值、現在的公告現值和持有年數，屋主通常不會記得。可以帶土地所有權狀或謄本上的地號，到台中市政府地方稅務局臨櫃或用線上試算查。這個工具土增稅欄位留白就當「先不計」，結果會標示尚未含土增稅。",
+  },
+  {
+    q: "2016 年以前買的房子也適用房地合一嗎？",
+    a: "不適用。2015 年 12 月 31 日以前取得的房地是「舊制」：土地部分只課土地增值稅，房屋部分的財產交易所得併入隔年綜合所得稅申報。這個工具遇到舊制會把房地合一稅顯示為 0，並提醒你另外估房屋部分的綜所稅。",
+  },
+];
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map(f => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
+
+const inputCls =
+  "border-border bg-background w-full rounded-md border px-3 py-2.5 text-base tabular-nums";
+const labelCls = "text-foreground block text-sm font-medium";
+// hint：列印時整個藏掉（屋主拿到的紙只要數字，不要說明文），壓成一頁 A4
+const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
+---
+
+<Layout
+  title={`賣方售出實拿試算｜扣掉房地合一稅、土增稅、仲介費，屋主實際拿多少 | ${config.site.title}`}
+  description="輸入開價或預估成交價、當初買價、取得日期，一秒算出賣房後扣掉房地合一稅、土地增值稅、仲介服務費、履約保證費與貸款餘額之後，屋主實際拿到多少。手機可用、可列印給屋主。"
+  canonicalURL={canonicalURL}
+  ogImage="/og/page-tools.jpg"
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(appSchema)} />
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(breadcrumbSchema)} />
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(faqSchema)} />
+  </Fragment>
+  <Header />
+
+  <Main
+    pageTitle="賣方售出實拿試算"
+    pageDesc="開價這樣，扣掉房地合一稅、土增稅、仲介費、履保費、還掉貸款，屋主到底拿多少？填幾個數字，當場算給你看。"
+  >
+    {/* 列印時才出現的抬頭 */}
+    <div class="print-only mb-4">
+      <p class="text-sm">試算日期：<span id="print-date"></span></p>
+      <p id="print-name" class="mt-1 text-lg font-bold"></p>
+    </div>
+
+    <form id="calc" class="grid grid-cols-1 gap-6 lg:grid-cols-5" autocomplete="off" novalidate>
+      {/* ===== 左：輸入 ===== */}
+      <div class="space-y-6 lg:col-span-3">
+        {/* 1. 價格 */}
+        <section class="card-surface p-4 sm:p-5">
+          <h2 class="text-lg font-bold">① 價格</h2>
+          <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div class="sm:col-span-2">
+              <label class={labelCls} for="name">物件名稱（選填，印出來用）</label>
+              <input id="name" type="text" class={inputCls} placeholder="例：北屯 XX 社區 12 樓" />
+            </div>
+            <div>
+              <label class={labelCls} for="ask">開價（萬）</label>
+              <input id="ask" type="text" inputmode="decimal" class={inputCls} placeholder="例：1280" />
+            </div>
+            <div>
+              <label class={labelCls} for="discount">議價空間（%）</label>
+              <input id="discount" type="text" inputmode="decimal" class={inputCls} placeholder="0" />
+              <div class="no-print mt-2 flex flex-wrap gap-2" role="group" aria-label="常用議價空間">
+                <button type="button" data-disc="0" class="border-border rounded-md border px-3 py-1.5 text-sm">0%</button>
+                <button type="button" data-disc="3" class="border-border rounded-md border px-3 py-1.5 text-sm">3%</button>
+                <button type="button" data-disc="5" class="border-border rounded-md border px-3 py-1.5 text-sm">5%</button>
+                <button type="button" data-disc="8" class="border-border rounded-md border px-3 py-1.5 text-sm">8%</button>
+              </div>
+            </div>
+            <div class="sm:col-span-2">
+              <label class={labelCls} for="sale">預估成交價（萬）</label>
+              <input id="sale" type="text" inputmode="decimal" class={`${inputCls} text-lg font-semibold`} placeholder="會依開價 × 議價空間自動帶入，也可以直接改" />
+              <p class={hintCls}>直接改這格，上面的議價空間會跟著反算。</p>
+            </div>
+          </div>
+        </section>
+
+        {/* 2. 取得資料 */}
+        <section class="card-surface p-4 sm:p-5">
+          <h2 class="text-lg font-bold">② 當初怎麼買的（算房地合一稅用）</h2>
+          <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label class={labelCls} for="acqDate">取得日期（所有權登記日）</label>
+              <input id="acqDate" type="date" class={inputCls} />
+              <p class={hintCls}>看謄本「登記日期」或權狀。2015/12/31 以前取得＝舊制，不算房地合一。</p>
+            </div>
+            <div>
+              <label class={labelCls} for="saleDate">預計出售日期</label>
+              <input id="saleDate" type="date" class={inputCls} />
+              <p class={hintCls}>預設今天。持有期間差一天就可能差一個稅率級距。</p>
+            </div>
+            <div>
+              <label class={labelCls} for="cost">取得成本：當初買價（萬）</label>
+              <input id="cost" type="text" inputmode="decimal" class={inputCls} placeholder="例：980" />
+              <p class={hintCls}>含車位。看當時的買賣契約或實價登錄。</p>
+            </div>
+            <div>
+              <label class={labelCls} for="expense">可認列費用（萬）</label>
+              <input id="expense" type="text" inputmode="decimal" class={inputCls} placeholder="0" />
+              <p class={hintCls}>
+                買進時的契稅、印花稅、代書費、仲介費，加上有單據的裝潢、修繕。
+                沒單據可用國稅局推計：成交價 3%、上限 30 萬
+                <button type="button" id="expense3" class="no-print text-accent ms-1 underline">→ 帶入 3% 推計</button>
+              </p>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="flex items-start gap-2 text-sm">
+                <input id="selfUse" type="checkbox" class="mt-1" />
+                <span>
+                  <strong>符合自住優惠</strong>：本人、配偶或未成年子女設籍並實際居住<strong>連續滿 6 年</strong>，期間沒有出租、營業，而且 6 年內沒用過這個優惠
+                  <span class={`${hintCls} block`}>符合的話：課稅所得 400 萬以內免稅、超過的部分 10%。</span>
+                </span>
+              </label>
+            </div>
+            <div>
+              <label class={labelCls} for="lvt">土地增值稅（萬）</label>
+              <input id="lvt" type="text" inputmode="decimal" class={inputCls} placeholder="不知道就留白" />
+              <p class={hintCls}>
+                留白＝先不計，結果會標示。要查：帶謄本上的地號到
+                <a class="text-accent underline" href="https://www.tax.taichung.gov.tw/" target="_blank" rel="noopener">台中市政府地方稅務局</a>
+                線上試算或臨櫃問。
+              </p>
+            </div>
+            <div>
+              <label class="flex items-start gap-2 pt-6 text-sm">
+                <input id="lvtSelf" type="checkbox" class="mt-1" />
+                <span>
+                  這個土增稅是用<strong>自用住宅稅率 10%</strong> 算的
+                  <span class={`${hintCls} block`}>勾了會把土地漲價總數額（土增稅 ÷ 10%）從房地合一課稅所得裡扣掉，稅會少一點。不確定就別勾，算出來的稅偏保守。</span>
+                </span>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        {/* 3. 交易費用 */}
+        <section class="card-surface p-4 sm:p-5">
+          <h2 class="text-lg font-bold">③ 交易費用與貸款</h2>
+          <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label class={labelCls} for="fee">仲介服務費（%）</label>
+              <input id="fee" type="text" inputmode="decimal" class={inputCls} value="4" />
+              <p class={hintCls}>法規上限：買賣雙方合計不超過成交價 6%。賣方常見 4%，可以改。</p>
+            </div>
+            <div>
+              <p class={labelCls}>履約保證費（固定計入）</p>
+              <p class="mt-2 py-2.5 text-base">成交價 × 0.03%，自動計算</p>
+              <p class={hintCls}>買賣一定走履約保證。服務費常見萬分之 6、買賣各付一半。</p>
+            </div>
+            <div>
+              <label class={labelCls} for="other">其他費用（萬）</label>
+              <input id="other" type="text" inputmode="decimal" class={inputCls} placeholder="0" />
+              <p class={hintCls}>抵押權塗銷代辦、交屋前的地價稅／房屋稅分攤、搬家等。沒有就 0。</p>
+            </div>
+            <div>
+              <label class={labelCls} for="loan">尚未清償的貸款餘額（萬）</label>
+              <input id="loan" type="text" inputmode="decimal" class={inputCls} placeholder="0" />
+              <p class={hintCls}>成交款會先還掉這筆，剩下才是實拿。沒貸款就 0。</p>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {/* ===== 右：結果 ===== */}
+      <div class="lg:col-span-2">
+        <div class="lg:sticky lg:top-4">
+          <section id="result" class="card-surface p-4 sm:p-5" aria-live="polite">
+            <p class="text-muted-foreground text-sm">屋主實際拿到（扣稅、扣費用、還完貸款）</p>
+            <p id="res-cash" class="text-accent mt-1 text-4xl font-extrabold tabular-nums">—</p>
+            <p id="res-flag" class="text-muted-foreground mt-2 text-xs leading-relaxed"></p>
+
+            <table class="mt-5 w-full text-sm">
+              <tbody>
+                <tr class="border-border border-b">
+                  <td class="py-2">預估成交價</td>
+                  <td id="res-sale" class="py-2 text-right font-semibold tabular-nums">—</td>
+                </tr>
+                <tr class="border-border/50 border-b">
+                  <td class="py-2 ps-3">− 仲介服務費 <span id="res-fee-pct" class="text-muted-foreground"></span></td>
+                  <td id="res-fee" class="py-2 text-right tabular-nums">—</td>
+                </tr>
+                <tr class="border-border/50 border-b">
+                  <td class="py-2 ps-3">− 履約保證費</td>
+                  <td id="res-escrow" class="py-2 text-right tabular-nums">—</td>
+                </tr>
+                <tr class="border-border/50 border-b">
+                  <td class="py-2 ps-3">− 其他費用</td>
+                  <td id="res-other" class="py-2 text-right tabular-nums">—</td>
+                </tr>
+                <tr class="border-border/50 border-b">
+                  <td class="py-2 ps-3">− 土地增值稅</td>
+                  <td id="res-lvt" class="py-2 text-right tabular-nums">—</td>
+                </tr>
+                <tr class="border-border/50 border-b">
+                  <td class="py-2 ps-3">− 房地合一稅 <span id="res-hl-rate" class="text-muted-foreground"></span></td>
+                  <td id="res-hl" class="py-2 text-right tabular-nums">—</td>
+                </tr>
+                <tr class="border-border border-b-2">
+                  <td class="py-2 font-semibold">＝ 稅後淨額（還沒扣貸款）</td>
+                  <td id="res-net" class="py-2 text-right font-semibold tabular-nums">—</td>
+                </tr>
+                <tr class="border-border/50 border-b">
+                  <td class="py-2 ps-3">− 清償貸款餘額</td>
+                  <td id="res-loan" class="py-2 text-right tabular-nums">—</td>
+                </tr>
+                <tr>
+                  <td class="py-2 text-base font-bold">＝ 實拿現金</td>
+                  <td id="res-cash2" class="text-accent py-2 text-right text-base font-bold tabular-nums">—</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <details id="hl-details" class="border-border mt-4 rounded-md border p-3 text-sm">
+              <summary class="cursor-pointer font-medium">房地合一稅是怎麼算出來的</summary>
+              <div id="hl-detail" class="text-muted-foreground mt-2 space-y-1 leading-relaxed"></div>
+            </details>
+
+            <div class="no-print mt-4 flex flex-wrap gap-2">
+              <button type="button" id="print" class="btn-outline flex-1">🖨️ 列印 / 存 PDF</button>
+              <button type="button" id="reset" class="border-border rounded-btn min-h-11 border px-4 text-sm">清空</button>
+            </div>
+          </section>
+
+          {/* 反推：想拿多少 → 要賣多少 */}
+          <section class="card-surface mt-4 p-4 sm:p-5">
+            <h2 class="text-base font-bold">反過來算：屋主想實拿多少？</h2>
+            <div class="mt-3 flex items-end gap-3">
+              <div class="flex-1">
+                <label class={labelCls} for="target">想實拿（萬）</label>
+                <input id="target" type="text" inputmode="decimal" class={inputCls} placeholder="例：1000" />
+              </div>
+              <div class="flex-1 text-right">
+                <p class="text-muted-foreground text-xs">至少要成交</p>
+                <p id="target-out" class="text-xl font-bold tabular-nums">—</p>
+              </div>
+            </div>
+            <p class={hintCls}>用上面同一組成本、費用、貸款條件反算，成交價一動稅率級距不變。</p>
+          </section>
+        </div>
+      </div>
+    </form>
+
+    {/* 手機底部固定條：捲到下面填資料時還看得到結果 */}
+    <div id="sticky" class="no-print bg-card border-border fixed inset-x-0 bottom-0 z-40 border-t px-4 py-2.5 shadow-lg lg:hidden" hidden>
+      <div class="mx-auto flex max-w-3xl items-center justify-between gap-3">
+        <span class="text-muted-foreground text-sm">屋主實拿約</span>
+        <span id="sticky-cash" class="text-accent text-2xl font-extrabold tabular-nums">—</span>
+        <a href="#result" class="text-accent text-sm underline">看明細</a>
+      </div>
+    </div>
+
+    <hr class="no-print my-8 border-dashed" />
+
+    <section class="no-print">
+      <h2 class="text-xl font-semibold">怎麼算的、哪些地方要注意</h2>
+      <ul class="mt-3 space-y-2 ps-5 text-sm leading-relaxed" style="list-style:disc;">
+        <li>
+          <strong>房地合一稅（2.0）</strong>：課稅所得 ＝ 成交價 − 取得成本 − 可認列費用 − 土地漲價總數額。
+          稅率看持有期間：<strong>2 年以內 45%、超過 2～5 年 35%、超過 5～10 年 20%、超過 10 年 15%</strong>。
+          自住優惠（設籍居住連續滿 6 年、無出租營業、6 年一次）：400 萬以內免稅、超過的部分 10%。
+          費用沒單據，國稅局按成交價 3% 推計、上限 30 萬。
+        </li>
+        <li>
+          <strong>2015/12/31 以前取得＝舊制</strong>：土地只課土增稅，房屋部分的財產交易所得併入隔年綜所稅，這頁不算那一段。
+        </li>
+        <li>
+          <strong>土地增值稅</strong>：自用住宅用地 10%（一生一次／一生一屋有條件）、一般 20／30／40% 累進，要看地號的前次移轉現值與公告現值，屋主通常不知道，所以留白就先不計。
+        </li>
+        <li>
+          <strong>繼承、受贈取得</strong>的取得成本不是當初的買價，而是繼承或受贈時的房屋評定現值＋公告土地現值（按物價指數調整），這頁的「當初買價」欄位不適用，請另外問。
+        </li>
+        <li>
+          預售屋換約、合建分屋、非自願因素交易（調職、非自願離職、重大疾病等有 20% 的特別規定）都不在這頁範圍。
+        </li>
+        <li>
+          結果是<strong>試算</strong>，實際稅額以國稅局、地方稅務局核定為準。要正式申報建議找地政士或會計師。
+        </li>
+      </ul>
+
+      <p class="text-muted-foreground mt-4 text-xs leading-relaxed">
+        📌 資料來源：財政部 所得稅法第 14 條之 4、第 14 條之 5（房地合一 2.0，2021-07-01 施行）／財政部 110-06-11 台財稅字第 11004575360 號令（費用推計 3%、上限 30 萬）／土地稅法第 33、34 條／內政部 不動產經紀業報酬計收標準。
+        線上試算：<a class="underline" href="https://www.etax.nat.gov.tw/" target="_blank" rel="noopener">財政部電子申報繳稅服務網（房地合一稅額試算）</a>、
+        <a class="underline" href="https://www.tax.taichung.gov.tw/" target="_blank" rel="noopener">台中市政府地方稅務局（土地增值稅試算）</a>。
+      </p>
+
+      <h2 class="mt-8 text-xl font-semibold">常見問題</h2>
+      <div class="mt-3 space-y-3">
+        {faqs.map(f => (
+          <details class="border-border rounded-md border p-3">
+            <summary class="cursor-pointer font-medium">{f.q}</summary>
+            <p class="text-muted-foreground mt-2 text-sm leading-relaxed">{f.a}</p>
+          </details>
+        ))}
+      </div>
+
+      <p class="mt-6 text-sm">
+        算完想知道這個開價在市場上站不站得住？我可以幫你做一次免費的行情評估，
+        <a class="text-accent underline" href="/go/line?src=tools-seller-net">LINE sky811117</a> 或到
+        <a class="text-accent underline" href="/sell/">賣房服務</a> 看流程。
+      </p>
+    </section>
+
+    <hr class="my-8 border-dashed" />
+
+    <p class="text-muted-foreground text-sm">
+      <strong>陳景泰 — 一品不動產（有巢氏房屋台中世界之心加盟店）</strong><br />
+      經紀人黃永隆 113 彰縣字第 324 號 / 營業員陳景泰 114 登字第 488296 號<br />
+      0920-118-756 / LINE <a class="text-accent underline" href="/go/line?src=tools-seller-net">sky811117</a>
+    </p>
+    <p class="print-only text-muted-foreground mt-2 text-xs">
+      本表為試算，實際稅額以國稅局、地方稅務局核定為準。teddy-website-blog.pages.dev/tools/seller-net-proceeds/
+    </p>
+
+    {/* 底部固定條會遮到頁尾，手機上留一點空間 */}
+    <div class="no-print h-16 lg:hidden"></div>
+  </Main>
+
+  <Footer />
+
+  <style is:global>
+    .print-only { display: none; }
+    @page { size: A4; margin: 10mm; }
+    /* 列印：導覽、說明小字全藏，輸入在左、結果在右，整體縮到 88% 塞進一頁 A4 給屋主帶回去 */
+    @media print {
+      header, footer, nav, .no-print, .hint, #main-content > h1 + p { display: none !important; }
+      .print-only { display: block !important; }
+      main { max-width: 100% !important; padding: 0 !important; zoom: 0.88; }
+      body { font-size: 10.5pt; }
+      h1 { font-size: 16pt !important; }
+      h2 { font-size: 12pt !important; }
+      #calc { display: grid !important; grid-template-columns: 3fr 2fr; gap: 10px; align-items: start; }
+      #calc > div { min-width: 0; }
+      .space-y-6 > * + * { margin-top: 10px !important; }
+      .card-surface { box-shadow: none !important; break-inside: avoid; padding: 10px !important; }
+      .lg\:sticky { position: static !important; }
+      #calc input[type="text"], #calc input[type="date"] {
+        border: 0 !important;
+        border-bottom: 1px solid #999 !important;
+        border-radius: 0 !important;
+        padding: 1px 0 !important;
+        background: transparent !important;
+      }
+      #calc input::placeholder { color: transparent !important; }
+      #calc input[type="date"]::-webkit-calendar-picker-indicator { display: none !important; }
+      #hl-details { border: 0 !important; padding: 0 !important; }
+      #hl-details summary { list-style: none; }
+      details > summary::-webkit-details-marker { display: none; }
+    }
+  </style>
+
+  <script is:inline>
+    (function () {
+      var $ = function (id) { return document.getElementById(id); };
+      var ids = ["name", "ask", "discount", "sale", "acqDate", "saleDate", "cost", "expense", "selfUse",
+                 "lvt", "lvtSelf", "fee", "other", "loan", "target"];
+      var el = {};
+      for (var i = 0; i < ids.length; i++) el[ids[i]] = $(ids[i]);
+
+      // 全部以「萬」為單位計算
+      function num(x) {
+        var s = String(x == null ? "" : x).replace(/[,\s萬元]/g, "");
+        var v = parseFloat(s);
+        return isFinite(v) ? v : 0;
+      }
+      function has(x) { return String(x == null ? "" : x).trim() !== ""; }
+      function wan(n) {
+        var r = Math.round(n * 10) / 10;
+        return r.toLocaleString("zh-TW", { minimumFractionDigits: 0, maximumFractionDigits: 1 }) + " 萬";
+      }
+      function pct(n) { return (Math.round(n * 100) / 100) + "%"; }
+      function toDate(s) {
+        if (!s) return null;
+        var p = s.split("-");
+        if (p.length !== 3) return null;
+        var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+        return isNaN(d.getTime()) ? null : d;
+      }
+      function addYears(d, n) {
+        var r = new Date(d.getTime());
+        r.setFullYear(r.getFullYear() + n);
+        return r;
+      }
+      function todayStr() {
+        var d = new Date();
+        var m = d.getMonth() + 1, day = d.getDate();
+        return d.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (day < 10 ? "0" : "") + day;
+      }
+      function holdingText(a, b) {
+        var y = b.getFullYear() - a.getFullYear();
+        var m = b.getMonth() - a.getMonth();
+        if (b.getDate() < a.getDate()) m--;
+        if (m < 0) { y--; m += 12; }
+        if (y < 0) return "出售日早於取得日";
+        return y + " 年 " + m + " 個月";
+      }
+
+      // 房地合一 2.0：回傳 { tax, rate, note[], regime }
+      function houseLandTax(sale, cost, expense, landGain, selfUse, acq, sold) {
+        var out = { tax: 0, rate: null, notes: [], regime: "new", taxable: 0 };
+        if (!acq || !sold) {
+          out.regime = "unknown";
+          out.notes.push("還沒填取得日期，房地合一稅先以 0 計。");
+          return out;
+        }
+        if (sold < acq) {
+          out.regime = "invalid";
+          out.notes.push("出售日期早於取得日期，請檢查。");
+          return out;
+        }
+        if (acq < new Date(2016, 0, 1)) {
+          out.regime = "old";
+          out.notes.push("2015/12/31 以前取得＝舊制，不適用房地合一；房屋部分的財產交易所得要併入隔年綜所稅，這裡沒算。");
+          return out;
+        }
+        // 持有期間：「超過 N 年」= 出售日在取得日加 N 年之後（同日仍算 N 年以內）
+        var over = function (n) { return sold.getTime() > addYears(acq, n).getTime(); };
+        var rate = !over(2) ? 45 : !over(5) ? 35 : !over(10) ? 20 : 15;
+        var taxable = sale - cost - expense - landGain;
+        if (taxable < 0) taxable = 0;
+        out.taxable = taxable;
+        out.notes.push("持有 " + holdingText(acq, sold) + "。");
+        out.notes.push("課稅所得 ＝ " + wan(sale) + " − 成本 " + wan(cost) + " − 費用 " + wan(expense) +
+          (landGain > 0 ? " − 土地漲價總數額 " + wan(landGain) : "") + " ＝ " + wan(taxable) + "。");
+        if (selfUse) {
+          if (!over(6) && sold.getTime() < addYears(acq, 6).getTime()) {
+            out.notes.push("勾了自住優惠，但持有還不滿 6 年，不符合條件，改用一般稅率 " + rate + "%。");
+            out.rate = rate;
+            out.tax = taxable * rate / 100;
+          } else {
+            var ex = Math.max(0, taxable - 400);
+            out.rate = 10;
+            out.tax = ex * 0.10;
+            out.notes.push("自住優惠：400 萬以內免稅，超過的 " + wan(ex) + " × 10% ＝ " + wan(out.tax) + "。");
+          }
+        } else {
+          out.rate = rate;
+          out.tax = taxable * rate / 100;
+          out.notes.push("一般稅率 " + rate + "%：" + wan(taxable) + " × " + rate + "% ＝ " + wan(out.tax) + "。");
+        }
+        return out;
+      }
+
+      function readInputs() {
+        var lvt = has(el.lvt.value) ? num(el.lvt.value) : null;
+        return {
+          sale: num(el.sale.value),
+          cost: num(el.cost.value),
+          expense: num(el.expense.value),
+          selfUse: el.selfUse.checked,
+          lvt: lvt,
+          landGain: (lvt !== null && lvt > 0 && el.lvtSelf.checked) ? lvt / 0.10 : 0,
+          feePct: has(el.fee.value) ? num(el.fee.value) : 0,
+          escrow: true, // 履約保證一律計入（2026-09-20 景泰：不給選）
+          other: num(el.other.value),
+          loan: num(el.loan.value),
+          acq: toDate(el.acqDate.value),
+          sold: toDate(el.saleDate.value),
+        };
+      }
+
+      // 給定成交價算實拿（反推也用這支）
+      function compute(inp, sale) {
+        var fee = sale * inp.feePct / 100;
+        var escrow = inp.escrow ? sale * 0.0003 : 0;
+        var hl = houseLandTax(sale, inp.cost, inp.expense, inp.landGain, inp.selfUse, inp.acq, inp.sold);
+        var lvt = inp.lvt === null ? 0 : inp.lvt;
+        var net = sale - fee - escrow - inp.other - lvt - hl.tax;
+        var cash = net - inp.loan;
+        return { sale: sale, fee: fee, escrow: escrow, other: inp.other, lvt: lvt, hl: hl, net: net, cash: cash };
+      }
+
+      // 手機底部實拿條顯示時，把全站右下角的 LINE 浮動鈕往上推，不然會壓到數字
+      // （FloatingCTA 的 bottom 本來就吃 --consent-h，這裡只在它原本的算式上再加條高）
+      function showSticky(show) {
+        $("sticky").hidden = !show;
+        var cta = document.querySelector("[data-floating-cta]");
+        if (!cta) return;
+        if (cta.dataset.origBottom == null) cta.dataset.origBottom = cta.style.bottom || "";
+        cta.style.bottom = show ? "calc(1rem + var(--consent-h, 0px) + 3.5rem)" : cta.dataset.origBottom;
+      }
+
+      function render() {
+        var inp = readInputs();
+        var hasSale = inp.sale > 0;
+        var r = compute(inp, inp.sale);
+
+        var set = function (id, v) { $(id).textContent = v; };
+        if (!hasSale) {
+          ["res-cash", "res-cash2", "res-sale", "res-fee", "res-escrow", "res-other", "res-lvt", "res-hl", "res-net", "res-loan", "sticky-cash"]
+            .forEach(function (id) { set(id, "—"); });
+          set("res-fee-pct", ""); set("res-hl-rate", "");
+          $("res-flag").textContent = "先填開價或預估成交價。";
+          $("hl-detail").innerHTML = "";
+          showSticky(false);
+          return;
+        }
+        set("res-cash", wan(r.cash)); set("res-cash2", wan(r.cash)); set("sticky-cash", wan(r.cash));
+        set("res-sale", wan(r.sale));
+        set("res-fee", wan(r.fee)); set("res-fee-pct", "(" + pct(inp.feePct) + ")");
+        set("res-escrow", wan(r.escrow));
+        set("res-other", wan(r.other));
+        set("res-lvt", inp.lvt === null ? "未計" : wan(r.lvt));
+        set("res-hl", r.hl.regime === "new" ? wan(r.hl.tax) : (r.hl.regime === "old" ? "舊制 0" : "未計"));
+        set("res-hl-rate", r.hl.rate !== null ? "(" + r.hl.rate + "%)" : "");
+        set("res-net", wan(r.net));
+        set("res-loan", wan(inp.loan));
+        showSticky(true);
+
+        var flags = [];
+        if (inp.lvt === null) flags.push("⚠️ 尚未含土地增值稅");
+        if (r.hl.regime === "old") flags.push("⚠️ 舊制：房屋部分綜所稅另計");
+        if (r.hl.regime === "unknown") flags.push("⚠️ 尚未含房地合一稅（沒填取得日期）");
+        if (!has(el.cost.value) && r.hl.regime === "new") flags.push("⚠️ 取得成本填 0，房地合一稅會偏高");
+        if (r.cash < 0) flags.push("⚠️ 賣了還不夠還貸款和費用，要自己補差額");
+        $("res-flag").textContent = flags.join("　");
+
+        var html = "";
+        for (var i = 0; i < r.hl.notes.length; i++) html += "<p>" + esc(r.hl.notes[i]) + "</p>";
+        $("hl-detail").innerHTML = html;
+
+        renderTarget(inp);
+      }
+
+      function esc(s) {
+        return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      }
+
+      // 反推：二分法找「實拿 ≥ 目標」的最低成交價（實拿對成交價單調遞增）
+      function renderTarget(inp) {
+        var t = num(el.target.value);
+        if (!(t > 0)) { $("target-out").textContent = "—"; return; }
+        var lo = 0, hi = Math.max(t * 4, 100);
+        // 稅率最高 45%、仲介費最高 6%，實拿至少是成交價的一半左右，hi 夠用；保險再放大
+        for (var g = 0; g < 8 && compute(inp, hi).cash < t; g++) hi *= 2;
+        if (compute(inp, hi).cash < t) { $("target-out").textContent = "算不出來"; return; }
+        for (var i = 0; i < 60; i++) {
+          var mid = (lo + hi) / 2;
+          if (compute(inp, mid).cash >= t) hi = mid; else lo = mid;
+        }
+        $("target-out").textContent = wan(Math.ceil(hi));
+      }
+
+      // 開價 × 議價空間 ↔ 成交價 雙向聯動
+      var syncing = false;
+      function fromAsk() {
+        if (syncing) return; syncing = true;
+        var ask = num(el.ask.value), d = num(el.discount.value);
+        if (ask > 0) el.sale.value = String(Math.round(ask * (1 - d / 100)));
+        syncing = false;
+      }
+      function fromSale() {
+        if (syncing) return; syncing = true;
+        var ask = num(el.ask.value), sale = num(el.sale.value);
+        if (ask > 0 && sale > 0) el.discount.value = String(Math.round((1 - sale / ask) * 1000) / 10);
+        syncing = false;
+      }
+
+      function boot() {
+        if (!el.sale) return;
+        if (!el.saleDate.value) el.saleDate.value = todayStr();
+
+        el.ask.addEventListener("input", function () { fromAsk(); render(); });
+        el.discount.addEventListener("input", function () { fromAsk(); render(); });
+        el.sale.addEventListener("input", function () { fromSale(); render(); });
+        Array.prototype.forEach.call(document.querySelectorAll("[data-disc]"), function (b) {
+          b.addEventListener("click", function () {
+            el.discount.value = b.getAttribute("data-disc");
+            fromAsk(); render();
+          });
+        });
+        $("expense3").addEventListener("click", function () {
+          var s = num(el.sale.value);
+          if (!(s > 0)) { el.sale.focus(); return; }
+          el.expense.value = String(Math.min(30, Math.round(s * 0.03 * 10) / 10));
+          render();
+        });
+        ["acqDate", "saleDate", "cost", "expense", "selfUse", "lvt", "lvtSelf", "fee", "other", "loan", "target"]
+          .forEach(function (id) {
+            el[id].addEventListener("input", render);
+            el[id].addEventListener("change", render);
+          });
+        el.name.addEventListener("input", function () { $("print-name").textContent = el.name.value; });
+
+        $("print").addEventListener("click", function () { window.print(); });
+        $("reset").addEventListener("click", function () {
+          for (var i = 0; i < ids.length; i++) {
+            var e = el[ids[i]];
+            if (e.type === "checkbox") e.checked = false;
+            else e.value = "";
+          }
+          el.fee.value = "4";
+          el.saleDate.value = todayStr();
+          $("print-name").textContent = "";
+          render();
+        });
+        window.addEventListener("beforeprint", function () {
+          $("print-date").textContent = todayStr().replace(/-/g, "/");
+          $("hl-details").open = true;
+        });
+        $("print-date").textContent = todayStr().replace(/-/g, "/");
+        render();
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", boot);
+      } else {
+        boot();
+      }
+    })();
+  </script>
+</Layout>
