@@ -13,10 +13,14 @@
  *  - 可列印：隱藏導覽與說明，只留輸入摘要 + 明細 + 證號。
  *
  * 計算依據（全部在頁面下方「怎麼算的」段落再講一次）：
- *  - 房地合一 2.0：所得稅法第 14 條之 4（2021-07-01 施行；2016-01-01 以後取得才適用）
+ *  - 房地合一 2.0：所得稅法第 4 條之 4（適用範圍）、第 4 條之 5（自住免稅）、第 14 條之 4（稅率）
+ *    2021-07-01 施行；2016-01-01 以後取得才適用。
  *    持有 ≤2 年 45%、>2～5 年 35%、>5～10 年 20%、>10 年 15%；
  *    自住（設籍居住連續滿 6 年、無出租營業）課稅所得 400 萬免稅、超過部分 10%。
- *    費用未提示：成交價 3%、上限 30 萬（財政部 110 年 6 月 11 日令）。
+ *    課稅所得可減除「取得、改良及移轉」的費用 → 這次出售付的仲介費是移轉費用，程式自動扣
+ *    （2026-09-20 審查抓到漏扣，會把稅算高約成交價 4% × 稅率）。移轉費用未提示：成交價 3%、
+ *    上限 30 萬（房地合一課徵所得稅申報作業要點第 15 點），有仲介費發票核實申報通常比推計划算。
+ *  - 取得日、交易日都以「完成所有權移轉登記日」為準（作業要點第 3 點），不是簽約日。
  *  - 土地增值稅：土地稅法第 33、34 條（自用住宅 10%；一般 20／30／40% 累進）。
  *  - 仲介服務費：不動產經紀業報酬計收標準（買賣雙方合計不得超過成交價 6%）。
  *  - 履約保證：市場常見服務費萬分之 6、買賣各半（各家履保公司費率略有不同）。
@@ -63,7 +67,7 @@ const faqs = [
   },
   {
     q: "房地合一稅怎麼算？",
-    a: "課稅所得 = 成交價 − 取得成本 − 可列舉的費用 − 土地漲價總數額。稅率看持有期間：2 年以內 45%、超過 2 年到 5 年 35%、超過 5 年到 10 年 20%、超過 10 年 15%。本人、配偶或未成年子女設籍並實際居住連續滿 6 年、期間沒有出租或營業，可以用自住優惠：課稅所得 400 萬以內免稅、超過的部分 10%，6 年內只能用一次。",
+    a: "課稅所得 = 成交價 − 取得成本 − 可列舉的費用（含這次出售付的仲介費）− 土地漲價總數額。稅率看持有期間：2 年以內 45%、超過 2 年到 5 年 35%、超過 5 年到 10 年 20%、超過 10 年 15%。持有期間從取得的所有權登記日算到出售的所有權移轉登記日，不是簽約日。本人、配偶或未成年子女設籍並實際居住連續滿 6 年、期間沒有出租或營業，可以用自住優惠：課稅所得 400 萬以內免稅、超過的部分 10%，6 年內只能用一次。",
   },
   {
     q: "我不知道土增稅是多少，怎麼辦？",
@@ -166,9 +170,9 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
               <p class={hintCls}>看謄本「登記日期」或權狀。2015/12/31 以前取得＝舊制，不算房地合一。</p>
             </div>
             <div>
-              <label class={labelCls} for="saleDate">預計出售日期</label>
+              <label class={labelCls} for="saleDate">預計出售日期（所有權移轉登記日）</label>
               <input id="saleDate" type="date" class={inputCls} />
-              <p class={hintCls}>預設今天。持有期間差一天就可能差一個稅率級距。</p>
+              <p class={hintCls}>以「完成所有權移轉登記日」為準，不是簽約日（成屋簽約後大約 1～2 個月才登記）。預設今天，持有期間差一天就可能差一個稅率級距。</p>
             </div>
             <div>
               <label class={labelCls} for="cost">取得成本：當初買價（萬）</label>
@@ -179,9 +183,9 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
               <label class={labelCls} for="expense">可認列費用（萬）</label>
               <input id="expense" type="text" inputmode="decimal" class={inputCls} placeholder="0" />
               <p class={hintCls}>
-                買進時的契稅、印花稅、代書費、仲介費，加上有單據的裝潢、修繕。
-                沒單據可用國稅局推計：成交價 3%、上限 30 萬
-                <button type="button" id="expense3" class="no-print text-accent ms-1 underline">→ 帶入 3% 推計</button>
+                買進時的契稅、印花稅、代書費、仲介費，加上有單據的裝潢、修繕，還有這次出售的廣告、搬運等雜費。
+                <strong>這次賣房的仲介服務費會自動算進去，不用重複填。</strong>
+                出售費用沒單據時國稅局按成交價 3% 推計、上限 30 萬，有仲介費發票核實申報通常比較划算。
               </p>
             </div>
             <div class="sm:col-span-2">
@@ -226,7 +230,7 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
             <div>
               <p class={labelCls}>履約保證費（固定計入）</p>
               <p class="mt-2 py-2.5 text-base">成交價 × 0.03%，自動計算</p>
-              <p class={hintCls}>買賣一定走履約保證。服務費常見萬分之 6、買賣各付一半。</p>
+              <p class={hintCls}>本店買賣一律走履約保證。服務費常見萬分之 6、買賣各付一半，各家履保公司費率略有不同。</p>
             </div>
             <div>
               <label class={labelCls} for="other">其他費用（萬）</label>
@@ -322,7 +326,8 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
     </form>
 
     {/* 手機底部固定條：捲到下面填資料時還看得到結果 */}
-    <div id="sticky" class="no-print bg-card border-border fixed inset-x-0 bottom-0 z-40 border-t px-4 py-2.5 shadow-lg lg:hidden" hidden>
+    {/* bottom 吃 --consent-h：cookie 橫幅在時往上讓位，不蓋住接受／拒絕鈕（跟 FloatingCTA 同一套） */}
+    <div id="sticky" class="no-print bg-card border-border fixed inset-x-0 z-40 border-t px-4 py-2.5 shadow-lg lg:hidden" style="bottom: var(--consent-h, 0px);" hidden>
       <div class="mx-auto flex max-w-3xl items-center justify-between gap-3">
         <span class="text-muted-foreground text-sm">屋主實拿約</span>
         <span id="sticky-cash" class="text-accent text-2xl font-extrabold tabular-nums">—</span>
@@ -337,9 +342,11 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
       <ul class="mt-3 space-y-2 ps-5 text-sm leading-relaxed" style="list-style:disc;">
         <li>
           <strong>房地合一稅（2.0）</strong>：課稅所得 ＝ 成交價 − 取得成本 − 可認列費用 − 土地漲價總數額。
-          稅率看持有期間：<strong>2 年以內 45%、超過 2～5 年 35%、超過 5～10 年 20%、超過 10 年 15%</strong>。
+          可認列的費用包含取得、改良和移轉三種，<strong>這次出售付的仲介費就是移轉費用，工具會自動扣掉</strong>。
+          稅率看持有期間：<strong>2 年以內 45%、超過 2～5 年 35%、超過 5～10 年 20%、超過 10 年 15%</strong>，
+          持有期間從取得登記日算到出售的移轉登記日。
           自住優惠（設籍居住連續滿 6 年、無出租營業、6 年一次）：400 萬以內免稅、超過的部分 10%。
-          費用沒單據，國稅局按成交價 3% 推計、上限 30 萬。
+          出售費用沒單據，國稅局按成交價 3% 推計、上限 30 萬。
         </li>
         <li>
           <strong>2015/12/31 以前取得＝舊制</strong>：土地只課土增稅，房屋部分的財產交易所得併入隔年綜所稅，這頁不算那一段。
@@ -359,7 +366,7 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
       </ul>
 
       <p class="text-muted-foreground mt-4 text-xs leading-relaxed">
-        📌 資料來源：財政部 所得稅法第 14 條之 4、第 14 條之 5（房地合一 2.0，2021-07-01 施行）／財政部 110-06-11 台財稅字第 11004575360 號令（費用推計 3%、上限 30 萬）／土地稅法第 33、34 條／內政部 不動產經紀業報酬計收標準。
+        📌 資料來源：所得稅法第 4 條之 4、第 4 條之 5、第 14 條之 4（房地合一 2.0，2021-07-01 施行）／財政部 房地合一課徵所得稅申報作業要點第 3 點（登記日為準）、第 15 點（費用推計 3%、上限 30 萬）／土地稅法第 33、34 條／內政部 不動產經紀業報酬計收標準。
         線上試算：<a class="underline" href="https://www.etax.nat.gov.tw/" target="_blank" rel="noopener">財政部電子申報繳稅服務網（房地合一稅額試算）</a>、
         <a class="underline" href="https://www.tax.taichung.gov.tw/" target="_blank" rel="noopener">台中市政府地方稅務局（土地增值稅試算）</a>。
       </p>
@@ -469,6 +476,8 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
       function addYears(d, n) {
         var r = new Date(d.getTime());
         r.setFullYear(r.getFullYear() + n);
+        // 2/29 取得、目標年沒有 2/29 時 JS 會進位成 3/1，退回該月最後一天（民法 121 條）
+        if (r.getMonth() !== d.getMonth()) r.setDate(0);
         return r;
       }
       function todayStr() {
@@ -486,7 +495,8 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
       }
 
       // 房地合一 2.0：回傳 { tax, rate, note[], regime }
-      function houseLandTax(sale, cost, expense, landGain, selfUse, acq, sold) {
+      // transferFee = 這次出售付的仲介費（移轉費用，所得稅法 14-4 可減除），跟屋主自填的 expense 分開列，明細才看得懂
+      function houseLandTax(sale, cost, expense, transferFee, landGain, selfUse, acq, sold) {
         var out = { tax: 0, rate: null, notes: [], regime: "new", taxable: 0 };
         if (!acq || !sold) {
           out.regime = "unknown";
@@ -506,11 +516,12 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
         // 持有期間：「超過 N 年」= 出售日在取得日加 N 年之後（同日仍算 N 年以內）
         var over = function (n) { return sold.getTime() > addYears(acq, n).getTime(); };
         var rate = !over(2) ? 45 : !over(5) ? 35 : !over(10) ? 20 : 15;
-        var taxable = sale - cost - expense - landGain;
+        var taxable = sale - cost - expense - transferFee - landGain;
         if (taxable < 0) taxable = 0;
         out.taxable = taxable;
         out.notes.push("持有 " + holdingText(acq, sold) + "。");
         out.notes.push("課稅所得 ＝ " + wan(sale) + " − 成本 " + wan(cost) + " − 費用 " + wan(expense) +
+          " − 本次仲介費 " + wan(transferFee) +
           (landGain > 0 ? " − 土地漲價總數額 " + wan(landGain) : "") + " ＝ " + wan(taxable) + "。");
         if (selfUse) {
           if (!over(6) && sold.getTime() < addYears(acq, 6).getTime()) {
@@ -553,7 +564,7 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
       function compute(inp, sale) {
         var fee = sale * inp.feePct / 100;
         var escrow = inp.escrow ? sale * 0.0003 : 0;
-        var hl = houseLandTax(sale, inp.cost, inp.expense, inp.landGain, inp.selfUse, inp.acq, inp.sold);
+        var hl = houseLandTax(sale, inp.cost, inp.expense, fee, inp.landGain, inp.selfUse, inp.acq, inp.sold);
         var lvt = inp.lvt === null ? 0 : inp.lvt;
         var net = sale - fee - escrow - inp.other - lvt - hl.tax;
         var cash = net - inp.loan;
@@ -572,6 +583,7 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
 
       function render() {
         var inp = readInputs();
+        renderTarget(inp); // 反推不需要成交價，放在提前 return 之前才不會卡住或殘留舊數字
         var hasSale = inp.sale > 0;
         var r = compute(inp, inp.sale);
 
@@ -601,6 +613,7 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
         if (inp.lvt === null) flags.push("⚠️ 尚未含土地增值稅");
         if (r.hl.regime === "old") flags.push("⚠️ 舊制：房屋部分綜所稅另計");
         if (r.hl.regime === "unknown") flags.push("⚠️ 尚未含房地合一稅（沒填取得日期）");
+        if (r.hl.regime === "invalid") flags.push("⚠️ 出售日早於取得日，房地合一稅未計，請檢查日期");
         if (!has(el.cost.value) && r.hl.regime === "new") flags.push("⚠️ 取得成本填 0，房地合一稅會偏高");
         if (r.cash < 0) flags.push("⚠️ 賣了還不夠還貸款和費用，要自己補差額");
         $("res-flag").textContent = flags.join("　");
@@ -608,8 +621,6 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
         var html = "";
         for (var i = 0; i < r.hl.notes.length; i++) html += "<p>" + esc(r.hl.notes[i]) + "</p>";
         $("hl-detail").innerHTML = html;
-
-        renderTarget(inp);
       }
 
       function esc(s) {
@@ -658,12 +669,6 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
             el.discount.value = b.getAttribute("data-disc");
             fromAsk(); render();
           });
-        });
-        $("expense3").addEventListener("click", function () {
-          var s = num(el.sale.value);
-          if (!(s > 0)) { el.sale.focus(); return; }
-          el.expense.value = String(Math.min(30, Math.round(s * 0.03 * 10) / 10));
-          render();
         });
         ["acqDate", "saleDate", "cost", "expense", "selfUse", "lvt", "lvtSelf", "fee", "other", "loan", "target"]
           .forEach(function (id) {
