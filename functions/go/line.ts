@@ -3,7 +3,7 @@
  *
  * 官網所有 LINE 按鈕的中繼站。
  *
- * 為什麼要有這支：站上每一個 LINE 按鈕原本都直接指向 line.me/ti/p/sky811117，
+ * 為什麼要有這支：站上每一個 LINE 按鈕原本都直接指向 line.me/ti/p/~sky811117，
  * 跟 IG bio、名片、591 廣告用的是同一個連結 —— 客戶加了 LINE 進來，完全無法
  * 分辨他是從哪裡來的。2026-08-27 有人用 LINE 來問「麗園道」，就是因為這樣查不出來源。
  *
@@ -20,7 +20,9 @@
  *   CONTACT_TG_TOKEN / CONTACT_TG_CHAT — 沒設就只轉址、不記錄（silent）。
  */
 
-const LINE_URL = "https://line.me/ti/p/sky811117";
+// ⚠️ LINE ID 加好友一定要帶「~」。2026-09-29 前寫成 ti/p/sky811117（沒有 ~），
+// LINE 會把它當成加密代碼、加不到好友；景泰手機實測只有 ~sky811117 能開。
+const LINE_URL = "https://line.me/ti/p/~sky811117";
 
 // 按鈕位置代碼 → 看得懂的名稱。命名規範：<page>-<placement>
 const SRC_LABEL: Record<string, string> = {

@@ -55,7 +55,7 @@ export const GET: APIRoute = ({ site }) => {
       },
       {
         name: "LINE 諮詢",
-        url: "https://line.me/ti/p/sky811117",
+        url: "https://line.me/ti/p/~sky811117",
         description: "30 秒內聯絡景泰",
       },
       {
