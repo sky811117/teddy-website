@@ -179,14 +179,16 @@ const breadcrumbSchema = {
   ],
 };
 
+// 跟全站同一個 @id、同一個類型（Layout.astro 的景泰 Person 節點），Google 會合併成同一個人；
+// 以前沒有 @id，11 個區域頁等於 11 個互不相連的「陳景泰」。
+// 類型必須也是 Person（同 @id 一邊 Person 一邊 RealEstateAgent 會互相矛盾），
+// 區域用 workLocation 表達（Person 沒有 areaServed）；證照只放在 Layout 那個節點。
 const areaServedSchema = {
   "@context": "https://schema.org",
-  "@type": "RealEstateAgent",
+  "@type": "Person",
+  "@id": `${new URL("/", Astro.site).href}#realestateagent`,
   name: "陳景泰",
-  alternateName: ["Teddy Chen", "泰迪", "景泰"],
-  url: canonicalURL,
-  telephone: "+886-920-118-756",
-  areaServed: {
+  workLocation: {
     "@type": "AdministrativeArea",
     name: area.shortName,
     containedInPlace: {
@@ -201,10 +203,6 @@ const areaServedSchema = {
     `${area.shortName}行情`,
     ...hotCommunitiesShown.map(c => c.name),
     ...(area.seoSections?.map(s => s.heading) ?? []),
-  ],
-  hasCredential: [
-    "經紀人 黃永隆 113彰縣字324",
-    "營業員 陳景泰 114登字488296",
   ],
 };
 

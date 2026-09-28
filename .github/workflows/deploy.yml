@@ -102,9 +102,29 @@ jobs:
           test -f dist/pagefind/pagefind.js || (echo "dist/pagefind/pagefind.js missing" && exit 1)
           test -f dist/index.html || (echo "dist/index.html missing" && exit 1)
 
+      # 2026-09-29 補：IndexNow（Bing / Yandex / Naver；ChatGPT 搜尋、Copilot 吃的是 Bing 索引）。
+      # 部署「前」先把線上現有的 sitemap 存成舊版（放 runner.temp，不進 dist、不會被上傳），
+      # 部署成功「後」拿 dist 的 sitemap 比對：新出現的網址 + lastmod 有變的網址才推。
+      # 線上 sitemap 抓不到 → 只推 lastmod 在最近 2 天內的，不整站推。
+      # 兩步都 continue-on-error，腳本本身也永遠 exit 0 —— IndexNow 掛掉絕不能擋部署。
+      # 腳本自帶時限（snapshot 60 秒、推送 150 秒）刻意比下面的 timeout-minutes 短；
+      # 要調低 timeout-minutes 先改腳本底部的 DEADLINE_MS，不然會變成被 GitHub 砍掉。
+      # 金鑰不寫在這裡：腳本從 dist 根目錄的 <key>.txt 驗證檔讀（public/ 裡那支）。
+      - name: Snapshot live sitemap (IndexNow 舊版)
+        continue-on-error: true
+        timeout-minutes: 2
+        run: node scripts/indexnow-submit.mjs --snapshot "$RUNNER_TEMP/indexnow-live-sitemap.json"
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=teddy-website-blog --branch=main --commit-dirty=true --commit-hash=${{ github.sha }} --commit-message="deploy ${{ github.sha }}"
+
+      # 只有上一步部署成功才會跑到這裡（沒寫 if = success()）。log 會印推了幾筆、HTTP 狀態碼，
+      # 網址清單寫在這次 run 的 Summary 頁。
+      - name: Submit changed URLs to IndexNow
+        continue-on-error: true
+        timeout-minutes: 3
+        run: node scripts/indexnow-submit.mjs --old "$RUNNER_TEMP/indexnow-live-sitemap.json"

@@ -145,7 +145,9 @@ const rssHref = getRelativeLocaleUrl(
         "@context": "https://schema.org",
         "@graph": [
           {
-            "@type": "RealEstateAgent",
+            // 景泰本人是「人」：Person 才能用 jobTitle／worksFor／knowsAbout／hasCredential。
+            // @id 沿用 #realestateagent（about／posts／各頁都用這個 id 連回來，不要改）。
+            "@type": "Person",
             "@id": `${site.url}#realestateagent`,
             name: "陳景泰",
             alternateName: ["Teddy Chen", "Teddy", "泰迪", "景泰", "房仲大看板 泰迪"],
@@ -161,18 +163,17 @@ const rssHref = getRelativeLocaleUrl(
               alternateName: ["BigKanBan", "大看板"],
               url: "https://instagram.com/bigkanban",
             },
-            address: {
-              "@type": "PostalAddress",
-              addressLocality: "台中市",
-              addressRegion: "Taichung",
-              addressCountry: "TW",
-            },
+            workLocation: { "@type": "City", name: "台中市", alternateName: "Taichung" },
             sameAs: [
               "https://line.me/ti/p/sky811117",
               "https://instagram.com/nov__817",
+              "https://www.instagram.com/nov_817taidi/",
+              "https://www.threads.com/@nov__817",
               "https://www.facebook.com/profile.php?id=61575492127872",
               "https://www.youtube.com/@%E6%B3%B0%E8%BF%AA001",
               "https://www.tiktok.com/@sky811117",
+              "https://realtor.houseprice.tw/agent/buy/0920118756/",
+              "https://github.com/sky811117",
             ],
             knowsAbout: [
               "台中房地產",
@@ -191,26 +192,19 @@ const rssHref = getRelativeLocaleUrl(
               "房仲業務",
               "AI 自動化",
             ],
-            areaServed: [
-              { "@type": "City", name: "台中市", alternateName: "Taichung" },
-              { "@type": "AdministrativeArea", name: "北屯區" },
-              { "@type": "AdministrativeArea", name: "西屯區" },
-              { "@type": "AdministrativeArea", name: "南屯區" },
-              { "@type": "AdministrativeArea", name: "七期" },
-              { "@type": "AdministrativeArea", name: "中區" },
-              { "@type": "AdministrativeArea", name: "太平區" },
-              { "@type": "AdministrativeArea", name: "大里區" },
-            ],
-            hasCredential: [
-              "經紀人 黃永隆 113彰縣字324",
-              "營業員 陳景泰 114登字488296",
-            ],
-            priceRange: "$$$",
+            // 只放景泰自己的證照；經紀人黃永隆掛在公司節點（以前兩張都掛這裡，AI 會誤以為景泰是經紀人）
+            hasCredential: {
+              "@type": "EducationalOccupationalCredential",
+              name: "不動產營業員",
+              credentialCategory: "license",
+              identifier: "114年登字第488296號",
+            },
           },
           {
             "@type": "RealEstateAgent",
             "@id": `${site.url}#organization`,
             name: "一品不動產 有巢氏房屋 台中世界之心加盟店",
+            legalName: "一品不動產經紀股份有限公司",
             alternateName: "有巢氏房屋 世界之心店",
             url: site.url,
             logo: `${site.url}logos/yochaoshi.png`,
@@ -244,9 +238,20 @@ const rssHref = getRelativeLocaleUrl(
               { "@type": "AdministrativeArea", name: "彰化縣" },
               { "@type": "AdministrativeArea", name: "苗栗縣" },
             ],
-            employee: {
-              "@id": `${site.url}#realestateagent`,
-            },
+            employee: [
+              { "@id": `${site.url}#realestateagent` },
+              {
+                "@type": "Person",
+                name: "黃永隆",
+                jobTitle: "不動產經紀人",
+                hasCredential: {
+                  "@type": "EducationalOccupationalCredential",
+                  name: "不動產經紀人",
+                  credentialCategory: "license",
+                  identifier: "113彰縣字第324號",
+                },
+              },
+            ],
             parentOrganization: {
               "@type": "Organization",
               name: "有巢氏房屋",
