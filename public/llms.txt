@@ -65,9 +65,11 @@
 
 ## 工具
 
-- [客戶工具總覽](https://teddy-website-blog.pages.dev/tools/)：買方費用試算（青安 3.0 與一般房貸）、拆車位單價、看屋檢查表、嫌惡設施地圖，部分為外部連結
+- [客戶工具總覽](https://teddy-website-blog.pages.dev/tools/)：台中學區查詢、垃圾車時間查詢、買方費用試算（青安 3.0 與一般房貸）、拆車位單價、看屋檢查表、嫌惡設施地圖，部分為外部連結
 - [賣方售出實拿試算](https://teddy-website-blog.pages.dev/tools/seller-net-proceeds/)：扣掉房地合一稅、土地增值稅、仲介服務費、履約保證費與貸款餘額後，屋主實際拿到多少
 - [嫌惡設施查詢地圖](https://teddy-website-blog.pages.dev/tools/undesirable-facilities/)：輸入台中地址，查周邊 300、500、1000 公尺內的嫌惡設施，資料來自 OpenStreetMap
+- [台中學區查詢地圖](https://teddy-website-blog.pages.dev/tools/school-district/)：輸入一般地址（不用知道里、鄰），用台中市門牌開放資料推出里與鄰，再對照教育局 115 學年度國小、國中學區表；地圖以顏色標出每校學區
+- [台中垃圾車時間查詢](https://teddy-website-blog.pages.dev/tools/garbage-truck/)：輸入台中地址，列出 300、500 公尺內的垃圾車清運點與一般垃圾、資源回收時段，含 115 年國定假日定點班表，資料來自臺中市環保局開放資料
 
 ## 關於我
 

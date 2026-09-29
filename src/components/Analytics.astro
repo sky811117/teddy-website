@@ -8,6 +8,9 @@ const gtagId = PUBLIC_GA4_MEASUREMENT_ID;
     // ── 1. GA4 boilerplate + Consent Mode v2 ──────────────────────────────
     window.dataLayer = window.dataLayer || [];
     function gtag() { dataLayer.push(arguments); }
+    // ⚠️ define:vars 會把這整段包進 (function(){ … })()，上面的 gtag 只在函式裡有效；
+    //   工具頁的 track()、下面的 click_line 都是看 window.gtag 才送事件 → 一定要掛到全域（gtag.js 本身不會補）。
+    window.gtag = gtag;
 
     // Consent Mode v2。
     // ⚠️ 2026-08-27 修：原本 default 一律 denied + send_page_view:false，等於
@@ -61,6 +64,9 @@ const gtagId = PUBLIC_GA4_MEASUREMENT_ID;
     //     往上讓位；橫幅移除時歸 0。
     //   - 字 14px、按鈕高 44px（觸控目標）
     //   - 桌機（≥640px）改成右下角小卡片，不佔全寬
+    // ⚠️ 2026-09-29 修：手機橫向（812×375）時小卡片高約 150px、蓋住工具頁的「查詢」鈕。
+    //   視窗高 ≤500px 一律改回貼底全寬細條（單排、13px 字），並照手機模式寫 --consent-h 讓位。
+    //   同意／拒絕的邏輯完全沒動，只改版面。
     document.addEventListener('DOMContentLoaded', function () {
       if (_gaStored === 'granted' || _gaStored === 'denied') return;
 
@@ -81,7 +87,22 @@ const gtagId = PUBLIC_GA4_MEASUREMENT_ID;
         '#ga-decline{background:transparent;color:var(--muted-foreground,#555);border:1px solid var(--border,#e5e7eb);}' +
         '@media (min-width:640px){#ga-consent{left:auto;right:16px;bottom:16px;max-width:380px;' +
           'border:1px solid var(--border,#e5e7eb);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:14px 16px;}' +
-          '#ga-consent p{flex-basis:100%;}}';
+          '#ga-consent p{flex-basis:100%;}}' +
+        // 頁面底部多留一段空間，捲到底時頁尾最後幾行（證號、版權、隱私權政策）不會被橫幅／小卡蓋住：
+        //   全寬貼底 → --consent-h（橫幅高度，其他貼底元件也用它讓位）；
+        //   右下角小卡（寬 ≥640、高 >500，例 768×1024）→ --consent-card-h（小卡高度＋離底距離），只給 body 留白，
+        //   不動 --consent-h（浮動元件不必讓位）
+        'html[data-consent-open] body{padding-bottom:max(var(--consent-h,0px),var(--consent-card-h,0px));}' +
+        '#ga-consent .ga-short{display:none;}' +
+        // 矮螢幕（手機橫向 812×375 等）：右下角小卡會佔掉快一半畫面、蓋住工具頁的「查詢」鈕 →
+        // 改回貼底全寬、單排細條（短版文字在左、按鈕在右、不換行，812 寬約 40px 高），
+        // 高度寫進 --consent-h 讓其他浮動元件往上讓。
+        '@media (max-height:500px){#ga-consent{left:0;right:0;bottom:0;max-width:none;border:0;' +
+          'border-top:1px solid var(--border,#e5e7eb);border-radius:0;box-shadow:0 -2px 12px rgba(0,0,0,.08);' +
+          'flex-wrap:nowrap;gap:10px;padding:3px 12px;font-size:13px;line-height:1.4;}' +
+          '#ga-consent p{flex:1 1 auto;min-width:0;}' +
+          '#ga-consent .ga-full{display:none;}#ga-consent .ga-short{display:inline;}' +
+          '#ga-consent button{min-height:32px;padding:0 12px;font-size:13px;}}';
       document.head.appendChild(style);
 
       var banner = document.createElement('div');
@@ -89,25 +110,37 @@ const gtagId = PUBLIC_GA4_MEASUREMENT_ID;
       banner.setAttribute('role', 'region');
       banner.setAttribute('aria-label', 'Cookie 使用說明');
       banner.innerHTML =
-        '<p>本站會記錄不含 cookie、無法識別個人的匿名瀏覽數。按「接受」才會啟用 cookie（用來分辨回訪），協助改善內容品質。詳見<a href="/privacy/">隱私權政策</a>。</p>' +
+        // ga-full：原本的完整說明（手機直向、桌機小卡用）；ga-short：矮螢幕細條用的短版，意思相同、只省略「協助改善內容品質」
+        '<p><span class="ga-full">本站會記錄不含 cookie、無法識別個人的匿名瀏覽數。按「接受」才會啟用 cookie（用來分辨回訪），協助改善內容品質。詳見</span>' +
+          '<span class="ga-short">本站記錄不含 cookie 的匿名瀏覽數；按「接受」才啟用 cookie 分辨回訪。</span>' +
+          '<a href="/privacy/">隱私權政策</a>。</p>' +
         '<div class="ga-btns">' +
           '<button type="button" id="ga-accept">接受</button>' +
           '<button type="button" id="ga-decline">拒絕</button>' +
         '</div>';
 
-      // 物件頁：桌機小卡要避開底部 sticky 價格列，手機由 --consent-h 推上去
+      // 物件頁：桌機小卡要避開底部 sticky 價格列（在 syncHeight 裡依目前是小卡還是全寬條決定），
+      // 手機由 --consent-h 推上去
       var propertyBar = document.querySelector('[data-property-mobile-cta]');
-      if (propertyBar && window.matchMedia('(min-width:640px)').matches) {
-        banner.style.bottom = '96px';
-      }
       document.body.appendChild(banner);
       root.setAttribute('data-consent-open', '1');
 
-      // 橫幅高度 → --consent-h。手機全寬貼底才需要讓位；桌機小卡不佔底部整排、設 0。
+      // 橫幅高度 → --consent-h。全寬貼底（手機直向、或任何矮螢幕）才需要讓位；
+      // 桌機小卡不佔底部整排、設 0。判斷條件跟上面 CSS 的兩個 @media 一致，轉橫／轉直時 resize 會重算。
       function syncHeight() {
-        var full = !window.matchMedia('(min-width:640px)').matches;
-        var h = full && document.body.contains(banner) ? banner.offsetHeight : 0;
+        var full = !window.matchMedia('(min-width:640px)').matches ||
+          window.matchMedia('(max-height:500px)').matches;
+        var on = document.body.contains(banner);
+        var h = full && on ? banner.offsetHeight : 0;
         root.style.setProperty('--consent-h', h + 'px');
+        if (propertyBar) banner.style.bottom = full ? '' : '96px';
+        // 小卡模式：小卡高度＋離底距離＋8px 間隔，只拿來給 body 底部留白
+        var ch = 0;
+        if (!full && on) {
+          var b = parseFloat(window.getComputedStyle(banner).bottom) || 0;
+          ch = Math.ceil(banner.offsetHeight + b + 8);
+        }
+        root.style.setProperty('--consent-card-h', ch + 'px');
       }
       syncHeight();
       if ('ResizeObserver' in window) {
@@ -125,6 +158,7 @@ const gtagId = PUBLIC_GA4_MEASUREMENT_ID;
         banner.remove();
         root.removeAttribute('data-consent-open');
         root.style.setProperty('--consent-h', '0px');
+        root.style.setProperty('--consent-card-h', '0px');
         window.removeEventListener('resize', syncHeight);
       }
       document.getElementById('ga-accept').addEventListener('click', function () {

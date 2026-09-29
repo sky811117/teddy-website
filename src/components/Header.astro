@@ -64,7 +64,9 @@ const isActive = (path: string) => {
       <span class="text-xl leading-8 font-semibold sm:text-2xl sm:leading-none">
         陳景泰
       </span>
-      <span class="text-muted-foreground text-sm leading-none sm:text-base">
+      {/* 窄手機（<414px）藏副標：站名是 absolute 疊在右側按鈕列上，375 寬時「/ 泰迪」會被搜尋鈕壓到
+          （深色模式 logo 多 16px 白底，所以門檻抓 414 兩種模式都留得出空隙）。2026-09-29 */}
+      <span class="text-muted-foreground text-sm leading-none max-[413px]:hidden sm:text-base">
         / 泰迪
       </span>
     </a>
@@ -73,14 +75,15 @@ const isActive = (path: string) => {
       aria-label="主選單"
       class="flex w-full flex-col items-center xl:w-auto xl:flex-row xl:justify-end xl:space-x-4 xl:py-0"
     >
-      {/* 手機控制列：搜尋 / LINE / 漢堡 同一排（原本上下堆疊，header 多吃 45px） */}
+      {/* 手機控制列：搜尋 / LINE / 漢堡 同一排（原本上下堆疊，header 多吃 45px）。
+          <360px（iPhone SE 一代等）放不下站名＋三顆鈕，搜尋鈕先收進漢堡選單（選單裡本來就有搜尋）。 */}
       <div class="flex items-center gap-1 self-end xl:hidden">
         {
           features.search !== false && (
             <a
               href={getRelativeLocaleUrl(locale, "search")}
               class:list={[
-                "focus-outline relative size-10",
+                "focus-outline relative size-10 max-[359px]:hidden",
                 { "text-accent": isActive("/search") },
               ]}
               title="搜尋"
@@ -112,9 +115,13 @@ const isActive = (path: string) => {
           <IconMenuDeep id="menu-icon" />
         </button>
       </div>
+      {/* 桌機橫排選單約 765px 寬，會超出 max-w-3xl 容器往右延伸；1280～1339px 視窗右邊放不下，
+          多出 13px 橫向捲軸、深淺色鈕被切。這段寬度把項目間距減半（省約 50px），1340 以上維持原樣。
+          手機選單原本 place-content-center：螢幕矮（手機橫向、iPhone SE）選單比 max-h 高時，內容往上下兩邊溢出，
+          上面那幾項（房市筆記、在售物件…）跑到捲動範圍外、捲不到 → 改 content-start 從頂端排。2026-09-29 */}
       <ul
         id="menu-items"
-        class="[&>li>a]:hover:text-accent [&>li>a]:whitespace-nowrap mt-4 hidden max-h-[calc(100dvh-7rem)] w-44 grid-cols-2 place-content-center gap-2 overflow-y-auto overscroll-contain xl:mt-0 xl:flex xl:max-h-none xl:w-auto xl:gap-x-2 xl:gap-y-0 xl:overflow-visible xl:[&>li]:h-8 [&>li>a]:block [&>li>a]:px-4 [&>li>a]:py-3 [&>li>a]:text-center [&>li>a]:font-medium xl:[&>li>a]:px-1 xl:[&>li>a]:py-1"
+        class="[&>li>a]:hover:text-accent [&>li>a]:whitespace-nowrap mt-4 hidden max-h-[calc(100dvh-7rem)] w-44 grid-cols-2 content-start justify-center gap-2 overflow-y-auto overscroll-contain xl:mt-0 xl:flex xl:max-h-none xl:w-auto xl:max-[1340px]:gap-x-1 min-[1340px]:gap-x-2 xl:gap-y-0 xl:overflow-visible xl:[&>li]:h-8 [&>li>a]:block [&>li>a]:px-4 [&>li>a]:py-3 [&>li>a]:text-center [&>li>a]:font-medium xl:[&>li>a]:px-1 xl:[&>li>a]:py-1"
       >
         <li class="col-span-2">
           <a

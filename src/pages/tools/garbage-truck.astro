@@ -1,0 +1,2316 @@
+---
+/**
+ * 台中垃圾車時間查詢 — /tools/garbage-truck/（工具代號 garbage-truck）
+ *
+ * 做什麼：輸入地址 / 用我的位置 / 點地圖 → 列出 300／500 公尺內的垃圾車清運點、每週班表、
+ *   今天明天有沒有收；國定假日定點班表；附近垃圾車大約位置（/api/garbage-live）。
+ *
+ * 資料（全部在 public/data/，由 scripts/build-garbage.py 從官方開放資料產生，本頁不打任何政府網站）：
+ *   - /data/garbage/index.json（本頁在 build 時直接內嵌，不再另外下載）
+ *   - /data/garbage/t/<格>.json   清運點分塊（0.02 度一格，查詢時只抓附近 1～4 塊）
+ *   - /data/garbage/routes.json   車牌 → 路線（看路線、判斷即時車輛是不是垃圾車時才抓）
+ *   - /data/garbage/holiday.json  國定假日定點（選行政區或 14 天內有國定假日時才抓）
+ *   - /data/garbage/rules.json    規則原文與官方網址（build 時讀；頁面上的規則文字都附官方連結）
+ *   - 地址 → 座標：/js/tc-addr.js + /data/tc-addr/（115 年 1 月門牌，全在瀏覽器本機比對）
+ *
+ * ⛔ 隱私：使用者輸入的地址只在瀏覽器比對，不放 URL、不送 GA、不送任何 API。
+ *    GA4 事件只記 result / via / district / radius（沒有地址、沒有座標）。
+ * ⛔ 規則類敘述一律要有官方來源（rules.json evidence 的網址）；「週三、週日停收」只能當一般說明，
+ *    不是環保局明文規定。106 年分日回收說明跟現況不一致，只當背景、不拿來判斷哪天收。
+ * ⛔ 「這一點今天車子到了沒／預計幾點到」不做（那是環保局非開放查詢服務），一律連官方。
+ * ⚠️ 本機 astro dev 沒有 Pages Functions，/api/garbage-live 會 404 → 頁面要安靜降級。
+ * ⚠️ 不要在模板裡寫 TS 泛型（Record<...>），Astro 模板解析器會把 < 當標籤。
+ */
+import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import Main from "@/components/Main.astro";
+import config from "@/config";
+import { safeJsonLd } from "@/utils/safeJsonLd";
+import gIndex from "../../../public/data/garbage/index.json";
+import gMeta from "../../../public/data/garbage/meta.json";
+import gRules from "../../../public/data/garbage/rules.json";
+import gHoliday from "../../../public/data/garbage/holiday.json";
+
+const canonicalURL = new URL("/tools/garbage-truck/", Astro.site).href; // 全站 canonical 帶結尾斜線
+
+// 門牌庫的版本字樣（檔案內容雜湊）：/data/* 與 /js/* 有 1 天快取，換月份版時網址跟著變，瀏覽器才不會拿舊檔
+// （跟 school-district.astro 同一套做法；Cloudflare Pages 靜態檔不看 query string，分片版本要靠 index.json 自己帶）
+function fileVer(rel: string): string {
+  try {
+    return crypto.createHash("md5").update(fs.readFileSync(path.join(process.cwd(), rel))).digest("hex").slice(0, 10);
+  } catch {
+    return gIndex.v;
+  }
+}
+const vAddr = fileVer("public/js/tc-addr.js");
+const vIdx = fileVer("public/data/tc-addr/index.json");
+
+const OFFICIAL = "https://cleaner.epb.taichung.gov.tw/";
+const HOLIDAY_PAGE = "https://cleaner.epb.taichung.gov.tw/schedule.aspx";
+const TEAM_PAGE = "https://cleaner.epb.taichung.gov.tw/services_4.aspx";
+const NEWS_PAGE = "https://cleaner.epb.taichung.gov.tw/services_2_1.aspx"; // 大車隊「最新消息」：國定假日、颱風等收運訊息
+const LICENSE_URL = "https://data.gov.tw/license";
+const POST_HOLIDAY = gHoliday.announcement; // 115 年國定假日收運公告（環保局）
+const POST_MID_AUTUMN = "https://www.epb.taichung.gov.tw/3375213/post"; // 2026-09-21 新聞稿
+const POST_LABOR_DAY = "https://www.epb.taichung.gov.tw/3263783/post"; // 2026-04-27 新聞稿（三類）
+const RECYCLE_SPLIT = "https://recycle.epb.taichung.gov.tw/other/other10.asp"; // 資源回收網：分日回收
+const RECYCLE_QA = "https://recycle.epb.taichung.gov.tw/qa/qa_01-1.asp"; // 資源回收網：常見問答
+const DATA_STOPS = gIndex.srcUrl; // data.gov.tw 84004
+const DATA_LIVE = "https://data.gov.tw/dataset/83558";
+const DATA_ADDR = "https://opendata.taichung.gov.tw/search/50168dd2-4239-4f3e-89cf-f706617f0436";
+const APP_ANDROID = gRules.app.android;
+const APP_IOS = gRules.app.ios;
+
+const dataModified = gIndex.modified; // 開放資料平臺修改日（資料版本）
+const dataFetched = gIndex.fetched.slice(0, 10);
+const stopCount = gMeta.stops.count;
+const rawCount = gMeta.stops.raw_rows;
+const holFetched = gHoliday.fetched.slice(0, 10);
+const holCount = gHoliday.count;
+const geoMedian = gMeta.stops.geo_validation_vs_epb_holiday_xy.median_m;
+const geoCompared = gMeta.stops.geo_validation_vs_epb_holiday_xy.compared;
+
+// 建置時用環保局官方查詢系統抽查開放資料有沒有過時（scripts/build-garbage.py --drift-check）
+type DriftDist = { n: number; diff: number; plate: number; only: number };
+type DriftRoute = { n: number; diff: number; dists: string[]; msg: string; marked?: number };
+type Drift = {
+  checked: string; against: string; src: string; stops: number; same: number;
+  dists: { [d: string]: DriftDist }; flag: string[]; msg: { [d: string]: string };
+  routes?: { [plate: string]: DriftRoute } | null;
+};
+const drift = (gIndex as unknown as { drift: Drift | null }).drift;
+const driftChecked = drift ? `${+drift.checked.slice(5, 7)}/${+drift.checked.slice(8, 10)}` : "";
+const driftDistCount = drift ? Object.keys(drift.dists).filter(d => drift.dists[d].n > 0).length : 0;
+const driftFlag = drift ? drift.flag : [];
+const driftFlagText = driftFlag.map(d => `${d}（${drift!.dists[d].n} 點有 ${drift!.dists[d].diff} 點不同）`).join("、");
+// 整區沒被標、但有路線抽到不同的區 → 「南區 1 條路線（車號 411-VP）」
+const driftRoutes = (drift && drift.routes) || {};
+const extraRoutesByDist: { [d: string]: string[] } = {};
+Object.keys(driftRoutes).forEach(plate => {
+  driftRoutes[plate].dists.filter(d => !driftFlag.includes(d)).forEach(d => {
+    (extraRoutesByDist[d] = extraRoutesByDist[d] || []).push(plate);
+  });
+});
+const extraRouteDists = Object.keys(extraRoutesByDist);
+const extraRouteText = extraRouteDists.map(d => `${d} ${extraRoutesByDist[d].length} 條路線（車號 ${extraRoutesByDist[d].join("、")}）`).join("、");
+// FAQ 用的短句：「中區、太平區整區和南區部分路線」
+const driftScope = [
+  driftFlag.length ? `${driftFlag.join("、")}整區` : "",
+  extraRouteDists.length ? `${extraRouteDists.join("、")}部分路線` : "",
+].filter(Boolean).join("和");
+
+// 官方彈窗原文（去掉結尾「，時間、地點如下：」，其餘一字不改）
+const holidayNotice = gHoliday.notice.replace(/，?時間、地點如下[:：]?\s*$/, "");
+
+const weekly = gRules.rules.find(r => r.id === "weekly_pattern") as { data_evidence?: string } | undefined;
+const weeklyEvidence = weekly?.data_evidence ?? "";
+
+const districts = Object.keys(gRules.contacts.dist_team);
+
+// 前端要用的小資料直接內嵌（省一次請求；資料重建時頁面也會一起重建）
+const boot = {
+  v: gIndex.v,
+  modified: dataModified,
+  scale: gIndex.scale,
+  cell: gIndex.cell,
+  tiles: gIndex.tiles,
+  geoApprox: gIndex.geoApprox,
+  hol: {
+    year: gHoliday.year,
+    yearRoc: gHoliday.year_roc,
+    dates: gHoliday.dates,
+    noData: gHoliday.no_data_districts,
+    noDataNote: gHoliday.no_data_note,
+    pdf: gHoliday.pdf_by_district,
+    announcement: POST_HOLIDAY,
+  },
+  drift: drift
+    ? {
+        checked: drift.checked, against: drift.against, flag: drift.flag, msg: drift.msg,
+        routes: Object.fromEntries(Object.entries(driftRoutes).map(([k, r]) => [k, { n: r.n, diff: r.diff, dists: r.dists, msg: r.msg }])),
+        dists: Object.fromEntries(Object.entries(drift.dists).map(([k, d]) => [k, { n: d.n, diff: d.diff }])),
+      }
+    : null,
+  vIdx,
+  teamPage: TEAM_PAGE,
+  teams: gRules.contacts.teams.map(t => ({ no: t.no, name: t.name, tel: t.tel })),
+  distTeam: gRules.contacts.dist_team,
+  official: OFFICIAL,
+};
+
+const faqs = [
+  {
+    id: "how",
+    q: "台中垃圾車時間怎麼查？",
+    a: `在本頁輸入台中的地址、用手機定位或在地圖上點一下，就會列出 300／500 公尺內每個清運點的收運時間與收運方式，資料來自臺中市政府環境保護局開放資料「臺中市定時定點垃圾收運地點」（${dataModified} 版）。這份開放資料是不定期更新的預定班表，可能跟現況不同${driftScope ? `；本站 ${driftChecked} 用環保局官方查詢系統抽查，${driftScope}的時間已經不一樣，查到會標「時間可能已改」，請以官方為準` : ""}。實際到點請看環保局「臺中垃圾清運大車隊」查詢網頁或官方 APP。`,
+    html: `在本頁輸入台中的地址、用手機定位或在地圖上點一下，就會列出 300／500 公尺內每個清運點的收運時間與收運方式，資料來自臺中市政府環境保護局開放資料<a href="${DATA_STOPS}" rel="noopener" target="_blank">「臺中市定時定點垃圾收運地點」</a>（${dataModified} 版）。這份開放資料是不定期更新的預定班表，可能跟現況不同${driftScope ? `；本站 ${driftChecked} 用環保局官方查詢系統抽查，<strong>${driftScope}的時間已經不一樣</strong>，查到會標「時間可能已改」，請以官方為準` : ""}。實際到點請看環保局<a href="${OFFICIAL}" rel="noopener" target="_blank">「臺中垃圾清運大車隊」</a>查詢網頁或<a href="#gt-official">官方 APP</a>。`,
+  },
+  {
+    id: "holiday",
+    q: "國定假日垃圾車有沒有收？",
+    a: "臺中市環保局公告，115 年元旦、農曆春節初一與初三、和平紀念日、兒童節、勞動節、端午節、中秋節、教師節、國慶日、行憲紀念日，停止沿街垃圾收運，當天改為定時定點服務。各區定點的時間與地點，可以在本頁「國定假日定點班表」選行政區查，或看環保局公告附的各區 PDF。和平區在官方的國定假日定點班表裡沒有資料，請洽和平區清潔隊。",
+    html: `臺中市環保局公告，115 年元旦、農曆春節初一與初三、和平紀念日、兒童節、勞動節、端午節、中秋節、教師節、國慶日、行憲紀念日，<strong>停止沿街垃圾收運，當天改為定時定點服務</strong>（<a href="${POST_HOLIDAY}" rel="noopener" target="_blank">環保局公告</a>）。各區定點的時間與地點，可以在本頁<a href="#gt-hol">「國定假日定點班表」</a>選行政區查，或看環保局公告附的各區 PDF。和平區在<a href="${HOLIDAY_PAGE}" rel="noopener" target="_blank">官方的國定假日定點班表</a>裡沒有資料，請洽和平區清潔隊。`,
+  },
+  {
+    id: "recycle",
+    q: "資源回收哪天收？",
+    a: "每個清運點不一樣。本頁列表裡的「資源回收」就是該點的資源回收時段，來自環保局開放資料；那天沒寫時間，就是那天沒排資源回收。瓦斯罐、殺蟲劑、噴漆罐等壓力容器，環保局提醒要交給資源回收車，不要丟進垃圾車。環保局資源回收網另有一份 106 年 10 月起實施的原市 8 區「分日回收」說明（週一收紙類與玻璃容器、週四收紙容器與塑膠、金屬容器、週六全收，北區與西屯區週二也收容器類），但現在各點的資源回收班表和那份說明不完全一致，哪天有資源回收車，看各點班表或官方 APP。",
+    html: `每個清運點不一樣。本頁列表裡的「資源回收」就是該點的資源回收時段，來自<a href="${DATA_STOPS}" rel="noopener" target="_blank">環保局開放資料</a>；那天沒寫時間，就是那天沒排資源回收。瓦斯罐、殺蟲劑、噴漆罐等壓力容器，環保局提醒要交給資源回收車，不要丟進垃圾車（<a href="${POST_MID_AUTUMN}" rel="noopener" target="_blank">環保局 2026-09-21 新聞稿</a>）。<br />環保局資源回收網另有一份 106 年 10 月起實施的原市 8 區<a href="${RECYCLE_SPLIT}" rel="noopener" target="_blank">「分日回收」說明</a>（週一收紙類與玻璃容器、週四收紙容器與塑膠、金屬容器、週六全收，北區與西屯區週二也收容器類），但現在各點的資源回收班表和那份說明不完全一致，<strong>哪天有資源回收車，看各點班表或官方 APP</strong>。`,
+  },
+  {
+    id: "wed",
+    q: "週三、週日有收垃圾嗎？",
+    a: `依環保局開放資料的清運班表統計：${weeklyEvidence}。環保局 2026-09-21 的新聞稿也寫到 9 月 27 日（星期日）為例假日不收運。這是從資料整理出來的一般情形，不是環保局明文規定；你家附近哪天收，看本頁查到的各點班表或官方 APP。`,
+    html: `依<a href="${DATA_STOPS}" rel="noopener" target="_blank">環保局開放資料</a>的清運班表統計：${weeklyEvidence}。環保局 <a href="${POST_MID_AUTUMN}" rel="noopener" target="_blank">2026-09-21 的新聞稿</a>也寫到 9 月 27 日（星期日）為例假日不收運。<strong>這是從資料整理出來的一般情形，不是環保局明文規定</strong>；你家附近哪天收，看本頁查到的各點班表或官方 APP。`,
+  },
+  {
+    id: "kitchen",
+    q: "廚餘要怎麼丟？",
+    a: "廚餘跟著垃圾車收。環保局資源回收網說明：廚餘類隨垃圾車收運日回收，民眾自備容器盛裝，交給清潔隊垃圾車上的廚餘回收桶；塑膠袋、衛生紙、竹筷等雜質不能丟進廚餘桶，並請先瀝乾水分。環保局也提醒，倒垃圾前先分成「資源垃圾」「生、熟廚餘」「一般垃圾」三類。",
+    html: `廚餘跟著垃圾車收。環保局資源回收網說明：廚餘類隨垃圾車收運日回收（<a href="${RECYCLE_SPLIT}" rel="noopener" target="_blank">分日回收頁</a>），民眾自備容器盛裝，交給清潔隊垃圾車上的廚餘回收桶；塑膠袋、衛生紙、竹筷等雜質不能丟進廚餘桶，並請先瀝乾水分（<a href="${RECYCLE_QA}" rel="noopener" target="_blank">常見問答</a>）。環保局也提醒，倒垃圾前先分成「資源垃圾」「生、熟廚餘」「一般垃圾」三類（<a href="${POST_LABOR_DAY}" rel="noopener" target="_blank">環保局 2026-04-27 新聞稿</a>）。`,
+  },
+  {
+    id: "bulky",
+    q: "大型家電、堪用家具要怎麼丟？",
+    a: "環保局資源回收網說明，大型家電、堪用家具屬於約定收運項目，要先向所在地的清潔隊申請、約好時間。本頁查詢結果會附上該區清潔隊電話。",
+    html: `環保局資源回收網說明，大型家電、堪用家具屬於約定收運項目，要先向所在地的清潔隊申請、約好時間（<a href="${RECYCLE_SPLIT}" rel="noopener" target="_blank">資源回收網</a>）。本頁查詢結果會附上該區清潔隊電話，完整名單在<a href="${TEAM_PAGE}" rel="noopener" target="_blank">環保局清潔隊聯絡方式</a>。`,
+  },
+];
+
+const appSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "台中垃圾車時間查詢",
+  applicationCategory: "UtilitiesApplication",
+  operatingSystem: "Web",
+  url: canonicalURL,
+  description:
+    "輸入台中的地址、用手機定位或在地圖上點一下，列出 300／500 公尺內的垃圾車清運點與每週收運時間，看今天、明天有沒有收、資源回收哪天來，以及國定假日的定時定點班表。資料來自臺中市政府環境保護局開放資料，僅供參考，以官方公告為準。",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "TWD" },
+  provider: { "@id": `${config.site.url}#realestateagent` },
+};
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "首頁", item: config.site.url },
+    { "@type": "ListItem", position: 2, name: "客戶工具", item: `${config.site.url}tools/` },
+    { "@type": "ListItem", position: 3, name: "台中垃圾車時間查詢", item: canonicalURL },
+  ],
+};
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map(f => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
+---
+
+<Layout
+  title={`台中垃圾車時間查詢｜輸入地址看附近清運點 | ${config.site.title}`}
+  description="台中垃圾車時間怎麼查？輸入地址、用手機定位或點地圖，列出 300／500 公尺內的清運點與每週收運時間，看今天、明天有沒有收，資源回收哪天來，國定假日改到哪個定點。資料來自臺中市環保局開放資料。"
+  canonicalURL={canonicalURL}
+  ogImage="/og/page-tools.jpg"
+  showFloatingCTA={false}
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(appSchema)} />
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(breadcrumbSchema)} />
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(faqSchema)} />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+  </Fragment>
+  <Header />
+
+  <Main
+    pageTitle="台中垃圾車時間查詢"
+    pageDesc="輸入地址、用手機定位，或在地圖上點一下，看附近垃圾車幾點來、今天有沒有收。"
+    class="gt-main"
+  >
+    <noscript>
+      <p class="gt-card">
+        這個工具需要開啟 JavaScript。也可以直接用環保局官方的
+        <a class="text-accent underline" href={OFFICIAL}>臺中垃圾清運大車隊</a> 查詢。
+      </p>
+    </noscript>
+
+    <div class="gt-app" id="gt-app">
+      <section class="gt-a-search gt-card" aria-label="查詢垃圾車清運點">
+        <form id="gt-form" autocomplete="off" role="search">
+          <label for="gt-addr" class="gt-label">輸入台中的地址</label>
+          <div class="gt-row">
+            <input
+              id="gt-addr"
+              type="text"
+              inputmode="text"
+              enterkeyhint="search"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="例：崇德路二段46號"
+              class="gt-input"
+            />
+            <button type="submit" class="gt-btn gt-btn-primary">查詢</button>
+          </div>
+          <div class="gt-row gt-row2">
+            <button type="button" id="gt-here" class="gt-btn gt-btn-outline">用我的位置</button>
+            <div class="gt-seg" role="radiogroup" aria-label="查詢範圍">
+              <label><input type="radio" name="gt-r" value="300" checked /><span>300 公尺</span></label>
+              <label><input type="radio" name="gt-r" value="500" /><span>500 公尺</span></label>
+            </div>
+          </div>
+        </form>
+        <p id="gt-status" class="gt-status" role="status" aria-live="polite">
+          也可以直接點地圖上的位置。你打的地址只在你的裝置上比對，不會送出。
+        </p>
+        <div id="gt-cands" class="gt-cands" hidden></div>
+      </section>
+
+      <section class="gt-a-today gt-card gt-card-soft" id="gt-today" aria-label="今天的收運提醒">
+        <p class="gt-small">正在讀取今天的日期……</p>
+      </section>
+
+      <section class="gt-a-summary" id="gt-summary" aria-live="polite" hidden></section>
+
+      <div class="gt-a-map" id="gt-mapcol">
+        <a class="gt-skip" href="#gt-list-h" id="gt-skip">跳過地圖，看清運點清單</a>
+        <div class="gt-mapwrap">
+          <div id="gt-map" role="application" aria-label="垃圾車清運點地圖"></div>
+          <div class="gt-maphint" id="gt-maphint" aria-hidden="true" hidden></div>
+          <div class="gt-mapempty" id="gt-mapempty">輸入地址，或直接點地圖上的位置</div>
+        </div>
+        <div class="gt-maptools">
+          <div class="gt-legend" id="gt-legend">
+            <span><i class="gt-dot gt-dot-g"></i>有垃圾車</span>
+            <span><i class="gt-dot gt-dot-r"></i>只有資源回收</span>
+            <span><i class="gt-dot gt-dot-n"></i>沒排班</span>
+            <span><i class="gt-sq"></i>國定假日定點</span>
+          </div>
+          <label class="gt-check" id="gt-live-row">
+            <input type="checkbox" id="gt-live" />
+            <span>顯示附近垃圾車大約位置<small>（約 10～20 分鐘前）</small></span>
+          </label>
+          <p id="gt-live-status" class="gt-small" hidden></p>
+        </div>
+      </div>
+
+      <section class="gt-a-route" id="gt-route" hidden></section>
+
+      <section class="gt-a-list" id="gt-listwrap" hidden>
+        <div class="gt-listhead">
+          <h2 class="gt-h2" id="gt-list-h" tabindex="-1">附近的清運點</h2>
+          <div class="gt-ctrls">
+            <label class="gt-sel">
+              <span>看哪一天</span>
+              <select id="gt-day" class="gt-select"></select>
+            </label>
+            <div class="gt-seg" role="radiogroup" aria-label="排序方式">
+              <label><input type="radio" name="gt-sort" value="dist" checked /><span>依距離</span></label>
+              <label><input type="radio" name="gt-sort" value="time" /><span>依時間</span></label>
+            </div>
+            <label class="gt-check gt-check-inline">
+              <input type="checkbox" id="gt-only" />
+              <span>只看這天有車的點</span>
+            </label>
+          </div>
+        </div>
+        <div id="gt-dayinfo"></div>
+        <ol id="gt-list" class="gt-list"></ol>
+        <button type="button" id="gt-more" class="gt-btn gt-btn-outline gt-btn-block" hidden>顯示更多</button>
+      </section>
+    </div>
+
+    <section id="gt-hol" class="gt-card gt-hol" aria-labelledby="gt-hol-h">
+      <h2 id="gt-hol-h" class="gt-h2">國定假日定點班表（{gHoliday.year_roc} 年）</h2>
+      <p class="gt-small gt-mt">環保局公告原文：</p>
+      <blockquote class="gt-quote">「{holidayNotice}」</blockquote>
+      <p class="gt-small">
+        出處：<a class="text-accent underline" href={POST_HOLIDAY} rel="noopener" target="_blank">環保局 115 年國定假日垃圾收運定時定點表公告</a>、
+        <a class="text-accent underline" href={HOLIDAY_PAGE} rel="noopener" target="_blank">臺中垃圾清運大車隊 國定假日定點班表</a>
+      </p>
+      <p id="gt-hol-left" class="gt-hol-left"></p>
+      <div class="gt-hol-grid">
+        <div class="gt-hol-side">
+          <label class="gt-sel gt-sel-block">
+            <span>選行政區</span>
+            <select id="gt-hol-dist" class="gt-select">
+              <option value="">請選擇行政區</option>
+              {districts.map(d => <option value={d}>{d}</option>)}
+            </select>
+          </label>
+          <div id="gt-hol-out" class="gt-hol-out"></div>
+        </div>
+        <div class="gt-hol-mapcol" id="gt-hol-mapcol" hidden>
+          <div class="gt-mapwrap">
+            <div id="gt-hol-map" role="application" aria-label="國定假日定點地圖"></div>
+            <div class="gt-maphint" id="gt-hol-maphint" aria-hidden="true" hidden></div>
+          </div>
+        </div>
+      </div>
+      <p class="gt-small gt-mt">
+        定點與時間取自環保局 {gHoliday.year_roc} 年國定假日定點班表（{holCount} 個定點，{holFetched} 取得，座標由環保局提供）。
+      </p>
+    </section>
+
+    <div class="gt-prose">
+      <section id="gt-official">
+        <h2 class="gt-h2">車子今天到了沒？看官方</h2>
+        <p class="mt-2">本頁是<strong>預定班表</strong>，看不到車子的實際進度。這幾個是環保局的管道：</p>
+        <ul class="gt-ul">
+          <li>
+            <a class="text-accent underline" href={OFFICIAL} rel="noopener" target="_blank">臺中垃圾清運大車隊（清運點動態查詢）</a>
+          </li>
+          <li>
+            官方 APP「{gRules.app.name}」：
+            <a class="text-accent underline" href={APP_ANDROID} rel="noopener" target="_blank">Android（Google Play）</a>、
+            <a class="text-accent underline" href={APP_IOS} rel="noopener" target="_blank">iPhone（App Store）</a>。
+            環保局表示 APP 可以自行設定清運 3 分鐘或 5 分鐘到點推播（<a class="text-accent underline" href={POST_MID_AUTUMN} rel="noopener" target="_blank">2026-09-21 新聞稿</a>）。
+            <span class="text-muted-foreground">下載連結出自<a class="underline" href={POST_HOLIDAY} rel="noopener" target="_blank">環保局公告</a>提供的短網址。</span>
+          </li>
+          <li>
+            垃圾收運的最新消息：環保局會在官方網站及「臺中垃圾清運大車隊」APP 公布（<a class="text-accent underline" href={POST_HOLIDAY} rel="noopener" target="_blank">環保局公告</a>）；國定假日、颱風等情況的收運訊息，看大車隊網站的<a class="text-accent underline" href={NEWS_PAGE} rel="noopener" target="_blank">最新消息</a>。
+          </li>
+          <li>
+            各區清潔隊電話：<a class="text-accent underline" href={TEAM_PAGE} rel="noopener" target="_blank">環保局清潔隊聯絡方式</a>；也可以撥 1999 詢問（<a class="text-accent underline" href={POST_HOLIDAY} rel="noopener" target="_blank">環保局公告</a>）。
+          </li>
+        </ul>
+      </section>
+
+      <section class="mt-10">
+        <h2 class="gt-h2">看屋、租屋前，先查一次垃圾車</h2>
+        <p class="mt-2">垃圾車幾點來，會決定你平日幾點得在家。看房子時把地址丟進來，順便看這幾件：</p>
+        <ul class="gt-ul">
+          <li>
+            <strong>下班趕得上嗎？</strong>看結果裡的「今天最晚一班」。最晚一班是 19:00、你 19:30 才到家，平日就得找別的點，或把垃圾留到隔天。
+          </li>
+          <li>
+            <strong>要走多遠？</strong>列表上的距離是直線距離。一袋廚餘提 50 公尺和提 300 公尺，差很多。
+          </li>
+          <li>
+            點開「一週班表」，看哪幾天沒有車，那幾天的垃圾得先放在家裡（<a class="text-accent underline" href="#gt-faq-wed">週三、週日的情形</a>）。
+          </li>
+        </ul>
+        <p class="mt-3">看大樓的話，也可以問管委會或物業一句：社區有沒有代收垃圾、幾點收。</p>
+      </section>
+
+      <section class="mt-10" aria-labelledby="gt-faq-h">
+        <h2 id="gt-faq-h" class="gt-h2">常見問題</h2>
+        <div class="mt-4 space-y-3">
+          {faqs.map(f => (
+            <details class="gt-faq" id={`gt-faq-${f.id}`}>
+              <summary>{f.q}</summary>
+              <p class="gt-faq-a" set:html={f.html} />
+            </details>
+          ))}
+        </div>
+      </section>
+
+      <section class="mt-10" aria-labelledby="gt-src-h">
+        <h2 id="gt-src-h" class="gt-h2">資料來源與版本</h2>
+        <ul class="gt-ul gt-src">
+          <li>
+            清運點與收運時間：臺中市政府環境保護局
+            <a class="text-accent underline" href={DATA_STOPS} rel="noopener" target="_blank">「臺中市定時定點垃圾收運地點」</a>
+            （政府資料開放平臺 84004），資料版本 {dataModified}，本站 {dataFetched} 下載整理。原始 {rawCount.toLocaleString("zh-TW")} 筆，排除往焚化廠等不收民眾垃圾的點、沒有班表的點，並把同一點一天兩趟的資料合併後，共 {stopCount.toLocaleString("zh-TW")} 個清運點。
+          </li>
+          {drift && (
+            <li>
+              開放資料有沒有過時：本站 {driftChecked} 用環保局<a class="text-accent underline" href={OFFICIAL} rel="noopener" target="_blank">臺中垃圾清運大車隊</a>查詢網頁抽查 {driftDistCount} 個區、{drift.stops.toLocaleString("zh-TW")} 個清運點，{drift.same.toLocaleString("zh-TW")} 個點的時間跟開放資料一致，{(drift.stops - drift.same).toLocaleString("zh-TW")} 個點不一樣。{driftFlagText ? `${driftFlagText}，${driftFlag.length === 1 ? "這一區" : driftFlag.length === 2 ? "這兩區" : "這幾區"}的點都會標「時間可能已改」。` : ""}{extraRouteText ? `${extraRouteText}抽到的點也不一樣，同一台車的點都會標出來。` : ""}每區只抽了一部分路線，沒抽到的路線也可能已經改了。官方查詢網頁只拿來抽查，本頁的時間仍是開放資料。
+            </li>
+          )}
+          <li>
+            清運點位置：原始資料沒有經緯度，由本站用臺中市政府數位發展局
+            <a class="text-accent underline" href={DATA_ADDR} rel="noopener" target="_blank">「臺中市空間資訊建物及門牌號碼位置」</a>
+            115 年 1 月門牌點位推算；只能定位到巷口、路段或村里中心的點，會標「位置約略」，距離也只給大概。跟環保局自帶座標的 {geoCompared} 個定點比對，誤差中位數約 {geoMedian} 公尺。
+          </li>
+          <li>
+            國定假日定點：環保局「臺中垃圾清運大車隊」<a class="text-accent underline" href={HOLIDAY_PAGE} rel="noopener" target="_blank">國定假日定點班表</a>（{gHoliday.year_roc} 年，{holFetched} 取得），座標由環保局提供。
+          </li>
+          <li>
+            垃圾車位置：臺中市政府環境保護局（{new Date().getFullYear()}）
+            <a class="text-accent underline" href={DATA_LIVE} rel="noopener" target="_blank">「臺中市垃圾清運及資源回收車動態資訊」</a>
+            （政府資料開放平臺 83558）。這份資料每 10 分鐘出一版快照，地圖上寫的「資料時間」就是用到的那一版；位置會落後 10～20 分鐘。
+          </li>
+          <li>
+            地址比對：臺中市政府數位發展局門牌資料 115 年 1 月版。你輸入的地址和手機定位的座標只在瀏覽器裡比對，不會傳到任何伺服器；頁面會下載你附近那一區的公開資料檔。地圖底圖由 OpenStreetMap 提供，會下載你正在看的那一塊地圖圖片。
+          </li>
+          <li>
+            清潔隊電話：環保局<a class="text-accent underline" href={TEAM_PAGE} rel="noopener" target="_blank">清潔隊聯絡方式</a>。國定假日定點與清潔隊電話取自環保局「臺中垃圾清運大車隊」網站公開資訊。
+          </li>
+          <li>
+            清運點（84004）、垃圾車動態（83558）、門牌點位資料依<a class="text-accent underline" href={LICENSE_URL} rel="noopener" target="_blank">政府資料開放授權條款－第 1 版</a>使用。地圖 © <a class="underline" href="https://www.openstreetmap.org/copyright" rel="noopener" target="_blank">OpenStreetMap</a> 貢獻者（ODbL）。
+          </li>
+        </ul>
+      </section>
+
+      <section class="gt-card gt-card-soft mt-8 text-sm" aria-label="使用前請注意">
+        <p class="font-medium">使用前請注意</p>
+        <ul class="gt-ul">
+          <li><strong>本頁僅供參考，以官方公告為準。</strong>時間是環保局的預定班表，實際到點會受路況、天候影響。</li>
+          <li>颱風、連假等臨時異動，本頁不會即時更新，請看臺中垃圾清運大車隊的<a class="text-accent underline" href={NEWS_PAGE} rel="noopener" target="_blank">最新消息</a>與官方 APP。</li>
+          <li>開放資料是環保局不定期更新的班表，可能已經換車、改時間；出門倒垃圾前，可以用<a class="text-accent underline" href={OFFICIAL} rel="noopener" target="_blank">官方查詢</a>再確認一次。</li>
+          <li>「今天有沒有收」是依每個清運點自己的星期班表，用你裝置的時鐘換算成台灣時間來判斷。</li>
+        </ul>
+      </section>
+
+      <hr class="my-8 border-dashed" />
+
+      <p class="text-muted-foreground text-sm">
+        <strong>陳景泰 — 一品不動產（有巢氏房屋台中世界之心加盟店）</strong><br />
+        經紀人黃永隆 113 彰縣字第 324 號 / 營業員陳景泰 114 登字第 488296 號<br />
+        0920-118-756 / LINE <a class="text-accent underline" href="/go/line?src=garbage-truck">sky811117</a>
+      </p>
+    </div>
+  </Main>
+
+  <Footer />
+
+  <script type="application/json" id="gt-boot" is:inline set:html={safeJsonLd(boot)} />
+
+  <script
+    is:inline
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+  <script is:inline src={`/js/tc-addr.js?v=${vAddr}`}></script>
+
+  <script is:inline>
+    (function () {
+      "use strict";
+
+      var BOOT = null;
+      try { BOOT = JSON.parse(document.getElementById("gt-boot").textContent); } catch (e) { BOOT = null; }
+      var BASE = "/data/garbage/";
+      var WD = ["一", "二", "三", "四", "五", "六", "日"];
+      var TC = [24.1477, 120.6736];
+      var LIVE_RADIUS = 3000;
+      var PAGE = 40;
+      var COL = { g: "#2e7d32", r: "#1565c0", n: "#9e9e9e" };
+
+      function $(id) { return document.getElementById(id); }
+      var E = {
+        form: $("gt-form"), addr: $("gt-addr"), here: $("gt-here"), status: $("gt-status"),
+        cands: $("gt-cands"), today: $("gt-today"), summary: $("gt-summary"),
+        mapcol: $("gt-mapcol"), map: $("gt-map"), hint: $("gt-maphint"), empty: $("gt-mapempty"),
+        legend: $("gt-legend"), live: $("gt-live"), liveRow: $("gt-live-row"), liveSt: $("gt-live-status"),
+        route: $("gt-route"), listwrap: $("gt-listwrap"), day: $("gt-day"), only: $("gt-only"),
+        dayinfo: $("gt-dayinfo"), list: $("gt-list"), more: $("gt-more"),
+        holLeft: $("gt-hol-left"), holSel: $("gt-hol-dist"), holOut: $("gt-hol-out"),
+        holMapcol: $("gt-hol-mapcol"), holMap: $("gt-hol-map"), holHint: $("gt-hol-maphint"),
+      };
+      var S = {
+        pt: null, via: "", label: "", note: "", dist: "", all: [], radius: 300,
+        sort: "dist", dayOff: 0, only: false, limit: PAGE, seq: 0, stale: false,
+      };
+      var isTouch = !!(window.matchMedia && window.matchMedia("(hover: none) and (pointer: coarse)").matches);
+
+      /* ---------- 小工具 ---------- */
+      function esc(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+      }
+      function pad(n) { return (n < 10 ? "0" : "") + n; }
+      function hm(m) { return pad(Math.floor(m / 60)) + ":" + pad(m % 60); }
+      // "07:30-07:55,15:30-15:40" → [{a,b}]（分鐘數）
+      function segs(cell) {
+        var out = [];
+        if (!cell) return out;
+        String(cell).split(",").forEach(function (p) {
+          var m = p.match(/(\d{1,2}):(\d{2})(?:\s*[-~～]\s*(\d{1,2}):(\d{2}))?/);
+          if (!m) return;
+          var a = Number(m[1]) * 60 + Number(m[2]);
+          var b = m[3] != null ? Number(m[3]) * 60 + Number(m[4]) : a;
+          if (b < a) b = a;
+          out.push({ a: a, b: b });
+        });
+        out.sort(function (x, y) { return x.a - y.a; });
+        return out;
+      }
+      function segTxt(s) { return s.b > s.a ? hm(s.a) + "–" + hm(s.b) : hm(s.a); }
+      function segsTxt(arr) { return arr.map(segTxt).join("、"); }
+      function haversine(aLat, aLon, bLat, bLon) {
+        var R = 6371000, p = Math.PI / 180;
+        var dLat = (bLat - aLat) * p, dLon = (bLon - aLon) * p;
+        var s = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(aLat * p) * Math.cos(bLat * p) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return 2 * R * Math.asin(Math.sqrt(s));
+      }
+      function mtxt(d) {
+        if (d < 1000) return "約 " + Math.max(10, Math.round(d / 10) * 10) + " 公尺";
+        return "約 " + (d / 1000).toFixed(1) + " 公里";
+      }
+      function setStatus(msg, isErr) {
+        E.status.textContent = msg;
+        E.status.classList.toggle("gt-err", !!isErr);
+      }
+      function track(name, params) {
+        // 只記不含地址、不含座標的欄位
+        try {
+          if (window.__gaMeasure === true && typeof window.gtag === "function") window.gtag("event", name, params);
+        } catch (e) { /* 量測失敗不影響功能 */ }
+      }
+      function getJSON(url) {
+        return fetch(url).then(function (r) {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.json();
+        });
+      }
+
+      /* ---------- 台灣時間（Asia/Taipei 沒有日光節約，固定 +8） ---------- */
+      function twNow() {
+        var d = new Date(Date.now() + 8 * 3600000);
+        return { ymd: d.toISOString().slice(0, 10), slot: (d.getUTCDay() + 6) % 7, min: d.getUTCHours() * 60 + d.getUTCMinutes() };
+      }
+      function ymdDate(ymd) { var p = ymd.split("-"); return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])); }
+      function addDays(ymd, k) { var d = ymdDate(ymd); d.setUTCDate(d.getUTCDate() + k); return d.toISOString().slice(0, 10); }
+      function slotOf(ymd) { return (ymdDate(ymd).getUTCDay() + 6) % 7; }
+      function dlabel(ymd) { var p = ymd.split("-"); return +p[1] + "/" + +p[2] + "（" + WD[slotOf(ymd)] + "）"; }
+      function holOn(ymd) {
+        var ds = (BOOT && BOOT.hol && BOOT.hol.dates) || [];
+        for (var i = 0; i < ds.length; i++) if (ds[i].date === ymd) return ds[i];
+        return null;
+      }
+      function holsBetween(a, b) {
+        var ds = (BOOT && BOOT.hol && BOOT.hol.dates) || [];
+        return ds.filter(function (d) { return d.date >= a && d.date <= b; });
+      }
+      function dayInfo(k) {
+        var now = twNow();
+        var ymd = addDays(now.ymd, k);
+        return { k: k, ymd: ymd, slot: slotOf(ymd), hol: holOn(ymd), isToday: k === 0, now: now,
+          name: k === 0 ? "今天" : k === 1 ? "明天" : dlabel(ymd),
+          full: (k === 0 ? "今天 " : k === 1 ? "明天 " : "") + dlabel(ymd) };
+      }
+      // 某點從某天起的下一次收運（跳過國定假日，因為那天沿街收運暫停）
+      function nextService(s, kind, now) {
+        for (var k = 0; k < 14; k++) {
+          var ymd = addDays(now.ymd, k);
+          if (holOn(ymd)) continue;
+          var ss = segs(s[kind][slotOf(ymd)]);
+          if (!ss.length) continue;
+          if (k === 0) {
+            var up = ss.filter(function (x) { return x.b + 5 >= now.min; });
+            if (!up.length) continue;
+            return { k: 0, ymd: ymd, seg: up[0] };
+          }
+          return { k: k, ymd: ymd, seg: ss[0] };
+        }
+        return null;
+      }
+      // 「今天／明天」一律跟真實的今天（台灣時間）比，不能用 n.k：卡片在「看哪一天」選明天以後時，
+      // nextService 是從選的那天起算，n.k=1 其實是後天（9/29 選明天 9/30 → 下一次 10/1 被寫成「明天」）
+      function nextTxt(n) {
+        if (!n) return "兩週內查不到排班";
+        var today = twNow().ymd;
+        return (n.ymd === today ? "今天" : n.ymd === addDays(today, 1) ? "明天 " + dlabel(n.ymd) : dlabel(n.ymd)) + " " + hm(n.seg.a);
+      }
+      function segState(seg, nowMin) {
+        if (nowMin < seg.a) {
+          var m = seg.a - nowMin;
+          if (m < 60) return { k: "soon", t: "約 " + m + " 分鐘後" };
+          if (m <= 180) return { k: "soon", t: "約 " + Math.floor(m / 60) + " 小時" + (m % 60 ? " " + (m % 60) + " 分" : "") + "後" };
+          return { k: "soon", t: "還沒到" };
+        }
+        if (nowMin <= seg.b + 5) return { k: "now", t: "照班表，車子這時候會到" };
+        return { k: "past", t: "今天這班已過" };
+      }
+      function teamOf(dist) {
+        if (!BOOT || !dist) return null;
+        var no = BOOT.distTeam[dist];
+        for (var i = 0; i < BOOT.teams.length; i++) if (BOOT.teams[i].no === no) return BOOT.teams[i];
+        return null;
+      }
+      function teamName(dist, t) {
+        if (/和平/.test(t.name)) return "和平區清潔隊（和平區公所）";
+        return t.name + "清潔隊";
+      }
+      function isApprox(s) { return BOOT && BOOT.geoApprox && BOOT.geoApprox.indexOf(s.geo) !== -1; }
+      // 位置約略的點（巷口、路段、村里中心）不給精確公尺數，只給到百公尺
+      function dtxt(it) {
+        if (!isApprox(it.s)) return mtxt(it.d);
+        if (it.d >= 1000) return "約 " + (it.d / 1000).toFixed(1) + " 公里（位置約略）";
+        return "約 " + Math.max(100, Math.round(it.d / 100) * 100) + " 公尺（位置約略）";
+      }
+      // 建置時抽查環保局官方查詢系統（scripts/build-garbage.py）：
+      //   整區（flag）：那一區抽查不同的比例高 → 整區「可能已改」
+      //   s.od === 1：這一點本身抽查到不同；s.od === 2：這點沒抽到，但同一台車（路線）有點抽查到不同
+      function driftFlag(dist) { var d = BOOT && BOOT.drift; return !!(d && d.flag && d.flag.indexOf(dist) !== -1); }
+      function isDrift(s) { return driftFlag(s.dist) || s.od === 1 || s.od === 2; }
+      function driftDate() { var c = BOOT && BOOT.drift && BOOT.drift.checked; return c ? +c.slice(5, 7) + "/" + +c.slice(8, 10) : ""; }
+      function driftRoute(plate) { var d = BOOT && BOOT.drift; return (d && d.routes && plate && d.routes[plate]) || null; }
+      function officialA(txt) { return '<a class="gt-a" href="' + esc(BOOT.official) + '" rel="noopener" target="_blank">' + esc(txt) + "</a>"; }
+      // 一句話說明「為什麼這點標了時間可能已改」（彈窗、提示框用；完整說明在摘要最上面，卡片只放徽章）
+      function driftWhy(s) {
+        var dd = driftDate();
+        if (s.od === 1) return "官方 " + dd + " 抽查，這一點的時間跟開放資料不同";
+        if (s.od === 2) return "官方 " + dd + " 抽查，同一台車（" + s.route + "）有別的點時間已改，這一點可能也改了";
+        var st = BOOT.drift.dists && BOOT.drift.dists[s.dist];
+        return s.dist + "班表可能已改（官方 " + dd + " 抽查" + (st ? " " + st.n + " 點有 " + st.diff + " 點不同" : "") + "）";
+      }
+      function driftBadge(s) {
+        return '<span class="gt-badge gt-badge-warn" title="' + esc(driftWhy(s)) + '">' + (s.od === 1 ? "官方抽查時間不同" : "時間可能已改") + "</span>";
+      }
+
+      /* ---------- 資料 ---------- */
+      var tileCache = {};
+      function loadTile(k) {
+        if (!tileCache[k]) {
+          tileCache[k] = getJSON(BASE + "t/" + k + ".json?v=" + BOOT.v)
+            .then(function (j) { return j.stops || []; })
+            .catch(function (e) { delete tileCache[k]; throw e; });
+        }
+        return tileCache[k];
+      }
+      function cellOf(lat, lng) {
+        return [Math.floor(Math.round(lat * BOOT.scale) / BOOT.cell), Math.floor(Math.round(lng * BOOT.scale) / BOOT.cell)];
+      }
+      function stopsNear(lat, lng, R) {
+        var dLat = R / 111320, dLng = R / (111320 * Math.cos(lat * Math.PI / 180));
+        var a = cellOf(lat - dLat, lng - dLng), b = cellOf(lat + dLat, lng + dLng);
+        var keys = [];
+        for (var y = a[0]; y <= b[0]; y++) for (var x = a[1]; x <= b[1]; x++) {
+          var k = y + "_" + x;
+          if (BOOT.tiles[k]) keys.push(k);
+        }
+        return Promise.all(keys.map(loadTile)).then(function (arrs) {
+          var out = [], seen = {};
+          arrs.forEach(function (arr) {
+            arr.forEach(function (s) {
+              if (s.lat == null || seen[s.id]) return;
+              var d = haversine(lat, lng, s.lat, s.lng);
+              if (d <= R) { seen[s.id] = 1; out.push({ s: s, d: d }); }
+            });
+          });
+          out.sort(function (p, q) { return p.d - q.d; });
+          return out;
+        });
+      }
+      var routesP = null;
+      function loadRoutes() {
+        if (!routesP) routesP = getJSON(BASE + "routes.json?v=" + BOOT.v).catch(function (e) { routesP = null; throw e; });
+        return routesP;
+      }
+      var holP = null;
+      function loadHoliday() {
+        if (!holP) holP = getJSON(BASE + "holiday.json?v=" + BOOT.v).catch(function (e) { holP = null; throw e; });
+        return holP;
+      }
+      function inR() {
+        var R = S.radius;
+        return S.all.filter(function (it) { return it.d <= R; });
+      }
+
+      /* ---------- 地圖 ---------- */
+      var hasL = typeof L !== "undefined";
+      function flash(el, msg) {
+        if (!el) return;
+        el.textContent = msg;
+        el.hidden = false;
+        clearTimeout(el._t);
+        el._t = setTimeout(function () { el.hidden = true; }, 1800);
+      }
+      function makeMap(el, hintEl) {
+        if (!hasL || !el) return null;
+        var m = L.map(el, { dragging: !isTouch, scrollWheelZoom: false, zoomSnap: 1, zoomControl: false }).setView(TC, 12);
+        // 螢幕報讀器念中文：放大縮小鈕、彈窗關閉鈕（Leaflet 預設是英文 Zoom in / Close popup）
+        L.control.zoom({ zoomInTitle: "放大地圖", zoomOutTitle: "縮小地圖" }).addTo(m);
+        m.on("popupopen", function (e) {
+          var pe = e.popup && e.popup.getElement && e.popup.getElement();
+          var cb = pe && pe.querySelector(".leaflet-popup-close-button");
+          if (cb) { cb.setAttribute("aria-label", "關閉"); cb.setAttribute("title", "關閉"); }
+        });
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> 貢獻者',
+        }).addTo(m);
+        // 電腦：滾輪預設捲頁面；按住 Ctrl / ⌘ 才縮放地圖（不會卡在地圖上捲不下去）
+        var lastWheel = 0;
+        el.addEventListener("wheel", function (e) {
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            var t = Date.now();
+            if (t - lastWheel < 200) return;
+            lastWheel = t;
+            m.setZoomAround(m.mouseEventToContainerPoint(e), m.getZoom() + (e.deltaY < 0 ? 1 : -1));
+          } else if (!isTouch) {
+            flash(hintEl, "按住 Ctrl（Mac 按 ⌘）再滾動滑鼠，可以縮放地圖");
+          }
+        }, { passive: false });
+        // 手機：單指捲頁面、兩指移動縮放；要單指拖曳按右上角
+        if (isTouch) {
+          var one = false;
+          el.addEventListener("touchstart", function (e) { one = e.touches.length === 1 && !m.dragging.enabled(); }, { passive: true });
+          el.addEventListener("touchmove", function (e) {
+            if (one && e.touches.length === 1) { one = false; flash(hintEl, "用兩指移動、縮放地圖；要單指拖曳，按右上角「拖曳地圖」"); }
+          }, { passive: true });
+          var Ctl = L.Control.extend({
+            options: { position: "topright" },
+            onAdd: function () {
+              var b = L.DomUtil.create("button", "gt-unlock");
+              b.type = "button";
+              b.textContent = "拖曳地圖";
+              b.setAttribute("aria-pressed", "false");
+              L.DomEvent.disableClickPropagation(b);
+              L.DomEvent.on(b, "click", function (ev) {
+                L.DomEvent.stop(ev);
+                if (m.dragging.enabled()) {
+                  m.dragging.disable(); b.textContent = "拖曳地圖"; b.setAttribute("aria-pressed", "false");
+                } else {
+                  m.dragging.enable(); b.textContent = "鎖定地圖"; b.setAttribute("aria-pressed", "true");
+                }
+              });
+              return b;
+            },
+          });
+          new Ctl().addTo(m);
+        }
+        return m;
+      }
+      // 彈窗寬度：地圖寬 − 左側避讓 − 右側留白 − 彈窗內距，手機 320 寬也不會被地圖邊切掉
+      function popW(el) { return Math.max(150, Math.min(300, (el ? el.clientWidth : 320) - 130)); }
+      // 彈窗自動平移時，避開左上的放大縮小鈕與右上的「拖曳地圖」鈕
+      function popOpts(el) {
+        return { maxWidth: popW(el), autoPanPaddingTopLeft: isTouch ? [56, 64] : [50, 20], autoPanPaddingBottomRight: [16, 24] };
+      }
+
+      var map = null, qLayer, sLayer, hLayer, rLayer, lLayer, qCircle = null, markers = {};
+      var pinIcon, truckIcon;
+      function initMap() {
+        map = makeMap(E.map, E.hint);
+        if (!map) return;
+        qLayer = L.layerGroup().addTo(map);
+        rLayer = L.layerGroup().addTo(map);
+        sLayer = L.layerGroup().addTo(map);
+        hLayer = L.layerGroup().addTo(map);
+        lLayer = L.layerGroup().addTo(map);
+        pinIcon = L.divIcon({
+          className: "gt-pin",
+          html: '<svg viewBox="0 0 24 32" width="28" height="36" aria-hidden="true"><path d="M12 0C5.4 0 0 5.2 0 11.7 0 20.5 12 32 12 32s12-11.5 12-20.3C24 5.2 18.6 0 12 0z" fill="#8a6539" stroke="#fff" stroke-width="1.5"/><circle cx="12" cy="11.5" r="4.5" fill="#fff"/></svg>',
+          iconSize: [28, 36], iconAnchor: [14, 36],
+        });
+        var truckSvg = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="#fff" d="M3 6h11v9H3zM14 9h4l3 3v3h-7zM6.5 18.5a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6zm11 0a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6z"/></svg>';
+        truckIcon = L.divIcon({ className: "gt-truck", html: '<span class="gt-truck-in">' + truckSvg + "</span>", iconSize: [28, 28], iconAnchor: [14, 14] });
+        // 點地圖：還沒查過 → 直接查；已經有結果 → 先跳「改查這個位置」小彈窗，按了才改查
+        // （點空白處關彈窗、點到路線，都不會不小心把原本的結果換掉）
+        var popClosedAt = 0;
+        map.on("popupclose", function () { popClosedAt = Date.now(); });
+        map.on("click", function (e) {
+          if (Date.now() - popClosedAt < 400) return; // 這一下是在關掉彈窗
+          if (!S.pt) { runQuery(e.latlng.lat, e.latlng.lng, "map", { label: "", note: "", dist: "" }); return; }
+          L.popup(popOpts(E.map)).setLatLng(e.latlng)
+            .setContent('<div class="gt-pop"><button type="button" class="gt-btn gt-btn-primary gt-btn-sm" data-gt-here="' +
+              e.latlng.lat.toFixed(6) + "," + e.latlng.lng.toFixed(6) + '">改查這個位置</button></div>')
+            .openOn(map);
+        });
+        map.on("moveend", function () { if (live.on && !S.pt && live.data) drawLive(live.data); });
+      }
+
+      /* ---------- 今天提醒（查詢前就顯示） ---------- */
+      function renderToday() {
+        var now = twNow();
+        var h = [];
+        h.push('<p class="gt-today-date">今天 ' + dlabel(now.ymd) + "</p>");
+        h.push('<ul class="gt-facts">');
+        var th = holOn(now.ymd);
+        if (th) {
+          h.push('<li class="gt-warn">今天是<b>' + esc(th.name) + "</b>：環保局公告停止沿街垃圾收運，改為定時定點服務。" +
+            ' <a href="#gt-hol" class="gt-a">看國定假日定點班表</a></li>');
+        }
+        holsBetween(addDays(now.ymd, 1), addDays(now.ymd, 14)).forEach(function (d) {
+          h.push('<li class="gt-warn"><b>' + dlabel(d.date) + esc(d.name) + "</b>：環保局公告停止沿街垃圾收運，當天改為定時定點服務（" +
+            '<a class="gt-a" href="' + esc(BOOT.hol.announcement) + '" rel="noopener" target="_blank">公告</a>）。' +
+            ' <a href="#gt-hol" class="gt-a">看假日定點</a></li>');
+        });
+        var tmrSlot = (now.slot + 1) % 7;
+        var basis = '（依開放資料統計，不是官方明文規定，<a href="#gt-faq-wed" class="gt-a">看依據</a>）';
+        if (now.slot === 2 || now.slot === 6) {
+          h.push("<li>今天週" + WD[now.slot] + "：大多數清運點今天沒有排班" + basis + "。你家那一點有沒有收，查了就知道。</li>");
+        } else if (tmrSlot === 2 || tmrSlot === 6) {
+          h.push("<li>明天週" + WD[tmrSlot] + "：大多數清運點沒有排班" + basis + "。</li>");
+        } else {
+          h.push("<li>大多數清運點<b>週三、週日沒有排班</b>" + basis + "。</li>");
+        }
+        h.push("</ul>");
+        E.today.innerHTML = h.join("");
+      }
+
+      /* ---------- 查詢 ---------- */
+      function showCands(list, title) {
+        if (!list || !list.length) { E.cands.hidden = true; E.cands.innerHTML = ""; return; }
+        var h = ['<p class="gt-small">' + esc(title) + "</p><div class=\"gt-cand-btns\">"];
+        list.forEach(function (c, i) {
+          h.push('<button type="button" class="gt-chip" data-cand="' + i + '">' + esc(c.label) + "</button>");
+        });
+        h.push("</div>");
+        E.cands.innerHTML = h.join("");
+        E.cands.hidden = false;
+        E.cands._list = list;
+      }
+      /* ---------- 地址：外縣市判斷、打錯一個字的路名建議（tc-addr.js 本身沒做，這裡補） ---------- */
+      var OTHER_CITY = ["臺北市", "新北市", "桃園市", "臺南市", "高雄市", "基隆市", "新竹市", "新竹縣", "苗栗縣", "彰化縣", "南投縣",
+        "雲林縣", "嘉義市", "嘉義縣", "屏東縣", "宜蘭縣", "花蓮縣", "臺東縣", "澎湖縣", "金門縣", "連江縣", "臺北縣", "桃園縣",
+        "臺南縣", "高雄縣"];
+      var TC_TOWNS = ["豐原", "大里", "太平", "東勢", "大甲", "清水", "沙鹿", "梧棲", "后里", "神岡", "潭子", "大雅", "新社", "石岡",
+        "外埔", "大安", "烏日", "大肚", "龍井", "霧峰", "和平"];
+      var SEC_CN = ["", "一段", "二段", "三段", "四段", "五段", "六段", "七段", "八段", "九段"];
+      function normAddr(q) { return String(q || "").replace(/[\s　]/g, "").replace(/台/g, "臺").replace(/^\d{3,6}/, ""); }
+      function stripSec(r) { return String(r || "").replace(/[一二三四五六七八九十]+段$/, ""); }
+      // 使用者寫了別的縣市，或寫了臺中沒有的「X區」（例：信義區市府路1號）→ 不要硬比成臺中的同名路
+      function outOfCity(q, r) {
+        var n = normAddr(q);
+        for (var i = 0; i < OTHER_CITY.length; i++) if (n.indexOf(OTHER_CITY[i]) === 0) return OTHER_CITY[i];
+        if (n.indexOf("臺中") === 0 || !r || !window.TcAddr.parse) return "";
+        var p = window.TcAddr.parse(q);
+        if (!p || p.dist) return "";
+        var road = r.ok ? stripSec(r.road) : (r.candidates && r.candidates[0] ? stripSec(r.candidates[0].road) : "");
+        var pr = String(p.road || "");
+        if (!road || pr.length <= road.length || pr.slice(pr.length - road.length) !== road) return "";
+        var m = pr.slice(0, pr.length - road.length).match(/([\u4e00-\u9fff]{1,3})([區鄉鎮市縣])$/);
+        if (!m) return "";
+        if (TC_TOWNS.indexOf(m[1]) !== -1 || (BOOT.distTeam && BOOT.distTeam[m[1] + "區"])) return "";
+        return m[0];
+      }
+      var roadIdxP = null;
+      function typoCands(q) {
+        var p = window.TcAddr.parse ? window.TcAddr.parse(q) : null;
+        if (!p || !p.road || !p.no) return Promise.resolve([]);
+        if (!roadIdxP) roadIdxP = getJSON("/data/tc-addr/index.json" + (BOOT.vIdx ? "?v=" + encodeURIComponent(BOOT.vIdx) : "")).catch(function (e) { roadIdxP = null; throw e; });
+        return roadIdxP.then(function (ix) {
+          var di = -1;
+          if (p.dist) for (var i = 0; i < ix.d.length; i++) if (ix.d[i][1] === p.dist) di = i;
+          var want = String(p.road), out = [];
+          Object.keys(ix.r).forEach(function (k) {
+            if (out.length >= 6) return;
+            var base = stripSec(k);
+            if (base.length !== want.length || base === want) return;
+            var diff = 0;
+            for (var j = 0; j < base.length && diff < 2; j++) if (base[j] !== want[j]) diff++;
+            if (diff !== 1) return;
+            var sec = k.slice(base.length);
+            if (p.sec && sec && sec !== SEC_CN[p.sec]) return;
+            var dis = String(ix.r[k]).split(",").map(function (x) { return +x.split(":")[0]; });
+            if (di >= 0 && dis.indexOf(di) === -1) return;
+            var dname = di >= 0 ? p.dist : ix.d[dis[0]][1];
+            var tail = (p.lane ? p.lane + "巷" : "") + (p.alley ? p.alley + "弄" : "") + p.no +
+              (p.sub ? "之" + String(p.sub).split("-").join("之") : "") + "號";
+            out.push({ label: dname + k, query: "臺中市" + dname + k + tail });
+          });
+          return out;
+        }).catch(function () { return []; });
+      }
+      // 查新地址失敗時，把上一次的結果淡化、標明「這是上一次的」
+      function markStale(on) {
+        S.stale = !!on;
+        [E.summary, E.listwrap, E.route].forEach(function (el) { if (el) el.classList.toggle("gt-stale", !!on); });
+        var old = $("gt-stale-note");
+        if (old) old.parentNode.removeChild(old);
+        if (on && !E.summary.hidden) {
+          var p = document.createElement("p");
+          p.id = "gt-stale-note";
+          p.className = "gt-warn-box gt-stale-note";
+          p.textContent = "這次沒查到。下面還是上一次（" + (S.label || (S.via === "geo" ? "你的位置" : "地圖上點的位置")) + "）的結果。";
+          E.summary.insertBefore(p, E.summary.firstChild);
+        }
+      }
+      function lookupFail(msg, reason) {
+        setStatus(msg, true);
+        if (S.pt) markStale(true);
+        track("gt_query", { result: "fail", reason: reason || "", via: "address" });
+      }
+      function lookupAddr(q) {
+        showCands(null);
+        if (!q) { setStatus("請先輸入地址，例如「北屯區崇德路二段46號」。", true); return; }
+        if (!window.TcAddr) { setStatus("地址比對元件沒有載入，請重新整理；也可以用「用我的位置」或直接點地圖。", true); return; }
+        var city = outOfCity(q, null);
+        if (city) { lookupFail("這個工具只查臺中市的地址（你輸入的是" + city + "）。其他縣市的垃圾車時間，請看當地環保局。", "out-of-city"); return; }
+        setStatus("比對地址中……");
+        window.TcAddr.lookup(q).then(function (r) {
+          var oc = (r.ok || r.reason === "ambiguous") ? outOfCity(q, r) : "";
+          if (oc) { lookupFail("這個工具只查臺中市的地址，「" + oc + "」不在臺中市。其他縣市的垃圾車時間，請看當地環保局。", "out-of-city"); return; }
+          if (r.ok) {
+            // 查無此號（near-number）：標題放使用者輸入的地址（只在本機顯示，跟學區頁一樣），
+            // 下一行的說明寫「查無 123 號，改用最接近的 111 號定位」，不要讓人以為系統把地址認錯
+            runQuery(r.lat, r.lng, "address", { label: r.precision === "near-number" ? String(q).trim() : r.label, note: r.note || "", dist: r.dist, precision: r.precision });
+            return;
+          }
+          if (r.reason === "ambiguous") {
+            lookupFail(r.message || "這條路在好幾個地方都有，請選一個。", r.reason);
+            showCands(r.candidates, "請選行政區：");
+          } else if (r.reason === "road-not-found" && r.renamed) {
+            // 舊路名（中港路、中區／西區的中正路 → 臺灣大道）：tc-addr 刻意不給建議（中港路 ≠ 中清路），這裡也不叫 typoCands
+            lookupFail(r.message || "這條路已經改名，請改用新地址再查一次。", "renamed");
+            if (r.renamed.src && r.renamed.src.url) {
+              var rs = r.renamed.src;
+              E.cands.innerHTML = '<p class="gt-small">📌 資料來源：<a class="gt-a" href="' + esc(rs.url) + '" target="_blank" rel="noopener">' +
+                esc(rs.org + "〈" + rs.name + "〉") + "</a>（" + esc(rs.date) + "；新舊門牌對照表在這一頁下載）</p>";
+              E.cands._list = [];
+              E.cands.hidden = false;
+            }
+          } else if (r.reason === "road-not-found") {
+            lookupFail((r.message || "找不到這條路。") + " 請檢查路名，或直接點地圖。", r.reason);
+            if (r.candidates && r.candidates.length) showCands(r.candidates, "你要找的是不是：");
+            else typoCands(q).then(function (c) { if (c.length) showCands(c, "你要找的是不是："); });
+          } else if (r.reason === "not-taichung") { // tc-addr.js 新版自己會判斷外縣市
+            lookupFail((r.message || "這個工具只查臺中市的地址。") + "其他縣市的垃圾車時間，請看當地環保局。", "out-of-city");
+          } else if (r.reason === "empty") {
+            setStatus("請先輸入地址。", true);
+          } else {
+            lookupFail("看不出路名。請輸入像「北屯區崇德路二段46號」這樣的地址，或直接點地圖。", r.reason);
+          }
+        }).catch(function () {
+          lookupFail("地址資料載入失敗，請檢查網路後再試；也可以用「用我的位置」或直接點地圖。", "load");
+        });
+      }
+
+      function runQuery(lat, lng, via, info) {
+        var seq = ++S.seq;
+        S.pt = { lat: lat, lng: lng };
+        S.via = via;
+        S.label = info.label || "";
+        S.note = info.note || "";
+        S.dist = info.dist || "";
+        S.limit = PAGE;
+        markStale(false);
+        closeRoute(true);
+        if (E.empty) E.empty.hidden = true;
+        setStatus("查詢附近清運點中……");
+        drawQuery(true);
+        if (!BOOT) { setStatus("清運點資料沒有載入，請重新整理再試。", true); return; }
+        stopsNear(lat, lng, 500).then(function (list) {
+          if (seq !== S.seq) return;
+          S.all = list;
+          if (!S.dist && list.length) S.dist = list[0].s.dist;
+          renderAll(true);
+          var n = inR().length;
+          setStatus(n ? (map ? "想改查別的位置：點地圖，再按「改查這個位置」。" : "查好了，結果在下面。") : "這個位置附近沒有清運點資料，可以換個位置或放大範圍。");
+          track("gt_query", { result: n ? "ok" : "empty", via: via, district: S.dist || "", radius: S.radius });
+          maybeScroll();
+        }).catch(function () {
+          if (seq !== S.seq) return;
+          setStatus("清運點資料載入失敗，請檢查網路後再試一次。", true);
+          track("gt_query", { result: "fail", reason: "load", via: via });
+        });
+      }
+
+      function maybeScroll() {
+        if (window.innerWidth >= 1024) return;
+        var r = E.summary.getBoundingClientRect();
+        if (r.top > window.innerHeight * 0.55 || r.top < 0) {
+          E.summary.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }
+
+      function drawQuery(fit) {
+        if (!map || !S.pt) return;
+        qLayer.clearLayers();
+        L.marker([S.pt.lat, S.pt.lng], { icon: pinIcon, interactive: false, keyboard: false }).addTo(qLayer);
+        qCircle = L.circle([S.pt.lat, S.pt.lng], { radius: S.radius, color: "#8a6539", weight: 2, fillOpacity: 0.05, interactive: false }).addTo(qLayer);
+        if (fit) map.fitBounds(qCircle.getBounds(), { padding: [16, 16] });
+      }
+
+      function renderAll(fit) {
+        drawQuery(fit);
+        renderSummary();
+        renderList();
+        if (live.on && live.data) drawLive(live.data);
+      }
+
+      /* ---------- 查詢結果摘要（最重要的答案放最上面） ---------- */
+      function renderSummary() {
+        var now = twNow();
+        var items = inR();
+        var R = S.radius;
+        var th = holOn(now.ymd);
+        var h = ['<div class="gt-card">'];
+        var kicker = S.via === "address" ? "你查的地址" : S.via === "geo" ? "你目前的位置" : "你在地圖上點的位置";
+        h.push('<p class="gt-kicker">' + kicker + "</p>");
+        if (S.label) h.push('<p class="gt-sum-title">' + esc(S.label) + "</p>");
+        if (S.note) h.push('<p class="gt-note">' + esc(S.note) + "</p>");
+
+        // 建置時抽查官方查詢系統，發現整區班表已經改了 → 最上面先講清楚
+        var fl = [];
+        if (S.dist && driftFlag(S.dist)) fl.push(S.dist);
+        items.forEach(function (it) { if (driftFlag(it.s.dist) && fl.indexOf(it.s.dist) === -1) fl.push(it.s.dist); });
+        // 整區沒被標、但路線抽查到不同（同一台車的點一起標）→ 每條路線講一次就好；卡片上只放徽章，說明集中在這一格
+        var rl = [];
+        items.forEach(function (it) {
+          var s = it.s;
+          if ((s.od === 1 || s.od === 2) && !driftFlag(s.dist) && driftRoute(s.route) && rl.indexOf(s.route) === -1) rl.push(s.route);
+        });
+        var dl = fl.map(function (d) { return esc((BOOT.drift.msg && BOOT.drift.msg[d]) || ""); })
+          .concat(rl.map(function (plate) { return esc(driftRoute(plate).msg); }));
+        if (dl.length) {
+          var who = fl.map(function (d) { return esc(d) + "的點"; }).concat(rl.map(function (plate) { return "車號 " + esc(plate) + " 經過的點"; })).join("、");
+          var dlP = dl.map(function (x) { return "<p>" + x + "</p>"; }).join("");
+          var ddTxt = driftDate() ? "（官方 " + driftDate() + " 抽查）" : "";
+          // 電腦版（≥1024px）整段攤開，跟以前一樣
+          h.push('<div class="gt-drift gt-drift-big gt-drift-desk">' + dlP +
+            "<p>" + who + "都標了「時間可能已改」，請以" + officialA("官方查詢") + "或官方 APP 為準。</p></div>");
+          // 手機版：中區這種整區＋路線雙重警示攤開要 360～440px，會把地圖推到快兩個螢幕以下 →
+          // 只留一句摘要＋官方查詢連結，抽查細節收進「展開說明」
+          h.push('<div class="gt-drift gt-drift-big gt-drift-mob"><p><b>' + who + "，時間可能已改</b>" + ddTxt +
+            "，請以" + officialA("官方查詢") + "為準。</p>" +
+            '<details class="gt-drift-more"><summary>展開說明</summary>' + dlP +
+            "<p>下面清單裡這些點都標了「時間可能已改」，也可以用官方 APP 查。</p></details></div>");
+        }
+
+        var t = teamOf(S.dist);
+        if (!items.length) {
+          var more = S.all.length && R < 500 ? "改成 500 公尺，還有 " + S.all.length + " 個點。" :
+            "山區、工業區、新開的路，或台中市以外的地方，開放資料可能沒有清運點；可以直接問當地清潔隊" +
+            (t ? "（電話在下面）。" : "（" + '<a class="gt-a" href="' + esc(BOOT.teamPage) + '" rel="noopener" target="_blank">各區清潔隊電話</a>）。');
+          h.push('<p class="gt-sum-count">' + (S.all.length ? R : 500) + " 公尺內沒有清運點。" + more + "</p>");
+        } else {
+          // 時間可能已改的點（整區已改、或這點抽查不同）不拿來算「今天幾點」
+          var good = items.filter(function (it) { return !isDrift(it.s); });
+          var nDrift = items.length - good.length;
+          h.push('<p class="gt-sum-count">' + R + " 公尺內有 <b>" + items.length + "</b> 個清運點</p>");
+          h.push('<ul class="gt-facts">');
+          if (th) {
+            h.push('<li class="gt-warn">今天 ' + dlabel(now.ymd) + "是<b>" + esc(th.name) + "</b>，沿街收運暫停，改看下面的國定假日定點。</li>");
+          } else if (!good.length) {
+            h.push("<li>這附近的點，開放資料的時間可能已經過時；今天幾點收，請直接看" + officialA("官方查詢") + "。</li>");
+          } else {
+            var todays = [];
+            good.forEach(function (it) { var g = segs(it.s.g[now.slot]); if (g.length) todays.push({ it: it, g: g }); });
+            if (!todays.length) {
+              h.push("<li>今天 " + dlabel(now.ymd) + "：這附近的點今天都<b>沒有排垃圾車</b>。</li>");
+            } else {
+              var first = 1e9, last = -1, lastIt = null, nx = null, nxIt = null;
+              todays.forEach(function (x) {
+                x.g.forEach(function (sg) {
+                  if (sg.a < first) first = sg.a;
+                  if (sg.a > last || (sg.a === last && x.it.d < lastIt.d)) { last = sg.a; lastIt = x.it; }
+                  if (sg.b + 5 >= now.min && (!nx || sg.a < nx.a || (sg.a === nx.a && x.it.d < nxIt.d))) { nx = sg; nxIt = x.it; }
+                });
+              });
+              var rc = 0;
+              good.forEach(function (it) { if (segs(it.s.r[now.slot]).length) rc++; });
+              h.push("<li>今天 " + dlabel(now.ymd) + "：<b>" + todays.length + "</b> 個點有垃圾車（" + hm(first) + "～" + hm(last) + "）" +
+                (rc ? "，" + rc + " 個點有資源回收" : "") + "。</li>");
+              if (nx) {
+                h.push("<li>接下來最早的一班：<b>" + segTxt(nx) + "</b>・" + dtxt(nxIt) + "・" + esc(nxIt.s.place) + "</li>");
+              } else {
+                h.push("<li>照班表，今天這附近的垃圾車<b>都已經過了</b>。</li>");
+              }
+              h.push("<li>今天最晚一班：<b>" + hm(last) + "</b>・" + dtxt(lastIt) + "・" + esc(lastIt.s.place) + "</li>");
+            }
+            if (nDrift) h.push("<li>另有 " + nDrift + " 個點的時間可能已經改了，沒有算進上面。</li>");
+          }
+          // 最近的清運點：照實寫真正最近的那一點；它的時間被標「可能已改」時，再補一行時間沒被標的最近點
+          var nearTxt = function (it) {
+            var k = it.s.kind === "回收" ? "r" : "g";
+            var g0 = segs(it.s[k][now.slot]);
+            var w = k === "r" ? "資源回收" : "垃圾";
+            return th ? "今天是國定假日，改看假日定點" :
+              isDrift(it.s) ? "時間可能已改，請看" + officialA("官方查詢") :
+              g0.length ? "今天" + w + " " + segsTxt(g0) :
+              "今天沒有" + (k === "r" ? "資源回收車" : "垃圾車") + "，下一次 " + nextTxt(nextService(it.s, k, now));
+          };
+          var n0 = items[0];
+          h.push("<li>最近的清運點：" + dtxt(n0) + "・" + esc(n0.s.place) + "（" + esc(n0.s.method) + "）・" + nearTxt(n0) + "</li>");
+          if (isDrift(n0.s) && good.length && !th) {
+            h.push("<li>時間沒被標記的最近清運點：" + dtxt(good[0]) + "・" + esc(good[0].s.place) + "（" + esc(good[0].s.method) + "）・" + nearTxt(good[0]) + "</li>");
+          }
+          // 明天
+          var tmr = addDays(now.ymd, 1), ts = slotOf(tmr), tHol = holOn(tmr);
+          if (tHol) {
+            h.push('<li class="gt-warn">明天 ' + dlabel(tmr) + "是<b>" + esc(tHol.name) + "</b>，沿街收運暫停，改定時定點。</li>");
+          } else if (good.length) {
+            var tc = 0, tf = 1e9, tl = -1;
+            good.forEach(function (it) {
+              var g = segs(it.s.g[ts]);
+              if (g.length) { tc++; if (g[0].a < tf) tf = g[0].a; if (g[g.length - 1].a > tl) tl = g[g.length - 1].a; }
+            });
+            if (tc) {
+              h.push("<li>明天 " + dlabel(tmr) + "：<b>" + tc + "</b> 個點有垃圾車，" + hm(tf) + "～" + hm(tl) + "。</li>");
+            } else {
+              var nd = null;
+              for (var k = 2; k <= 8 && !nd; k++) {
+                var y = addDays(now.ymd, k);
+                if (holOn(y)) continue;
+                var sl = slotOf(y);
+                for (var i = 0; i < good.length; i++) if (segs(good[i].s.g[sl]).length) { nd = y; break; }
+              }
+              h.push("<li>明天 " + dlabel(tmr) + "：這附近<b>沒有點排垃圾車</b>" + (nd ? "，下一次是 " + dlabel(nd) : "") + "。</li>");
+            }
+          }
+          h.push("</ul>");
+        }
+        // 次要資訊收進「更多」：手機預設收起來，地圖才不會被擠到第二個螢幕以下；電腦版、國定假日當天預設打開
+        var hs = holsBetween(now.ymd, addDays(now.ymd, 14));
+        var sumLab = hs.map(function (d) { return dlabel(d.date).replace(/（.）/, "") + " " + esc(d.name) + "改定點"; })
+          .concat(t ? ["清潔隊電話", "官方查詢"] : ["官方查詢"]).join("・");
+        var open = window.innerWidth >= 1024 || !!th;
+        h.push('<details class="gt-sum-more"' + (open ? " open" : "") + "><summary>" + sumLab + "</summary>");
+        h.push('<div id="gt-holnear"></div>');
+        if (t) {
+          h.push('<p class="gt-small gt-mt">要丟大型家電、堪用家具：先打給' + esc(teamName(S.dist, t)) + ' <a class="gt-a" href="tel:' + esc(t.tel) + '">' + esc(t.tel) +
+            "</a> 約時間（" + '<a class="gt-a" href="https://recycle.epb.taichung.gov.tw/other/other10.asp" rel="noopener" target="_blank">資源回收網說明</a>）。</p>');
+        }
+        h.push('<p class="gt-small gt-mt">實際到點：' + officialA("臺中垃圾清運大車隊查詢") + '或<a class="gt-a" href="#gt-official">官方 APP</a>。</p>');
+        h.push("</details>");
+        h.push("</div>");
+        E.summary.innerHTML = h.join("");
+        E.summary.hidden = false;
+        // 摘要已經講了今天、明天、國定假日，上面的「今天」卡收起來，避免同一件事講兩遍
+        E.today.hidden = true;
+        if (S.stale) markStale(true); // 換範圍重畫時，「這是上一次的結果」提示要留著
+        renderHolNear();
+      }
+
+      // 今天或 14 天內有國定假日 → 列最近的 3 個假日定點
+      function renderHolNear() {
+        var box = $("gt-holnear");
+        if (!box || !S.pt) return;
+        var now = twNow();
+        var hs = holsBetween(now.ymd, addDays(now.ymd, 14));
+        if (hLayer) hLayer.clearLayers();
+        if (!hs.length) { box.innerHTML = ""; return; }
+        var todayHol = !!holOn(now.ymd);
+        var head = '<div class="gt-holnear"><p><b>' + hs.map(function (d) { return (d.date === now.ymd ? "今天 " : "") + dlabel(d.date) + esc(d.name); }).join("、") +
+          "</b>：停止沿街垃圾收運，改為定時定點（<a class=\"gt-a\" href=\"" + esc(BOOT.hol.announcement) + "\" rel=\"noopener\" target=\"_blank\">環保局公告</a>）。</p>";
+        if (S.dist && BOOT.hol.noData.indexOf(S.dist) !== -1) {
+          box.innerHTML = head + "<p>" + esc(BOOT.hol.noDataNote) + "</p></div>";
+          return;
+        }
+        box.innerHTML = head + '<p class="gt-small">正在找附近的假日定點……</p></div>';
+        var seq = S.seq;
+        loadHoliday().then(function (hd) {
+          if (seq !== S.seq) return;
+          // 只列 3 公里內的；更遠的不說「離你最近」（山區、市界附近常會對到別區很遠的定點）
+          var arr = hd.stops.map(function (s) { return { s: s, d: haversine(S.pt.lat, S.pt.lng, s.lat, s.lng) }; })
+            .filter(function (x) { return x.d <= 3000; })
+            .sort(function (a, b) { return a.d - b.d; }).slice(0, 3);
+          var line = function (x) {
+            return mtxt(x.d) + "・<b>" + esc(x.s.start) + "–" + esc(x.s.end) + "</b>・" + esc(x.s.place) + "（" + esc(x.s.dist) + esc(x.s.li) + "）";
+          };
+          var h = [head];
+          if (!arr.length) {
+            h.push("<p>3 公里內沒有國定假日定點" + (S.dist && BOOT.hol.pdf[S.dist] ? "，下面可以看" + esc(S.dist) + "完整的定點班表，或問清潔隊" : "，請看環保局公告附的各區定點表，或問當地清潔隊") + "。</p>");
+          } else if (todayHol) {
+            // 今天就是國定假日：三個都攤開
+            h.push("<p>離你最近的假日定點" + (map ? "（地圖上紫色 1～3）" : "") + "：</p><ol class=\"gt-ol\">");
+            arr.forEach(function (x) { h.push("<li>" + line(x) + "</li>"); });
+            h.push("</ol>");
+          } else if (arr.length) {
+            h.push("<p>當天離你最近的假日定點" + (map ? "（地圖上紫色 1）" : "") + "：" + line(arr[0]) + "</p>");
+            if (arr.length > 1) {
+              h.push('<details class="gt-more-d"><summary>再看 ' + (arr.length - 1) + ' 個</summary><ol class="gt-ol" start="2">');
+              arr.slice(1).forEach(function (x) { h.push("<li>" + line(x) + "</li>"); });
+              h.push("</ol></details>");
+            }
+          }
+          var dd = S.dist && BOOT.hol.pdf[S.dist] ? S.dist : (arr[0] ? arr[0].s.dist : "");
+          if (dd) h.push('<button type="button" class="gt-btn gt-btn-outline gt-btn-sm" data-gt-hol="' + esc(dd) + '">看' + esc(dd) + "完整的假日定點班表</button>");
+          h.push("</div>");
+          box.innerHTML = h.join("");
+          if (map) {
+            hLayer.clearLayers();
+            arr.forEach(function (x, i) {
+              L.marker([x.s.lat, x.s.lng], { icon: L.divIcon({ className: "gt-hmk", html: "<span>" + (i + 1) + "</span>", iconSize: [22, 22], iconAnchor: [11, 11] }) })
+                .bindPopup('<div class="gt-pop"><strong>國定假日定點 ' + (i + 1) + "</strong><br>" + esc(x.s.place) + "<br>" + esc(x.s.start) + "–" + esc(x.s.end) + "・" + mtxt(x.d) + "</div>", popOpts(E.map))
+                .addTo(hLayer);
+            });
+          }
+        }).catch(function () {
+          if (seq !== S.seq) return;
+          box.innerHTML = head + '<p class="gt-small">假日定點資料載入失敗，請看下方「國定假日定點班表」或環保局公告。</p></div>';
+        });
+      }
+
+      /* ---------- 清單 ---------- */
+      function buildDaySelect() {
+        var cur = S.dayOff;
+        var h = [];
+        for (var k = 0; k < 7; k++) {
+          var di = dayInfo(k);
+          var lab = (k === 0 ? "今天 " : k === 1 ? "明天 " : "") + dlabel(di.ymd) + (di.hol ? "・" + di.hol.name : "");
+          h.push('<option value="' + k + '"' + (k === cur ? " selected" : "") + ">" + esc(lab) + "</option>");
+        }
+        E.day.innerHTML = h.join("");
+      }
+      function stateOf(s, day) {
+        if (day.hol) return "n";
+        if (segs(s.g[day.slot]).length) return "g";
+        if (segs(s.r[day.slot]).length) return "r";
+        return "n";
+      }
+      function stHtml(seg, day, s) {
+        if (!day.isToday || day.hol || (s && isDrift(s))) return "";
+        var st = segState(seg, day.now.min);
+        return ' <em class="gt-st gt-st-' + st.k + '" data-a="' + seg.a + '" data-b="' + seg.b + '">' + st.t + "</em>";
+      }
+      function kindLine(label, cls, arr, day, s) {
+        if (!arr.length) return "";
+        var first = arr.filter(function (x) { return !day.isToday || x.b + 5 >= day.now.min; })[0] || arr[arr.length - 1];
+        return '<div class="gt-kline"><span class="gt-tag ' + cls + '">' + label + "</span> <b>" + segsTxt(arr) + "</b>" + stHtml(first, day, s) + "</div>";
+      }
+      function weekTable(s, day) {
+        var h = ['<table class="gt-week"><thead><tr><th scope="col">星期</th><th scope="col">垃圾・廚餘</th><th scope="col">資源回收</th></tr></thead><tbody>'];
+        for (var i = 0; i < 7; i++) {
+          var g = segs(s.g[i]), r = segs(s.r[i]);
+          h.push("<tr" + (i === day.slot ? ' class="gt-cur"' : "") + "><th scope=\"row\">週" + WD[i] + "</th><td>" + (g.length ? segsTxt(g) : "—") + "</td><td>" + (r.length ? segsTxt(r) : "—") + "</td></tr>");
+        }
+        h.push("</tbody></table>");
+        return h.join("");
+      }
+      function stopCard(it, day, now) {
+        var s = it.s;
+        var g = segs(s.g[day.slot]), r = segs(s.r[day.slot]);
+        var h = ['<li class="gt-stop" id="gt-s-' + esc(s.id) + '">'];
+        var dr = isDrift(s);
+        h.push('<div class="gt-stop-top"><span class="gt-dist">' + (isApprox(s) ? dtxt(it).replace("（位置約略）", "") : mtxt(it.d)) + '</span><span class="gt-badge">' + esc(s.method) + "</span>" +
+          (s.kind === "回收" ? '<span class="gt-badge">只有資源回收</span>' : "") +
+          (isApprox(s) ? '<span class="gt-badge gt-badge-warn" title="這個點只能定位到巷口、路段或村里中心，實際位置請看地點文字">位置約略</span>' : "") +
+          (dr ? driftBadge(s) : "") + "</div>");
+        h.push('<p class="gt-place">' + esc(s.place) + "</p>");
+        h.push('<p class="gt-meta">' + esc(s.dist) + esc(s.li) + "</p>");
+        h.push('<div class="gt-dayline' + (dr ? " gt-old" : "") + '">');
+        if (day.hol) {
+          h.push('<p class="gt-holtag">' + day.full + "是" + esc(day.hol.name) + "：沿街收運暫停，改定時定點。</p>");
+        }
+        if (g.length || r.length) {
+          h.push(kindLine("垃圾・廚餘", "gt-tag-g", g, day, s));
+          h.push(kindLine("資源回收", "gt-tag-r", r, day, s));
+        } else {
+          var base = { ymd: day.ymd, slot: day.slot, min: day.isToday ? now.min : -1 };
+          var nx = s.kind === "回收" ? nextService(s, "r", base) : nextService(s, "g", base);
+          h.push('<p class="gt-none">' + day.name + "沒有排班・下一次 " + nextTxt(nx) + "</p>");
+        }
+        h.push("</div>");
+        h.push("<details class=\"gt-weekd\"><summary>一週班表</summary>" + weekTable(s, day) +
+          (s.route ? '<p class="gt-small">開放資料登記的車號：' + esc(s.route) + "（環保局可能已經換車）</p>" : "") + "</details>");
+        h.push('<div class="gt-actions">' + (map ? '<button type="button" class="gt-btn gt-btn-outline gt-btn-sm" data-act="map" data-id="' + esc(s.id) + '">在地圖上看</button>' : ""));
+        if (s.route) h.push('<button type="button" class="gt-btn gt-btn-outline gt-btn-sm" data-act="route" data-route="' + esc(s.route) + '" data-id="' + esc(s.id) + '">看這條路線</button>');
+        h.push("</div></li>");
+        return h.join("");
+      }
+      function sortedItems(day) {
+        var list = inR().map(function (it) {
+          var g = segs(it.s.g[day.slot]), r = segs(it.s.r[day.slot]);
+          var first = g[0] || r[0];
+          return { s: it.s, d: it.d, key: first ? first.a : 1e9, any: !!(g.length || r.length) };
+        });
+        if (S.only) list = list.filter(function (x) { return x.any; });
+        if (S.sort === "time") list.sort(function (a, b) { return a.key - b.key || a.d - b.d; });
+        else list.sort(function (a, b) { return a.d - b.d; });
+        return list;
+      }
+      function renderList() {
+        var day = dayInfo(S.dayOff);
+        var now = twNow();
+        var all = inR();
+        if (!all.length) { E.listwrap.hidden = true; E.list.innerHTML = ""; E.dayinfo.innerHTML = ""; drawStops([], day); return; }
+        E.listwrap.hidden = false;
+        var list = sortedItems(day);
+        var info = [];
+        if (day.hol) {
+          info.push('<p class="gt-warn-box">' + day.full + "是<b>" + esc(day.hol.name) + "</b>：環保局公告停止沿街垃圾收運，改為定時定點。下面是平常的班表，當天請改用國定假日定點（" +
+            '<a class="gt-a" href="#gt-hol">看假日定點班表</a>）。</p>');
+        }
+        if (BOOT.hol.year && Number(day.ymd.slice(0, 4)) > BOOT.hol.year) {
+          info.push('<p class="gt-warn-box">本站只有 ' + BOOT.hol.yearRoc + " 年的國定假日資料。" + day.full + "如果是國定假日，請看" +
+            '<a class="gt-a" href="https://cleaner.epb.taichung.gov.tw/schedule.aspx" rel="noopener" target="_blank">臺中垃圾清運大車隊國定假日定點班表</a>。</p>');
+        }
+        if (day.hol) {
+          info.push('<p class="gt-small">' + day.full + "：" + S.radius + " 公尺內 " + all.length + " 個點。這天是國定假日，下面平常的班表只供對照。</p>");
+        } else {
+          var active = 0, drn = 0;
+          all.forEach(function (it) {
+            if (segs(it.s.g[day.slot]).length || segs(it.s.r[day.slot]).length) active++;
+            if (isDrift(it.s)) drn++;
+          });
+          info.push('<p class="gt-small">' + day.full + "：" + S.radius + " 公尺內 " + all.length + " 個點，其中 " + active + " 個這天有車" +
+            (drn ? "（" + drn + " 個點的時間可能已經改了）" : "") + "。時間是環保局預定班表，僅供參考，以官方公告為準。</p>");
+        }
+        E.dayinfo.innerHTML = info.join("");
+        var shown = list.slice(0, S.limit);
+        E.list.innerHTML = shown.length ? shown.map(function (it) { return stopCard(it, day, now); }).join("") :
+          '<li class="gt-none">這天附近沒有排班的點。</li>';
+        E.more.hidden = list.length <= S.limit;
+        E.more.textContent = "再顯示 " + Math.min(PAGE, list.length - S.limit) + " 個（共 " + list.length + " 個）";
+        drawStops(all, day);
+        updateLegend(day);
+      }
+      function updateLegend(day) {
+        day = day || dayInfo(S.dayOff);
+        var lab = day.isToday ? "今天" : dlabel(day.ymd);
+        E.legend.innerHTML =
+          '<span><i class="gt-dot gt-dot-g"></i>' + lab + "有垃圾車</span>" +
+          '<span><i class="gt-dot gt-dot-r"></i>只有資源回收</span>' +
+          '<span><i class="gt-dot gt-dot-n"></i>' + (day.hol ? "國定假日（沿街暫停）" : "沒排班") + "</span>" +
+          '<span><i class="gt-sq"></i>國定假日定點</span>' +
+          (live.on ? '<span><i class="gt-tk"></i>垃圾車大約位置</span>' : "");
+      }
+      function popupHtml(it, day) {
+        var s = it.s;
+        var g = segs(s.g[day.slot]), r = segs(s.r[day.slot]);
+        var lab = day.isToday ? "今天" : dlabel(day.ymd);
+        return '<div class="gt-pop"><strong>' + esc(s.place) + "</strong>" +
+          '<div class="gt-pop-sub">' + dtxt(it) + "・" + esc(s.method) + "</div>" +
+          (isDrift(s) ? '<div class="gt-pop-warn">' + esc(driftWhy(s)) + "；下面是開放資料的時間，請以" + officialA("官方查詢") + "為準</div>" : "") +
+          (day.hol ? '<div class="gt-pop-warn">' + esc(day.hol.name) + "：沿街收運暫停，改定時定點</div>" : "") +
+          "<div>" + lab + " 垃圾・廚餘：" + (g.length ? "<b>" + segsTxt(g) + "</b>" : "沒排班") + "</div>" +
+          "<div>" + lab + " 資源回收：" + (r.length ? "<b>" + segsTxt(r) + "</b>" : "沒排班") + "</div>" +
+          '<button type="button" class="gt-linkbtn" data-gt-go="' + esc(s.id) + '">看一週班表</button></div>';
+      }
+      function drawStops(items, day) {
+        if (!map) return;
+        sLayer.clearLayers();
+        markers = {};
+        items.forEach(function (it) {
+          var s = it.s;
+          var st = stateOf(s, day);
+          var mk = L.circleMarker([s.lat, s.lng], {
+            radius: 7, weight: 2, color: "#ffffff", fillColor: COL[st], fillOpacity: 0.95,
+            dashArray: isApprox(s) ? "3 3" : null,
+          });
+          mk.bindPopup(function () { return popupHtml(it, dayInfo(S.dayOff)); }, popOpts(E.map));
+          if (!isTouch) {
+            var g = segs(s.g[day.slot]);
+            mk.bindTooltip(esc(s.place) + "<br>" + (g.length ? "垃圾 " + segsTxt(g) : "這天沒有垃圾車") + (isDrift(s) ? "（時間可能已改）" : ""), { direction: "top", offset: [0, -6] });
+          }
+          mk.addTo(sLayer);
+          markers[s.id] = mk;
+        });
+      }
+      // 每分鐘更新「約 N 分鐘後／已過」
+      function tickStates() {
+        if (S.dayOff !== 0) return;
+        var now = twNow();
+        Array.prototype.forEach.call(document.querySelectorAll(".gt-st[data-a]"), function (el) {
+          var st = segState({ a: +el.getAttribute("data-a"), b: +el.getAttribute("data-b") }, now.min);
+          el.textContent = st.t;
+          el.className = "gt-st gt-st-" + st.k;
+        });
+      }
+
+      function indexIn(list, id) {
+        for (var i = 0; i < list.length; i++) if (list[i].s.id === id) return i;
+        return -1;
+      }
+      function goCard(id) {
+        var el = $("gt-s-" + id);
+        if (!el) {
+          var day = dayInfo(S.dayOff);
+          var idx = indexIn(sortedItems(day), id);
+          if (idx < 0 && S.only) {
+            S.only = false;
+            E.only.checked = false;
+            idx = indexIn(sortedItems(day), id);
+          }
+          if (idx >= 0) S.limit = Math.max(S.limit, idx + 1);
+          renderList();
+          el = $("gt-s-" + id);
+        }
+        if (!el) return;
+        var d = el.querySelector("details");
+        if (d) d.open = true;
+        el.classList.add("gt-flash");
+        setTimeout(function () { el.classList.remove("gt-flash"); }, 1600);
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      function showOnMap(id) {
+        if (!map || !markers[id]) return;
+        var mk = markers[id];
+        var r = E.map.getBoundingClientRect();
+        var visible = r.top >= -40 && r.bottom <= window.innerHeight + 40;
+        if (!visible) E.mapcol.scrollIntoView({ behavior: "smooth", block: "start" });
+        map.setView(mk.getLatLng(), Math.max(map.getZoom(), 17));
+        setTimeout(function () { mk.openPopup(); }, visible ? 0 : 350);
+      }
+
+      /* ---------- 這台車的路線 ---------- */
+      var routeState = null;
+      function closeRoute(silent) {
+        routeState = null;
+        if (rLayer) rLayer.clearLayers();
+        E.route.hidden = true;
+        E.route.innerHTML = "";
+        if (!silent && map && qCircle) map.fitBounds(qCircle.getBounds(), { padding: [16, 16] });
+      }
+      function showRoute(plate, fromId) {
+        if (!plate) return;
+        var day = dayInfo(S.dayOff);
+        routeState = { plate: plate, fromId: fromId || "" };
+        E.route.hidden = false;
+        E.route.innerHTML = '<div class="gt-card"><p class="gt-small">載入車號 ' + esc(plate) + " 的路線中……</p></div>";
+        var mySeq = S.seq;
+        loadRoutes().then(function (rj) {
+          var info = rj.routes && rj.routes[plate];
+          if (!info) throw new Error("noroute");
+          var keys = info.tiles.filter(function (k) { return BOOT.tiles[k]; });
+          return Promise.all(keys.map(loadTile)).then(function (arrs) {
+            var seen = {}, stops = [];
+            arrs.forEach(function (a) { a.forEach(function (s) { if (s.route === plate && !seen[s.id] && s.lat != null) { seen[s.id] = 1; stops.push(s); } }); });
+            return { info: info, stops: stops };
+          });
+        }).then(function (res) {
+          if (!routeState || routeState.plate !== plate || mySeq !== S.seq) return;
+          var rows = [];
+          res.stops.forEach(function (s) {
+            var g = segs(s.g[day.slot]), r = segs(s.r[day.slot]);
+            (g.length ? g : r).forEach(function (sg) {
+              rows.push({ s: s, seg: sg, d: S.pt ? haversine(S.pt.lat, S.pt.lng, s.lat, s.lng) : null });
+            });
+          });
+          rows.sort(function (a, b) { return a.seg.a - b.seg.a; });
+          var dayTxt = day.isToday ? "今天" : dlabel(day.ymd);
+          var h = ['<div class="gt-card"><div class="gt-route-head"><h2 class="gt-h3">這條清運路線・' + dayTxt + "的停靠順序</h2>" +
+            '<button type="button" class="gt-btn gt-btn-outline gt-btn-sm" data-act="route-close">關閉路線</button></div>'];
+          var dd = driftDate();
+          // routes.json 的 ok 只代表「官方抽查時車牌還是這台」，不代表時間一致；時間有沒有改看 od
+          h.push('<p class="gt-small">依開放資料（' + esc(BOOT.modified || "") + " 版），這條路線登記的車號是 " + esc(plate) +
+            (res.info.moved ? "；官方 " + dd + " 抽查時，這條路線已經換成別台車" :
+              res.info.ok ? "；官方 " + dd + " 抽查時車號還是這台，但時間不一定跟開放資料一樣" : "；環保局可能已經換車或調整路線") + "。</p>");
+          if (res.info.od) h.push('<p class="gt-drift">' + esc(res.info.od.msg) + "下面的時間只能參考，請以" + officialA("官方查詢") + "為準。</p>");
+          if (!rows.length) {
+            h.push('<p class="gt-small">這條路線' + dayTxt + "沒有排班。</p></div>");
+            E.route.innerHTML = h.join("");
+            if (rLayer) rLayer.clearLayers();
+            return;
+          }
+          // 「粗體」那句只在真的有粗體時才講（還沒查地址、或整條路線都在 1 公里外時，畫面上沒有粗體）
+          var anyNear = rows.some(function (x) { return x.d != null && x.d <= 1000; });
+          h.push('<p class="gt-small">' + esc(res.info.dists.join("、")) + "・共 " + rows.length + " 站・" + hm(rows[0].seg.a) + "～" + hm(rows[rows.length - 1].seg.a) +
+            "。" + (anyNear ? "粗體是離你 1 公里內的點。" : "") + "</p>");
+          if (!res.info.od && res.info.dists.some(driftFlag)) h.push('<p class="gt-drift">官方 ' + dd + " 抽查，" + esc(res.info.dists.filter(driftFlag).join("、")) + "的班表可能已經跟開放資料不一樣，下面的時間只能參考。</p>");
+          if (day.hol) h.push('<p class="gt-warn-box">' + esc(day.hol.name) + "：沿街收運暫停，改定時定點。</p>");
+          h.push('<ol class="gt-route-list" tabindex="0" aria-label="這條路線的停靠順序">');
+          rows.forEach(function (x) {
+            var near = x.d != null && x.d <= 1000;
+            var cur = x.s.id === routeState.fromId;
+            h.push('<li class="' + (cur ? "gt-cur " : "") + (near ? "gt-near" : "") + '"><span class="gt-rt">' + segTxt(x.seg) + '</span><span class="gt-rp">' + esc(x.s.place) +
+              (x.d != null ? '<small>' + mtxt(x.d) + "</small>" : "") + "</span></li>");
+          });
+          h.push("</ol></div>");
+          E.route.innerHTML = h.join("");
+          var curEl = E.route.querySelector("li.gt-cur");
+          if (curEl) { var ol = curEl.parentNode; ol.scrollTop = Math.max(0, curEl.offsetTop - ol.offsetTop - 60); }
+          if (map) {
+            rLayer.clearLayers();
+            var pts = rows.map(function (x) { return [x.s.lat, x.s.lng]; });
+            L.polyline(pts, { color: "#8a6539", weight: 3, opacity: 0.7, interactive: false }).addTo(rLayer);
+            rows.forEach(function (x) {
+              L.circleMarker([x.s.lat, x.s.lng], { radius: 3, weight: 1, color: "#8a6539", fillColor: "#fff", fillOpacity: 1, bubblingMouseEvents: false })
+                .bindTooltip(segTxt(x.seg) + " " + esc(x.s.place), { direction: "top" }).addTo(rLayer);
+            });
+            map.fitBounds(L.latLngBounds(pts), { padding: [20, 20] });
+          }
+          track("gt_route", { district: (res.info.dists || [])[0] || "" });
+        }).catch(function (err) {
+          if (!routeState || routeState.plate !== plate) return;
+          var msg = err && err.message === "noroute" ? "開放資料裡沒有車號 " + esc(plate) + " 的路線。" : "路線資料載入失敗，請檢查網路後再試。";
+          E.route.innerHTML = '<div class="gt-card"><p class="gt-small">' + msg + '</p><button type="button" class="gt-btn gt-btn-outline gt-btn-sm" data-act="route-close">關閉</button></div>';
+        });
+      }
+
+      /* ---------- 附近垃圾車大約位置（/api/garbage-live，只在頁面看得到時每 60 秒更新） ---------- */
+      // markers：車牌 → 地圖標記（重畫時只移動位置、不整層清掉，開著的彈窗才不會被關掉）；openPlate：目前開著彈窗的車
+      var live = { on: false, timer: null, last: 0, data: null, busy: false, markers: {}, openPlate: "" };
+      function liveMsg(msg) { E.liveSt.textContent = msg; E.liveSt.hidden = !msg; }
+      function liveStop() { clearInterval(live.timer); live.timer = null; }
+      function liveStart() {
+        liveStop();
+        live.timer = setInterval(function () { if (document.visibilityState === "visible") liveFetch(); }, 60000);
+      }
+      function liveClear() {
+        if (lLayer) lLayer.clearLayers();
+        live.markers = {};
+        live.openPlate = "";
+      }
+      function liveFail() {
+        live.data = null;
+        liveClear();
+        liveStop();
+        live.on = false;
+        E.live.checked = false;
+        updateLegend();
+        liveMsg("目前拿不到垃圾車位置，班表查詢不受影響。可以稍後再開一次，或看官方 APP。");
+        track("gt_live", { state: "error" });
+      }
+      function liveFetch() {
+        if (live.busy) return;
+        live.busy = true;
+        live.last = Date.now();
+        fetch("/api/garbage-live", { headers: { accept: "application/json" } })
+          .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+          .then(function (j) {
+            live.busy = false;
+            if (!live.on) return;
+            if (!j || j.ok !== true || !j.cars) throw new Error("bad");
+            live.data = j;
+            drawLive(j);
+          })
+          .catch(function () { live.busy = false; if (live.on) liveFail(); });
+      }
+      function drawLive(j) {
+        if (!j) return;
+        if (!map) { liveMsg("地圖沒有載入，看不到垃圾車位置。班表查詢不受影響。"); return; }
+        var snapMs = Date.parse(j.snapshot || "");
+        var age = isNaN(snapMs) ? null : Math.max(0, Math.round((Date.now() - snapMs) / 60000));
+        var snapHM = j.snapshot ? String(j.snapshot).slice(11, 16) : "";
+        if (age != null && age > 40) {
+          liveClear();
+          // 可能已經收班，也可能是官方資料暫停更新（白天也遇過車子停在 1 小時前的位置）→ 不斷言「沒有車」
+          liveMsg("最近 40 分鐘沒有新的車輛位置（官方最後回報 " + snapHM + "），可能已經收班，也可能是資料暫停更新。");
+          return;
+        }
+        var c = S.pt ? L.latLng(S.pt.lat, S.pt.lng) : null;
+        var bounds = map.getBounds();
+        var routes = live.routes || null;
+        var n = 0, inView = 0, near = [], keep = {};
+        j.cars.forEach(function (car) {
+          var plate = String(car[0] || "");
+          var lat = car[2], lng = car[1];
+          if (!plate || typeof lat !== "number" || typeof lng !== "number") return;
+          var dd = c ? haversine(c.lat, c.lng, lat, lng) : 0;
+          var isOpen = plate === live.openPlate;
+          if (c) { if (dd > LIVE_RADIUS && !isOpen) return; }
+          else if (!bounds.contains([lat, lng]) && !isOpen) return;
+          n++;
+          if (bounds.contains([lat, lng])) inView++;
+          near.push({ d: dd, ll: [lat, lng] });
+          var mins = (age != null ? age : 0) + (Number(car[6]) || 0);
+          // 開放資料沒有車種欄位；車牌對得上清運路線、而且官方抽查時還是這台車，才給「看路線」
+          var info = routes && routes[plate];
+          var okRoute = !!(info && info.ok);
+          var html = '<div class="gt-pop"><strong>垃圾車或資源回收車・' + esc(plate) + "</strong>" +
+            '<div class="gt-pop-sub">約 ' + mins + " 分鐘前的位置" + (car[4] ? "・時速約 " + esc(car[4]) + " 公里" : "") + "</div>" +
+            (okRoute ? '<button type="button" class="gt-linkbtn" data-act="route" data-route="' + esc(plate) + '">看這台車登記的清運路線</button>' : "") +
+            "</div>";
+          keep[plate] = 1;
+          var mk = live.markers[plate];
+          if (mk) {
+            var ll = mk.getLatLng();
+            if (ll.lat !== lat || ll.lng !== lng) mk.setLatLng([lat, lng]); // 彈窗會跟著車移動，不會關掉
+            if (mk._gtHtml !== html) { mk._gtHtml = html; mk.setPopupContent(html); }
+            return;
+          }
+          mk = L.marker([lat, lng], { icon: truckIcon, keyboard: false, zIndexOffset: 500 }).bindPopup(html, popOpts(E.map));
+          mk._gtHtml = html;
+          mk.on("popupopen", function () { live.openPlate = plate; });
+          mk.on("popupclose", function () { if (live.openPlate === plate) live.openPlate = ""; });
+          mk.addTo(lLayer);
+          live.markers[plate] = mk;
+        });
+        Object.keys(live.markers).forEach(function (plate) {
+          if (keep[plate]) return;
+          lLayer.removeLayer(live.markers[plate]);
+          delete live.markers[plate];
+          if (live.openPlate === plate) live.openPlate = "";
+        });
+        // 剛打開時，如果查詢範圍裡看不到車，把地圖拉遠到看得到最近的幾台
+        if (live.fitOnce && c && n && !inView) {
+          near.sort(function (a, b) { return a.d - b.d; });
+          var fb = L.latLngBounds([[c.lat, c.lng]]);
+          near.slice(0, 3).forEach(function (x) { fb.extend(x.ll); });
+          map.fitBounds(fb, { padding: [30, 30], maxZoom: 17 });
+        }
+        live.fitOnce = false;
+        var where = c ? "附近 3 公里內" : "地圖範圍內";
+        liveMsg(where + " " + n + " 台・資料時間 " + snapHM + (age != null ? "（約 " + age + " 分鐘前）" : "") +
+          (j.stale ? "・暫時抓不到新資料，顯示的是較舊的位置" : "") + "・官方快照約 10 分鐘更新一次，位置會落後 10～20 分鐘。");
+      }
+      function liveOn() {
+        live.on = true;
+        live.fitOnce = true;
+        updateLegend();
+        liveMsg("讀取垃圾車位置中……");
+        track("gt_live", { state: "on" });
+        loadRoutes().then(function (rj) { live.routes = rj.routes || {}; if (live.data) drawLive(live.data); }).catch(function () { live.routes = {}; });
+        liveFetch();
+        liveStart();
+      }
+      function liveOff() {
+        live.on = false;
+        updateLegend();
+        liveStop();
+        live.data = null;
+        liveClear();
+        liveMsg("");
+      }
+      document.addEventListener("visibilitychange", function () {
+        if (!live.on) return;
+        if (document.visibilityState === "visible") {
+          if (Date.now() - live.last > 60000) liveFetch();
+          liveStart();
+        } else {
+          liveStop();
+        }
+      });
+
+      /* ---------- 國定假日定點班表 ---------- */
+      var holMap = null, holLayer = null;
+      function initHolidaySection() {
+        if (!BOOT) return;
+        var now = twNow();
+        var left = BOOT.hol.dates.filter(function (d) { return d.date >= now.ymd; });
+        if (!left.length) {
+          E.holLeft.innerHTML = BOOT.hol.yearRoc + " 年的國定假日都已經過了。新年度的定點表，看" +
+            '<a class="gt-a" href="https://cleaner.epb.taichung.gov.tw/schedule.aspx" rel="noopener" target="_blank">臺中垃圾清運大車隊國定假日定點班表</a>。';
+          E.holSel.disabled = true;
+          return;
+        }
+        E.holLeft.innerHTML = "今年還剩：" + left.map(function (d) { return "<b>" + dlabel(d.date) + esc(d.name) + "</b>"; }).join("、");
+      }
+      function renderHol(dist) {
+        if (!dist) { E.holOut.innerHTML = ""; E.holMapcol.hidden = true; return; }
+        var t = teamOf(dist);
+        if (BOOT.hol.noData.indexOf(dist) !== -1) {
+          E.holOut.innerHTML = '<p class="gt-warn-box">' + esc(BOOT.hol.noDataNote) + "</p>" +
+            (t ? '<p class="gt-small">' + esc(teamName(dist, t)) + '：<a class="gt-a" href="tel:' + esc(t.tel) + '">' + esc(t.tel) + "</a></p>" : "");
+          E.holMapcol.hidden = true;
+          return;
+        }
+        E.holOut.innerHTML = '<p class="gt-small">載入中……</p>';
+        loadHoliday().then(function (hd) {
+          if (E.holSel.value !== dist) return;
+          var list = hd.stops.filter(function (s) { return s.dist === dist; })
+            .sort(function (a, b) { return a.start < b.start ? -1 : a.start > b.start ? 1 : 0; });
+          var h = ['<p class="gt-small">' + esc(dist) + " 共 " + list.length + " 個假日定點，依時間排序。" +
+            (BOOT.hol.pdf[dist] ? ' <a class="gt-a" href="' + esc(BOOT.hol.pdf[dist]) + '" rel="noopener" target="_blank">官方 PDF</a>' : "") + "</p>"];
+          h.push('<ol class="gt-hol-list" tabindex="0" aria-label="' + esc(dist) + '國定假日定點清單">');
+          list.forEach(function (s, i) {
+            var d = S.pt ? haversine(S.pt.lat, S.pt.lng, s.lat, s.lng) : null;
+            h.push('<li><span class="gt-hn">' + (i + 1) + '</span><span class="gt-rt">' + esc(s.start) + "–" + esc(s.end) + '</span><span class="gt-rp">' + esc(s.place) +
+              "<small>" + esc(s.li) + (d != null ? "・離你查的位置" + mtxt(d) : "") + "</small></span></li>");
+          });
+          h.push("</ol>");
+          E.holOut.innerHTML = h.join("");
+          E.holMapcol.hidden = false;
+          if (hasL) {
+            if (!holMap) {
+              holMap = makeMap(E.holMap, E.holHint);
+              holLayer = L.layerGroup().addTo(holMap);
+            }
+            holMap.invalidateSize();
+            holLayer.clearLayers();
+            var pts = [];
+            list.forEach(function (s, i) {
+              pts.push([s.lat, s.lng]);
+              L.marker([s.lat, s.lng], { icon: L.divIcon({ className: "gt-hmk", html: "<span>" + (i + 1) + "</span>", iconSize: [22, 22], iconAnchor: [11, 11] }) })
+                .bindPopup('<div class="gt-pop"><strong>' + (i + 1) + ". " + esc(s.place) + "</strong><br>" + esc(s.start) + "–" + esc(s.end) + "・" + esc(s.li) + "</div>", popOpts(E.holMap))
+                .addTo(holLayer);
+            });
+            if (S.pt && pinIcon) L.marker([S.pt.lat, S.pt.lng], { icon: pinIcon, interactive: false, keyboard: false }).addTo(holLayer);
+            if (pts.length) holMap.fitBounds(L.latLngBounds(pts), { padding: [20, 20], maxZoom: 16 });
+          }
+          track("gt_holiday", { district: dist });
+        }).catch(function () {
+          E.holOut.innerHTML = '<p class="gt-small gt-err">假日定點資料載入失敗，請重新整理，或看<a class="gt-a" href="' + esc(BOOT.hol.announcement) + '" rel="noopener" target="_blank">環保局公告</a>。</p>';
+        });
+      }
+      function openHol(dist) {
+        if (dist && !E.holSel.disabled) { E.holSel.value = dist; renderHol(dist); }
+        $("gt-hol").scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      /* ---------- 事件 ---------- */
+      function boot() {
+        if (!BOOT) {
+          setStatus("清運點資料沒有載入，請重新整理再試；也可以用環保局官方查詢。", true);
+          return;
+        }
+        // 門牌索引帶版本字樣（跟 tc-addr.js 同一份建置），/data/* 有 1 天快取也不會拿到舊索引
+        if (window.TcAddr && window.TcAddr.config && BOOT.vIdx) {
+          try { window.TcAddr.config({ v: BOOT.vIdx }); } catch (e) { /* 舊版 tc-addr.js 沒有 v 參數也能用 */ }
+        }
+        renderToday();
+        buildDaySelect();
+        initHolidaySection();
+        if (hasL && E.map) {
+          try { initMap(); } catch (e) { map = null; }
+        }
+        if (!map) {
+          E.map.innerHTML = '<p class="gt-mapfail">地圖載入失敗（可能是網路擋住了地圖服務）。清單查詢還是可以用。</p>';
+          if (E.empty) E.empty.hidden = true;
+          if (E.liveRow) E.liveRow.hidden = true;
+          if (E.legend) E.legend.hidden = true;
+        }
+
+        var skip = $("gt-skip");
+        if (skip) skip.addEventListener("click", function (e) {
+          e.preventDefault();
+          var tgt = !E.listwrap.hidden ? $("gt-list-h") : $("gt-hol-h");
+          if (tgt) { if (!tgt.hasAttribute("tabindex")) tgt.setAttribute("tabindex", "-1"); tgt.focus(); tgt.scrollIntoView({ block: "start" }); }
+        });
+        E.form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          E.addr.blur();
+          lookupAddr((E.addr.value || "").trim());
+        });
+        // 第一次點輸入框就先載門牌索引（~21KB gzip），按查詢時比較快
+        E.addr.addEventListener("focus", function () { if (window.TcAddr) window.TcAddr.ready().catch(function () {}); }, { once: true });
+        E.cands.addEventListener("click", function (e) {
+          var b = e.target.closest("[data-cand]");
+          if (!b || !E.cands._list) return;
+          var c = E.cands._list[+b.getAttribute("data-cand")];
+          if (!c) return;
+          E.addr.value = c.query || c.label;
+          lookupAddr(c.query || c.label);
+        });
+        E.here.addEventListener("click", function () {
+          if (!navigator.geolocation) { setStatus("這個瀏覽器不支援定位，請輸入地址或點地圖。", true); return; }
+          setStatus("定位中……（需要你允許使用位置）");
+          navigator.geolocation.getCurrentPosition(function (pos) {
+            var acc = pos.coords.accuracy;
+            runQuery(pos.coords.latitude, pos.coords.longitude, "geo", {
+              label: "", dist: "",
+              note: acc && acc > 200 ? "定位誤差約 " + Math.round(acc) + " 公尺，結果可能有偏差；可以改輸入地址。" : "",
+            });
+          }, function () {
+            setStatus("拿不到位置（可能沒給權限）。請輸入地址，或直接點地圖。", true);
+            track("gt_query", { result: "fail", reason: "geo", via: "geo" });
+          }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
+        });
+        Array.prototype.forEach.call(document.querySelectorAll('input[name="gt-r"]'), function (el) {
+          el.addEventListener("change", function () {
+            S.radius = Number(el.value) || 300;
+            S.limit = PAGE;
+            if (S.pt) renderAll(true);
+          });
+        });
+        Array.prototype.forEach.call(document.querySelectorAll('input[name="gt-sort"]'), function (el) {
+          el.addEventListener("change", function () { S.sort = el.value; S.limit = PAGE; renderList(); });
+        });
+        E.day.addEventListener("change", function () {
+          S.dayOff = Number(E.day.value) || 0;
+          S.limit = PAGE;
+          renderList();
+          if (routeState) showRoute(routeState.plate, routeState.fromId);
+        });
+        E.only.addEventListener("change", function () { S.only = E.only.checked; S.limit = PAGE; renderList(); });
+        E.more.addEventListener("click", function () { S.limit += PAGE; renderList(); });
+        E.live.addEventListener("change", function () { if (E.live.checked) liveOn(); else liveOff(); });
+        E.holSel.addEventListener("change", function () { renderHol(E.holSel.value); });
+
+        // 清單、摘要、地圖彈窗裡的按鈕（capture：Leaflet 彈窗會擋冒泡）
+        document.addEventListener("click", function (e) {
+          var t = e.target;
+          if (!t || !t.closest) return;
+          var go = t.closest("[data-gt-go]");
+          if (go) { e.preventDefault(); if (map) map.closePopup(); goCard(go.getAttribute("data-gt-go")); return; }
+          var here = t.closest("[data-gt-here]");
+          if (here) {
+            e.preventDefault();
+            var ll = here.getAttribute("data-gt-here").split(",");
+            if (map) map.closePopup();
+            runQuery(+ll[0], +ll[1], "map", { label: "", note: "", dist: "" });
+            return;
+          }
+          var hb = t.closest("[data-gt-hol]");
+          if (hb) { e.preventDefault(); openHol(hb.getAttribute("data-gt-hol")); return; }
+          var a = t.closest("[data-act]");
+          if (!a) return;
+          var act = a.getAttribute("data-act");
+          if (act === "map") { e.preventDefault(); showOnMap(a.getAttribute("data-id")); }
+          else if (act === "route") {
+            e.preventDefault();
+            if (map) map.closePopup();
+            showRoute(a.getAttribute("data-route"), a.getAttribute("data-id"));
+            if (window.innerWidth < 1024) setTimeout(function () { E.route.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50);
+          } else if (act === "route-close") { e.preventDefault(); closeRoute(false); }
+        }, true);
+        // 常見問題的站內連結：打開對應的那一題
+        function openFaq(id) {
+          var d = document.getElementById(id);
+          if (!d || d.tagName !== "DETAILS") return false;
+          d.open = true;
+          d.scrollIntoView({ behavior: "smooth", block: "start" });
+          return true;
+        }
+        document.addEventListener("click", function (e) {
+          var a = e.target.closest && e.target.closest('a[href^="#gt-faq-"]');
+          if (a && openFaq(a.getAttribute("href").slice(1))) e.preventDefault();
+        });
+        if (/^#gt-faq-/.test(location.hash)) openFaq(location.hash.slice(1));
+        // 「看假日定點」連結：已經查過地址時，直接帶入那一區
+        E.today.addEventListener("click", function (e) {
+          var a = e.target.closest && e.target.closest('a[href="#gt-hol"]');
+          if (a && S.dist) { e.preventDefault(); openHol(S.dist); }
+        });
+
+        setInterval(function () {
+          if (document.visibilityState !== "visible") return;
+          tickStates();
+        }, 60000);
+      }
+
+      if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+      else boot();
+    })();
+  </script>
+</Layout>
+
+<style is:global>
+  @media (min-width: 1024px) {
+    #main-content.gt-main {
+      max-width: 80rem;
+    }
+  }
+  .gt-app {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "search" "today" "summary" "map" "route" "list";
+    column-gap: 1.5rem;
+    row-gap: 0;
+  }
+  .gt-app > * {
+    min-width: 0;
+    margin-bottom: 1rem;
+  }
+  .gt-app [hidden],
+  .gt-hol [hidden] {
+    display: none !important;
+  }
+  .gt-a-search { grid-area: search; }
+  .gt-a-today { grid-area: today; }
+  .gt-a-summary { grid-area: summary; }
+  .gt-a-map { grid-area: map; }
+  .gt-a-route { grid-area: route; }
+  .gt-a-list { grid-area: list; }
+  @media (min-width: 1024px) {
+    .gt-app {
+      grid-template-columns: minmax(340px, 410px) minmax(0, 1fr);
+      grid-template-rows: auto auto auto auto 1fr;
+      grid-template-areas: "search map" "today map" "summary map" "route map" "list map";
+      align-items: start;
+    }
+    .gt-a-map {
+      position: sticky;
+      top: 1rem;
+      align-self: start;
+    }
+  }
+
+  .gt-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    padding: 1rem;
+    box-shadow: var(--elev-1);
+  }
+  .gt-card-soft {
+    background: var(--muted);
+    box-shadow: none;
+  }
+  .gt-h2 { font-size: 1.25rem; font-weight: 700; line-height: 1.4; }
+  .gt-h3 { font-size: 1.05rem; font-weight: 700; line-height: 1.4; }
+  .gt-label { display: block; font-weight: 600; margin-bottom: 0.5rem; }
+  .gt-row { display: flex; gap: 0.5rem; align-items: stretch; }
+  .gt-row2 { margin-top: 0.625rem; flex-wrap: wrap; }
+  .gt-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 0.625rem;
+    background: var(--background);
+    color: var(--foreground);
+  }
+  .gt-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .gt-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0.5rem 0.85rem;
+    border-radius: 0.625rem;
+    font-size: 1rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .gt-btn-primary { background: var(--accent); color: var(--accent-foreground); border: 1px solid var(--accent); }
+  .gt-btn-outline { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); }
+  .gt-btn-outline:hover { background: var(--accent); color: var(--accent-foreground); }
+  .gt-btn-sm { font-size: 0.9rem; padding: 0.35rem 0.8rem; }
+  .gt-btn-block { width: 100%; margin-top: 0.75rem; }
+  .gt-seg {
+    display: inline-flex;
+    border: 1.5px solid var(--accent);
+    border-radius: 0.625rem;
+    overflow: hidden;
+    flex: 0 0 auto;
+  }
+  .gt-seg label { position: relative; display: flex; }
+  .gt-seg input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .gt-seg span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 0.65rem;
+    font-size: 0.95rem;
+    color: var(--accent);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .gt-seg label + label span { border-left: 1.5px solid var(--accent); }
+  .gt-seg input:checked + span { background: var(--accent); color: var(--accent-foreground); font-weight: 600; }
+  .gt-seg input:focus-visible + span { outline: 2px dashed var(--accent); outline-offset: -4px; }
+  .gt-status { margin-top: 0.75rem; font-size: 0.9rem; color: var(--muted-foreground); }
+  .gt-status.gt-err, .gt-err { color: #b3261e; }
+  [data-theme="dark"] .gt-status.gt-err, [data-theme="dark"] .gt-err { color: #ffb4ab; }
+  .gt-cands { margin-top: 0.5rem; }
+  .gt-cand-btns { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+  .gt-chip {
+    min-height: 44px;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--background);
+    color: var(--foreground);
+    font-size: 0.95rem;
+    text-align: left;
+  }
+  .gt-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .gt-small { font-size: 0.875rem; color: var(--muted-foreground); line-height: 1.6; }
+  .gt-mt { margin-top: 0.75rem; }
+  .gt-a { color: var(--accent); text-decoration: underline; }
+  .gt-today-date { font-weight: 700; }
+  .gt-facts { margin-top: 0.4rem; padding-left: 1.1rem; list-style: disc; font-size: 0.95rem; line-height: 1.65; }
+  .gt-facts li + li { margin-top: 0.3rem; }
+  @media (max-width: 399px) {
+    .gt-facts { font-size: 0.9rem; line-height: 1.55; }
+    .gt-facts li + li { margin-top: 0.2rem; }
+  }
+  .gt-warn { color: inherit; }
+  .gt-warn b { color: #9a3412; }
+  [data-theme="dark"] .gt-warn b { color: #fdba74; }
+  .gt-warn-box {
+    border-left: 4px solid #c2410c;
+    background: rgb(194 65 12 / 0.08);
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+  }
+  .gt-kicker { font-size: 0.8rem; color: var(--muted-foreground); }
+  .gt-sum-title { font-weight: 700; font-size: 1.05rem; overflow-wrap: anywhere; }
+  .gt-note { margin-top: 0.35rem; font-size: 0.875rem; color: #9a3412; }
+  [data-theme="dark"] .gt-note { color: #fdba74; }
+  .gt-sum-count { margin-top: 0.5rem; font-size: 1.05rem; }
+  /* 官方抽查：班表可能已改 */
+  .gt-drift {
+    margin: 0.4rem 0;
+    padding: 0.45rem 0.7rem;
+    border-left: 4px solid #b3261e;
+    background: rgb(179 38 30 / 0.07);
+    border-radius: 0.375rem;
+    font-size: 0.88rem;
+    line-height: 1.6;
+  }
+  .gt-drift-big { font-size: 0.95rem; margin-top: 0.6rem; }
+  .gt-drift-big p + p { margin-top: 0.3rem; }
+  /* 摘要最上面的抽查警示：手機只顯示一句＋「展開說明」，電腦版整段攤開 */
+  .gt-drift-desk { display: none; }
+  @media (min-width: 1024px) {
+    .gt-drift-desk { display: block; }
+    .gt-drift-mob { display: none; }
+  }
+  .gt-drift-more > summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; font-size: 0.9rem; font-weight: 600; list-style: none; }
+  .gt-drift-more > summary::-webkit-details-marker { display: none; }
+  .gt-drift-more > summary::before { content: "▸"; margin-right: 0.4rem; flex: 0 0 auto; }
+  .gt-drift-more[open] > summary::before { content: "▾"; }
+  .gt-drift-more > p { font-size: 0.9rem; }
+  .gt-drift-more > p + p { margin-top: 0.3rem; }
+  [data-theme="dark"] .gt-drift { border-left-color: #ffb4ab; background: rgb(255 180 171 / 0.1); }
+  .gt-old { opacity: 0.6; }
+  /* 查新地址失敗：上一次的結果淡化 */
+  .gt-stale > .gt-card, .gt-stale > .gt-listhead, .gt-stale > #gt-dayinfo, .gt-stale > .gt-list, .gt-a-route.gt-stale { opacity: 0.45; }
+  .gt-stale-note { margin-bottom: 0.6rem; }
+  .gt-sum-more { margin-top: 0.6rem; border-top: 1px solid var(--border); }
+  .gt-sum-more > summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; font-size: 0.92rem; }
+  .gt-sum-more > summary::before { content: "▸"; margin-right: 0.4rem; flex: 0 0 auto; }
+  .gt-sum-more[open] > summary::before { content: "▾"; }
+  .gt-holnear {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    border: 1px dashed #7b1fa2;
+    border-radius: 0.75rem;
+    font-size: 0.92rem;
+    line-height: 1.6;
+  }
+  .gt-ol { list-style: decimal; padding-left: 1.3rem; margin: 0.3rem 0 0.6rem; }
+  .gt-more-d { margin: 0.2rem 0 0.6rem; }
+  .gt-more-d summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+  #gt-summary, .gt-list, .gt-hol, #gt-route { overflow-wrap: anywhere; }
+
+  /* 地圖 */
+  .gt-mapwrap { position: relative; isolation: isolate; }
+  #gt-map, #gt-hol-map {
+    width: 100%;
+    height: clamp(240px, 60vh, 560px);
+    border: 1px solid var(--border);
+    border-radius: 0.875rem;
+    background: var(--muted);
+  }
+  #gt-hol-map { height: clamp(240px, 50vh, 460px); }
+  @media (min-width: 1024px) {
+    #gt-map { height: clamp(460px, calc(100vh - 9rem), 860px); }
+  }
+  .gt-mapwrap .leaflet-container { font: inherit; font-size: 14px; }
+  .gt-mapwrap .leaflet-touch .leaflet-bar a { width: 44px; height: 44px; line-height: 44px; font-size: 22px; }
+  .gt-maphint {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    max-width: 80%;
+    padding: 0.6rem 0.9rem;
+    border-radius: 0.625rem;
+    background: rgb(0 0 0 / 0.72);
+    color: #fff;
+    font-size: 0.95rem;
+    text-align: center;
+    pointer-events: none;
+  }
+  .gt-mapempty {
+    position: absolute;
+    left: 50%;
+    bottom: 1.25rem;
+    transform: translateX(-50%);
+    z-index: 900;
+    max-width: calc(100% - 2rem);
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    background: var(--card);
+    color: var(--foreground);
+    border: 1px solid var(--border);
+    font-size: 0.875rem;
+    box-shadow: var(--elev-1);
+    pointer-events: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .gt-mapfail { padding: 2rem 1rem; text-align: center; color: var(--muted-foreground); }
+  /* 鍵盤用：地圖上每個點都是一個 Tab 停留點，先給一個跳過地圖的連結（平常看不到，Tab 到才出現） */
+  .gt-skip {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+  .gt-skip:focus {
+    position: static;
+    clip: auto;
+    clip-path: none;
+    overflow: visible;
+    white-space: normal;
+    display: inline-flex;
+    align-items: center;
+    width: auto;
+    height: auto;
+    min-height: 44px;
+    margin: 0 0 0.5rem;
+    padding: 0.4rem 0.8rem;
+    border: 2px solid var(--accent);
+    border-radius: 0.5rem;
+    background: var(--card);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .gt-h2:focus { outline: none; }
+  .gt-unlock {
+    min-height: 44px;
+    padding: 0 0.8rem;
+    border-radius: 0.5rem;
+    border: 2px solid rgb(0 0 0 / 0.2);
+    background: #fff;
+    color: #2c2522;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  .gt-unlock[aria-pressed="true"] { background: #8a6539; color: #fff; }
+  .gt-maptools { margin-top: 0.6rem; }
+  .gt-legend { display: flex; flex-wrap: wrap; gap: 0.35rem 0.9rem; font-size: 0.85rem; color: var(--muted-foreground); }
+  .gt-legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+  .gt-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.2); }
+  .gt-dot-g { background: #2e7d32; }
+  .gt-dot-r { background: #1565c0; }
+  .gt-dot-n { background: #9e9e9e; }
+  .gt-sq { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: #7b1fa2; }
+  .gt-tk { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #e65100; }
+  .gt-check { display: flex; align-items: center; gap: 0.5rem; min-height: 44px; margin-top: 0.25rem; font-size: 0.95rem; cursor: pointer; }
+  .gt-check input { width: 20px; height: 20px; accent-color: var(--accent); flex: 0 0 auto; }
+  .gt-check small { color: var(--muted-foreground); }
+  .gt-pin { background: none; border: 0; }
+  .gt-hmk span {
+    display: flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 5px;
+    background: #7b1fa2; color: #fff; font-size: 12px; font-weight: 700;
+    border: 2px solid #fff; box-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
+  }
+  .gt-truck-in {
+    display: flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #e65100; border: 2px solid #fff; box-shadow: 0 1px 4px rgb(0 0 0 / 0.45);
+  }
+  .gt-mapwrap .leaflet-popup-content { margin: 12px 30px 8px 14px; }
+  .gt-mapwrap .leaflet-container a.leaflet-popup-close-button { width: 32px; height: 32px; font: 22px/32px Tahoma, Verdana, sans-serif; }
+  .gt-mapwrap .leaflet-touch a.leaflet-popup-close-button { width: 40px; height: 40px; font: 26px/40px Tahoma, Verdana, sans-serif; }
+  .gt-mapwrap .leaflet-touch .leaflet-popup-content { margin-right: 40px; }
+  .gt-pop { font-size: 14px; line-height: 1.55; overflow-wrap: anywhere; }
+  .gt-pop strong { display: block; margin-bottom: 2px; }
+  .gt-pop-sub, .gt-pop-note { color: #6b5e54; font-size: 12.5px; }
+  .gt-pop-warn { color: #9a3412; font-weight: 600; }
+  .gt-linkbtn {
+    margin-top: 4px; padding: 6px 0; min-height: 44px;
+    color: #8a6539; text-decoration: underline; background: none; border: 0; font-size: 14px; cursor: pointer;
+  }
+  [data-theme="dark"] .gt-mapwrap .leaflet-popup-content-wrapper,
+  [data-theme="dark"] .gt-mapwrap .leaflet-popup-tip { background: #2c2522; color: #f5f1eb; }
+  [data-theme="dark"] .gt-mapwrap .leaflet-container a.leaflet-popup-close-button { color: #d9cfc5; }
+  [data-theme="dark"] .gt-pop-sub, [data-theme="dark"] .gt-pop-note { color: #c9bdb3; }
+  [data-theme="dark"] .gt-pop-warn { color: #fdba74; }
+  [data-theme="dark"] .gt-linkbtn { color: #c9a87c; }
+  [data-theme="dark"] .gt-mapwrap .leaflet-tooltip { background: #2c2522; color: #f5f1eb; border-color: #3a3530; }
+  [data-theme="dark"] .gt-mapwrap .leaflet-tooltip-top:before { border-top-color: #2c2522; }
+  [data-theme="dark"] .gt-mapwrap .leaflet-tile-pane { filter: brightness(0.88); }
+
+  /* 清單 */
+  .gt-listhead { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.5rem; }
+  .gt-ctrls { display: flex; flex-wrap: wrap; gap: 0.5rem 0.75rem; align-items: center; }
+  .gt-sel { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.95rem; }
+  .gt-sel-block { display: flex; flex-wrap: wrap; }
+  .gt-select {
+    min-height: 44px;
+    font-size: 16px;
+    padding: 0.35rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 0.625rem;
+    background: var(--background);
+    color: var(--foreground);
+    max-width: 100%;
+  }
+  .gt-check-inline { margin-top: 0; }
+  .gt-list { display: flex; flex-direction: column; gap: 0.75rem; }
+  .gt-stop {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 0.875rem;
+    padding: 0.85rem 0.9rem;
+    transition: box-shadow 0.3s;
+  }
+  .gt-stop.gt-flash { box-shadow: 0 0 0 3px var(--accent); }
+  .gt-stop-top { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+  .gt-dist { font-weight: 700; margin-right: 0.2rem; }
+  .gt-badge {
+    font-size: 0.78rem;
+    padding: 0.05rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--muted-foreground);
+  }
+  .gt-badge-warn { border-color: #c2410c; color: #9a3412; }
+  [data-theme="dark"] .gt-badge-warn { color: #fdba74; border-color: #fdba74; }
+  .gt-place { margin-top: 0.35rem; font-weight: 600; line-height: 1.5; }
+  .gt-meta { font-size: 0.85rem; color: var(--muted-foreground); }
+  .gt-dayline { margin-top: 0.45rem; font-size: 0.95rem; line-height: 1.6; }
+  .gt-kline + .gt-kline { margin-top: 0.15rem; }
+  .gt-tag { display: inline-block; font-size: 0.78rem; font-weight: 600; padding: 0.05rem 0.45rem; border-radius: 0.35rem; }
+  .gt-tag-g { background: rgb(46 125 50 / 0.12); color: #2e7d32; }
+  .gt-tag-r { background: rgb(21 101 192 / 0.12); color: #1565c0; }
+  [data-theme="dark"] .gt-tag-g { background: rgb(129 199 132 / 0.16); color: #a5d6a7; }
+  [data-theme="dark"] .gt-tag-r { background: rgb(144 202 249 / 0.16); color: #90caf9; }
+  .gt-st { font-style: normal; font-size: 0.82rem; margin-left: 0.25rem; }
+  .gt-st-soon { color: #2e7d32; }
+  .gt-st-now { color: #c2410c; font-weight: 700; }
+  .gt-st-past { color: var(--muted-foreground); }
+  [data-theme="dark"] .gt-st-soon { color: #a5d6a7; }
+  [data-theme="dark"] .gt-st-now { color: #fdba74; }
+  .gt-none { color: var(--muted-foreground); font-size: 0.92rem; }
+  .gt-holtag { font-size: 0.85rem; color: #9a3412; margin-bottom: 0.2rem; }
+  [data-theme="dark"] .gt-holtag { color: #fdba74; }
+  .gt-weekd { margin-top: 0.5rem; font-size: 0.9rem; }
+  .gt-weekd summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+  .gt-week { width: 100%; margin-top: 0.3rem; border-collapse: collapse; font-size: 0.85rem; }
+  .gt-week th, .gt-week td { padding: 0.25rem 0.35rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  .gt-week thead th { color: var(--muted-foreground); font-weight: 600; }
+  .gt-week tbody th { white-space: nowrap; font-weight: 600; }
+  .gt-week tr.gt-cur { background: rgb(138 101 57 / 0.1); }
+  .gt-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
+
+  /* 路線 */
+  .gt-route-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
+  .gt-route-list, .gt-hol-list {
+    margin-top: 0.6rem;
+    max-height: 22rem;
+    overflow-y: auto;
+    border-top: 1px solid var(--border);
+    font-size: 0.9rem;
+  }
+  .gt-hol-list { max-height: 28rem; }
+  .gt-route-list li, .gt-hol-list li {
+    display: flex;
+    gap: 0.6rem;
+    padding: 0.4rem 0.2rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .gt-route-list li.gt-near .gt-rp { font-weight: 700; }
+  .gt-route-list li.gt-cur { background: rgb(138 101 57 / 0.14); }
+  .gt-rt { flex: 0 0 auto; font-variant-numeric: tabular-nums; min-width: 6.2em; }
+  .gt-rp { flex: 1 1 auto; min-width: 0; }
+  .gt-rp small { display: block; color: var(--muted-foreground); font-weight: 400; }
+  .gt-hn {
+    flex: 0 0 auto;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 1.5rem; height: 1.5rem; border-radius: 5px;
+    background: #7b1fa2; color: #fff; font-size: 0.75rem; font-weight: 700;
+  }
+
+  /* 國定假日區塊 */
+  .gt-hol { margin-top: 1.5rem; }
+  .gt-quote {
+    margin-top: 0.35rem;
+    padding: 0.6rem 0.8rem;
+    border-left: 4px solid #7b1fa2;
+    background: var(--muted);
+    border-radius: 0.375rem;
+    font-size: 0.92rem;
+    line-height: 1.7;
+  }
+  .gt-hol-left { margin-top: 0.75rem; font-size: 0.95rem; }
+  .gt-hol-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; margin-top: 0.75rem; }
+  .gt-hol-grid > * { min-width: 0; }
+  .gt-hol-out { margin-top: 0.6rem; }
+  @media (min-width: 1024px) {
+    .gt-hol-grid { grid-template-columns: minmax(320px, 420px) minmax(0, 1fr); align-items: start; }
+  }
+
+  /* 下方文字區 */
+  .gt-prose { max-width: 48rem; margin-top: 2rem; line-height: 1.75; }
+  .gt-ul { margin-top: 0.5rem; padding-left: 1.25rem; list-style: disc; }
+  .gt-ul li + li { margin-top: 0.4rem; }
+  .gt-src { font-size: 0.9rem; }
+  .gt-src, .gt-prose { overflow-wrap: anywhere; }
+  .gt-faq { border: 1px solid var(--border); border-radius: 0.625rem; padding: 0.75rem 0.9rem; background: var(--card); }
+  .gt-faq summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+  .gt-faq-a { margin-top: 0.5rem; font-size: 0.95rem; color: var(--foreground); }
+  .gt-faq-a a { color: var(--accent); text-decoration: underline; }
+</style>

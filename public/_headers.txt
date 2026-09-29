@@ -73,9 +73,20 @@
 /rss.xml
   Cache-Control: public, max-age=3600
 
+# 站內工具資料（門牌定位庫 tc-addr、學區、垃圾車、嫌惡設施）與工具 JS
+# 資料每月～每年才更新一次，頁面引用時帶 ?v=版本，所以 1 天快取＋背景更新 7 天就夠；
+# 原本走預設 max-age=0，每查一次地址都要多發一輪 304。
+/data/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/js/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
 # Security headers — 全站
+# geolocation=(self)：工具頁的「用我的位置」要用（瀏覽器仍會先問使用者）。
+# 原本是 geolocation=()＝整站禁止定位，嫌惡設施地圖的「用我的位置」在正式站一直按了沒反應（2026-09-29 發現）。
 /*
   X-Content-Type-Options: nosniff
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
-  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Permissions-Policy: camera=(), microphone=(), geolocation=(self)

@@ -1,0 +1,1676 @@
+---
+/**
+ * 台中學區查詢地圖 — /tools/school-district/（工具代號 school-district）
+ *
+ * 為什麼做這頁：買方問學區，一般人手上只有「門牌地址」，但教育局學區表是用「里、鄰」寫的，
+ * 地址本身不會寫里鄰。這頁的主角是地址查詢：
+ *   一般地址 → /js/tc-addr.js（臺中市 GIS 門牌，瀏覽器本機比對）推出里、鄰
+ *            → /js/sd-lookup.js 對 115 學年度學區表 → 綠燈／黃燈／查無
+ * 資料全部來自政府公開資料（來源寫在 public/data/school-district/meta.json，頁尾也會列出）：
+ *   scripts/build-tc-addr.py         → public/data/tc-addr/
+ *   scripts/build-school-district.py → public/data/school-district/（zones_*.json 是 GeoJSON，副檔名故意用 .json）
+ *
+ * 隱私：使用者輸入的地址文字只在瀏覽器裡比對，不送任何伺服器、不進網址、不進 GA 參數。
+ *       GA 事件只記「成功／失敗原因、精度、行政區、燈號」。
+ *       （地圖底圖會向國土測繪中心下載查詢位置附近的圖磚，頁面上有寫清楚）
+ *
+ * 規則類文字都附官方出處，2026-09-29 實際讀過：
+ *   臺中市公立國民中小學新生分發及入學實施要點（law.taichung.gov.tw GL000378，103-07-08 修正）第三、四、五點
+ *   115 學年度國小學區表（中區區公所 2026-02-24 轉公告）、國中學區表（西屯區公所 2026-02-11 公告）
+ *   臺中市政府教育局 學區查詢（tc.edu.tw；共同學區／自由學區的各校說明）
+ *   國立中科實驗高級中學 招生資訊（國小部）
+ * 「共同學區」「自由學區」一律照學區表原文標示，⛔ 不自己寫「可選讀」這種規則。
+ */
+import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import config from "@/config";
+import { safeJsonLd } from "@/utils/safeJsonLd";
+import meta from "../../../public/data/school-district/meta.json";
+import schoolInfo from "../../../public/data/school-district/school_info.json";
+import lookupGs from "../../../public/data/school-district/lookup_gs.json";
+
+const pageURL = new URL("/tools/school-district/", Astro.site).href;
+
+// 靜態 JS／資料的版本號：public/_headers.txt 讓 /js/* /data/* 快取 1 天＋背景更新 7 天，
+// 所以網址一定要帶 ?v=，檔案內容一改就換號（算不到就退回學區資料的整理日期）。
+function fileVer(rel: string): string {
+  try {
+    const buf = fs.readFileSync(path.join(process.cwd(), rel));
+    return crypto.createHash("md5").update(buf).digest("hex").slice(0, 10);
+  } catch {
+    return meta.built;
+  }
+}
+const vAddr = fileVer("public/js/tc-addr.js");
+const vSd = fileVer("public/js/sd-lookup.js");
+const vIdx = fileVer("public/data/tc-addr/index.json");
+// 學區資料（zones／lookup／school_info／meta）的 ?v=：6 個檔內容合起來算雜湊，同一天重建也會換號
+const dataVer = (() => {
+  try {
+    const h = crypto.createHash("md5");
+    for (const f of ["meta.json", "school_info.json", "lookup_gs.json", "lookup_jh.json", "zones_gs.json", "zones_jh.json"]) {
+      h.update(fs.readFileSync(path.join(process.cwd(), "public/data/school-district", f)));
+    }
+    return h.digest("hex").slice(0, 10);
+  } catch {
+    return meta.built;
+  }
+})();
+// 「115學年度」→「115 學年度」（頁面其他地方都是這種寫法）
+const yearTxt = String(meta.year).replace(/^(\d+)\s*/, "$1 ");
+
+type SrcMeta = { name: string; url: string; page?: string; version: string; kind?: string; org?: string; year?: string };
+const metaAny = meta as unknown as { tables: SrcMeta[]; sources: SrcMeta[]; attribution: string; licenseUrl: string };
+const tables = metaAny.tables;
+const openData = metaAny.sources.filter(s => s.kind === "opendata");
+const otherData = metaAny.sources.filter(s => s.kind === "other");
+const officialQuery = meta.officialQuery;
+const LAW_URL = "https://law.taichung.gov.tw/LawContent.aspx?id=GL000378";
+const NEHS_URL = "https://www.nehs.tc.edu.tw/招生資訊國小部/";
+const GS_TABLE_PAGE = tables[0].page ?? tables[0].url;
+const JH_TABLE_PAGE = tables[1].page ?? tables[1].url;
+const GS_TABLE_PDF = tables[0].url;
+
+// 國小學區要看到「鄰」才分得出來的里（同一里各鄰對到的學校不一樣）
+type LkEntry = { all?: string[]; lin?: { [k: string]: string[] } };
+const lkEntries = Object.entries(lookupGs as unknown as { [k: string]: LkEntry });
+const splitLi = lkEntries.filter(([k, e]) => {
+  if (k.startsWith("_") || !e.lin || !Object.keys(e.lin).length) return false;
+  const base = e.all ?? [];
+  const sets = new Set(Object.values(e.lin).map(v => [...new Set([...base, ...v])].sort().join("|")));
+  return sets.size > 1 || base.length > 0;
+}).length;
+
+// 依行政區列出學校（給「依行政區找學校」；也讓搜尋引擎讀得到校名）
+const DIST_ORDER = [
+  "中區", "東區", "南區", "西區", "北區", "西屯區", "南屯區", "北屯區", "豐原區", "東勢區",
+  "大甲區", "清水區", "沙鹿區", "梧棲區", "后里區", "神岡區", "潭子區", "大雅區", "新社區", "石岡區",
+  "外埔區", "大安區", "烏日區", "大肚區", "龍井區", "霧峰區", "太平區", "大里區", "和平區",
+];
+type SchoolRow = { id: string; name: string; isNew: boolean };
+type DistGroup = { dist: string; items: SchoolRow[] };
+type InfoRec = { name: string; dist: string; status?: string };
+function groupSchools(level: "gs" | "jh"): DistGroup[] {
+  const src = (schoolInfo as unknown as { [lv: string]: { [id: string]: InfoRec } })[level];
+  const by = new Map<string, SchoolRow[]>();
+  for (const [id, v] of Object.entries(src)) {
+    const list = by.get(v.dist) ?? [];
+    list.push({ id, name: v.name, isNew: !!v.status });
+    by.set(v.dist, list);
+  }
+  return DIST_ORDER.filter(d => by.has(d)).map(d => ({
+    dist: d,
+    items: (by.get(d) ?? []).sort((a, b) => a.name.localeCompare(b.name, "zh-Hant")),
+  }));
+}
+const gsGroups = groupSchools("gs");
+const jhGroups = groupSchools("jh");
+
+const faqs = [
+  {
+    q: "台中學區怎麼查？",
+    a: "在上面輸入門牌地址就能查。要正式確認，用臺中市政府教育局的「學區查詢」，選學校類型和行政區，看各校的學區里鄰。",
+    src: [
+      { name: "臺中市政府教育局 學區查詢", url: officialQuery.url },
+      { name: "115 學年度國小學區表（中區區公所公告）", url: GS_TABLE_PAGE },
+      { name: "臺中市 115 學年度國中學區表（西屯區公所公告）", url: JH_TABLE_PAGE },
+    ],
+  },
+  {
+    q: "共同學區是什麼？",
+    a: "學區表寫「某里第幾鄰為 A 國小及 B 國小共同學區」，就是這幾鄰同時列在兩所學校的學區裡。例：115 學年度國小學區表寫明，東區泉源里第 16 鄰進德路以東，為臺中國小及樂業國小共同學區。至於怎麼分發，各校說法不同，僑忠國小的學區說明是「共同學區可選擇就讀僑忠國小或頭家國小」。有一種是整區的：國小學區表在國立中科實驗高級中學國小部那一列寫「大雅區及西屯區皆為共同學區」，這所學校另外辦招生，要網路報名、抽籤。遇到共同學區，工具會亮黃燈，每一所都列出來。",
+    src: [
+      { name: "115 學年度國小學區表（PDF）", url: GS_TABLE_PDF },
+      { name: "臺中市政府教育局 學區查詢（各校學區說明）", url: officialQuery.url },
+      { name: "國立中科實驗高級中學 招生資訊（國小部）", url: NEHS_URL },
+    ],
+  },
+  {
+    q: "自由學區是什麼？",
+    a: "學區表有幾個地方寫「自由學區」：國中學區表在和平國中那一列，行政區寫和平區，里鄰只寫【自由學區】；國小學區表把太平區黃竹里列為自由學區。同樣叫自由學區，意思不一定一樣。黃竹國小的說明是「本校為自由學區（台中市全區、入學免遷戶籍）」。大里區瑞城里第 4 鄰，瑞城國小那一列寫【自由學區】，美群國小那一列寫【共同學區】，並註明「共同學區可選擇就讀瑞城國小或美群國小」。",
+    src: [
+      { name: "115 學年度國小學區表（PDF）", url: GS_TABLE_PDF },
+      { name: "臺中市 115 學年度國中學區表（西屯區公所公告）", url: JH_TABLE_PAGE },
+      { name: "臺中市政府教育局 學區查詢（各校學區說明）", url: officialQuery.url },
+    ],
+  },
+  {
+    q: "學區以什麼為準？買了房子就能讀嗎？",
+    a: "看兩件事：教育局公告的學區表，和孩子的戶籍。《臺中市公立國民中小學新生分發及入學實施要點》第三點寫明，入學以「設籍並實際居住於學區內之學齡學生」為對象。第四點是學生數超額學校的作法：新生依設籍先後分發到額滿為止，其餘由原校協調轉介到鄰近學校（第二款）；超額學校做入學資格審查時，會核對房屋所有權狀正本、經法院公證的租賃契約正本，或其他足以證明實際居住的文件（第五款）。所以看的是設籍加上實際居住，不是只看房子在哪裡。熱門學校有沒有額滿、要多早設籍，請直接問學校。",
+    src: [{ name: "臺中市公立國民中小學新生分發及入學實施要點（103-07-08 修正）", url: LAW_URL }],
+  },
+  {
+    q: "學區資料多久更新？",
+    a: "學區表是以「學年度」為單位公告：115 學年度國中學區表在 2026-02-11、國小學區表在 2026-02-24 由區公所轉公告，國小另附當年度的「學區調整說明表」。上面那份實施要點第五點也寫明，教育局得定期檢討學區劃分。這頁用的是 115 學年度學區表，門牌資料是臺中市 115 年 1 月版，版本都寫在頁面下方的資料來源。",
+    src: [
+      { name: "115 學年度國小學區表公告（2026-02-24）", url: GS_TABLE_PAGE },
+      { name: "臺中市 115 學年度國中學區表公告（2026-02-11）", url: JH_TABLE_PAGE },
+      { name: "新生分發及入學實施要點 第五點", url: LAW_URL },
+    ],
+  },
+  {
+    q: "地圖和地址查詢的結果不一樣，要看哪一個？",
+    a: "看地址查詢。地圖上的學區交界是依門牌位置推估的，交界附近不一定準；同一鄰依路段分給不同學校的地方，地圖上兩校範圍會重疊。地址查詢直接用門牌資料對學區表，兩者不同時以地址查詢為準。",
+    src: [] as { name: string; url: string }[],
+  },
+];
+
+const appSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "台中學區查詢地圖（國小・國中）",
+  applicationCategory: "EducationalApplication",
+  operatingSystem: "Web",
+  url: pageURL,
+  description:
+    "輸入台中的門牌地址，不用知道里鄰，查這個地址在哪一所國小、國中的學區（115 學年度），並列出判斷依據的里鄰；地圖分色標示每所學校的學區。",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "TWD" },
+  provider: { "@id": `${config.site.url}#realestateagent` },
+};
+
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "首頁", item: config.site.url },
+    { "@type": "ListItem", position: 2, name: "客戶工具", item: `${config.site.url}tools/` },
+    { "@type": "ListItem", position: 3, name: "台中學區查詢", item: pageURL },
+  ],
+};
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map(f => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
+
+const chipCls =
+  "border-border bg-background hover:border-accent inline-flex min-h-11 items-center rounded-full border px-3 text-sm";
+---
+
+<Layout
+  title={`台中學區查詢地圖｜輸入地址查國小、國中（115 學年度） | ${config.site.title}`}
+  description="台中學區查詢：輸入門牌地址，不用知道里鄰，就能查國小、國中學區（115 學年度），附判斷依據的里鄰與官方查詢連結；地圖分色標示各校學區。"
+  canonicalURL={pageURL}
+  ogImage="/og/page-tools.jpg"
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(appSchema)} />
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(breadcrumbSchema)} />
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(faqSchema)} />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+  </Fragment>
+  <Header />
+
+  <main id="main-content" class="pb-6">
+    <div
+      id="sd-app"
+      class="mx-auto w-full max-w-[1440px] px-4 sm:px-6"
+      data-v={dataVer}
+      data-vidx={vIdx}
+      data-official={officialQuery.url}
+      data-gs-table={GS_TABLE_PAGE}
+      data-jh-table={JH_TABLE_PAGE}
+    >
+      <h1 class="mt-6 text-2xl font-extrabold sm:text-3xl">台中學區查詢（國小・國中）</h1>
+      <p class="text-muted-foreground mt-2 mb-4 sm:mb-6">
+        輸入門牌地址，不用知道里、鄰，就能查這個地址在哪一所國小、國中的學區（{yearTxt}）。
+      </p>
+
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-[380px_minmax(0,1fr)] lg:gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
+        {/* ===== 左：地址查詢＋結果 ===== */}
+        <div class="min-w-0 space-y-4">
+          <section class="card-surface p-4" aria-labelledby="sd-q-title">
+            <label id="sd-q-title" for="sd-addr" class="text-base font-bold">輸入地址查學區</label>
+            <form id="sd-form" class="mt-2 flex gap-2" role="search" autocomplete="off">
+              <input
+                id="sd-addr"
+                type="text"
+                inputmode="text"
+                enterkeyhint="search"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="例：福星路123號"
+                aria-describedby="sd-q-hint"
+                class="border-border bg-background min-h-11 min-w-0 flex-1 rounded-md border px-3 py-2 text-base"
+              />
+              <button id="sd-go" type="submit" class="btn-primary shrink-0 px-5">查詢</button>
+            </form>
+            <p id="sd-q-hint" class="text-muted-foreground mt-2 text-sm leading-relaxed">
+              照平常寫法打：樓層、之幾號、全形數字、「三段／3段」、沒寫行政區都可以。
+              你打的地址只在你的手機或電腦裡比對，不會傳出去（地圖會向國土測繪中心下載那一帶的底圖）。
+              網站的匿名使用統計只記查詢有沒有成功、定位精度、燈號和行政區，不含地址。
+            </p>
+            <div class="mt-3 flex flex-wrap items-center gap-2">
+              <button id="sd-here" type="button" class="border-border bg-background hover:border-accent inline-flex min-h-11 items-center gap-1.5 rounded-md border px-3 text-sm">
+                <span aria-hidden="true">📍</span>用我的位置
+              </button>
+              <span class="text-muted-foreground text-sm">試試看：</span>
+              <button type="button" class={chipCls} data-example="西屯區福星路123號5樓">福星路123號5樓</button>
+              <button type="button" class={chipCls} data-example="北屯區崇德路三段200號">崇德路三段200號</button>
+              <button type="button" class={chipCls} data-example="北屯區崇德路二段">只打路名</button>
+            </div>
+            <p id="sd-status" class="text-muted-foreground mt-3 min-h-5 text-sm" role="status" aria-live="polite"></p>
+            <p class="text-muted-foreground mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+              <span class="inline-flex items-center gap-1"><span class="sd-dot sd-dot-green" aria-hidden="true"></span>只有一所</span>
+              <span class="inline-flex items-center gap-1"><span class="sd-dot sd-dot-yellow" aria-hidden="true"></span>可能不只一所，全部列出</span>
+              <span class="inline-flex items-center gap-1"><span class="sd-dot sd-dot-none" aria-hidden="true"></span>學區表查無</span>
+            </p>
+          </section>
+
+          <section id="sd-result" class="scroll-mt-4" aria-live="polite" hidden></section>
+
+          <p class="text-muted-foreground text-sm leading-relaxed">
+            ⚠️ 僅供參考，以教育局公告的學區表與學校通知為準。本工具依 {yearTxt}學區表（<a class="text-accent underline" href={GS_TABLE_PAGE} target="_blank" rel="noopener">國小</a>、<a class="text-accent underline" href={JH_TABLE_PAGE} target="_blank" rel="noopener">國中</a>）＋臺中市 115 年 1 月門牌資料。
+            正式查詢：<a class="text-accent underline" href={officialQuery.url} target="_blank" rel="noopener">臺中市政府教育局 學區查詢</a>
+          </p>
+        </div>
+
+        {/* ===== 右：地圖 ===== */}
+        <div class="min-w-0 lg:sticky lg:top-4 lg:self-start">
+          <section class="card-surface p-2 sm:p-3" aria-label="學區地圖">
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="border-border inline-flex shrink-0 overflow-hidden rounded-md border" role="group" aria-label="切換國小或國中學區">
+                <button type="button" data-level-btn="gs" aria-pressed="true" class="sd-seg min-h-11 px-4 text-sm font-semibold">國小</button>
+                <button type="button" data-level-btn="jh" aria-pressed="false" class="sd-seg border-border min-h-11 border-s px-4 text-sm font-semibold">國中</button>
+              </div>
+              <div class="relative min-w-0 flex-1 basis-40">
+                <label for="sd-school" class="sr-only">依校名找學校</label>
+                <input
+                  id="sd-school"
+                  type="search"
+                  role="combobox"
+                  enterkeyhint="search"
+                  autocomplete="off"
+                  placeholder="搜尋校名，例：四維"
+                  class="border-border bg-background min-h-11 w-full min-w-0 rounded-md border px-3 text-base"
+                  aria-controls="sd-school-list"
+                  aria-autocomplete="list"
+                  aria-expanded="false"
+                />
+                <ul id="sd-school-list" class="bg-card border-border absolute inset-x-0 top-full z-20 mt-1 max-h-72 overflow-y-auto rounded-md border shadow-lg" role="listbox" hidden></ul>
+              </div>
+            </div>
+            <div class="mt-1 flex flex-wrap items-center gap-x-4 text-sm">
+              <label class="inline-flex min-h-11 items-center gap-2"><input id="sd-show-schools" type="checkbox" class="size-4" checked /> 學校位置</label>
+              <label class="inline-flex min-h-11 items-center gap-2"><input id="sd-show-labels" type="checkbox" class="size-4" checked /> 校名（放大才顯示）</label>
+            </div>
+
+            <div class="relative mt-1">
+              <div
+                id="sd-map"
+                class="border-border h-[60vh] max-h-[680px] min-h-[260px] w-full rounded-lg border lg:h-[calc(100vh-12rem)] lg:max-h-[900px] lg:min-h-[520px]"
+                role="application"
+                aria-label="台中國小、國中學區地圖"
+              ></div>
+              <div id="sd-map-msg" class="pointer-events-none absolute inset-0 z-10 grid place-items-center p-4" hidden>
+                <p class="bg-card border-border rounded-md border px-4 py-3 text-center text-sm shadow"></p>
+              </div>
+              <div id="sd-gesture" class="pointer-events-none absolute inset-0 z-10 grid place-items-center rounded-lg bg-black/45 p-4 text-center text-base font-semibold text-white opacity-0 transition-opacity duration-200">
+                用兩根手指移動、縮放地圖
+              </div>
+            </div>
+            <p id="sd-legend" class="text-muted-foreground mt-2 text-sm leading-relaxed">
+              每個顏色是一所學校的學區（顏色只用來分開相鄰學區）。交界是依門牌位置推估的，交界附近請用地址查詢。點地圖看那裡的學區。
+            </p>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-layout mt-10">
+      <section>
+        <h2 class="text-xl font-semibold">為什麼一定要輸入門牌號碼？</h2>
+        <p class="mt-2 leading-relaxed">
+          台中全市 {meta.counts.li} 個里，有 {splitLi} 個里的國小學區要看到「鄰」才分得出來。同一條路，隔幾個門牌號碼，可能就在不同學校的學區。
+        </p>
+        <p class="mt-2 leading-relaxed">
+          地址上不會寫里、鄰。這個工具先用臺中市政府的門牌資料，把地址對到里與鄰，再去對教育局公告的學區表。結果卡會寫出「系統判定的里、鄰」和定位精度，依據攤開給你看。
+        </p>
+        <p class="text-muted-foreground mt-2 text-sm">📌 里數依臺中市政府民政局鄰長名冊（{meta.counts.li} 里）；要看到鄰才分得出來的里，依 {yearTxt}國小學區表逐里統計（學區表來源見下方）。</p>
+
+        <h3 class="mt-6 text-lg font-semibold">燈號怎麼看</h3>
+        <ul class="mt-2 space-y-2 text-sm leading-relaxed">
+          <li class="flex gap-2"><span class="sd-dot sd-dot-green mt-1.5 shrink-0" aria-hidden="true"></span><span><strong>綠燈：只有一所。</strong>門牌對到的里鄰只在一所學校的學區裡。寫著「推估」的，是門牌資料沒有這個號碼，但同一號的其他門牌和前後門牌，全都在同一所學校的學區。</span></li>
+          <li class="flex gap-2"><span class="sd-dot sd-dot-yellow mt-1.5 shrink-0" aria-hidden="true"></span><span><strong>黃燈：可能不只一所，全部列出來，請再向學校確認。</strong>遇到下面任一種就亮黃燈：
+            <ul class="mt-1 space-y-0.5 ps-5" style="list-style:disc;">
+              <li>學區表寫明共同學區、自由學區，或註記「可選…就讀」</li>
+              <li>同一鄰依路段分給不同學校</li>
+              <li>整區另列一所學校（西屯區、大雅區的國小另有中科實中國小部；和平區的國中另有和平國中）</li>
+              <li>門牌資料沒有這個號，附近門牌分屬不同學區</li>
+              <li>同一個門牌號登記在不同里鄰</li>
+              <li>門牌寫法有兩種讀法</li>
+              <li>行政區、段別或路名是工具推測的（沒寫區、沒寫段，或打的那條路沒有這個門牌、改用同名的另一段）</li>
+              <li>只輸入到路名、巷名</li>
+            </ul></span></li>
+          <li class="flex gap-2"><span class="sd-dot sd-dot-none mt-1.5 shrink-0" aria-hidden="true"></span><span><strong>查無：</strong>官方學區表沒有列到這個里鄰，結果卡會附教育局學區查詢的連結。</span></li>
+        </ul>
+
+        <h3 class="mt-6 text-lg font-semibold">輸入地址的小提醒</h3>
+        <ul class="mt-2 space-y-1.5 ps-5 text-sm leading-relaxed" style="list-style:disc;">
+          <li>樓層不影響學區：「12號5樓之3」看的是 12 號。</li>
+          <li>「12之1號」「12號之1」都當成 12 之 1 號。</li>
+          <li>「12號之15樓」分不出是「12 之 1 號 5 樓」還是「12 之 15 號」，兩種都會查；寫成「12之1號5樓」最清楚。</li>
+          <li>門牌號碼前面有字的（例：臨3號、某某新村6號），請照門牌上的寫法打。只打「3號」時，同一個號的這類門牌也會一起列出來。</li>
+          <li>沒寫行政區也可以；同名的路在好幾區都有時，會請你選區。</li>
+          <li>新大樓的門牌如果還不在門牌資料裡，會用同一條路（巷）同一號的其他門牌和前後門牌推估，並列出那幾個門牌的里鄰；對到不同學校時亮黃燈、全部列出。</li>
+          <li>只打里名（例：太平區黃竹里）時，會列出學區表上這個里的學校；同一個里各鄰分屬不同學校的，要打路名和門牌號碼才分得出來。</li>
+          <li>只打到路名或巷名，會列出這段路（這條巷）經過的所有里鄰和可能的學校。</li>
+          <li>戶口名簿上有里鄰的話可以一起打（例：北屯區平安里11鄰崇德路二段46號）；跟門牌資料不同時，兩邊對到的學校都會列出來。</li>
+        </ul>
+      </section>
+
+      <hr class="my-8 border-dashed" />
+
+      <section>
+        <h2 class="text-xl font-semibold">依行政區找學校</h2>
+        <p class="text-muted-foreground mt-1 text-sm">點校名，地圖會打開那所學校的學區。</p>
+        <details class="border-border mt-3 rounded-md border p-3">
+          <summary class="cursor-pointer font-medium">國小（{meta.counts.gs} 所）</summary>
+          <div class="mt-3 space-y-3">
+            {gsGroups.map(g => (
+              <div>
+                <p class="text-muted-foreground text-sm font-semibold">{g.dist}</p>
+                <div class="mt-1 flex flex-wrap gap-1.5">
+                  {g.items.map(s => (
+                    <button type="button" class="sd-sb" data-goto-school={s.id} data-goto-level="gs">{s.name}{s.isNew ? "（115 學年度新設）" : ""}</button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </details>
+        <details class="border-border mt-3 rounded-md border p-3">
+          <summary class="cursor-pointer font-medium">國中（{meta.counts.jh} 所）</summary>
+          <div class="mt-3 space-y-3">
+            {jhGroups.map(g => (
+              <div>
+                <p class="text-muted-foreground text-sm font-semibold">{g.dist}</p>
+                <div class="mt-1 flex flex-wrap gap-1.5">
+                  {g.items.map(s => (
+                    <button type="button" class="sd-sb" data-goto-school={s.id} data-goto-level="jh">{s.name}{s.isNew ? "（115 學年度新設）" : ""}</button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </details>
+      </section>
+
+      <hr class="my-8 border-dashed" />
+
+      <section>
+        <h2 class="text-xl font-semibold">常見問題</h2>
+        <div class="mt-3 space-y-3">
+          {faqs.map(f => (
+            <details class="border-border rounded-md border p-3">
+              <summary class="cursor-pointer font-medium">{f.q}</summary>
+              <p class="text-muted-foreground mt-2 text-sm leading-relaxed">{f.a}</p>
+              {f.src.length > 0 && (
+                <p class="text-muted-foreground mt-2 text-sm leading-relaxed break-words">
+                  📌 資料來源：{f.src.map((s, i) => (
+                    <Fragment>{i > 0 && "／"}<a class="underline" href={s.url} target="_blank" rel="noopener">{s.name}</a></Fragment>
+                  ))}
+                </p>
+              )}
+            </details>
+          ))}
+        </div>
+      </section>
+
+      <hr class="my-8 border-dashed" />
+
+      <section>
+        <h2 class="text-xl font-semibold">這個工具的限制，先講清楚</h2>
+        <ul class="mt-3 space-y-2 ps-5 text-sm leading-relaxed" style="list-style:disc;">
+          <li><strong>僅供參考，以官方公告為準。</strong>入學看設籍與實際居住，最後讀哪一所，看學校的入學通知。</li>
+          <li>門牌資料是臺中市 <strong>115 年 1 月</strong>版，之後才編的門牌不在裡面。</li>
+          <li>同一鄰依路段分給不同學校時（例如北屯區仁和里第 18 鄰以崇德八路為界），工具會把學區表的原文條件列出來，不替你判斷在哪一側。</li>
+          <li>少數里鄰在官方學區表上找不到對應學校（國小約 {meta.coverage.gs.addr_unmatched} 個門牌、國中約 {meta.coverage.jh.addr_unmatched} 個門牌，不到全市門牌的萬分之二），會顯示「查無」並附官方查詢連結。</li>
+          <li>少數學校的學區說明還是 113、114 學年度的寫法（例：松竹國小；見<a class="text-accent underline" href={officialQuery.url} target="_blank" rel="noopener">教育局學區查詢</a>，2026-09-29 查閱）。本工具依 115 學年度公告的學區表；兩邊不同時，請看公告的學區表，或直接問學校。</li>
+          <li>只查臺中市的地址；其他縣市請用當地教育局的學區查詢。</li>
+        </ul>
+
+        <h2 class="mt-8 text-xl font-semibold">資料來源與版本</h2>
+        <h3 class="mt-4 font-semibold">學區表與規定（官方公告）</h3>
+        <ul class="mt-2 space-y-2 text-sm leading-relaxed break-words">
+          {tables.map(s => (
+            <li>
+              <a class="text-accent underline" href={s.page ?? s.url} target="_blank" rel="noopener">{s.name}</a>
+              <span class="text-muted-foreground">（{s.version}；<a class="underline" href={s.url} target="_blank" rel="noopener">原始檔</a>）</span>
+            </li>
+          ))}
+          <li><a class="text-accent underline" href={LAW_URL} target="_blank" rel="noopener">臺中市公立國民中小學新生分發及入學實施要點</a><span class="text-muted-foreground">（民國 103 年 7 月 8 日修正；2026-09-29 查閱）</span></li>
+          <li><a class="text-accent underline" href={officialQuery.url} target="_blank" rel="noopener">臺中市政府教育局 學區查詢</a><span class="text-muted-foreground">（2026-09-29 查閱）</span></li>
+          <li><a class="text-accent underline" href={NEHS_URL} target="_blank" rel="noopener">國立中科實驗高級中學 招生資訊（國小部）</a><span class="text-muted-foreground">（2026-09-29 查閱）</span></li>
+        </ul>
+        <h3 class="mt-4 font-semibold">開放資料</h3>
+        <ul class="mt-2 space-y-2 text-sm leading-relaxed break-words">
+          {openData.map(s => (
+            <li>
+              {s.org} {s.year} <a class="text-accent underline" href={s.page ?? s.url} target="_blank" rel="noopener">{s.name.replace(s.org ?? "", "")}</a> {s.version}
+            </li>
+          ))}
+        </ul>
+        <p class="text-muted-foreground mt-2 text-sm leading-relaxed">
+          {metaAny.attribution}
+          <a class="underline" href={metaAny.licenseUrl} target="_blank" rel="noopener">政府資料開放授權條款</a>
+        </p>
+        <h3 class="mt-4 font-semibold">其他資料</h3>
+        <ul class="mt-2 space-y-2 text-sm leading-relaxed break-words">
+          {otherData.map(s => (
+            <li>
+              <a class="text-accent underline" href={s.page ?? s.url} target="_blank" rel="noopener">{s.name}</a>
+              <span class="text-muted-foreground">（{s.version}）</span>
+            </li>
+          ))}
+          <li>地圖底圖：© 內政部國土測繪中心「臺灣通用電子地圖」（線上圖磚，2026-09 取用）</li>
+        </ul>
+        <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
+          本頁為整理後的加值應用，資料整理日期：{meta.built}。學校座標依教育部學校名錄的校址定位，只用來在地圖上標示位置。
+        </p>
+      </section>
+
+      <p class="mt-8 text-sm leading-relaxed">
+        看房時想確認學區、或想找某所學校學區裡的房子，LINE 傳地址或校名過來，一起對照學區表：
+        <a class="text-accent underline" href="/go/line?src=school-district">LINE sky811117</a>
+      </p>
+
+      <hr class="my-8 border-dashed" />
+
+      <p class="text-muted-foreground text-sm">
+        <strong>陳景泰 — 一品不動產（有巢氏房屋台中世界之心加盟店）</strong><br />
+        經紀人黃永隆 113 彰縣字第 324 號 / 營業員陳景泰 114 登字第 488296 號<br />
+        0920-118-756 / LINE <a class="text-accent underline" href="/go/line?src=school-district">sky811117</a>
+      </p>
+    </div>
+  </main>
+
+  <Footer />
+
+  <style is:global>
+    .sd-sb { min-height: 44px; padding: 0 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+    .sd-sb:hover { border-color: var(--accent); }
+    .sd-dot { display: inline-block; width: 10px; height: 10px; border-radius: 9999px; }
+    .sd-dot-green { background: #16a34a; }
+    .sd-dot-yellow { background: #f59e0b; }
+    .sd-dot-none { background: #a8a29e; }
+    .sd-seg[aria-pressed="true"] { background: var(--accent); color: var(--accent-foreground); }
+    .sd-seg[aria-pressed="false"] { background: var(--background); color: var(--foreground); }
+
+    /* 地圖自成一個疊層：Leaflet 控制項的 z-index 1000 不會蓋到 cookie 橫幅與 LINE 浮動鈕 */
+    #sd-map { isolation: isolate; z-index: 0; background: #eef0ec; }
+    #sd-map.leaflet-container { font-family: inherit; font-size: 14px; }
+    #sd-map .leaflet-popup-content-wrapper,
+    #sd-map .leaflet-popup-tip { background: var(--card); color: var(--foreground); }
+    /* 彈窗高度由 popW() 依地圖實際高度給 Leaflet 的 maxHeight（矮地圖也不會被下緣切掉）；右邊留 30px 給關閉鈕，捲動時 X 不壓字 */
+    #sd-map .leaflet-popup-content { margin: 12px 30px 12px 14px; line-height: 1.55; overflow-y: auto; overscroll-behavior: contain; }
+    #sd-map a.leaflet-popup-close-button { width: 44px; height: 44px; font: 26px/44px Tahoma, Verdana, sans-serif; color: var(--muted-foreground); }
+    #sd-map .leaflet-tooltip.sd-tip { background: var(--card); color: var(--foreground); border: 1px solid var(--border); font-weight: 600; font-size: 14px; box-shadow: 0 2px 8px rgb(0 0 0 / 0.15); }
+    #sd-map .leaflet-tooltip.sd-tip::before { display: none; }
+    #sd-map .leaflet-control-attribution { font-size: 11px; }
+    /* 觸控：放大縮小鈕 44px，手指點得到 */
+    #sd-map.leaflet-touch .leaflet-bar a { width: 44px; height: 44px; line-height: 44px; font-size: 22px; }
+    [data-theme="dark"] #sd-map .leaflet-control-zoom a { background: #2c2522; color: #f5f1eb; border-color: #3a3530; }
+
+    .sd-pop { font-size: 15px; }
+    .sd-pop p { margin: 0; }
+    .sd-pop-k { font-size: 14px; color: var(--muted-foreground); }
+    .sd-pop-t { font-size: 17px; font-weight: 800; margin-top: 2px !important; }
+    .sd-pop-s { font-size: 14px; color: var(--muted-foreground); margin-top: 2px !important; }
+    .sd-pop-tag { display: inline-block; margin-top: 6px; font-size: 14px; padding: 1px 8px; border-radius: 9999px; background: var(--muted); }
+    .sd-pop-h { font-weight: 700; margin-top: 10px !important; font-size: 15px; }
+    .sd-pop-l { margin: 4px 0 0; padding-left: 18px; list-style: disc; font-size: 14px; }
+    .sd-pop-l li { margin: 2px 0; }
+    .sd-pop-n { margin: 8px 0 0; padding: 8px 10px; list-style: none; font-size: 14px; background: var(--muted); border-radius: 8px; }
+    .sd-pop-n li + li { margin-top: 4px; }
+    .sd-pop-n a { text-decoration: underline; }
+    .sd-pop-a { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .sd-pop-a a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 8px; font-weight: 600; font-size: 15px; text-decoration: none; }
+    .sd-pop-a a.sd-pop-off { border: 1.5px solid var(--accent); color: var(--accent); }
+    .sd-pop-a a.sd-pop-line { background: var(--color-line, #0c8540); color: #fff; }
+    .sd-pop-here { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed var(--border); }
+    .sd-pop-here b { font-weight: 800; }
+    .sd-pop-warn { font-size: 14px; color: var(--muted-foreground); margin-top: 4px !important; }
+    .sd-pop-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .sd-pop-btns button, .sd-pop-inline { min-height: 44px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--background); color: var(--foreground); font-size: 15px; }
+    .sd-pop-btns button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .sd-pop-inline { margin-top: 8px; }
+
+    /* 學校點：滑鼠 24px、觸控 40px 的點擊範圍，看得到的點都是 12px；校名在放大到街道層級才顯示 */
+    .sd-school { cursor: pointer; }
+    .sd-school-dot { position: absolute; left: 6px; top: 6px; width: 12px; height: 12px; border-radius: 9999px; background: #fff; border: 2.5px solid #1c1917; box-shadow: 0 0 0 1.5px #fff; box-sizing: border-box; }
+    .sd-school-name { display: none; position: absolute; left: 22px; top: 2px; white-space: nowrap; font-size: 14px; font-weight: 700; color: #1c1917; text-shadow: 0 0 2px #fff, 0 0 3px #fff, 0 0 4px #fff, 0 0 5px #fff; pointer-events: none; }
+    .sd-touch .sd-school-dot { left: 14px; top: 14px; }
+    .sd-touch .sd-school-name { left: 30px; top: 11px; }
+    .sd-labels-on .sd-school-name { display: block; }
+    .sd-z-low .sd-school-dot { transform: scale(0.7); }
+    .sd-pin { position: relative; }
+    .sd-pin::before { content: ""; position: absolute; left: 3px; top: 0; width: 24px; height: 24px; border-radius: 50% 50% 50% 0; background: #dc2626; border: 3px solid #fff; transform: rotate(-45deg); box-shadow: 0 2px 6px rgb(0 0 0 / 0.35); box-sizing: border-box; }
+    .sd-pin::after { content: ""; position: absolute; left: 12px; top: 8px; width: 6px; height: 6px; border-radius: 50%; background: #fff; }
+  </style>
+
+  <script
+    is:inline
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+  <script is:inline src={`/js/tc-addr.js?v=${vAddr}`}></script>
+  <script is:inline src={`/js/sd-lookup.js?v=${vSd}`}></script>
+
+  <script is:inline>
+    (function () {
+      "use strict";
+      var app = document.getElementById("sd-app");
+      if (!app) return;
+      var V = app.getAttribute("data-v") || "";
+      var VIDX = app.getAttribute("data-vidx") || "";
+      var OFFICIAL = app.getAttribute("data-official") || "https://www.tc.edu.tw/";
+      var GS_TABLE = app.getAttribute("data-gs-table") || OFFICIAL;
+      var JH_TABLE = app.getAttribute("data-jh-table") || OFFICIAL;
+      var LINE_HREF = "/go/line?src=school-district";
+      var LV = { gs: "國小", jh: "國中" };
+      var TC_BOUNDS = [[23.97, 120.45], [24.46, 121.47]];
+
+      var $ = function (id) { return document.getElementById(id); };
+      var el = {
+        form: $("sd-form"), addr: $("sd-addr"), go: $("sd-go"), here: $("sd-here"),
+        status: $("sd-status"), result: $("sd-result"), map: $("sd-map"), mapMsg: $("sd-map-msg"),
+        gesture: $("sd-gesture"), school: $("sd-school"), schoolList: $("sd-school-list"),
+        showSchools: $("sd-show-schools"), showLabels: $("sd-show-labels"), legend: $("sd-legend")
+      };
+
+      function esc(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+      }
+      function setStatus(msg) { el.status.textContent = msg || ""; }
+      function isDesktop() { return window.matchMedia("(min-width: 1024px)").matches; }
+      function mq(q) { try { return window.matchMedia(q).matches; } catch (e) { return false; } }
+      var isTouch = mq("(pointer: coarse)") || (!mq("(hover: hover)") && "ontouchstart" in window);
+      var canHover = mq("(hover: hover)") && mq("(pointer: fine)");
+
+      // GA4：只記「查詢成功或失敗、精度、行政區、燈號」，絕不帶地址或座標
+      function track(name, params) {
+        try {
+          if (window.__gaMeasure === true && typeof window.gtag === "function") window.gtag("event", name, params);
+        } catch (e) {}
+      }
+
+      /* ================= 地圖 ================= */
+      var map = null, canvas = null, zoneLayer = null, schoolLayer = null, pinLayer = null;
+      var level = "gs";
+      var INFO = null;                              // SchoolDistrict.loadInfo()：{meta, info}（學校清單，畫學校點用）
+      var data = null;                              // SchoolDistrict.load()：查地址用的全部資料
+      var zones = { gs: null, jh: null }, zoneReq = { gs: null, jh: null };
+      var zoneIdx = { gs: null, jh: null }, zoneById = { gs: {}, jh: {} };
+      var hi = {};                                  // 目前高亮的校 id
+      var focusIds = { gs: [], jh: [] };            // 查詢結果對應的學校（切換國小／國中時沿用）
+      var popCtx = null;                            // 點地圖彈窗的內容狀態
+      var infoFailed = false;                       // 開頁載學校清單失敗
+
+      function infoOf(lv) { return (INFO && INFO.info && INFO.info[lv]) || {}; }
+
+      var PAL = [
+        { c: "#1d4ed8", f: "#3b82f6" },
+        { c: "#15803d", f: "#22c55e" },
+        { c: "#b45309", f: "#f59e0b" },
+        { c: "#be185d", f: "#ec4899" },
+        { c: "#6d28d9", f: "#8b5cf6" }
+      ];
+      function zoneStyle(p, on) {
+        if (p.wide) {
+          return { color: "#57534e", weight: on ? 2.5 : 1.5, opacity: 0.85, dashArray: "8 6", fillColor: "#a8a29e", fillOpacity: on ? 0.12 : 0.04 };
+        }
+        var k = PAL[(p.ci || 0) % PAL.length];
+        return { color: k.c, weight: on ? 3.5 : 1.2, opacity: on ? 1 : 0.85, fillColor: k.f, fillOpacity: on ? 0.4 : 0.16 };
+      }
+
+      function mapMsg(msg) {
+        if (!el.mapMsg) return;
+        el.mapMsg.hidden = !msg;
+        el.mapMsg.firstElementChild.textContent = msg || "";
+      }
+
+      function initMap() {
+        canvas = L.canvas({ padding: 0.4, tolerance: isTouch ? 6 : 2 });
+        map = L.map(el.map, {
+          preferCanvas: true,
+          renderer: canvas,
+          zoomControl: false,
+          // 觸控裝置：單指留給捲動頁面，兩指移動、縮放地圖（不會卡在地圖裡捲不下去）
+          dragging: !isTouch,
+          scrollWheelZoom: !isTouch,
+          minZoom: 9,
+          maxZoom: 18,
+          maxBounds: [[23.75, 120.2], [24.7, 121.7]],
+          maxBoundsViscosity: 0.8
+        });
+        // 觸控裝置用兩指縮放（也可以點兩下放大），不放縮放鈕：左上角空出來給彈窗，矮螢幕才放得下
+        if (!isTouch) L.control.zoom({ zoomInTitle: "放大", zoomOutTitle: "縮小" }).addTo(map);
+        else el.map.classList.add("sd-touch");
+        map.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener" title="Leaflet 地圖元件">Leaflet</a>');
+        map.fitBounds(isDesktop() ? [[24.09, 120.58], [24.24, 120.76]] : [[24.11, 120.61], [24.22, 120.73]]);
+        L.tileLayer("https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}", {
+          maxZoom: 18,
+          attribution: '© <a href="https://maps.nlsc.gov.tw/" target="_blank" rel="noopener">內政部國土測繪中心</a>'
+        }).addTo(map);
+        pinLayer = L.layerGroup().addTo(map);
+        map.on("click", onMapClick);
+        map.on("zoomend", updateLabels);
+
+        if (isTouch && el.gesture) {
+          var t = null;
+          el.map.addEventListener("touchmove", function (e) {
+            if (e.touches && e.touches.length === 1) {
+              el.gesture.style.opacity = "1";
+              clearTimeout(t);
+              t = setTimeout(function () { el.gesture.style.opacity = "0"; }, 1200);
+            }
+          }, { passive: true });
+          el.map.addEventListener("touchend", function () {
+            clearTimeout(t);
+            t = setTimeout(function () { el.gesture.style.opacity = "0"; }, 700);
+          }, { passive: true });
+          el.legend.textContent = "每個顏色是一所學校的學區。交界是依門牌位置推估的，交界附近請用地址查詢。點地圖看那裡的學區；手機用兩根手指移動、縮放地圖，單指可以正常捲動頁面。";
+        }
+        // 彈窗裡的按鈕（Leaflet 會擋掉冒泡，所以用捕獲階段）
+        el.map.addEventListener("click", onPopupClick, true);
+      }
+
+      function indexZones(gj) {
+        var out = [];
+        gj.features.forEach(function (f) {
+          var g = f.geometry;
+          if (!g) return;
+          var polys = g.type === "Polygon" ? [g.coordinates] : g.coordinates;
+          var bb = [999, 999, -999, -999];
+          polys.forEach(function (poly) {
+            poly[0].forEach(function (c) {
+              if (c[0] < bb[0]) bb[0] = c[0];
+              if (c[1] < bb[1]) bb[1] = c[1];
+              if (c[0] > bb[2]) bb[2] = c[0];
+              if (c[1] > bb[3]) bb[3] = c[1];
+            });
+          });
+          out.push({ id: f.properties.school, p: f.properties, polys: polys, bb: bb });
+        });
+        return out;
+      }
+      function inRing(x, y, ring) {
+        var inside = false;
+        for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+          var xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+          if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+        }
+        return inside;
+      }
+      function inPoly(x, y, poly) {
+        if (!inRing(x, y, poly[0])) return false;
+        for (var k = 1; k < poly.length; k++) if (inRing(x, y, poly[k])) return false;
+        return true;
+      }
+      function zonesAt(lv, lat, lng) {
+        var idx = zoneIdx[lv] || [];
+        return idx.filter(function (z) {
+          if (lng < z.bb[0] || lng > z.bb[2] || lat < z.bb[1] || lat > z.bb[3]) return false;
+          for (var i = 0; i < z.polys.length; i++) if (inPoly(lng, lat, z.polys[i])) return true;
+          return false;
+        });
+      }
+      // 某點周圍（半徑 m 公尺，8 個方向＋中心）落在哪些一般學區：各點不一樣＝在學區交界附近
+      function ringSets(lv, lat, lng, m) {
+        var dLat = m / 111320, dLng = m / (111320 * Math.cos(lat * Math.PI / 180));
+        var pts = [[lat, lng]];
+        for (var i = 0; i < 8; i++) {
+          var a = i * Math.PI / 4;
+          pts.push([lat + dLat * Math.sin(a), lng + dLng * Math.cos(a)]);
+        }
+        var sigs = {}, union = {}, order = [];
+        pts.forEach(function (p) {
+          var ids = zonesAt(lv, p[0], p[1]).filter(function (z) { return !z.p.wide; }).map(function (z) { return z.id; }).sort();
+          sigs[ids.join("|")] = 1;
+          ids.forEach(function (id) { if (!union[id]) { union[id] = 1; order.push(id); } });
+        });
+        return { mixed: Object.keys(sigs).length > 1, union: order };
+      }
+
+      function ensureZones(lv) {
+        if (zones[lv]) return Promise.resolve(zones[lv]);
+        if (!zoneReq[lv]) {
+          zoneReq[lv] = fetch("/data/school-district/zones_" + lv + ".json?v=" + encodeURIComponent(V))
+            .then(function (r) {
+              if (!r.ok) throw new Error("HTTP " + r.status);
+              return r.json();
+            })
+            .then(function (gj) {
+              zones[lv] = gj;
+              zoneIdx[lv] = indexZones(gj);
+              zoneIdx[lv].forEach(function (z) { zoneById[lv][z.id] = z.p; });
+              return gj;
+            }, function (e) { zoneReq[lv] = null; throw e; });
+        }
+        return zoneReq[lv];
+      }
+
+      function drawZones() {
+        var lv = level;
+        mapMsg("載入" + LV[lv] + "學區地圖中……");
+        return ensureZones(lv).then(function (gj) {
+          if (lv !== level) return;
+          if (zoneLayer) map.removeLayer(zoneLayer);
+          // 整區學區（中科實中國小部、和平國中）先畫、壓在最底層，不蓋住一般學區
+          var feats = gj.features.slice().sort(function (a, b) {
+            return (b.properties.wide ? 1 : 0) - (a.properties.wide ? 1 : 0);
+          });
+          zoneLayer = L.geoJSON({ type: "FeatureCollection", features: feats }, {
+            renderer: canvas,
+            style: function (f) { return zoneStyle(f.properties, false); },
+            onEachFeature: function (f, l) {
+              var p = f.properties;
+              if (canHover) {
+                l.bindTooltip(esc(p.name) + (p.wide ? "（整區學區）" : ""), { sticky: true, direction: "top", className: "sd-tip", opacity: 1 });
+                l.on("mouseover", function () {
+                  if (!hi[p.school]) l.setStyle({ weight: 2.6, fillOpacity: p.wide ? 0.08 : 0.28 });
+                });
+                l.on("mouseout", function () { l.setStyle(zoneStyle(p, !!hi[p.school])); });
+              }
+            }
+          }).addTo(map);
+          applyHighlight(focusIds[lv]);
+          mapMsg("");
+        }).catch(function () {
+          if (lv === level) mapMsg("學區地圖載入失敗，請檢查網路後重新整理。上面的地址查詢還是可以用。");
+        });
+      }
+
+      function applyHighlight(ids) {
+        hi = {};
+        (ids || []).forEach(function (id) { hi[id] = 1; });
+        if (!zoneLayer) return;
+        zoneLayer.eachLayer(function (l) {
+          var p = l.feature.properties;
+          l.setStyle(zoneStyle(p, !!hi[p.school]));
+          if (hi[p.school]) l.bringToFront();
+        });
+      }
+
+      function drawSchools() {
+        if (!INFO || !map) return;
+        if (schoolLayer) map.removeLayer(schoolLayer);
+        schoolLayer = L.layerGroup();
+        var info = infoOf(level);
+        var sz = isTouch ? 40 : 24;
+        Object.keys(info).forEach(function (id) {
+          var s = info[id];
+          if (!(s.lat && s.lng)) return;
+          var m = L.marker([s.lat, s.lng], {
+            icon: L.divIcon({
+              className: "sd-school",
+              html: '<span class="sd-school-dot"></span><span class="sd-school-name">' + esc(s.name) + "</span>",
+              iconSize: [sz, sz],
+              iconAnchor: [sz / 2, sz / 2]
+            }),
+            title: s.name,
+            alt: s.name,
+            keyboard: false        // 239 個學校點不進 Tab 順序；鍵盤使用者用校名搜尋或下方清單找學校
+          });
+          m.on("click", function () { openSchool(level, id, L.latLng(s.lat, s.lng)); });
+          schoolLayer.addLayer(m);
+        });
+        if (el.showSchools.checked) schoolLayer.addTo(map);
+        updateLabels();
+      }
+
+      function updateLabels() {
+        if (!map) return;
+        var on = el.showLabels.checked && el.showSchools.checked && map.getZoom() >= 14;
+        el.map.classList.toggle("sd-labels-on", on);
+        el.map.classList.toggle("sd-z-low", map.getZoom() < 13);   // 全市視角時學校點縮小，不擋學區顏色
+      }
+
+      function popW() {
+        var w = el.map.clientWidth || 320;
+        var mh = el.map.clientHeight || 400;
+        // 上方留白：桌機避開左上角放大縮小鈕（觸控裝置沒有縮放鈕，只留一點邊）
+        var padTop = Math.min(isTouch ? 24 : 84, Math.round(mh * 0.3));
+        // 彈窗內容最高＝地圖高度 − 上方留白 − 下方留白（避開右下角出處標示 34）− 內距與邊框 26 − 箭頭 20 − 預留 10；
+        // 矮地圖（手機橫放、iPhone SE）內容改成在彈窗裡捲，底部按鈕捲得到、不會掉出地圖
+        var maxH = Math.max(100, Math.min(isDesktop() ? 460 : 400, mh - padTop - 34 - 26 - 20 - 10));
+        return {
+          maxWidth: Math.min(340, w - 72), minWidth: Math.min(240, w - 72), maxHeight: maxH,
+          autoPanPaddingTopLeft: [16, padTop], autoPanPaddingBottomRight: [16, 34]
+        };
+      }
+
+      /* ---------- 學校彈窗 ---------- */
+      function coNames(lv, ids) {
+        var info = infoOf(lv);
+        return (ids || []).map(function (i) { return (info[i] && info[i].name) || i; });
+      }
+      // 整區學區：照學區表原文轉述（和平國中那一列：行政區寫「和平區」，里鄰只寫【自由學區】；原文沒有「全區」兩個字）
+      function wideNote(p) {
+        return p.free ? "學區表在" + (p.name || "這所學校") + "那一列，行政區寫「" + (p.wide_dists || []).join("、") + "」，里鄰寫【自由學區】"
+          : "學區表寫「" + String(p.wide_raw || (p.wide_dists || []).join("、") + "為共同學區").replace(/。$/, "") + "」";
+      }
+      function wideInfoOf(lv, id) {
+        var w = data && data[lv] && data[lv]._dist_wide;
+        if (!w) return null;
+        for (var d in w) for (var i = 0; i < w[d].length; i++) if (w[d][i].school === id && w[d][i].info) return w[d][i].info;
+        return null;
+      }
+      function schoolHtml(lv, id) {
+        var s = infoOf(lv)[id] || {};
+        var p = zoneById[lv][id] || {};
+        var name = s.name || p.name || id;
+        var h = '<p class="sd-pop-k">' + esc(LV[lv]) + "學區・115 學年度</p>";
+        h += '<p class="sd-pop-t">' + esc(name) + "</p>";
+        h += '<p class="sd-pop-s">' + (s.addr ? "校址：" + esc(s.addr) : "所在：" + esc(s.dist || p.dist || "")) + "</p>";
+        if (s.status) h += '<span class="sd-pop-tag">' + esc(s.status) + "</span>";
+        var lis = s.lis || [];
+        if (lis.length) {
+          h += '<p class="sd-pop-h">學區範圍（里、鄰）</p><ul class="sd-pop-l">';
+          lis.forEach(function (x) {
+            var d = x[0], li = x[1], desc = x[2], co = x.slice(3);
+            var where = li === "*" ? d : (d !== s.dist ? d + " " : "") + li;
+            h += "<li><b>" + esc(where) + "</b> " + esc(desc);
+            if (co.length) h += "（與 " + esc(coNames(lv, co).join("、")) + " 同列共同學區）";
+            h += "</li>";
+          });
+          h += "</ul>";
+        }
+        var notes = [];
+        if (p.shared && p.shared.length) notes.push(esc("學區表列有共同學區（與 " + coNames(lv, p.shared).join("、") + "）。"));
+        if (p.choice && p.choice.length) notes.push(esc("學區表另有「可選…就讀」的註記（與 " + coNames(lv, p.choice).join("、") + "），原文見上面的學區範圍。"));
+        if (p.split && p.split.length) notes.push(esc("有些鄰同時列在 " + coNames(lv, p.split).join("、") + "（依路段分，或學區表重複列），地圖上各校範圍會重疊，請用地址查詢。"));
+        if (p.free && !p.wide) notes.push(esc("學區表有列自由學區（見上面清單）。"));
+        if (p.wide) {
+          var wi = wideInfoOf(lv, id);
+          notes.push(esc("整區學區：" + wideNote(p) + "。") + (wi ? " " + esc(wi.text) + "，名額和設籍規定：" + '<a href="' + esc(wi.url) + '" target="_blank" rel="noopener">看學校招生資訊</a>' : ""));
+        }
+        if (s.phone && /^0\d/.test(s.phone)) notes.push(esc("學校電話：" + s.phone));
+        if (notes.length) h += '<ul class="sd-pop-n"><li>' + notes.join("</li><li>") + "</li></ul>";
+        h += '<div class="sd-pop-a"><a class="sd-pop-off" href="' + esc(OFFICIAL) + '" target="_blank" rel="noopener">教育局學區查詢</a>' +
+          '<a class="sd-pop-line" href="' + LINE_HREF + '">LINE 問學區</a></div>';
+        return h;
+      }
+
+      function openSchool(lv, id, latlng) {
+        applyHighlight([id]);
+        popCtx = null;
+        L.popup(popW())
+          .setLatLng(latlng)
+          .setContent('<div class="sd-pop">' + schoolHtml(lv, id) + "</div>")
+          .openOn(map);
+      }
+
+      // 地圖上任一點：看落在哪個學區多邊形（依門牌位置推估，判斷不到門牌號）
+      function hereHtml(ctx) {
+        var n = ctx.normal, lv = ctx.lv;
+        var h = '<div class="sd-pop-here">';
+        if (!n.length) {
+          h += "<p>這個位置只落在整區學區：<b>" + esc(ctx.wide.map(function (z) { return z.p.name; }).join("、")) + "</b></p>";
+        } else if (n.length === 1) {
+          h += "<p>這個位置落在：<b>" + esc(n[0].p.name) + "</b> " + esc(LV[lv]) + "學區</p>";
+        } else {
+          h += "<p>這個位置同時落在 " + n.length + " 個" + esc(LV[lv]) + "學區：</p><div class=\"sd-pop-btns\">";
+          n.forEach(function (z) {
+            h += '<button type="button" data-pop-school="' + esc(z.id) + '" aria-pressed="' + (z.id === ctx.sel ? "true" : "false") + '">' + esc(z.p.name) + "</button>";
+          });
+          h += "</div>";
+        }
+        if (n.length && ctx.wide.length) {
+          h += '<p class="sd-pop-warn">另外，這裡也在「' + esc(ctx.wide.map(function (z) { return z.p.name; }).join("、")) + "」的整區學區內。</p>";
+        }
+        h += '<p class="sd-pop-warn">' + (ctx.edge ? "這裡在學區交界附近。" : "") + "點地圖是依門牌位置推估，要確認請輸入門牌地址。</p>";
+        h += '<button type="button" class="sd-pop-inline" data-act="focus-input">輸入地址查詢</button>';
+        return h + "</div>";
+      }
+      function renderPop() {
+        if (!popCtx) return;
+        var html = '<div class="sd-pop">' + hereHtml(popCtx) + schoolHtml(popCtx.lv, popCtx.sel) + "</div>";
+        popCtx.popup.setContent(html);
+        applyHighlight(popCtx.normal.length ? [popCtx.sel] : []);
+      }
+      function onMapClick(e) {
+        var lv = level;
+        if (!zoneIdx[lv]) return;
+        var hits = zonesAt(lv, e.latlng.lat, e.latlng.lng);
+        var normal = hits.filter(function (z) { return !z.p.wide; });
+        var wide = hits.filter(function (z) { return z.p.wide; });
+        var popup = L.popup(popW()).setLatLng(e.latlng);
+        if (!hits.length) {
+          popCtx = null;
+          applyHighlight([]);
+          popup.setContent('<div class="sd-pop"><p class="sd-pop-t">這裡沒有' + LV[lv] + '學區資料</p>' +
+            '<p class="sd-pop-warn">這裡可能不在臺中市，或是河川、港區等沒有編定村里的地方。要查特定地址，請在上方輸入門牌。</p>' +
+            '<button type="button" class="sd-pop-inline" data-act="focus-input">輸入地址查詢</button></div>').openOn(map);
+          return;
+        }
+        var edge = normal.length > 0 && ringSets(lv, e.latlng.lat, e.latlng.lng, 25).mixed;
+        popCtx = { lv: lv, normal: normal, wide: wide, sel: (normal[0] || wide[0]).id, popup: popup, edge: edge };
+        popup.openOn(map);
+        renderPop();
+      }
+      function onPopupClick(e) {
+        var t = e.target && e.target.closest ? e.target.closest("[data-pop-school],[data-act='focus-input']") : null;
+        if (!t) return;
+        e.preventDefault();
+        if (t.getAttribute("data-act") === "focus-input") {
+          map.closePopup();
+          el.addr.scrollIntoView({ behavior: "smooth", block: "center" });
+          setTimeout(function () { try { el.addr.focus({ preventScroll: true }); } catch (x) { el.addr.focus(); } }, 350);
+          return;
+        }
+        if (popCtx) { popCtx.sel = t.getAttribute("data-pop-school"); renderPop(); }
+      }
+
+      function setLevel(lv, silent) {
+        if (lv !== "gs" && lv !== "jh") return Promise.resolve();
+        var changed = lv !== level;
+        level = lv;
+        Array.prototype.forEach.call(document.querySelectorAll("[data-level-btn]"), function (b) {
+          b.setAttribute("aria-pressed", b.getAttribute("data-level-btn") === lv ? "true" : "false");
+        });
+        if (!changed) return Promise.resolve();
+        if (map) map.closePopup();
+        el.school.placeholder = lv === "gs" ? "搜尋校名，例：四維" : "搜尋校名，例：北新";
+        closeSchoolList();
+        drawSchools();
+        if (!silent) track("school_district_level", { level: LV[lv] });
+        return drawZones();
+      }
+
+      // 從結果卡／學校清單／搜尋跳到某所學校：地圖不在畫面裡就先捲過去（桌機也一樣），捲完再開彈窗
+      function focusSchool(lv, id) {
+        if (!map) return;
+        var rect = el.map.getBoundingClientRect();
+        var needScroll = !isDesktop() || rect.bottom < 80 || rect.top > window.innerHeight - 80;
+        if (needScroll) el.map.scrollIntoView({ behavior: "smooth", block: "center" });
+        setLevel(lv, true).then(function () {
+          var s = infoOf(lv)[id];
+          var layer = null;
+          if (zoneLayer) zoneLayer.eachLayer(function (l) { if (l.feature.properties.school === id) layer = l; });
+          if (layer && !(zoneById[lv][id] || {}).wide) map.fitBounds(layer.getBounds(), { padding: [24, 24], maxZoom: 16, animate: !isTouch });
+          else if (s) map.setView([s.lat, s.lng], 14, { animate: !isTouch });
+          var ll = s && s.lat ? L.latLng(s.lat, s.lng) : (layer ? layer.getBounds().getCenter() : map.getCenter());
+          setTimeout(function () { openSchool(lv, id, ll); }, needScroll ? 450 : (isTouch ? 50 : 300));
+        });
+      }
+
+      /* ---------- 依校名搜尋 ---------- */
+      function normQ(s) { return String(s || "").replace(/台/g, "臺").replace(/\s+/g, ""); }
+      var listItems = [];
+      function closeSchoolList() {
+        el.schoolList.hidden = true;
+        el.schoolList.innerHTML = "";
+        el.school.setAttribute("aria-expanded", "false");
+      }
+      var INFO_FAIL = "學校清單載入失敗，學校位置和校名搜尋暫時不能用；上面的地址查詢還是可以用。";
+      function searchSchools() {
+        var q = normQ(el.school.value);
+        if (!q) { closeSchoolList(); return; }
+        if (!INFO) {
+          el.schoolList.innerHTML = '<li class="text-muted-foreground px-3 py-2 text-sm">' + (infoFailed ? INFO_FAIL : "學校清單載入中，請稍等一下再打。") + "</li>";
+          el.schoolList.hidden = false;
+          el.school.setAttribute("aria-expanded", "true");
+          return;
+        }
+        var info = infoOf(level);
+        var hits = [];
+        Object.keys(info).forEach(function (id) {
+          var s = info[id];
+          var n = normQ(s.name);
+          var i = n.indexOf(q);
+          if (i >= 0 || normQ(s.dist).indexOf(q) === 0) hits.push({ id: id, name: s.name, dist: s.dist, rank: i === 0 ? 0 : i > 0 ? 1 : 2 });
+        });
+        hits.sort(function (a, b) { return a.rank - b.rank || a.name.length - b.name.length; });
+        listItems = hits.slice(0, 10);
+        if (!listItems.length) {
+          el.schoolList.innerHTML = '<li class="text-muted-foreground px-3 py-2 text-sm">找不到這所' + LV[level] + "，換個關鍵字試試。</li>";
+        } else {
+          el.schoolList.innerHTML = listItems.map(function (h, i) {
+            return '<li role="option"><button type="button" data-pick="' + i + '" class="hover:bg-muted flex min-h-11 w-full items-center justify-between gap-2 px-3 text-left text-sm">' +
+              "<span>" + esc(h.name) + '</span><span class="text-muted-foreground text-sm">' + esc(h.dist) + "</span></button></li>";
+          }).join("");
+        }
+        el.schoolList.hidden = false;
+        el.school.setAttribute("aria-expanded", "true");
+      }
+      function pickSchool(i) {
+        var h = listItems[i];
+        if (!h) return;
+        el.school.value = h.name;
+        closeSchoolList();
+        el.school.blur();
+        focusSchool(level, h.id);
+      }
+
+      /* ================= 結果卡 ================= */
+      var TONE = {
+        green: { box: "border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/40", dot: "sd-dot-green", label: "綠燈：只有一所" },
+        yellow: { box: "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40", dot: "sd-dot-yellow", label: "黃燈：可能不只一所，請再確認" },
+        none: { box: "border-border bg-muted", dot: "sd-dot-none", label: "查無：學區表沒有這個里鄰" }
+      };
+      // 門牌號的「-」是之號：12-1 → 12之1
+      function fmtNo(no) { return String(no == null ? "" : no).replace(/-/g, "之"); }
+
+      function groupVia(via) {
+        var by = {}, order = [];
+        (via || []).forEach(function (v) {
+          if (!by[v.li]) { by[v.li] = []; order.push(v.li); }
+          if (v.lin && by[v.li].indexOf(v.lin) < 0) by[v.li].push(v.lin);
+        });
+        return order.map(function (li) {
+          return li + (by[li].length ? " " + SchoolDistrict.linsText(by[li]) : "");
+        });
+      }
+
+      function levelBlock(lv, x, showVia) {
+        var tone = TONE[x.status] || TONE.none;
+        var h = '<div class="rounded-lg border p-3 ' + tone.box + '">';
+        h += '<div class="flex flex-wrap items-center gap-x-2 gap-y-1"><span class="sd-dot ' + tone.dot + '" aria-hidden="true"></span>' +
+          '<span class="font-bold">' + LV[lv] + '</span><span class="text-sm font-medium">' + esc(x.label || tone.label) + "</span></div>";
+        if (x.schools && x.schools.length) {
+          h += '<ul class="mt-2 space-y-2">';
+          x.schools.forEach(function (s) {
+            h += '<li><button type="button" class="text-accent min-h-11 text-left text-base font-bold underline underline-offset-2" data-goto-school="' + esc(s.id) + '" data-goto-level="' + lv + '">' + esc(s.name) + "</button>";
+            var via = showVia ? groupVia(s.via) : [];
+            if (via.length) {
+              var shown = via.slice(0, 4).join("、") + (via.length > 4 ? " 等 " + via.length + " 個里" : "");
+              h += '<span class="text-muted-foreground ms-1 text-sm">（' + esc(shown) + "）</span>";
+            }
+            if (s.free) h += ' <span class="rounded-full bg-black/5 px-2 py-0.5 text-sm dark:bg-white/10">自由學區</span>';
+            if (s.cond && x.reason !== "split" && x.reason !== "cond") {
+              var cs = s.conds || [];
+              if (showVia && cs.length > 1) {
+                // 好幾個里鄰：每一段前面標里鄰，共同學區那段後面標（共同學區）
+                h += '<p class="mt-0.5 text-sm">學區表條件：</p><ul class="mt-0.5 space-y-0.5 ps-5 text-sm leading-relaxed" style="list-style:disc;">' +
+                  cs.map(function (c) { return "<li>" + esc(c.li + (c.lin ? " " + c.lin + " 鄰" : "") + "：" + c.c + (c.co ? "（共同學區）" : "")) + "</li>"; }).join("") + "</ul>";
+              } else {
+                h += '<p class="mt-0.5 text-sm leading-relaxed">學區表條件：' + esc(s.cond) + "</p>";
+              }
+            }
+            if (s.hint) h += '<p class="mt-0.5 text-sm font-medium">↑ ' + esc(s.hint) + "，僅供參考</p>";
+            h += "</li>";
+          });
+          h += "</ul>";
+        }
+        if (x.note) h += '<p class="mt-2 text-sm leading-relaxed">' + esc(x.note) + "</p>";
+        if (x.frags && x.frags.length) {
+          h += '<ul class="mt-1 space-y-1 ps-5 text-sm leading-relaxed" style="list-style:disc;">';
+          x.frags.forEach(function (f) {
+            h += "<li><b>" + esc(f.cond) + "</b>：" + esc(f.names.join("、")) + (f.co ? "（共同學區）" : "") + "</li>";
+          });
+          h += "</ul>";
+        }
+        if (x.status === "none" || x.reason === "neighbors-none") {
+          h += '<p class="mt-2"><a class="text-accent text-sm font-semibold underline" href="' + esc(OFFICIAL) + '" target="_blank" rel="noopener">到教育局學區查詢確認 ↗</a></p>';
+        }
+        (x.wide || []).forEach(function (w) {
+          h += '<p class="text-muted-foreground mt-2 text-sm leading-relaxed">另外，「' + esc(w.name) + "」：" + esc(w.note) + "。" +
+            (w.info ? esc(w.info.text) + "，名額和設籍規定：" + '<a class="text-accent underline" href="' + esc(w.info.url) + '" target="_blank" rel="noopener">看學校招生資訊</a>' : "") + "</p>";
+        });
+        return h + "</div>";
+      }
+
+      // noOfficial：卡片上已經有「到教育局學區查詢確認」的連結（查無）→ 底部不再放一次
+      function footHtml(noOfficial) {
+        return '<div class="mt-4 flex flex-wrap gap-2">' +
+          '<button type="button" data-act="show-map" class="border-border bg-background inline-flex min-h-11 items-center rounded-md border px-4 text-sm lg:hidden">在地圖上看 ↓</button>' +
+          '<a class="btn-line px-4 text-sm" href="' + LINE_HREF + '">LINE 問這個學區</a>' +
+          "</div>" +
+          (noOfficial ? "" : '<p class="mt-3 text-sm leading-relaxed">正式查詢：' +
+          '<a class="text-accent underline" href="' + esc(OFFICIAL) + '" target="_blank" rel="noopener">臺中市政府教育局 學區查詢</a></p>');
+      }
+
+      function precTone(p) {
+        return p === "exact"
+          ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/50 dark:text-emerald-100"
+          : "bg-amber-100 text-amber-900 dark:bg-amber-900/50 dark:text-amber-100";
+      }
+
+      var lastCands = [];
+      // 候選按鈕：點了用 lastCands[i].query 重查（按鈕文字用 label）
+      function candButtons(list) {
+        var h = '<div class="mt-2 flex flex-wrap gap-2">';
+        list.forEach(function (x) {
+          var i = lastCands.push(x) - 1;
+          h += '<button type="button" data-cand="' + i + '" class="border-border bg-background hover:border-accent inline-flex min-h-11 items-center rounded-md border px-3 text-sm">' + esc(x.label) + "</button>";
+        });
+        return h + "</div>";
+      }
+      // 候選很多時（例：沒寫區的「中山路1號」）依行政區分行，同一區的段別排在一起
+      function candGroups(list) {
+        var by = {}, order = [];
+        list.forEach(function (x) {
+          if (!by[x.dist]) { by[x.dist] = []; order.push(x.dist); }
+          by[x.dist].push(x);
+        });
+        var h = '<div class="mt-2 space-y-2">';
+        order.forEach(function (d) {
+          h += '<div style="display:grid;grid-template-columns:3.5rem minmax(0,1fr);gap:8px;align-items:start"><span class="text-muted-foreground pt-3 text-sm">' + esc(d) + '</span><div class="flex flex-wrap gap-2">';
+          by[d].forEach(function (x) {
+            var i = lastCands.push(x) - 1;
+            var lab = String(x.label).indexOf(d) === 0 ? String(x.label).slice(d.length) : x.label;
+            h += '<button type="button" data-cand="' + i + '" class="border-border bg-background hover:border-accent inline-flex min-h-11 items-center rounded-md border px-3 text-sm">' + esc(lab) + "</button>";
+          });
+          h += "</div></div>";
+        });
+        return h + "</div>";
+      }
+      function ambText(a) {
+        return "「" + a.input + "」可以讀成" + a.options.map(function (o) { return "「" + fmtNo(o.no) + "號" + (o.floor ? " " + o.floor : "") + "」"; }).join("或");
+      }
+
+      function renderAddress(r, res, raw) {
+        var b = res.basis;
+        lastCands = [];
+        var h = '<div class="card-surface p-4">';
+        h += '<p class="text-muted-foreground text-sm">查詢結果</p>';
+        // 查無此號時，標題放使用者輸入的地址（只在本機顯示），不要讓人誤以為查到的是別的號碼
+        h += '<p class="mt-0.5 text-base font-bold break-words">' + esc(r.precision === "near-number" || (r.ambNo && b.ambMulti) ? raw : b.label) + "</p>";
+        // 情況說明：卡片上只講一次
+        var lines = [];
+        var guessLine = "";      // 「沒寫段別／行政區，依門牌號推估為…」；查無此號時跟下一句併成同一段
+        var canPick = !!(r.inferred && r.choices && r.choices.length > 1);
+        String(r.note || "").split("；").forEach(function (n) {
+          if (!/^(沒寫|門牌號前|路名是推測的)/.test(n)) return;
+          var t = n.replace(/，請確認$/, "") + (canPick && /^(沒寫|路名是推測的)/.test(n) ? "，不是的話請在下面改選。" : "。");
+          if (/^沒寫/.test(n) && r.precision === "near-number") guessLine = t;
+          else lines.push(t);
+        });
+        var found = r.ambNo ? r.ambNo.options.filter(function (o) { return o.found; }) : [];
+        if (r.ambNo && r.precision === "exact") {
+          lines.push(ambText(r.ambNo) + (found.length > 1
+            ? "，門牌資料裡都有，兩個都列出來；請看門牌或戶口名簿確認是哪一個。"
+            : "；門牌資料只有「" + fmtNo(found[0].no) + "號」，就用它查。"));
+        }
+        if (r.precision === "near-number") {
+          var edge = res.gs.reason === "edge" || res.jh.reason === "edge";
+          var hasSameNo = (r.neighbors || []).some(function (n) { return n.side === "same"; });
+          var where2 = guessLine ? (/dist/.test(r.inferred || "") ? "這一區的" : "這一段的") : "";
+          lines.push(guessLine + (r.ambNo ? ambText(r.ambNo) + "，門牌資料都沒有" : where2 + "門牌資料裡沒有「" + fmtNo(r.requestedNo) + "號」") +
+            "，改用同一條路（巷）" + (hasSameNo ? "同一號的其他門牌和前後門牌" : "前後的門牌") + "推估。" +
+            (edge ? "這個號碼超出現有門牌的範圍" + (r.gap > 20 ? "（最接近的門牌差了 " + r.gap + " 號）" : "") + "，請確認門牌號碼。"
+              : r.gap > 20 ? "最接近的門牌差了 " + r.gap + " 號，位置可能差很多，請確認門牌號碼。" : ""));
+        } else if (b.needNumber) {
+          var miss = String(r.note || "").match(/查無「([^」]+)」/);
+          var hasNo = !!(r.parsed && r.parsed.no);
+          var where = b.precision === "lane" ? "巷" : "路";
+          if (/的門牌都在弄裡/.test(r.note || "")) lines.push("這條巷的門牌都在弄裡，請補上弄和門牌號碼再查一次。");
+          else if (miss && hasNo) lines.push("門牌資料找不到「" + miss[1] + "」，請確認巷弄號碼；下面是整條" + where + "可能的學區。");
+          else if (hasNo) lines.push("這條路本身（不在巷弄裡）找不到這個門牌號，請確認門牌；下面是整條路（含巷弄）可能的學區。");
+          else lines.push("只輸入到" + where + "名，補上門牌號碼再查一次，結果會準很多。");
+        }
+        if (res.gs.reason === "alts" || res.jh.reason === "alts") lines.push("這個號的住戶在門牌資料裡登記在不同里鄰，對到的學校不同，請以戶口名簿上的里鄰為準。");
+        lines.forEach(function (t) { h += '<p class="mt-1 text-sm leading-relaxed">' + esc(t) + "</p>"; });
+        // 同一號、但門牌前面有字的（臨3號、雪山一村6號）：問是不是這個，點了直接改查
+        if (r.prefixed && r.prefixed.length) {
+          h += '<p class="mt-2 text-sm leading-relaxed">門牌資料有' + r.prefixed.map(function (x) {
+            return "「<b>" + esc(fmtNo(x.label)) + "</b>」（" + esc(x.li) + " " + esc(x.lin) + " 鄰）";
+          }).join("、") + "，是不是這個？</p>" +
+            candButtons(r.prefixed.slice(0, 6).map(function (x) { return { label: "改查「" + fmtNo(x.label) + "」", query: x.query }; }));
+        }
+        // 行政區／段別是推測的 → 讓使用者改選
+        if (r.choices && r.choices.length > 1 && r.inferred) {
+          h += '<p class="text-muted-foreground mt-2 text-sm">不是這裡？改選：</p>' + candButtons(r.choices.slice(1, 13));
+        }
+
+        h += '<dl class="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">';
+        h += '<dt class="text-muted-foreground">定位精度</dt><dd><span class="inline-block rounded px-2 py-1 text-sm leading-snug font-semibold ' + precTone(b.ambMulti ? "amb" : b.precision) + '">' +
+          esc(b.ambMulti ? "門牌寫法有兩種讀法，門牌資料裡都有" : b.precisionText) + "</span></dd>";
+        h += '<dt class="text-muted-foreground">行政區</dt><dd>' + esc(b.dist) + (/dist/.test(b.inferred || "") ? "（依門牌號推測）" : "") + "</dd>";
+        h += '<dt class="text-muted-foreground">系統判定的<br>里、鄰</dt><dd>';
+        if (b.precision === "near-number" && r.neighbors && r.neighbors.length) {
+          var SIDE = { lower: "前一個門牌", upper: "後一個門牌", same: "同一號" };
+          h += '<ul class="space-y-0.5">';
+          r.neighbors.forEach(function (n) {
+            h += "<li>" + esc(n.prefixed ? "同一號（門牌前面有字）" : (SIDE[n.side] || "附近門牌")) + " <b>" + esc(fmtNo(n.no)) + "號</b>" + (n.parity === "other" ? "（另一側）" : "") +
+              "：" + esc(n.li) + " " + esc(n.lin) + " 鄰</li>";
+          });
+          h += "</ul>";
+        } else if (b.ambMulti) {
+          h += '<ul class="space-y-0.5">';
+          r.ambNo.options.forEach(function (o) {
+            h += "<li><b>" + esc(fmtNo(o.no)) + "號</b>" + (o.floor ? esc("（" + o.floor + "）") : "") + "：" +
+              (o.found ? esc(o.li) + " " + esc(o.lin) + " 鄰" + (o.alts && o.alts.length ? "（也登記在 " + esc(o.alts.map(function (a) { return a.li + " " + a.lin + " 鄰"; }).join("、")) + "）" : "") : '<span class="text-muted-foreground">門牌資料沒有</span>') + "</li>";
+          });
+          h += "</ul>";
+        } else if (b.needNumber) {
+          var g = {}, order = [];
+          b.pairs.forEach(function (p) {
+            if (!g[p.li]) { g[p.li] = { lins: [], n: 0 }; order.push(p.li); }
+            g[p.li].lins.push(p.lin);
+            g[p.li].n += p.count || 0;
+          });
+          h += '<p class="text-muted-foreground text-sm">這' + (b.precision === "lane" ? "條巷弄" : "段路（含巷弄）") + "的門牌涵蓋：</p><ul class=\"space-y-0.5\">";
+          order.forEach(function (li) {
+            h += "<li><b>" + esc(li) + "</b> " + esc(SchoolDistrict.linsText(g[li].lins)) +
+              (g[li].n ? '<span class="text-muted-foreground text-sm">（' + g[li].n + " 個門牌）</span>" : "") + "</li>";
+          });
+          h += "</ul>";
+        } else if (b.pairs.length > 1) {
+          h += '<p class="text-muted-foreground text-sm">門牌資料裡這個號（含各樓層）登記在：</p><ul class="space-y-0.5">';
+          b.pairs.forEach(function (p) {
+            h += "<li><b>" + esc(p.li) + " " + esc(p.lin) + " 鄰</b>" + (p.count ? '<span class="text-muted-foreground text-sm">（' + p.count + " 筆）</span>" : "") + "</li>";
+          });
+          h += "</ul>";
+        } else {
+          h += "<b>" + esc(b.li) + " " + esc(b.lin) + " 鄰</b>";
+        }
+        h += "</dd>";
+        if (b.user) {
+          h += '<dt class="text-muted-foreground">你寫的里鄰</dt><dd>' + esc(b.user.li + (b.user.lin ? " " + b.user.lin + " 鄰" : "")) + "（跟門牌資料不同）</dd>";
+        }
+        h += "</dl>";
+        var many = b.pairs.length > 1;
+        h += '<div class="mt-4 space-y-3">' + levelBlock("gs", res.gs, many) + levelBlock("jh", res.jh, many) + "</div>";
+        // 共同學區、自由學區、「可選…就讀」註記：實際怎麼分發，整張卡只講一次（各燈號的說明裡不再重複）
+        var ZONE_REASONS = { "co-zone": 1, choice: 1, free: 1, "wide-free": 1, "wide-extra": 1 };
+        if (ZONE_REASONS[res.gs.reason] || ZONE_REASONS[res.jh.reason]) {
+          h += '<p class="text-muted-foreground mt-3 text-sm leading-relaxed">遇到共同學區、自由學區或學區表另有註記時，實際怎麼分發、能不能選，以學校說明為準。</p>';
+        }
+        var anyNone = [res.gs, res.jh].some(function (x) { return x.status === "none" || x.reason === "neighbors-none"; });
+        h += footHtml(anyNone);
+        return h + "</div>";
+      }
+
+      function renderFail(r) {
+        lastCands = [];
+        var h = '<div class="card-surface p-4">';
+        h += '<p class="font-bold">' + esc(r.message || "查不到這個地址。") + "</p>";
+        var c = r.candidates || [];
+        if (r.reason === "ambiguous" && c.length) {
+          h += '<p class="text-muted-foreground mt-1 text-sm">請點一個：</p>';
+        } else if (r.reason === "road-not-found" && !r.renamed) {
+          h += '<p class="text-muted-foreground mt-1 text-sm">' + (c.length ? (r.wrongDist ? "有這條路的行政區：" : "是不是要找：") : "請檢查路名有沒有打錯，或改打附近的大路。") + "</p>";
+        } else if (r.reason === "no-road") {
+          h += '<p class="text-muted-foreground mt-1 text-sm">例：西屯區福星路123號、北屯區崇德路二段。</p>';
+        } else if (r.reason === "not-taichung") {
+          h += '<p class="text-muted-foreground mt-1 text-sm">這裡只有臺中市的門牌資料和學區表；其他縣市請用當地教育局的學區查詢。</p>';
+        }
+        if (c.length) h += c.length > 8 && r.reason === "ambiguous" ? candGroups(c) : candButtons(c);
+        if (r.renamed && r.renamed.src && r.renamed.src.url) {
+          var rs = r.renamed.src;
+          h += '<p class="text-muted-foreground mt-2 text-sm leading-relaxed break-words">📌 資料來源：<a class="underline" href="' + esc(rs.url) + '" target="_blank" rel="noopener">' +
+            esc(rs.org + "〈" + rs.name + "〉") + "</a>（" + esc(rs.date) + "；新舊門牌對照表在這一頁下載）</p>";
+        }
+        if (r.liOnly && r.liOnly.dist && data) h += liHtml(SchoolDistrict.liSummary(data, r.liOnly.dist, r.liOnly.li, r.liOnly.lin));
+        h += '<p class="text-muted-foreground mt-3 text-sm">也可以直接在地圖上點位置，或用 <a class="text-accent underline" href="' + esc(OFFICIAL) + '" target="_blank" rel="noopener">教育局學區查詢</a>。</p>';
+        return h + "</div>";
+      }
+
+      // 只打里名／里鄰：列學區表上這個里的學校（不給燈號，還沒對到門牌）
+      function liHtml(sum) {
+        var where = sum.dist + sum.li + (sum.lin ? " " + sum.lin + " 鄰" : "");
+        var h = '<div class="border-border mt-3 rounded-lg border p-3">';
+        h += '<p class="text-sm font-semibold">學區表上，「' + esc(where) + '」列的學校：</p>';
+        ["gs", "jh"].forEach(function (lv) {
+          var x = sum[lv];
+          h += '<p class="mt-2 text-sm font-bold">' + LV[lv] + "</p>";
+          if (!x.groups.length && !x.wide.length) {
+            h += '<p class="text-muted-foreground text-sm">學區表查無這個里' + (sum.lin ? "鄰" : "") + "。</p>";
+            return;
+          }
+          h += '<ul class="mt-1 space-y-1 text-sm leading-relaxed">';
+          x.groups.forEach(function (g) {
+            var lins = g.all ? (sum.lin ? "" : "全里") : g.rest ? "其他鄰" : SchoolDistrict.linsText(g.lins);
+            h += "<li>" + (lins ? '<span class="text-muted-foreground">' + esc(lins) + "：</span>" : "") +
+              g.ids.map(function (id, i) {
+                return '<button type="button" class="text-accent min-h-11 text-left font-bold underline underline-offset-2" data-goto-school="' + esc(id) + '" data-goto-level="' + lv + '">' + esc(g.names[i]) + "</button>";
+              }).join("、") +
+              (g.detail && g.kind === "split"
+                ? '<span class="text-muted-foreground">（學區表依路段分）</span><ul class="text-muted-foreground mt-0.5 ps-5" style="list-style:disc;">' +
+                  (g.parts && g.parts.length ? g.parts : [g.detail]).map(function (d) { return "<li>" + esc(d) + "</li>"; }).join("") + "</ul>"
+                : g.detail ? '<span class="text-muted-foreground">（' + esc(g.detail) + "）</span>" : "") + "</li>";
+          });
+          x.wide.forEach(function (w) {
+            h += "<li>" + (x.groups.length ? "另外，" : "") + "「" + esc(w.name) + "」：" + esc(w.note) + "。" +
+              (w.info ? esc(w.info.text) + '，<a class="text-accent underline" href="' + esc(w.info.url) + '" target="_blank" rel="noopener">看學校招生資訊</a>' : "") + "</li>";
+          });
+          h += "</ul>";
+        });
+        var byLin = ["gs", "jh"].some(function (lv) { return sum[lv].groups.some(function (g) { return !g.all; }); });
+        h += '<p class="text-muted-foreground mt-2 text-sm leading-relaxed">' +
+          (sum.lin ? "這是照你寫的里鄰對的。打上路名和門牌號碼，可以確認門牌實際在哪個里鄰。"
+            : byLin ? "同一個里，各鄰分屬不同學校。打上路名和門牌號碼，才對得到門牌在哪一鄰。"
+              : "這是照你寫的里名對的。打上路名和門牌號碼，可以確認門牌實際在哪個里。") + "</p>";
+        return h + "</div>";
+      }
+
+      function showResult(html) {
+        el.result.innerHTML = html;
+        el.result.hidden = false;
+        var rect = el.result.getBoundingClientRect();
+        if (rect.top < 0 || rect.top > window.innerHeight * 0.6) el.result.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      function placePin(lat, lng, html, zoom) {
+        if (!map) return;
+        pinLayer.clearLayers();
+        L.marker([lat, lng], {
+          icon: L.divIcon({ className: "sd-pin", html: "", iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -28] }),
+          zIndexOffset: 1000,
+          keyboard: false
+        }).bindPopup('<div class="sd-pop">' + html + "</div>", popW()).addTo(pinLayer);
+        map.closePopup();
+        map.setView([lat, lng], zoom, { animate: !isTouch && isDesktop() });
+      }
+
+      // 紅色圖釘的彈窗：跟結果卡講同一件事。查無此號、門牌有兩種讀法時，標題用使用者輸入的地址（只在本機顯示），
+      // 寫清楚圖釘標的是哪一戶、推估看了哪些門牌，學校和燈號照結果卡列（多校就列多校），不要只給最接近那一戶的單一里鄰
+      function pinPopHtml(r, res, raw) {
+        var b = res.basis;
+        var est = r.precision === "near-number" || !!b.ambMulti;
+        var h = '<p class="sd-pop-k">查詢位置（' + esc(b.ambMulti ? "門牌寫法有兩種讀法" : b.precisionText) + "）</p>";
+        h += '<p class="sd-pop-t" style="font-size:16px">' + esc(est ? raw : b.label) + "</p>";
+        var detail = "";
+        if (r.precision === "near-number") {
+          h += '<p class="sd-pop-s">' + esc("圖釘標在最接近的「" + fmtNo(r.no) + "號」" + (r.gap > 0 ? "（差 " + r.gap + " 號）" : "") + "，不是你輸入的號碼。") + "</p>";
+          var nb = r.neighbors || [];
+          if (nb.length) {
+            var SIDE = { lower: "前一個門牌", upper: "後一個門牌", same: "同一號" };
+            detail += '<p class="sd-pop-h">推估看的門牌</p><ul class="sd-pop-l">';
+            nb.slice(0, 5).forEach(function (n) {
+              detail += "<li>" + esc((n.prefixed ? "同一號（門牌前面有字）" : (SIDE[n.side] || "附近門牌")) + " " + fmtNo(n.no) + "號：" + n.li + " " + n.lin + " 鄰") + "</li>";
+            });
+            if (nb.length > 5) detail += "<li>" + esc("另外 " + (nb.length - 5) + " 筆見結果卡") + "</li>";
+            detail += "</ul>";
+          }
+        } else if (b.ambMulti) {
+          h += '<p class="sd-pop-s">' + esc("圖釘標在「" + fmtNo(r.no) + "號」；兩種讀法門牌資料裡都有。") + "</p>";
+          detail += '<p class="sd-pop-h">兩種讀法的里鄰</p><ul class="sd-pop-l">';
+          r.ambNo.options.forEach(function (o) {
+            if (o.found) detail += "<li>" + esc(fmtNo(o.no) + "號" + (o.floor ? "（" + o.floor + "）" : "") + "：" + o.li + " " + o.lin + " 鄰") + "</li>";
+          });
+          detail += "</ul>";
+        } else if (b.needNumber) {
+          h += '<p class="sd-pop-s">' + esc(b.dist + " " + b.li + "（路段／巷弄中間點，經過的里鄰見結果卡）") + "</p>";
+        } else {
+          h += '<p class="sd-pop-s">' + esc(b.dist + " " + b.pairs.map(function (p) { return p.li + " " + p.lin + " 鄰"; }).join("、")) + "</p>";
+        }
+        // 學校：跟結果卡同一個燈號、同一串校名（放在推估明細前面，小地圖上不用捲就看得到）
+        h += '<ul class="sd-pop-n">';
+        ["gs", "jh"].forEach(function (lv) {
+          var x = res[lv];
+          var names = (x.schools || []).map(function (s) { return s.name; });
+          h += "<li><b>" + LV[lv] + "</b> " + esc((x.label || "") + (names.length ? "：" + names.join("、") : "")) + "</li>";
+        });
+        return h + "</ul>" + detail;
+      }
+
+      var busy = false;
+      function setBusy(b) {
+        busy = b;
+        el.go.disabled = b;
+        el.go.textContent = b ? "查詢中……" : "查詢";
+        el.go.setAttribute("aria-busy", b ? "true" : "false");
+      }
+
+      function gotData(d) {
+        data = d;
+        infoFailed = false;
+        if (!INFO) INFO = { meta: d.meta, info: d.info };
+        if (!schoolLayer) drawSchools();       // 開頁時學校清單沒載到 → 查詢成功後補畫學校點
+      }
+
+      // opts：TcAddr.lookup 的選項（「改選」按鈕帶 {exactRoad:true}：照選的那條路查，不再推測到別條路）
+      function runQuery(raw, opts) {
+        if (busy) return;
+        raw = String(raw || "").trim();
+        if (!raw) { setStatus("請先輸入地址。"); el.addr.focus(); return; }
+        if (typeof TcAddr === "undefined" || typeof SchoolDistrict === "undefined") {
+          setStatus("查詢元件載入失敗，請重新整理再試一次。");
+          return;
+        }
+        setBusy(true);
+        setStatus("查詢中……（第一次查詢要下載門牌資料，約 1～3 秒）");
+        Promise.all([TcAddr.lookup(raw, opts || undefined), SchoolDistrict.load()])
+          .then(function (a) {
+            var r = a[0];
+            gotData(a[1]);
+            if (!r.ok) {
+              showResult(renderFail(r));
+              setStatus("");
+              // 上一次查詢的紅色圖釘、學校高亮都清掉（不然點圖釘看到的是上一次的地址和學校）；
+              // 只打里名、對得到區時，改高亮學區表上這個里列的學校
+              if (map) { pinLayer.clearLayers(); map.closePopup(); }
+              focusIds = { gs: [], jh: [] };
+              if (r.liOnly && r.liOnly.dist) {
+                var sum = SchoolDistrict.liSummary(data, r.liOnly.dist, r.liOnly.li, r.liOnly.lin);
+                ["gs", "jh"].forEach(function (lv) {
+                  sum[lv].groups.forEach(function (g) { g.ids.forEach(function (id) { if (focusIds[lv].indexOf(id) < 0) focusIds[lv].push(id); }); });
+                });
+              }
+              applyHighlight(focusIds[level]);
+              track("school_district_query", {
+                method: "address", result: r.reason || "fail",
+                district: (r.parsed && r.parsed.dist) || ""
+              });
+              return;
+            }
+            var res = SchoolDistrict.resolve(r, data);
+            showResult(renderAddress(r, res, raw));
+            setStatus("");
+            focusIds = {
+              gs: res.gs.schools.map(function (s) { return s.id; }),
+              jh: res.jh.schools.map(function (s) { return s.id; })
+            };
+            applyHighlight(focusIds[level]);
+            placePin(r.lat, r.lng, pinPopHtml(r, res, raw), res.basis.needNumber ? 15 : 16);
+            track("school_district_query", {
+              method: "address", result: "ok", precision: r.precision, district: r.dist,
+              gs_status: res.gs.status, jh_status: res.jh.status
+            });
+          })
+          .catch(function (e) {
+            if (window.console) console.error(e);
+            showResult('<div class="card-surface p-4"><p class="font-bold">資料載入失敗</p><p class="text-muted-foreground mt-1 text-sm">可能是網路不穩，請重新整理再試一次。也可以先用 <a class="text-accent underline" href="' + esc(OFFICIAL) + '" target="_blank" rel="noopener">教育局學區查詢</a>。</p></div>');
+            setStatus("");
+            track("school_district_query", { method: "address", result: "load-error" });
+          })
+          .then(function () { setBusy(false); });
+      }
+
+      /* ---------- 用我的位置：依學區地圖（門牌位置推估）判斷，判斷不到門牌號 ---------- */
+      function pointLevel(lv, lat, lng, acc) {
+        var hits = zonesAt(lv, lat, lng);
+        var normal = hits.filter(function (z) { return !z.p.wide; });
+        var wide = hits.filter(function (z) { return z.p.wide; });
+        var info = infoOf(lv);
+        function nameOf(id, p) { return (info[id] && info[id].name) || (p && p.name) || id; }
+        var x = {
+          status: "none", label: "查無：這裡沒有學區資料", note: "",
+          schools: normal.map(function (z) { return { id: z.id, name: nameOf(z.id, z.p) }; }),
+          wide: wide.filter(function (z) { return !z.p.free; }).map(function (z) { return { name: nameOf(z.id, z.p), note: wideNote(z.p), info: wideInfoOf(lv, z.id) }; })
+        };
+        if (!normal.length) {
+          var wf = wide.filter(function (z) { return z.p.free; });
+          if (wf.length) {
+            x.status = "yellow";
+            x.label = "黃燈：整區列為自由學區";
+            x.schools = wf.map(function (z) { return { id: z.id, name: nameOf(z.id, z.p), free: true }; });
+            x.note = wideNote(wf[0].p) + "。";
+          } else {
+            x.note = "這個位置可能不在臺中市，或在河川、港區等沒有編定村里的地方；請改用輸入地址。";
+          }
+          return x;
+        }
+        var ring = ringSets(lv, lat, lng, Math.max(30, Math.min(acc || 0, 300)));
+        if (ring.mixed) {
+          x.status = "yellow";
+          x.label = "黃燈：在學區交界附近";
+          x.schools = ring.union.map(function (id) { return { id: id, name: nameOf(id, zoneById[lv][id]) }; });
+          x.note = "你附近有好幾所學校的學區，請輸入門牌地址確認。";
+        } else if (normal.length > 1) {
+          x.status = "yellow";
+          x.label = "黃燈：這一帶不只一所";
+          x.note = "學區表在這一帶列了不只一所（共同學區或依路段分），請輸入門牌地址確認。";
+        } else if (acc > 100) {
+          x.status = "yellow";
+          x.label = "黃燈：定位誤差大";
+          x.note = "定位誤差約 " + Math.round(acc) + " 公尺，請輸入門牌地址確認。";
+        } else if (normal[0].p.free) {
+          x.status = "yellow";
+          x.label = "黃燈：含自由學區";
+          x.note = "這所學校的學區表有列自由學區，請輸入門牌地址確認。";
+        } else if (x.wide.length) {
+          // 西屯區、大雅區的國小：整區另列中科實中國小部為共同學區 → 跟地址查詢一樣不說「只有一所」
+          x.status = "yellow";
+          x.label = "黃燈：整區另列" + x.wide.map(function (w) { return w.name; }).join("、") + "為共同學區";
+        } else {
+          x.status = "green";
+          x.label = "綠燈：附近門牌都屬同一學區（依位置推估）";
+        }
+        return x;
+      }
+
+      function locate(lat, lng, acc) {
+        if (lat < TC_BOUNDS[0][0] || lat > TC_BOUNDS[1][0] || lng < TC_BOUNDS[0][1] || lng > TC_BOUNDS[1][1]) {
+          setStatus("你目前的位置不在台中市，請改用輸入地址。");
+          return;
+        }
+        setStatus("比對學區中……");
+        Promise.all([ensureZones("gs"), ensureZones("jh"), SchoolDistrict.load()]).then(function (a) {
+          gotData(a[2]);
+          var gs = pointLevel("gs", lat, lng, acc);
+          var jh = pointLevel("jh", lat, lng, acc);
+          var h = '<div class="card-surface p-4">';
+          h += '<p class="text-muted-foreground text-sm">查詢結果</p><p class="mt-0.5 text-base font-bold">你目前的位置</p>';
+          h += '<dl class="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">';
+          h += '<dt class="text-muted-foreground">定位精度</dt><dd><span class="inline-block rounded px-2 py-1 text-sm leading-snug font-semibold ' + precTone("gps") + '">手機定位，誤差約 ' + Math.round(acc || 0) + " 公尺</span></dd>";
+          h += '<dt class="text-muted-foreground">判斷方式</dt><dd>看你附近的門牌屬於哪個學區，<b>判斷不到門牌號碼</b>；依鄰劃分的地方，輸入門牌地址才準。</dd></dl>';
+          h += '<div class="mt-4 space-y-3">' + levelBlock("gs", gs, false) + levelBlock("jh", jh, false) + "</div>";
+          h += footHtml() + "</div>";
+          showResult(h);
+          setStatus("");
+          focusIds = { gs: gs.schools.map(function (s) { return s.id; }), jh: jh.schools.map(function (s) { return s.id; }) };
+          applyHighlight(focusIds[level]);
+          placePin(lat, lng, '<p class="sd-pop-t" style="font-size:16px">你目前的位置</p><p class="sd-pop-s">誤差約 ' + Math.round(acc || 0) + " 公尺</p>", 16);
+          track("school_district_query", { method: "gps", result: "ok", gs_status: gs.status, jh_status: jh.status });
+        }).catch(function () {
+          setStatus("資料載入失敗，請重新整理再試一次。");
+        });
+      }
+
+      // 手機：查詢區、結果卡、地圖在畫面上時，先把全站右下角的 LINE 浮動鈕收起來（不蓋住按鈕和結果；結果卡裡有自己的 LINE 鈕）
+      function tameFloatingCta() {
+        var fab = document.querySelector("[data-floating-cta]");
+        if (!fab || !("IntersectionObserver" in window)) return;
+        new IntersectionObserver(function (es) {
+          es.forEach(function (e) { fab.style.visibility = e.isIntersecting ? "hidden" : ""; });
+        }, { threshold: 0 }).observe(app);
+      }
+
+      /* ================= 綁事件 ================= */
+      function boot() {
+        if (typeof TcAddr === "undefined" || typeof SchoolDistrict === "undefined") {
+          setStatus("查詢元件載入失敗，請重新整理再試一次。");
+        } else {
+          SchoolDistrict.config({ v: V });
+          TcAddr.config({ v: VIDX });
+          TcAddr.ready().catch(function () {});        // 預載門牌索引（約 20KB），第一次查詢比較快
+        }
+        tameFloatingCta();
+
+        el.form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          if (isTouch) el.addr.blur();
+          runQuery(el.addr.value);
+        });
+        Array.prototype.forEach.call(document.querySelectorAll("[data-example]"), function (b) {
+          b.addEventListener("click", function () {
+            el.addr.value = b.getAttribute("data-example");
+            runQuery(el.addr.value);
+          });
+        });
+        el.result.addEventListener("click", function (e) {
+          var t = e.target.closest ? e.target.closest("[data-cand],[data-goto-school],[data-act]") : null;
+          if (!t) return;
+          if (t.hasAttribute("data-cand")) {
+            var c = lastCands[+t.getAttribute("data-cand")];
+            if (c) { el.addr.value = c.query; runQuery(c.query, c.opts); }
+          } else if (t.hasAttribute("data-goto-school")) {
+            focusSchool(t.getAttribute("data-goto-level"), t.getAttribute("data-goto-school"));
+          } else if (t.getAttribute("data-act") === "show-map") {
+            el.map.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        });
+        Array.prototype.forEach.call(document.querySelectorAll("button[data-goto-school]"), function (b) {
+          b.addEventListener("click", function () {
+            focusSchool(b.getAttribute("data-goto-level"), b.getAttribute("data-goto-school"));
+          });
+        });
+
+        el.here.addEventListener("click", function () {
+          if (!navigator.geolocation) { setStatus("這個瀏覽器不支援定位，請輸入地址。"); return; }
+          setStatus("定位中……（瀏覽器會先問你要不要允許）");
+          navigator.geolocation.getCurrentPosition(
+            function (pos) { locate(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy); },
+            function (err) {
+              setStatus(err && err.code === 1 ? "沒有拿到定位權限，請直接輸入地址查詢。" : "暫時拿不到位置，請改用輸入地址。");
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+          );
+        });
+
+        el.school.addEventListener("input", searchSchools);
+        el.school.addEventListener("focus", function () { if (el.school.value) searchSchools(); });
+        el.school.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") { e.preventDefault(); if (!INFO) return; searchSchools(); pickSchool(0); }
+          else if (e.key === "Escape") closeSchoolList();
+        });
+        el.schoolList.addEventListener("click", function (e) {
+          var t = e.target.closest ? e.target.closest("[data-pick]") : null;
+          if (t) pickSchool(+t.getAttribute("data-pick"));
+        });
+        document.addEventListener("click", function (e) {
+          if (!el.schoolList.hidden && !el.schoolList.contains(e.target) && e.target !== el.school) closeSchoolList();
+        });
+
+        if (typeof L === "undefined") {
+          mapMsg("地圖元件載入失敗，請重新整理再試一次。上面的地址查詢還是可以用。");
+          el.map.style.minHeight = "120px";
+          return;
+        }
+        initMap();
+        Array.prototype.forEach.call(document.querySelectorAll("[data-level-btn]"), function (b) {
+          b.addEventListener("click", function () { setLevel(b.getAttribute("data-level-btn")); });
+        });
+        el.showSchools.addEventListener("change", function () {
+          if (!schoolLayer) return;
+          if (el.showSchools.checked) schoolLayer.addTo(map); else map.removeLayer(schoolLayer);
+          updateLabels();
+        });
+        el.showLabels.addEventListener("change", updateLabels);
+
+        drawZones();
+        // 開頁只載學校清單（畫學校點、校名搜尋）；查地址要的查詢表等第一次查詢再載
+        if (typeof SchoolDistrict !== "undefined") {
+          SchoolDistrict.loadInfo().then(function (d) { infoFailed = false; if (!INFO) INFO = d; drawSchools(); }).catch(function () {
+            infoFailed = true;
+            if (!INFO) setStatus(INFO_FAIL);
+          });
+        }
+      }
+
+      if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+      else boot();
+    })();
+  </script>
+</Layout>
