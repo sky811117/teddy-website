@@ -82,10 +82,11 @@
   function colStyle(g) { const c = G[g] || {}; return "--cl:" + esc(c.cl || "#8a8a8a") + ";--cd:" + esc(c.cd || "#b5b5b5"); }
   function gLabel(g) { return (G[g] && G[g].label) || ""; }
   // 來源：清單寫機關（短），彈窗寫機關〈清冊名〉（完整）；舊版資料沒有 org 就用名稱
+  // 清冊原名容易誤解的（「臺中市七處籌設列管攤販集中區」的「籌設」會被讀成還在規劃）有 short：
+  // 原名只在資料來源段出現，清單、彈窗一律改寫 short（「攤販集中區（列管）」），而且不加〈〉——short 不是清冊的正式名稱
   function srcOf(s) { return (BOOT && BOOT.src && BOOT.src[s]) || null; }
-  function srcShort(s) { const x = srcOf(s); return !x || x.osm ? "OpenStreetMap" : x.org || x.name; }
-  // 清冊原名太長或容易誤解的（「臺中市七處籌設列管攤販集中區」）彈窗用短名 short
-  function srcFull(s) { const x = srcOf(s); const nm = x && (x.short || x.name); return !x || x.osm ? "OpenStreetMap" : x.org ? x.org + "〈" + nm + "〉" : nm; }
+  function srcShort(s) { const x = srcOf(s); return !x || x.osm ? "OpenStreetMap" : x.short ? (x.org ? x.org + "・" : "") + x.short : x.org || x.name; }
+  function srcFull(s) { const x = srcOf(s); return !x || x.osm ? "OpenStreetMap" : x.short ? srcShort(s) : x.org ? x.org + "〈" + x.name + "〉" : x.name; }
   // OSM 沒標名稱的點，名稱會跟類別名稱一樣 → 不重複講
   function hasName(it) { return !!it.n && it.n !== gLabel(it.g); }
   // 「（資料沒有名稱）」只給真的沒名稱的點；名稱是頁面刻意不顯示的（it.h）不加這句

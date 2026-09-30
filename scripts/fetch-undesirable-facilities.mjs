@@ -60,6 +60,9 @@ const CATEGORIES = [
   { key: "waste", label: "掩埋場・轉運站", why: "異味與垃圾車動線", q: '["amenity"="waste_transfer_station"]' },
 ];
 
+// 2026-09-30 起改 out geom（原本 out center tags）：公墓、市場、殯葬是一整片，
+// 合併時要拿「多邊形有沒有包住官方點」判斷是不是同一處（只看中心點會把同一座公墓算兩次）。
+// out geom 的 way／relation 沒有 center，改用 bounds 的中點 —— Overpass 的 center 本來就是 bounds 中點，點位不變。
 function buildQuery() {
   const body = CATEGORIES.map(c => `  nwr${c.q}(area.tc);`).join("\n");
   return `[out:json][timeout:180];
@@ -67,7 +70,69 @@ area["name"="臺中市"]["admin_level"="4"]->.tc;
 (
 ${body}
 );
-out center tags;`;
+out geom;`;
+}
+
+// 面狀類別才帶多邊形到中介檔（其他類別只要點位，檔案不必變大）
+const POLY_KEYS = new Set(["cemetery", "funeral", "market"]);
+const r5 = v => Math.round(v * 1e5) / 1e5;
+function centerOf(el) {
+  if (typeof el.lat === "number") return [el.lat, el.lon];
+  if (el.center) return [el.center.lat, el.center.lon];
+  const b = el.bounds;
+  if (b) return [(b.minlat + b.maxlat) / 2, (b.minlon + b.maxlon) / 2];
+  return [undefined, undefined];
+}
+// relation 的外框常由好幾條 way 首尾相接組成 → 接成完整的環
+function stitch(parts) {
+  const rings = [];
+  const pool = parts.filter(p => p.length >= 2).map(p => p.slice());
+  const same = (a, b) => a[0] === b[0] && a[1] === b[1];
+  while (pool.length) {
+    let ring = pool.shift();
+    let grew = true;
+    while (!same(ring[0], ring[ring.length - 1]) && grew) {
+      grew = false;
+      for (let i = 0; i < pool.length; i++) {
+        const p = pool[i];
+        const end = ring[ring.length - 1];
+        if (same(end, p[0])) ring = ring.concat(p.slice(1));
+        else if (same(end, p[p.length - 1])) ring = ring.concat(p.slice(0, -1).reverse());
+        else if (same(ring[0], p[p.length - 1])) ring = p.slice(0, -1).concat(ring);
+        else if (same(ring[0], p[0])) ring = p.slice(1).reverse().concat(ring);
+        else continue;
+        pool.splice(i, 1);
+        grew = true;
+        break;
+      }
+    }
+    rings.push(ring);
+  }
+  return rings;
+}
+// 多邊形 → [[lat1, lon1, lat2, lon2, …], …]（外框；座標 5 位小數）
+function polygonOf(el) {
+  let rings = [];
+  if (el.type === "way" && Array.isArray(el.geometry)) {
+    rings = [el.geometry.filter(Boolean).map(g => [r5(g.lat), r5(g.lon)])];
+  } else if (el.type === "relation" && Array.isArray(el.members)) {
+    const parts = el.members
+      .filter(m => m.type === "way" && (m.role === "outer" || m.role === "") && Array.isArray(m.geometry))
+      .map(m => m.geometry.filter(Boolean).map(g => [r5(g.lat), r5(g.lon)]));
+    rings = stitch(parts);
+  }
+  rings = rings.filter(r => r.length >= 3);
+  return rings.length ? rings.map(r => r.flat()) : null;
+}
+
+// 只供氫氣的站（逢甲大學「綠色加氫站」是研究用，fuel:LH2=yes、沒有汽柴油）不是一般加油站：
+// 這裡先標 h2，由 build-undesirable-facilities.py 排除並寫進報告的排除清單
+const H2_TAGS = ["fuel:LH2", "fuel:H2", "fuel:h2", "fuel:hydrogen", "fuel:compressed_hydrogen", "fuel:liquid_hydrogen"];
+const PETROL_TAGS = ["fuel:octane_92", "fuel:octane_95", "fuel:octane_98", "fuel:diesel", "fuel:HGV_diesel", "fuel:GTL_diesel", "fuel:lpg", "fuel:e10"];
+function hydrogenOnly(tags) {
+  const name = `${tags["name:zh"] || ""} ${tags.name || ""}`;
+  const h2 = H2_TAGS.some(k => tags[k] === "yes") || /加氫|氫能|氫氣/.test(name);
+  return h2 && !PETROL_TAGS.some(k => tags[k] === "yes") && !/加油/.test(name);
 }
 
 // 「宮廟」只收佛道教與民間信仰。amenity=place_of_worship 也包含教會、清真寺，
@@ -195,8 +260,7 @@ async function main() {
     const tags = el.tags || {};
     const cat = classify(tags);
     if (!cat) continue;
-    const lat = el.lat ?? el.center?.lat;
-    const lon = el.lon ?? el.center?.lon;
+    const [lat, lon] = centerOf(el);
     if (typeof lat !== "number" || typeof lon !== "number") continue;
 
     let name = (tags["name:zh"] || tags.name || "").trim();
@@ -205,6 +269,7 @@ async function main() {
     const key = `${cat.key}|${lat.toFixed(4)}|${lon.toFixed(4)}`;
     if (seen.has(key)) continue;
     seen.add(key);
+    const pg = POLY_KEYS.has(cat.key) && el.type !== "node" ? polygonOf(el) : null;
 
     // ⚠️ 不要在每一筆重複存分類名稱與說明 —— 4,000 筆重複同樣的字串會讓檔案大一倍。
     //    分類資訊抽到 payload.categories 對照表，這裡只留 key。
@@ -222,6 +287,13 @@ async function main() {
       ...(tags.official_name ? { on: tags.official_name.trim() } : {}),
       ...(tags.operator ? { op: tags.operator.trim() } : {}),
       ...(tags["addr:street"] && tags["addr:housenumber"] ? { ad: `${tags["addr:street"]}${String(tags["addr:housenumber"]).replace(/號$/, "")}號` } : {}),
+      // 加油站合併用（2026-09-30）：完整地址、品牌、分店名；只供氫氣的站標 h2
+      ...(tags["addr:full"] ? { af: tags["addr:full"].trim() } : {}),
+      ...(cat.key === "fuel" && tags.brand ? { br: tags.brand.trim() } : {}),
+      ...(cat.key === "fuel" && tags.branch ? { bn: tags.branch.trim() } : {}),
+      ...(cat.key === "fuel" && hydrogenOnly(tags) ? { h2: true } : {}),
+      // 面狀類別的多邊形（合併時判斷「多邊形包住官方點」用）
+      ...(pg ? { pg } : {}),
     });
   }
 

@@ -205,10 +205,11 @@ const offOrgs = [...new Set(officialRows.map(r => r.org || r.name))];
 const offN = officialRows.reduce((a, r) => a + r.n, 0);
 const osmN = osmRows.reduce((a, r) => a + r.n, 0);
 const geoByAddr = officialRows.some(r => /門牌/.test(r.geo ?? ""));
-const geoByRoad = officialRows.filter(r => /路段/.test(r.geo ?? "")).map(r => r.short ?? r.name); // 限制說明用短名（清冊原名與說明寫在資料來源段）
+// 限制說明：清冊原名只寫在資料來源段；有短名的（「籌設」攤販集中區）改用短名，加「」當名詞、不加〈〉（短名不是清冊的正式名稱）
+const geoByRoad = officialRows.filter(r => /路段/.test(r.geo ?? "")).map(r => (r.short ? `「${r.short}」清冊` : `〈${r.name}〉`));
 const geoText = [
   geoByAddr ? "有些清冊只有地址，點位是用臺中市門牌資料定位的，落在門牌的位置，不一定是設施的出入口。" : "",
-  geoByRoad.length ? `〈${geoByRoad.join("〉〈")}〉只寫路段，點位定在路口附近，實際範圍比一個點大。` : "",
+  geoByRoad.length ? `${geoByRoad.length === 2 ? geoByRoad.join("和") : geoByRoad.join("、")}只寫路段，點位定在路口附近，實際範圍比一個點大。` : "",
 ].join("");
 const osmText = [
   osmOnlyLabels.length ? `${osmOnlyLabels.join("、")}全部來自 OpenStreetMap` : "",
