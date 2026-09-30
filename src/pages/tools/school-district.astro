@@ -20,6 +20,16 @@
  *   臺中市政府教育局 學區查詢（tc.edu.tw；共同學區／自由學區的各校說明）
  *   國立中科實驗高級中學 招生資訊（國小部）
  * 「共同學區」「自由學區」一律照學區表原文標示，⛔ 不自己寫「可選讀」這種規則。
+ *
+ * 畫面（2026-09-30 電影感改版）：
+ *   主視覺 <CinematicHero variant="tool">，地址搜尋卡放在主視覺裡（375×812 第一屏看得到輸入框＋查詢鈕）
+ *   地圖 /js/cine-map.js（MapLibre GL 4.7.1＋國土測繪中心 EMAP 暖色調色）：
+ *     全市視角＝平面、安靜：學區是往米色混 40% 的淡色塊（fill，5 色序號 ci 沿用建置腳本「相鄰學區不同色」）＋細邊線
+ *     國小／國中切換＝各 ci 層依序淡入、由下往上滑進定位（fill-opacity／fill-translate 屬性轉場，不重算圖磚）
+ *     查詢命中＝另一個小 source（z-hi）：用原色 fill-extrusion 從地面「升起」（feature-state 動畫）＋金色光暈邊＋落地陰影，其他學區淡化
+ *     學校點＝全市視角（zoom < 12.5）用小圓點 circle 圖層；放大後換成可點的光點 HTML Marker
+ *     點地圖／「用我的位置」一律用自己的點在多邊形內判斷（跟 Leaflet 版同一套，斜視也準）
+ *   ⛔ 查詢邏輯與結果卡文字跟改版前一致（基準比對：scratchpad tools2/design/baseline/capture.py）
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -27,6 +37,7 @@ import crypto from "node:crypto";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
+import CinematicHero from "@/components/cinematic/CinematicHero.astro";
 import config from "@/config";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 import meta from "../../../public/data/school-district/meta.json";
@@ -47,6 +58,7 @@ function fileVer(rel: string): string {
 }
 const vAddr = fileVer("public/js/tc-addr.js");
 const vSd = fileVer("public/js/sd-lookup.js");
+const vMap = fileVer("public/js/cine-map.js");
 const vIdx = fileVer("public/data/tc-addr/index.json");
 // 學區資料（zones／lookup／school_info／meta）的 ?v=：6 個檔內容合起來算雜湊，同一天重建也會換號
 const dataVer = (() => {
@@ -192,8 +204,13 @@ const faqSchema = {
   })),
 };
 
-const chipCls =
-  "border-border bg-background hover:border-accent inline-flex min-h-11 items-center rounded-full border px-3 text-sm";
+// 主視覺關鍵數字：只用本頁已經列出來源的數字（學校數＝學區表、里數＝鄰長名冊、門牌數＝臺中市 GIS 門牌 115 年 1 月）
+const heroStats = [
+  { value: meta.counts.gs, suffix: "所", label: "國小" },
+  { value: meta.counts.jh, suffix: "所", label: "國中" },
+  { value: meta.counts.li, label: "里" },
+  { prefix: "約", value: Math.round(meta.counts.addr / 10000), suffix: "萬", label: "筆門牌" },
+];
 ---
 
 <Layout
@@ -206,72 +223,85 @@ const chipCls =
     <script type="application/ld+json" is:inline set:html={safeJsonLd(appSchema)} />
     <script type="application/ld+json" is:inline set:html={safeJsonLd(breadcrumbSchema)} />
     <script type="application/ld+json" is:inline set:html={safeJsonLd(faqSchema)} />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-      crossorigin=""
-    />
+    <link rel="preconnect" href="https://unpkg.com" crossorigin="anonymous" />
+    <link rel="preconnect" href="https://wmts.nlsc.gov.tw" crossorigin="anonymous" />
   </Fragment>
   <Header />
 
   <main id="main-content" class="pb-6">
+    {/* ===== 主視覺＋地址查詢（搜尋卡直接放在主視覺裡：手機第一屏就看得到輸入框和查詢鈕） ===== */}
+    <CinematicHero
+      variant="tool"
+      layout="split"
+      eyebrow={`客戶工具・${yearTxt}`}
+      title="台中學區查詢（國小・國中）"
+      subtitle={`輸入門牌地址，不用知道里、鄰，就能查這個地址在哪一所國小、國中的學區（${yearTxt}）。`}
+      stats={heroStats}
+      container="cine-tool-wrap"
+      titleId="sd-title"
+      class="sd-hero"
+    >
+      <section class="cine-glass sd-search p-4" aria-labelledby="sd-q-title">
+        <label id="sd-q-title" for="sd-addr" class="text-base font-bold">輸入地址查學區</label>
+        <form id="sd-form" class="mt-2 flex gap-2" role="search" autocomplete="off">
+          <input
+            id="sd-addr"
+            type="text"
+            inputmode="text"
+            enterkeyhint="search"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="例：福星路123號"
+            aria-describedby="sd-q-hint"
+            class="cine-input flex-1"
+          />
+          <button id="sd-go" type="submit" class="cine-cta cine-btn">查詢</button>
+        </form>
+        <p id="sd-q-hint" class="text-muted-foreground mt-2 text-sm leading-relaxed">
+          照平常寫法打：樓層、之幾號、全形數字、「三段／3段」、沒寫行政區都可以。
+        </p>
+        {/* 隱私說明收進「怎麼保護你的地址」（內容一字不差），手機第一屏留給輸入框和數字 */}
+        <details class="sd-privacy mt-1 text-sm">
+          <summary class="text-muted-foreground">怎麼保護你的地址</summary>
+          <p class="text-muted-foreground mt-1 leading-relaxed">
+            你打的地址只在你的手機或電腦裡比對，不會傳出去（地圖會向國土測繪中心下載那一帶的底圖）。
+            網站的匿名使用統計只記查詢有沒有成功、定位精度、燈號和行政區，不含地址。
+          </p>
+        </details>
+        <div class="sd-chips mt-2 flex flex-wrap items-center gap-2">
+          <button id="sd-here" type="button" class="sd-chip sd-chip--here">
+            <span class="cine-locate-dot" aria-hidden="true"></span>用我的位置
+          </button>
+          <span class="text-muted-foreground text-sm">試試看：</span>
+          <button type="button" class="sd-chip" data-example="西屯區福星路123號5樓">福星路123號5樓</button>
+          <button type="button" class="sd-chip" data-example="北屯區崇德路三段200號">崇德路三段200號</button>
+          <button type="button" class="sd-chip" data-example="北屯區崇德路二段">只打路名</button>
+        </div>
+        <p id="sd-status" class="sd-status text-muted-foreground mt-2 text-sm" role="status" aria-live="polite"></p>
+      </section>
+    </CinematicHero>
+
     <div
       id="sd-app"
-      class="mx-auto w-full max-w-[1440px] px-4 sm:px-6"
+      class="cine-tool-wrap"
       data-v={dataVer}
       data-vidx={vIdx}
       data-official={officialQuery.url}
       data-gs-table={GS_TABLE_PAGE}
       data-jh-table={JH_TABLE_PAGE}
     >
-      <h1 class="mt-6 text-2xl font-extrabold sm:text-3xl">台中學區查詢（國小・國中）</h1>
-      <p class="text-muted-foreground mt-2 mb-4 sm:mb-6">
-        輸入門牌地址，不用知道里、鄰，就能查這個地址在哪一所國小、國中的學區（{yearTxt}）。
-      </p>
-
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-[380px_minmax(0,1fr)] lg:gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
-        {/* ===== 左：地址查詢＋結果 ===== */}
+        {/* ===== 左：查詢結果＋燈號說明 ===== */}
         <div class="min-w-0 space-y-4">
-          <section class="card-surface p-4" aria-labelledby="sd-q-title">
-            <label id="sd-q-title" for="sd-addr" class="text-base font-bold">輸入地址查學區</label>
-            <form id="sd-form" class="mt-2 flex gap-2" role="search" autocomplete="off">
-              <input
-                id="sd-addr"
-                type="text"
-                inputmode="text"
-                enterkeyhint="search"
-                autocomplete="off"
-                spellcheck="false"
-                placeholder="例：福星路123號"
-                aria-describedby="sd-q-hint"
-                class="border-border bg-background min-h-11 min-w-0 flex-1 rounded-md border px-3 py-2 text-base"
-              />
-              <button id="sd-go" type="submit" class="btn-primary shrink-0 px-5">查詢</button>
-            </form>
-            <p id="sd-q-hint" class="text-muted-foreground mt-2 text-sm leading-relaxed">
-              照平常寫法打：樓層、之幾號、全形數字、「三段／3段」、沒寫行政區都可以。
-              你打的地址只在你的手機或電腦裡比對，不會傳出去（地圖會向國土測繪中心下載那一帶的底圖）。
-              網站的匿名使用統計只記查詢有沒有成功、定位精度、燈號和行政區，不含地址。
-            </p>
-            <div class="mt-3 flex flex-wrap items-center gap-2">
-              <button id="sd-here" type="button" class="border-border bg-background hover:border-accent inline-flex min-h-11 items-center gap-1.5 rounded-md border px-3 text-sm">
-                <span aria-hidden="true">📍</span>用我的位置
-              </button>
-              <span class="text-muted-foreground text-sm">試試看：</span>
-              <button type="button" class={chipCls} data-example="西屯區福星路123號5樓">福星路123號5樓</button>
-              <button type="button" class={chipCls} data-example="北屯區崇德路三段200號">崇德路三段200號</button>
-              <button type="button" class={chipCls} data-example="北屯區崇德路二段">只打路名</button>
-            </div>
-            <p id="sd-status" class="text-muted-foreground mt-3 min-h-5 text-sm" role="status" aria-live="polite"></p>
-            <p class="text-muted-foreground mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-              <span class="inline-flex items-center gap-1"><span class="sd-dot sd-dot-green" aria-hidden="true"></span>只有一所</span>
-              <span class="inline-flex items-center gap-1"><span class="sd-dot sd-dot-yellow" aria-hidden="true"></span>可能不只一所，全部列出</span>
-              <span class="inline-flex items-center gap-1"><span class="sd-dot sd-dot-none" aria-hidden="true"></span>學區表查無</span>
-            </p>
-          </section>
+          <section id="sd-result" class="sd-result scroll-mt-4" aria-live="polite" hidden></section>
 
-          <section id="sd-result" class="scroll-mt-4" aria-live="polite" hidden></section>
+          <div class="cine-glass sd-legend-card cine-reveal px-4 py-3">
+            <p class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
+              <span class="inline-flex items-center gap-2"><span class="cine-orb cine-orb--green cine-orb--sm cine-orb--static" aria-hidden="true"></span>只有一所</span>
+              <span class="inline-flex items-center gap-2"><span class="cine-orb cine-orb--yellow cine-orb--sm cine-orb--static" aria-hidden="true"></span>可能不只一所，全部列出</span>
+              <span class="inline-flex items-center gap-2"><span class="cine-orb cine-orb--grey cine-orb--sm cine-orb--static" aria-hidden="true"></span>學區表查無</span>
+            </p>
+          </div>
 
           <p class="text-muted-foreground text-sm leading-relaxed">
             ⚠️ 僅供參考，以教育局公告的學區表與學校通知為準。本工具依 {yearTxt}學區表（<a class="text-accent underline" href={GS_TABLE_PAGE} target="_blank" rel="noopener">國小</a>、<a class="text-accent underline" href={JH_TABLE_PAGE} target="_blank" rel="noopener">國中</a>）＋臺中市 115 年 1 月門牌資料。
@@ -281,11 +311,12 @@ const chipCls =
 
         {/* ===== 右：地圖 ===== */}
         <div class="min-w-0 lg:sticky lg:top-4 lg:self-start">
-          <section class="card-surface p-2 sm:p-3" aria-label="學區地圖">
+          <section class="cine-glass sd-mapcard cine-reveal p-2 sm:p-3" aria-label="學區地圖">
             <div class="flex flex-wrap items-center gap-2">
-              <div class="border-border inline-flex shrink-0 overflow-hidden rounded-md border" role="group" aria-label="切換國小或國中學區">
+              <div class="sd-seg-group" data-lv="gs" role="group" aria-label="切換國小或國中學區">
+                <span class="sd-seg-thumb" aria-hidden="true"></span>
                 <button type="button" data-level-btn="gs" aria-pressed="true" class="sd-seg min-h-11 px-4 text-sm font-semibold">國小</button>
-                <button type="button" data-level-btn="jh" aria-pressed="false" class="sd-seg border-border min-h-11 border-s px-4 text-sm font-semibold">國中</button>
+                <button type="button" data-level-btn="jh" aria-pressed="false" class="sd-seg min-h-11 px-4 text-sm font-semibold">國中</button>
               </div>
               <div class="relative min-w-0 flex-1 basis-40">
                 <label for="sd-school" class="sr-only">依校名找學校</label>
@@ -296,35 +327,35 @@ const chipCls =
                   enterkeyhint="search"
                   autocomplete="off"
                   placeholder="搜尋校名，例：四維"
-                  class="border-border bg-background min-h-11 w-full min-w-0 rounded-md border px-3 text-base"
+                  class="sd-input min-h-11 w-full min-w-0 rounded-full px-4 text-base"
                   aria-controls="sd-school-list"
                   aria-autocomplete="list"
                   aria-expanded="false"
                 />
-                <ul id="sd-school-list" class="bg-card border-border absolute inset-x-0 top-full z-20 mt-1 max-h-72 overflow-y-auto rounded-md border shadow-lg" role="listbox" hidden></ul>
+                <ul id="sd-school-list" class="sd-school-list absolute inset-x-0 top-full z-20 mt-1 max-h-72 overflow-y-auto" role="listbox" hidden></ul>
               </div>
             </div>
             <div class="mt-1 flex flex-wrap items-center gap-x-4 text-sm">
-              <label class="inline-flex min-h-11 items-center gap-2"><input id="sd-show-schools" type="checkbox" class="size-4" checked /> 學校位置</label>
-              <label class="inline-flex min-h-11 items-center gap-2"><input id="sd-show-labels" type="checkbox" class="size-4" checked /> 校名（放大才顯示）</label>
+              <label class="sd-check inline-flex min-h-11 items-center gap-2"><input id="sd-show-schools" type="checkbox" class="size-4" checked /> 學校位置</label>
+              <label class="sd-check inline-flex min-h-11 items-center gap-2"><input id="sd-show-labels" type="checkbox" class="size-4" checked /> 校名（放大才顯示）</label>
             </div>
 
-            <div class="relative mt-1">
+            <div id="sd-mapframe" class="cine-mapframe mt-1">
               <div
                 id="sd-map"
-                class="border-border h-[60vh] max-h-[680px] min-h-[260px] w-full rounded-lg border lg:h-[calc(100vh-12rem)] lg:max-h-[900px] lg:min-h-[520px]"
+                class="h-[60vh] max-h-[680px] min-h-[260px] w-full lg:h-[calc(100vh-12rem)] lg:max-h-[900px] lg:min-h-[520px]"
                 role="application"
                 aria-label="台中國小、國中學區地圖"
               ></div>
               <div id="sd-map-msg" class="pointer-events-none absolute inset-0 z-10 grid place-items-center p-4" hidden>
-                <p class="bg-card border-border rounded-md border px-4 py-3 text-center text-sm shadow"></p>
-              </div>
-              <div id="sd-gesture" class="pointer-events-none absolute inset-0 z-10 grid place-items-center rounded-lg bg-black/45 p-4 text-center text-base font-semibold text-white opacity-0 transition-opacity duration-200">
-                用兩根手指移動、縮放地圖
+                <p class="sd-map-msg rounded-full px-4 py-2.5 text-center text-sm"></p>
               </div>
             </div>
             <p id="sd-legend" class="text-muted-foreground mt-2 text-sm leading-relaxed">
               每個顏色是一所學校的學區（顏色只用來分開相鄰學區）。交界是依門牌位置推估的，交界附近請用地址查詢。點地圖看那裡的學區。
+            </p>
+            <p class="text-muted-foreground mt-1 flex items-center gap-2 text-sm leading-relaxed">
+              <span class="sd-dash" aria-hidden="true"></span>虛線框的學區裡，有些里要看到「鄰」才分得出來，靠近邊界請輸入門牌查。
             </p>
           </section>
         </div>
@@ -332,7 +363,7 @@ const chipCls =
     </div>
 
     <div class="app-layout mt-10">
-      <section>
+      <section class="cine-reveal">
         <h2 class="text-xl font-semibold">為什麼一定要輸入門牌號碼？</h2>
         <p class="mt-2 leading-relaxed">
           台中全市 {meta.counts.li} 個里，有 {splitLi} 個里的國小學區要看到「鄰」才分得出來。同一條路，隔幾個門牌號碼，可能就在不同學校的學區。
@@ -344,8 +375,8 @@ const chipCls =
 
         <h3 class="mt-6 text-lg font-semibold">燈號怎麼看</h3>
         <ul class="mt-2 space-y-2 text-sm leading-relaxed">
-          <li class="flex gap-2"><span class="sd-dot sd-dot-green mt-1.5 shrink-0" aria-hidden="true"></span><span><strong>綠燈：只有一所。</strong>門牌對到的里鄰只在一所學校的學區裡。寫著「推估」的，是門牌資料沒有這個號碼，但同一號的其他門牌和前後門牌，全都在同一所學校的學區。</span></li>
-          <li class="flex gap-2"><span class="sd-dot sd-dot-yellow mt-1.5 shrink-0" aria-hidden="true"></span><span><strong>黃燈：可能不只一所，全部列出來，請再向學校確認。</strong>遇到下面任一種就亮黃燈：
+          <li class="flex gap-2.5"><span class="cine-orb cine-orb--green cine-orb--sm cine-orb--static mt-1.5" aria-hidden="true"></span><span><strong>綠燈：只有一所。</strong>門牌對到的里鄰只在一所學校的學區裡。寫著「推估」的，是門牌資料沒有這個號碼，但同一號的其他門牌和前後門牌，全都在同一所學校的學區。</span></li>
+          <li class="flex gap-2.5"><span class="cine-orb cine-orb--yellow cine-orb--sm cine-orb--static mt-1.5" aria-hidden="true"></span><span><strong>黃燈：可能不只一所，全部列出來，請再向學校確認。</strong>遇到下面任一種就亮黃燈：
             <ul class="mt-1 space-y-0.5 ps-5" style="list-style:disc;">
               <li>學區表寫明共同學區、自由學區，或註記「可選…就讀」</li>
               <li>同一鄰依路段分給不同學校</li>
@@ -356,7 +387,7 @@ const chipCls =
               <li>行政區、段別或路名是工具推測的（沒寫區、沒寫段，或打的那條路沒有這個門牌、改用同名的另一段）</li>
               <li>只輸入到路名、巷名</li>
             </ul></span></li>
-          <li class="flex gap-2"><span class="sd-dot sd-dot-none mt-1.5 shrink-0" aria-hidden="true"></span><span><strong>查無：</strong>官方學區表沒有列到這個里鄰，結果卡會附教育局學區查詢的連結。</span></li>
+          <li class="flex gap-2.5"><span class="cine-orb cine-orb--grey cine-orb--sm cine-orb--static mt-1.5" aria-hidden="true"></span><span><strong>查無：</strong>官方學區表沒有列到這個里鄰，結果卡會附教育局學區查詢的連結。</span></li>
         </ul>
 
         <h3 class="mt-6 text-lg font-semibold">輸入地址的小提醒</h3>
@@ -373,12 +404,12 @@ const chipCls =
         </ul>
       </section>
 
-      <hr class="my-8 border-dashed" />
+      <hr class="sd-hr my-8" />
 
-      <section>
+      <section class="cine-reveal">
         <h2 class="text-xl font-semibold">依行政區找學校</h2>
         <p class="text-muted-foreground mt-1 text-sm">點校名，地圖會打開那所學校的學區。</p>
-        <details class="border-border mt-3 rounded-md border p-3">
+        <details class="sd-det mt-3 p-3">
           <summary class="cursor-pointer font-medium">國小（{meta.counts.gs} 所）</summary>
           <div class="mt-3 space-y-3">
             {gsGroups.map(g => (
@@ -393,7 +424,7 @@ const chipCls =
             ))}
           </div>
         </details>
-        <details class="border-border mt-3 rounded-md border p-3">
+        <details class="sd-det mt-3 p-3">
           <summary class="cursor-pointer font-medium">國中（{meta.counts.jh} 所）</summary>
           <div class="mt-3 space-y-3">
             {jhGroups.map(g => (
@@ -410,13 +441,13 @@ const chipCls =
         </details>
       </section>
 
-      <hr class="my-8 border-dashed" />
+      <hr class="sd-hr my-8" />
 
-      <section>
+      <section class="cine-reveal">
         <h2 class="text-xl font-semibold">常見問題</h2>
         <div class="mt-3 space-y-3">
           {faqs.map(f => (
-            <details class="border-border rounded-md border p-3">
+            <details class="sd-det p-3">
               <summary class="cursor-pointer font-medium">{f.q}</summary>
               <p class="text-muted-foreground mt-2 text-sm leading-relaxed">{f.a}</p>
               {f.src.length > 0 && (
@@ -431,9 +462,9 @@ const chipCls =
         </div>
       </section>
 
-      <hr class="my-8 border-dashed" />
+      <hr class="sd-hr my-8" />
 
-      <section>
+      <section class="cine-reveal">
         <h2 class="text-xl font-semibold">這個工具的限制，先講清楚</h2>
         <ul class="mt-3 space-y-2 ps-5 text-sm leading-relaxed" style="list-style:disc;">
           <li><strong>僅供參考，以官方公告為準。</strong>入學看設籍與實際居住，最後讀哪一所，看學校的入學通知。</li>
@@ -478,18 +509,19 @@ const chipCls =
             </li>
           ))}
           <li>地圖底圖：© 內政部國土測繪中心「臺灣通用電子地圖」（線上圖磚，2026-09 取用）</li>
+          <li>地圖元件：<a class="text-accent underline" href="https://maplibre.org/" target="_blank" rel="noopener">MapLibre GL JS</a> 4.7.1（BSD-3-Clause 授權）</li>
         </ul>
         <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
           本頁為整理後的加值應用，資料整理日期：{meta.built}。學校座標依教育部學校名錄的校址定位，只用來在地圖上標示位置。
         </p>
       </section>
 
-      <p class="mt-8 text-sm leading-relaxed">
+      <p class="cine-reveal mt-8 text-sm leading-relaxed">
         看房時想確認學區、或想找某所學校學區裡的房子，LINE 傳地址或校名過來，一起對照學區表：
         <a class="text-accent underline" href="/go/line?src=school-district">LINE sky811117</a>
       </p>
 
-      <hr class="my-8 border-dashed" />
+      <hr class="sd-hr my-8" />
 
       <p class="text-muted-foreground text-sm">
         <strong>陳景泰 — 一品不動產（有巢氏房屋台中世界之心加盟店）</strong><br />
@@ -502,31 +534,253 @@ const chipCls =
   <Footer />
 
   <style is:global>
-    .sd-sb { min-height: 44px; padding: 0 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
-    .sd-sb:hover { border-color: var(--accent); }
-    .sd-dot { display: inline-block; width: 10px; height: 10px; border-radius: 9999px; }
-    .sd-dot-green { background: #16a34a; }
-    .sd-dot-yellow { background: #f59e0b; }
-    .sd-dot-none { background: #a8a29e; }
-    .sd-seg[aria-pressed="true"] { background: var(--accent); color: var(--accent-foreground); }
-    .sd-seg[aria-pressed="false"] { background: var(--background); color: var(--foreground); }
+    /* =====================================================================
+     * 學區頁專用樣式（電影感共用樣式在 src/styles/cinematic.css，這裡只放學區頁自己的元件）
+     * 只動 transform / opacity；prefers-reduced-motion 一律停在最終狀態（最下面）
+     * ===================================================================== */
 
-    /* 地圖自成一個疊層：Leaflet 控制項的 z-index 1000 不會蓋到 cookie 橫幅與 LINE 浮動鈕 */
-    #sd-map { isolation: isolate; z-index: 0; background: #eef0ec; }
-    #sd-map.leaflet-container { font-family: inherit; font-size: 14px; }
-    #sd-map .leaflet-popup-content-wrapper,
-    #sd-map .leaflet-popup-tip { background: var(--card); color: var(--foreground); }
-    /* 彈窗高度由 popW() 依地圖實際高度給 Leaflet 的 maxHeight（矮地圖也不會被下緣切掉）；右邊留 30px 給關閉鈕，捲動時 X 不壓字 */
-    #sd-map .leaflet-popup-content { margin: 12px 30px 12px 14px; line-height: 1.55; overflow-y: auto; overscroll-behavior: contain; }
-    #sd-map a.leaflet-popup-close-button { width: 44px; height: 44px; font: 26px/44px Tahoma, Verdana, sans-serif; color: var(--muted-foreground); }
-    #sd-map .leaflet-tooltip.sd-tip { background: var(--card); color: var(--foreground); border: 1px solid var(--border); font-weight: 600; font-size: 14px; box-shadow: 0 2px 8px rgb(0 0 0 / 0.15); }
-    #sd-map .leaflet-tooltip.sd-tip::before { display: none; }
-    #sd-map .leaflet-control-attribution { font-size: 11px; }
-    /* 觸控：放大縮小鈕 44px，手指點得到 */
-    #sd-map.leaflet-touch .leaflet-bar a { width: 44px; height: 44px; line-height: 44px; font-size: 22px; }
-    [data-theme="dark"] #sd-map .leaflet-control-zoom a { background: #2c2522; color: #f5f1eb; border-color: #3a3530; }
+    /* ---------- 主視覺裡的搜尋卡 ---------- */
+    .sd-search { border-radius: 18px; }
+    /* 狀態列空的時候不留邊距、只留 1px（卡片底部不會多一條空帶；留 1px 讓它仍算「在畫面上」，讀螢幕軟體的播報區照常） */
+    .sd-status:empty { margin-top: 0; min-height: 1px; }
+    /* 桌機左文右搜尋卡：標題和數字聚在搜尋卡的中段（不要一個在上、一個掉到最下面） */
+    @media (min-width: 1024px) {
+      .sd-hero .cine-hero__text { align-self: end; }
+      .sd-hero .cine-hero__stats { align-self: start; margin-top: 1.25rem; }
+    }
+    /* 隱私說明（收合）：點「怎麼保護你的地址」展開 */
+    .sd-privacy > summary {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-style: dotted;
+      text-underline-offset: 3px;
+    }
+    .sd-privacy > summary::marker { content: ""; }
+    .sd-privacy > summary::-webkit-details-marker { display: none; }
+    .sd-privacy > summary::after { content: "▾"; margin-left: 0.3rem; font-size: 0.75em; transition: transform 0.2s ease; }
+    .sd-privacy[open] > summary::after { transform: rotate(180deg); }
+    /* 手機：「用我的位置」＋範例改成單行、可左右滑（頁面本身不會出現橫向捲軸） */
+    @media (max-width: 639px) {
+      .sd-chips {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scroll-snap-type: x proximity;
+        scroll-padding-inline: 1rem;
+        scrollbar-width: none;
+        margin-inline: -1rem;
+        padding: 2px 1rem;
+        -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 0.9rem, #000 calc(100% - 1.6rem), transparent);
+        mask-image: linear-gradient(90deg, transparent 0, #000 0.9rem, #000 calc(100% - 1.6rem), transparent);
+      }
+      .sd-chips::-webkit-scrollbar { display: none; }
+      .sd-chips > * { flex: none; scroll-snap-align: start; }
+    }
+    .sd-input {
+      border: 1px solid var(--border);
+      background: var(--background);
+      color: var(--foreground);
+      transition: border-color 0.2s ease, box-shadow 0.3s ease;
+    }
+    .sd-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgb(var(--cine-glow) / 0.26), 0 0 22px -4px rgb(var(--cine-glow) / 0.7); }
+    .sd-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      min-height: 44px;
+      padding: 0 0.8rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      background: color-mix(in srgb, var(--card) 78%, transparent);
+      font-size: 0.875rem;
+      transition: border-color 0.2s ease, box-shadow 0.3s ease, transform 0.2s var(--cine-ease-out);
+    }
+    @media (hover: hover) {
+      .sd-chip:hover { border-color: var(--accent); box-shadow: 0 0 0 1px rgb(var(--cine-glow) / 0.3), 0 8px 18px -10px rgb(var(--cine-glow) / 0.9); }
+    }
+    .sd-chip:active { transform: scale(0.97); }
+    /* 「在地圖上看 ↓」只給手機用（電腦版地圖就在結果卡右邊）。.sd-chip 是 is:global、不在 CSS layer 裡，
+       它的 display 會蓋掉 Tailwind utilities layer 的 lg:hidden，所以這裡直接寫斷點。 */
+    @media (min-width: 1024px) {
+      .sd-chip[data-act="show-map"] { display: none; }
+    }
+    .sd-chip--here { position: relative; gap: 0.5rem; padding-left: 0.85rem; }
 
-    .sd-pop { font-size: 15px; }
+    /* ---------- 結果卡 ---------- */
+    .sd-card { border-radius: 18px; }
+    .sd-lv {
+      --lv-glow: rgb(168 162 158 / 0.14);
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 0.75rem 0.875rem;
+    }
+    .sd-lv::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      left: -22%;
+      top: -70%;
+      width: 72%;
+      height: 170%;
+      border-radius: 50%;
+      background: radial-gradient(closest-side, var(--lv-glow), transparent);
+      pointer-events: none;
+    }
+    .sd-lv--green { --lv-glow: rgb(34 179 94 / 0.2); border-color: rgb(34 179 94 / 0.36); background: linear-gradient(135deg, rgb(236 252 242 / 0.95), rgb(255 255 255 / 0.6)); }
+    .sd-lv--yellow { --lv-glow: rgb(240 160 32 / 0.24); border-color: rgb(226 150 30 / 0.45); background: linear-gradient(135deg, rgb(255 247 228 / 0.97), rgb(255 255 255 / 0.6)); }
+    .sd-lv--none { background: linear-gradient(135deg, var(--muted), rgb(255 255 255 / 0.5)); }
+    [data-theme="dark"] .sd-lv--green { border-color: rgb(74 200 128 / 0.32); background: linear-gradient(135deg, rgb(22 58 38 / 0.7), rgb(44 37 34 / 0.55)); }
+    [data-theme="dark"] .sd-lv--yellow { border-color: rgb(236 170 64 / 0.38); background: linear-gradient(135deg, rgb(78 54 16 / 0.7), rgb(44 37 34 / 0.55)); }
+    [data-theme="dark"] .sd-lv--none { background: linear-gradient(135deg, rgb(58 52 46 / 0.7), rgb(44 37 34 / 0.55)); }
+    .sd-lv .cine-orb { margin-right: 0.15rem; }
+
+    /* 判斷依據（定位精度／行政區／系統判定的里、鄰）：一塊獨立的依據區，一眼看得到。
+       標籤不斷行；卡片太窄（320 手機）時整列改成上下排 */
+    .sd-card { container-type: inline-size; }
+    .sd-basis > dt { white-space: nowrap; }
+    .sd-basis {
+      padding: 0.7rem 0.85rem;
+      border-radius: 12px;
+      background: rgb(var(--cine-glow) / 0.07);
+      border: 1px solid rgb(var(--cine-glow) / 0.28);
+      box-shadow: inset 3px 0 0 rgb(var(--cine-glow) / 0.8);
+    }
+    .sd-basis > dt { font-weight: 600; }
+    .sd-basis > dt ~ dt,
+    .sd-basis > dt ~ dt + dd { border-top: 1px dashed rgb(var(--cine-glow) / 0.35); padding-top: 0.5rem; }
+    .sd-basis > dt:nth-of-type(3) { color: var(--foreground); }
+    .sd-basis > dd:nth-of-type(3) { font-size: 0.9375rem; }
+    .sd-basis dd b { font-weight: 800; }
+    .sd-basis dd ul > li { position: relative; padding-left: 0.85rem; }
+    .sd-basis dd ul > li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 5px; height: 5px; border-radius: 50%; background: rgb(var(--cine-glow)); box-shadow: 0 0 6px rgb(var(--cine-glow) / 0.9); }
+    /* 卡片太窄（320 手機）：改上下排。標籤 13px 灰字、值緊接在下；分隔線只畫在「每一組」上面（標籤和自己的值之間不畫）
+       ⚠ 要放在上面那組規則後面才蓋得過（同樣的權重，後寫的贏） */
+    @container (max-width: 340px) {
+      .sd-basis { grid-template-columns: minmax(0, 1fr); row-gap: 0; }
+      .sd-basis > dt,
+      .sd-basis > dt:nth-of-type(3) { font-size: 13px; font-weight: 600; color: var(--muted-foreground); }
+      .sd-basis > dd { margin-top: 2px; }
+      .sd-basis > dt ~ dt + dd { border-top: 0; padding-top: 0; }
+      .sd-basis > dt ~ dt { margin-top: 11px; padding-top: 11px; }
+    }
+
+    .sd-legend-card { border-radius: 14px; }
+
+    /* ---------- 地圖卡 ---------- */
+    /* 地圖卡很大又 sticky：不用毛玻璃（捲動時每格重算模糊很吃效能），改半實心 */
+    .sd-mapcard { border-radius: 18px; -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--cine-glass-bg-solid); }
+    .sd-seg-group {
+      position: relative;
+      isolation: isolate;
+      display: inline-grid;
+      grid-template-columns: 1fr 1fr;
+      flex-shrink: 0;
+      padding: 3px;
+      border-radius: 999px;
+      background: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .sd-seg-thumb {
+      position: absolute;
+      z-index: -1;
+      top: 3px;
+      bottom: 3px;
+      left: 3px;
+      width: calc(50% - 3px);
+      border-radius: 999px;
+      /* 淺色：深木色漸層（白字 5.3～7.9:1），光澤靠內側高光，不靠把底色調亮 */
+      background: linear-gradient(135deg, #8a6539, #6f4f29);
+      box-shadow: 0 1px 0 rgb(255 255 255 / 0.25) inset, 0 6px 16px -6px rgb(var(--cine-glow) / 0.95), 0 0 18px -4px rgb(var(--cine-glow) / 0.6);
+      transition: transform 0.5s var(--cine-ease-spring);
+    }
+    [data-theme="dark"] .sd-seg-thumb { background: linear-gradient(135deg, #e2c79f, var(--accent)); }
+    .sd-seg-group[data-lv="jh"] .sd-seg-thumb { transform: translateX(100%); }
+    .sd-seg { min-width: 4.5rem; border-radius: 999px; background: transparent; color: var(--foreground); transition: color 0.3s ease; }
+    .sd-seg[aria-pressed="true"] { color: var(--accent-foreground); }
+    .sd-check input { accent-color: var(--accent); }
+    [data-theme="dark"] .sd-check input { color-scheme: dark; accent-color: #c9a87c; }
+    .sd-school-list {
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      box-shadow: 0 18px 40px -16px rgb(60 38 14 / 0.45), 0 0 0 1px rgb(var(--cine-glow) / 0.2);
+    }
+    .sd-map-msg { background: var(--cine-glass-bg-solid); color: var(--foreground); box-shadow: 0 10px 30px -12px rgb(60 38 14 / 0.45), 0 0 0 1px rgb(var(--cine-glow) / 0.3); }
+    .sd-dash { flex: none; width: 22px; height: 0; border-top: 2px dashed var(--muted-foreground); }
+    /* 沒有 WebGL：訊息框不用佔一整個地圖高 */
+    .cine-mapframe.is-fallback #sd-map { height: 12rem; min-height: 0; }
+
+    /* 學校點（HTML Marker）：滑鼠 24px、觸控 40px 的點擊範圍，看得到的光點 12px；校名放大到街道層級才顯示
+       ⚠ MapLibre 會改 .sd-school 本身的 transform，動畫只放在子元素 */
+    .sd-school { width: 24px; height: 24px; cursor: pointer; }
+    .sd-touch .sd-school { width: 40px; height: 40px; }
+    .sd-school-dot {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 12px;
+      height: 12px;
+      margin: -6px 0 0 -6px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 36% 30%, #fff 0 28%, #fbe5bd 55%, #d49a4e 100%);
+      box-shadow: 0 0 0 2px #fffaf0, 0 0 0 3.5px rgb(92 62 28 / 0.6), 0 0 14px 3px rgb(var(--cine-glow) / 0.7);
+      transition: transform 0.3s var(--cine-ease-spring);
+    }
+    .sd-z-low .sd-school-dot { transform: scale(0.7); }
+    @media (hover: hover) {
+      .sd-school:hover .sd-school-dot { transform: scale(1.4); }
+    }
+    .sd-school.is-on .sd-school-dot { transform: scale(1.4); box-shadow: 0 0 0 2px #fffaf0, 0 0 0 3.5px rgb(92 62 28 / 0.7), 0 0 20px 6px rgb(var(--cine-glow) / 0.95); }
+    .sd-school-name {
+      display: none;
+      position: absolute;
+      left: calc(50% + 11px);
+      top: 50%;
+      margin-top: -0.7em;
+      white-space: nowrap;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.4;
+      color: #2c2522;
+      text-shadow: 0 0 2px #fff, 0 0 3px #fff, 0 0 5px #fff, 0 0 9px rgb(255 244 222 / 0.95);
+      pointer-events: none;
+    }
+    [data-theme="dark"] .sd-school-name { color: #fbefdc; text-shadow: 0 0 2px #120d09, 0 0 4px #120d09, 0 0 8px rgb(0 0 0 / 0.85), 0 0 16px rgb(226 170 96 / 0.4); }
+    .sd-labels-on .sd-school-name { display: block; }
+    .sd-pin-hit { width: 34px; height: 44px; cursor: pointer; }
+
+    /* 滑過學區的名稱（跟著滑鼠，只動 transform） */
+    .sd-tip {
+      position: absolute;
+      left: 0;
+      top: 0;
+      z-index: 3;
+      padding: 4px 11px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      pointer-events: none;
+      background: var(--cine-glass-bg-solid);
+      color: var(--foreground);
+      box-shadow: 0 8px 20px -8px rgb(60 38 14 / 0.5), 0 0 0 1px rgb(var(--cine-glow) / 0.4);
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      will-change: transform;
+    }
+    .sd-tip.is-on { opacity: 1; }
+
+    /* ---------- 地圖彈窗（MapLibre Popup；右邊留 32px 給關閉鈕，內容太高時在彈窗裡捲） ---------- */
+    .sd-popup .maplibregl-popup-content { padding: 12px 32px 12px 14px; animation: sd-pop-in 0.38s var(--cine-ease-out) backwards; }
+    @keyframes sd-pop-in { from { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.97); } }
+    .sd-pop { font-size: 15px; line-height: 1.55; overflow-y: auto; overscroll-behavior: contain; }
     .sd-pop p { margin: 0; }
     .sd-pop-k { font-size: 14px; color: var(--muted-foreground); }
     .sd-pop-t { font-size: 17px; font-weight: 800; margin-top: 2px !important; }
@@ -535,39 +789,53 @@ const chipCls =
     .sd-pop-h { font-weight: 700; margin-top: 10px !important; font-size: 15px; }
     .sd-pop-l { margin: 4px 0 0; padding-left: 18px; list-style: disc; font-size: 14px; }
     .sd-pop-l li { margin: 2px 0; }
-    .sd-pop-n { margin: 8px 0 0; padding: 8px 10px; list-style: none; font-size: 14px; background: var(--muted); border-radius: 8px; }
+    .sd-pop-n { margin: 8px 0 0; padding: 8px 10px; list-style: none; font-size: 14px; background: var(--muted); border-radius: 10px; }
     .sd-pop-n li + li { margin-top: 4px; }
     .sd-pop-n a { text-decoration: underline; }
     .sd-pop-a { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-    .sd-pop-a a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 8px; font-weight: 600; font-size: 15px; text-decoration: none; }
+    .sd-pop-a a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 10px; font-weight: 600; font-size: 15px; text-decoration: none; }
     .sd-pop-a a.sd-pop-off { border: 1.5px solid var(--accent); color: var(--accent); }
     .sd-pop-a a.sd-pop-line { background: var(--color-line, #0c8540); color: #fff; }
     .sd-pop-here { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed var(--border); }
     .sd-pop-here b { font-weight: 800; }
     .sd-pop-warn { font-size: 14px; color: var(--muted-foreground); margin-top: 4px !important; }
     .sd-pop-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-    .sd-pop-btns button, .sd-pop-inline { min-height: 44px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--background); color: var(--foreground); font-size: 15px; }
-    .sd-pop-btns button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .sd-pop-btns button, .sd-pop-inline { min-height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--background); color: var(--foreground); font-size: 15px; }
+    .sd-pop-btns button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; box-shadow: 0 0 0 1px rgb(var(--cine-glow) / 0.35), 0 0 14px -4px rgb(var(--cine-glow) / 0.8); }
     .sd-pop-inline { margin-top: 8px; }
 
-    /* 學校點：滑鼠 24px、觸控 40px 的點擊範圍，看得到的點都是 12px；校名在放大到街道層級才顯示 */
-    .sd-school { cursor: pointer; }
-    .sd-school-dot { position: absolute; left: 6px; top: 6px; width: 12px; height: 12px; border-radius: 9999px; background: #fff; border: 2.5px solid #1c1917; box-shadow: 0 0 0 1.5px #fff; box-sizing: border-box; }
-    .sd-school-name { display: none; position: absolute; left: 22px; top: 2px; white-space: nowrap; font-size: 14px; font-weight: 700; color: #1c1917; text-shadow: 0 0 2px #fff, 0 0 3px #fff, 0 0 4px #fff, 0 0 5px #fff; pointer-events: none; }
-    .sd-touch .sd-school-dot { left: 14px; top: 14px; }
-    .sd-touch .sd-school-name { left: 30px; top: 11px; }
-    .sd-labels-on .sd-school-name { display: block; }
-    .sd-z-low .sd-school-dot { transform: scale(0.7); }
-    .sd-pin { position: relative; }
-    .sd-pin::before { content: ""; position: absolute; left: 3px; top: 0; width: 24px; height: 24px; border-radius: 50% 50% 50% 0; background: #dc2626; border: 3px solid #fff; transform: rotate(-45deg); box-shadow: 0 2px 6px rgb(0 0 0 / 0.35); box-sizing: border-box; }
-    .sd-pin::after { content: ""; position: absolute; left: 12px; top: 8px; width: 6px; height: 6px; border-radius: 50%; background: #fff; }
-  </style>
+    /* ---------- 下方內容 ---------- */
+    .sd-sb {
+      min-height: 44px;
+      padding: 0 11px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 14px;
+      background: var(--card);
+      background: color-mix(in srgb, var(--card) 70%, transparent);
+      transition: border-color 0.2s ease, box-shadow 0.3s ease;
+    }
+    @media (hover: hover) {
+      .sd-sb:hover { border-color: var(--accent); box-shadow: 0 0 0 1px rgb(var(--cine-glow) / 0.3), 0 8px 18px -10px rgb(var(--cine-glow) / 0.9); }
+    }
+    .sd-det {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--card);
+      background: color-mix(in srgb, var(--card) 72%, transparent);
+      transition: border-color 0.3s ease, box-shadow 0.4s ease;
+    }
+    .sd-det[open] { border-color: rgb(var(--cine-glow) / 0.5); box-shadow: 0 14px 34px -22px rgb(var(--cine-glow) / 0.95); }
+    .sd-det > summary { min-height: 28px; }
+    .sd-hr { border: 0; height: 1px; background: linear-gradient(90deg, transparent, rgb(var(--cine-glow) / 0.55), transparent); }
 
-  <script
-    is:inline
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""></script>
+    @media (prefers-reduced-motion: reduce) {
+      .sd-popup .maplibregl-popup-content { animation: none; }
+      .sd-seg-thumb,
+      .sd-school-dot { transition: none; }
+    }
+  </style>
+  <script is:inline src={`/js/cine-map.js?v=${vMap}`}></script>
   <script is:inline src={`/js/tc-addr.js?v=${vAddr}`}></script>
   <script is:inline src={`/js/sd-lookup.js?v=${vSd}`}></script>
 
@@ -588,9 +856,10 @@ const chipCls =
       var $ = function (id) { return document.getElementById(id); };
       var el = {
         form: $("sd-form"), addr: $("sd-addr"), go: $("sd-go"), here: $("sd-here"),
-        status: $("sd-status"), result: $("sd-result"), map: $("sd-map"), mapMsg: $("sd-map-msg"),
-        gesture: $("sd-gesture"), school: $("sd-school"), schoolList: $("sd-school-list"),
-        showSchools: $("sd-show-schools"), showLabels: $("sd-show-labels"), legend: $("sd-legend")
+        status: $("sd-status"), result: $("sd-result"), map: $("sd-map"), frame: $("sd-mapframe"), mapMsg: $("sd-map-msg"),
+        school: $("sd-school"), schoolList: $("sd-school-list"),
+        showSchools: $("sd-show-schools"), showLabels: $("sd-show-labels"), legend: $("sd-legend"),
+        seg: document.querySelector(".sd-seg-group")
       };
 
       function esc(s) {
@@ -603,6 +872,7 @@ const chipCls =
       function mq(q) { try { return window.matchMedia(q).matches; } catch (e) { return false; } }
       var isTouch = mq("(pointer: coarse)") || (!mq("(hover: hover)") && "ontouchstart" in window);
       var canHover = mq("(hover: hover)") && mq("(pointer: fine)");
+      var reduced = mq("(prefers-reduced-motion: reduce)");
 
       // GA4：只記「查詢成功或失敗、精度、行政區、燈號」，絕不帶地址或座標
       function track(name, params) {
@@ -611,33 +881,75 @@ const chipCls =
         } catch (e) {}
       }
 
-      /* ================= 地圖 ================= */
-      var map = null, canvas = null, zoneLayer = null, schoolLayer = null, pinLayer = null;
+      /* ================= 地圖（MapLibre，/js/cine-map.js） ================= */
+      var cm = null, map = null, ML = null;
       var level = "gs";
       var INFO = null;                              // SchoolDistrict.loadInfo()：{meta, info}（學校清單，畫學校點用）
       var data = null;                              // SchoolDistrict.load()：查地址用的全部資料
       var zones = { gs: null, jh: null }, zoneReq = { gs: null, jh: null };
       var zoneIdx = { gs: null, jh: null }, zoneById = { gs: {}, jh: {} };
+      var condIdx = { gs: [], jh: [] };             // 「學區表另有條件」範圍（zones_*.json 的 cond）
       var hi = {};                                  // 目前高亮的校 id
       var focusIds = { gs: [], jh: [] };            // 查詢結果對應的學校（切換國小／國中時沿用）
       var popCtx = null;                            // 點地圖彈窗的內容狀態
+      var popup = null;                             // 目前開著的彈窗（同時只開一個）
       var infoFailed = false;                       // 開頁載學校清單失敗
+      var markers = [], markerEl = {};              // 學校點
+      var pinLL = null, pinHtml = "", pinHit = null; // 查詢位置圖釘（光環圖釘由 cine-map 畫，這裡另放一個透明的點擊區開彈窗）
+      var built = { gs: false, jh: false }, shown = { gs: false, jh: false };
+      var hovered = null, tipEl = null;
+      var EMPTY = { type: "FeatureCollection", features: [] };
+      var J = { "line-join": "round" };
+      // 圖層一開始先不畫（visibility none），其他 layout 屬性照給
+      function hid(x) { var o = { visibility: "none" }; for (var k in x || {}) o[k] = x[k]; return o; }
 
       function infoOf(lv) { return (INFO && INFO.info && INFO.info[lv]) || {}; }
+      function dark() { return document.documentElement.getAttribute("data-theme") === "dark"; }
 
-      var PAL = [
-        { c: "#1d4ed8", f: "#3b82f6" },
-        { c: "#15803d", f: "#22c55e" },
-        { c: "#b45309", f: "#f59e0b" },
-        { c: "#be185d", f: "#ec4899" },
-        { c: "#6d28d9", f: "#8b5cf6" }
-      ];
-      function zoneStyle(p, on) {
-        if (p.wide) {
-          return { color: "#57534e", weight: on ? 2.5 : 1.5, opacity: 0.85, dashArray: "8 6", fillColor: "#a8a29e", fillOpacity: on ? 0.12 : 0.04 };
-        }
-        var k = PAL[(p.ci || 0) % PAL.length];
-        return { color: k.c, weight: on ? 3.5 : 1.2, opacity: on ? 1 : 0.85, fillColor: k.f, fillOpacity: on ? 0.4 : 0.16 };
+      // 配色：沿用建置腳本的 5 色序號 ci（相鄰、重疊的學區不同號）。
+      // 全市視角要平面、安靜（北歐米色）：色塊往米色（深色模式往暖灰）混 40%、低透明度、細邊線；
+      // 只有查詢命中的學區用原色升起＋金邊，對比才出得來。每色 [平面色塊, 命中升起的色塊]
+      var PAL = {
+        light: [["#d8a37c", "#c8773f"], ["#a2ba8a", "#6f9c56"], ["#dfbd79", "#d4a23a"], ["#d19ba4", "#bd6981"], ["#8fb1aa", "#4f8d8b"]],
+        dark: [["#c58a5f", "#ffc493"], ["#90a771", "#c6eeae"], ["#c9a45e", "#ffe19a"], ["#c1868c", "#ffc4d4"], ["#7b9e94", "#abe6e1"]]
+      };
+      function pal() { return PAL[dark() ? "dark" : "light"]; }
+      var CI = ["to-number", ["coalesce", ["get", "ci"], 0]];
+      function col(i) { var p = pal(); return ["match", CI, 0, p[0][i], 1, p[1][i], 2, p[2][i], 3, p[3][i], p[4][i]]; }
+      function lineCol() { return dark() ? "#ecd3ad" : "#5c3e1c"; }                            // 學區邊線（細、淡）
+      function wideCol() { return dark() ? ["#c2ae96", "#8a7a6a"] : ["#7d6a57", "#a8998a"]; }   // [邊線, 填色]
+      // 命中學區的邊：淺色用深木色實線＋琥珀光暈＋落地陰影（米色地圖上白邊看不見），深色用奶油亮邊＋金色光暈
+      function glowCol() { return dark() ? "#ffc978" : "#d08a2e"; }
+      function rimCol() { return dark() ? "#fff1d6" : "#8a6539"; }
+      function shadowCol() { return dark() ? "rgba(0,0,0,0.55)" : "rgba(92,62,28,0.25)"; }
+      function zi(a, b) { return ["interpolate", ["linear"], ["zoom"], 10, a, 16, b]; }
+      function glowW() { return dark() ? zi(7, 16) : zi(7, 10); }
+      function glowB() { return dark() ? zi(5, 11) : zi(4, 6); }
+      function glowOp() { return dark() ? 0.85 : 0.7; }
+      function hiOp() {
+        return dark() ? ["interpolate", ["linear"], ["zoom"], 11, 0.86, 13.5, 0.72, 15, 0.5, 16.5, 0.36]
+          : ["interpolate", ["linear"], ["zoom"], 11, 0.9, 13.5, 0.8, 15, 0.62, 16.5, 0.5];
+      }
+      // 命中學區升起的高度（公尺）隨縮放，乘上 t（feature-state，0→1）：全市、區域視角看得到立起來；
+      // 街道層級（手機 zoom 16、斜 45°）壓到只剩幾公尺：頂面偏離地面邊線 ≤6px，家長看「我家那條街在不在學區內」不會讀錯
+      var HZ = [9, 1800, 11, 700, 12, 380, 13, 200, 14, 60, 15, 20, 16, 8, 17, 5, 18, 3];
+      function hHi() {
+        var e = ["interpolate", ["linear"], ["zoom"]];
+        var t = ["to-number", ["coalesce", ["feature-state", "t"], 0]];
+        for (var i = 0; i < HZ.length; i += 2) e.push(HZ[i], ["*", HZ[i + 1], t]);
+        return e;
+      }
+      // 透明度隨縮放：街道層級色塊會蓋滿整個畫面 → 放大時變淡，底下的路名看得到
+      function opZ(v) { return v ? ["interpolate", ["linear"], ["zoom"], 12, v, 15, Math.round(v * 75) / 100, 16.5, Math.round(v * 55) / 100] : 0; }
+      function tr(ms, delay) { return reduced ? { duration: 0, delay: 0 } : { duration: ms, delay: delay || 0 }; }
+      function baseOpacity() { return hasHi() ? 0.14 : (dark() ? 0.3 : 0.28); }
+      function lineOp(dim) { return dark() ? (dim ? 0.16 : 0.3) : (dim ? 0.18 : 0.35); }
+      // 學校點：全市視角用小圓點（circle 圖層，不帶白框光暈），放大到 SCH_Z 以上才換成可點的光點標記
+      var SCH_Z = 12.5;
+      function schCol() { return dark() ? "#e2c79f" : "#8a6539"; }
+      function hasHi() {
+        for (var id in hi) if (zoneById[level][id] && !zoneById[level][id].wide) return true;
+        return false;
       }
 
       function mapMsg(msg) {
@@ -645,51 +957,101 @@ const chipCls =
         el.mapMsg.hidden = !msg;
         el.mapMsg.firstElementChild.textContent = msg || "";
       }
+      // 頁面自己要動鏡頭（查詢、點學校）：告訴 cine-map 不要再播開場飛行（不然地圖捲進畫面時會飛回全市視角，蓋掉查詢位置）
+      function claimCamera() { if (cm) cm.cancelIntro(); }
 
       function initMap() {
-        canvas = L.canvas({ padding: 0.4, tolerance: isTouch ? 6 : 2 });
-        map = L.map(el.map, {
-          preferCanvas: true,
-          renderer: canvas,
-          zoomControl: false,
-          // 觸控裝置：單指留給捲動頁面，兩指移動、縮放地圖（不會卡在地圖裡捲不下去）
-          dragging: !isTouch,
-          scrollWheelZoom: !isTouch,
-          minZoom: 9,
-          maxZoom: 18,
-          maxBounds: [[23.75, 120.2], [24.7, 121.7]],
-          maxBoundsViscosity: 0.8
-        });
-        // 觸控裝置用兩指縮放（也可以點兩下放大），不放縮放鈕：左上角空出來給彈窗，矮螢幕才放得下
-        if (!isTouch) L.control.zoom({ zoomInTitle: "放大", zoomOutTitle: "縮小" }).addTo(map);
-        else el.map.classList.add("sd-touch");
-        map.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener" title="Leaflet 地圖元件">Leaflet</a>');
-        map.fitBounds(isDesktop() ? [[24.09, 120.58], [24.24, 120.76]] : [[24.11, 120.61], [24.22, 120.73]]);
-        L.tileLayer("https://wmts.nlsc.gov.tw/wmts/EMAP/default/GoogleMapsCompatible/{z}/{y}/{x}", {
-          maxZoom: 18,
-          attribution: '© <a href="https://maps.nlsc.gov.tw/" target="_blank" rel="noopener">內政部國土測繪中心</a>'
-        }).addTo(map);
-        pinLayer = L.layerGroup().addTo(map);
-        map.on("click", onMapClick);
-        map.on("zoomend", updateLabels);
-
-        if (isTouch && el.gesture) {
-          var t = null;
-          el.map.addEventListener("touchmove", function (e) {
-            if (e.touches && e.touches.length === 1) {
-              el.gesture.style.opacity = "1";
-              clearTimeout(t);
-              t = setTimeout(function () { el.gesture.style.opacity = "0"; }, 1200);
-            }
-          }, { passive: true });
-          el.map.addEventListener("touchend", function () {
-            clearTimeout(t);
-            t = setTimeout(function () { el.gesture.style.opacity = "0"; }, 700);
-          }, { passive: true });
+        if (isTouch) {
+          el.map.classList.add("sd-touch");
           el.legend.textContent = "每個顏色是一所學校的學區。交界是依門牌位置推估的，交界附近請用地址查詢。點地圖看那裡的學區；手機用兩根手指移動、縮放地圖，單指可以正常捲動頁面。";
         }
-        // 彈窗裡的按鈕（Leaflet 會擋掉冒泡，所以用捕獲階段）
+        if (typeof CineMap === "undefined") {
+          mapMsg("地圖元件載入失敗，請重新整理再試一次。上面的地址查詢還是可以用。");
+          el.map.style.minHeight = "120px";
+          return;
+        }
+        var narrow = (el.map.clientWidth || window.innerWidth) < 640;
+        cm = CineMap.create(el.map, {
+          center: [120.672, 24.162],
+          zoom: narrow ? 11.7 : 12.2,
+          minZoom: 9,
+          maxZoom: 18.5,
+          onReady: setupMap,
+          onUnavailable: function () { mapMsg(""); }
+        });
+        // 彈窗裡的按鈕（捕獲階段，地圖元件擋不到）
         el.map.addEventListener("click", onPopupClick, true);
+      }
+
+      function setupMap(m) {
+        map = m;
+        ML = window.maplibregl;
+        applyLight();
+        tipEl = document.createElement("div");
+        tipEl.className = "sd-tip";
+        tipEl.setAttribute("aria-hidden", "true");
+        el.map.appendChild(tipEl);
+        // 命中學區：小 source（只放 1–3 校），「升起」用 feature-state 逐格動畫，不重算全市圖磚
+        map.addSource("z-hi", { type: "geojson", data: EMPTY, promoteId: "school" });
+        // 命中學區的圖層：沒有命中時整層關掉（尤其 3D 的 fill-extrusion：有 3D 圖層，MapLibre 每格都多一道深度處理）
+        map.addLayer({ id: "z-hi-shadow", type: "line", source: "z-hi", layout: hid(J),
+          paint: { "line-color": shadowCol(), "line-width": 6, "line-blur": 4, "line-translate": [2, 3], "line-translate-anchor": "viewport" } });
+        map.addLayer({ id: "z-hi-glow", type: "line", source: "z-hi", layout: { "line-join": "round", "line-cap": "round", visibility: "none" },
+          paint: { "line-color": glowCol(), "line-width": glowW(), "line-blur": glowB(), "line-opacity": glowOp() } });
+        map.addLayer({ id: "z-hi-ln", type: "line", source: "z-hi", layout: hid(J),
+          paint: { "line-color": rimCol(), "line-width": dark() ? 2.4 : 2.5, "line-opacity": 0.95 } });
+        map.addLayer({ id: "z-hi-ext", type: "fill-extrusion", source: "z-hi", filter: ["!", ["has", "wide"]], layout: { visibility: "none" },
+          paint: { "fill-extrusion-color": col(1), "fill-extrusion-base": 0, "fill-extrusion-height": hHi(), "fill-extrusion-opacity": hiOp(), "fill-extrusion-vertical-gradient": true } });
+        map.addSource("sd-sch", { type: "geojson", data: EMPTY });
+        map.addLayer({ id: "sd-sch-c", type: "circle", source: "sd-sch", maxzoom: SCH_Z,
+          layout: { visibility: el.showSchools.checked ? "visible" : "none" },
+          paint: { "circle-color": schCol(), "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 2, 12.5, 3.5], "circle-opacity": 0.85, "circle-stroke-width": 0 } });
+        map.on("click", onMapClick);
+        map.on("zoom", syncMarkers);
+        map.on("zoomend", updateLabels);
+        map.on("moveend", updateLabels);
+        if (canHover) {
+          map.on("mousemove", onHover);
+          map.on("mouseout", hideTip);
+          map.on("movestart", hideTip);
+        }
+        if ("MutationObserver" in window) {
+          new MutationObserver(function () { if (map) applyTheme(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+        }
+        if (INFO) drawSchools();
+        if (pinLL) addPinHit();
+        drawZones();
+      }
+
+      function applyLight() {
+        try {
+          // 淺色光打強一點：升起學區的側面比頂面暗，看起來是一塊浮起的量體
+          map.setLight({ anchor: "map", position: [1.4, 205, 38], color: dark() ? "#ffcf93" : "#fff0d4", intensity: dark() ? 0.32 : 0.58 });
+        } catch (e) {}
+      }
+      function applyTheme() {
+        applyLight();
+        ["gs", "jh"].forEach(function (lv) {
+          if (!built[lv]) return;
+          var w = wideCol();
+          for (var k = 0; k < 5; k++) sp("z-" + lv + "-f" + k, "fill-color", pal()[k][0]);
+          sp("z-" + lv + "-glow", "line-color", glowCol());
+          sp("z-" + lv + "-ln", "line-color", lineCol());
+          sp("z-" + lv + "-lnd", "line-color", lineCol());
+          sp("zw-" + lv + "-ln", "line-color", w[0]);
+          sp("zw-" + lv + "-band", "line-color", w[1]);
+          sp("zw-" + lv + "-fill", "fill-color", w[1]);
+          if (shown[lv]) setOpacities(lv, true);
+        });
+        sp("z-hi-ext", "fill-extrusion-color", col(1));
+        sp("z-hi-ext", "fill-extrusion-opacity", hiOp());
+        sp("z-hi-shadow", "line-color", shadowCol());
+        sp("z-hi-glow", "line-color", glowCol());
+        sp("z-hi-glow", "line-width", glowW());
+        sp("z-hi-glow", "line-blur", glowB());
+        sp("z-hi-ln", "line-color", rimCol());
+        sp("z-hi-ln", "line-width", dark() ? 2.4 : 2.5);
+        sp("sd-sch-c", "circle-color", schCol());
       }
 
       function indexZones(gj) {
@@ -697,19 +1059,22 @@ const chipCls =
         gj.features.forEach(function (f) {
           var g = f.geometry;
           if (!g) return;
-          var polys = g.type === "Polygon" ? [g.coordinates] : g.coordinates;
-          var bb = [999, 999, -999, -999];
-          polys.forEach(function (poly) {
-            poly[0].forEach(function (c) {
-              if (c[0] < bb[0]) bb[0] = c[0];
-              if (c[1] < bb[1]) bb[1] = c[1];
-              if (c[0] > bb[2]) bb[2] = c[0];
-              if (c[1] > bb[3]) bb[3] = c[1];
-            });
-          });
-          out.push({ id: f.properties.school, p: f.properties, polys: polys, bb: bb });
+          out.push(polyRec(g, f.properties.school, f.properties));
         });
         return out;
+      }
+      function polyRec(g, id, p) {
+        var polys = g.type === "Polygon" ? [g.coordinates] : g.coordinates;
+        var bb = [999, 999, -999, -999];
+        polys.forEach(function (poly) {
+          poly[0].forEach(function (c) {
+            if (c[0] < bb[0]) bb[0] = c[0];
+            if (c[1] < bb[1]) bb[1] = c[1];
+            if (c[0] > bb[2]) bb[2] = c[0];
+            if (c[1] > bb[3]) bb[3] = c[1];
+          });
+        });
+        return { id: id, p: p, polys: polys, bb: bb };
       }
       function inRing(x, y, ring) {
         var inside = false;
@@ -724,29 +1089,45 @@ const chipCls =
         for (var k = 1; k < poly.length; k++) if (inRing(x, y, poly[k])) return false;
         return true;
       }
-      function zonesAt(lv, lat, lng) {
-        var idx = zoneIdx[lv] || [];
-        return idx.filter(function (z) {
-          if (lng < z.bb[0] || lng > z.bb[2] || lat < z.bb[1] || lat > z.bb[3]) return false;
-          for (var i = 0; i < z.polys.length; i++) if (inPoly(lng, lat, z.polys[i])) return true;
-          return false;
-        });
+      function inRec(z, lat, lng) {
+        if (lng < z.bb[0] || lng > z.bb[2] || lat < z.bb[1] || lat > z.bb[3]) return false;
+        for (var i = 0; i < z.polys.length; i++) if (inPoly(lng, lat, z.polys[i])) return true;
+        return false;
       }
-      // 某點周圍（半徑 m 公尺，8 個方向＋中心）落在哪些一般學區：各點不一樣＝在學區交界附近
-      function ringSets(lv, lat, lng, m) {
+      function zonesAt(lv, lat, lng) {
+        return (zoneIdx[lv] || []).filter(function (z) { return inRec(z, lat, lng); });
+      }
+      // 某點＋周圍 8 個方向（半徑 m 公尺）
+      function ringPts(lat, lng, m) {
         var dLat = m / 111320, dLng = m / (111320 * Math.cos(lat * Math.PI / 180));
         var pts = [[lat, lng]];
-        for (var i = 0; i < 8; i++) {
-          var a = i * Math.PI / 4;
-          pts.push([lat + dLat * Math.sin(a), lng + dLng * Math.cos(a)]);
+        if (m > 0) {
+          for (var i = 0; i < 8; i++) {
+            var a = i * Math.PI / 4;
+            pts.push([lat + dLat * Math.sin(a), lng + dLng * Math.cos(a)]);
+          }
         }
+        return pts;
+      }
+      // 某點周圍落在哪些一般學區：各點不一樣＝在學區交界附近
+      function ringSets(lv, lat, lng, m) {
         var sigs = {}, union = {}, order = [];
-        pts.forEach(function (p) {
+        ringPts(lat, lng, m).forEach(function (p) {
           var ids = zonesAt(lv, p[0], p[1]).filter(function (z) { return !z.p.wide; }).map(function (z) { return z.id; }).sort();
           sigs[ids.join("|")] = 1;
           ids.forEach(function (id) { if (!union[id]) { union[id] = 1; order.push(id); } });
         });
         return { mixed: Object.keys(sigs).length > 1, union: order };
+      }
+      // 「學區表另有條件」範圍：某點（或周圍 m 公尺內任一方向）落在裡面 → 回傳那一筆 {school, dist, li, lins, c}
+      function condAt(lv, lat, lng, m) {
+        var list = condIdx[lv] || [];
+        if (!list.length) return null;
+        var pts = ringPts(lat, lng, m);
+        for (var i = 0; i < list.length; i++) {
+          for (var j = 0; j < pts.length; j++) if (inRec(list[i], pts[j][0], pts[j][1])) return list[i].p;
+        }
+        return null;
       }
 
       function ensureZones(lv) {
@@ -761,36 +1142,100 @@ const chipCls =
               zones[lv] = gj;
               zoneIdx[lv] = indexZones(gj);
               zoneIdx[lv].forEach(function (z) { zoneById[lv][z.id] = z.p; });
+              condIdx[lv] = (gj.cond || []).map(function (c) { return polyRec(c.geometry, c.school, c); });
               return gj;
             }, function (e) { zoneReq[lv] = null; throw e; });
         }
         return zoneReq[lv];
       }
 
+      // 跟著學制一起顯示／隱藏的圖層（滑過才畫的光暈線 z-*-glow 另外由 setHover 管）
+      function lvIds(lv) {
+        var a = ["zw-" + lv + "-fill", "zw-" + lv + "-band", "z-" + lv + "-ln", "z-" + lv + "-lnd", "zw-" + lv + "-ln"];
+        for (var k = 0; k < 5; k++) a.push("z-" + lv + "-f" + k);
+        return a;
+      }
+      // 一個學制的圖層：一般學區（每個 ci 一層平面色塊＋細邊線；approx＝有依鄰劃分的里 → 虛線），整區學區只畫外框
+      // 全部插在命中學區圖層（z-hi-*）底下
+      function buildLevel(lv, gj) {
+        if (built[lv]) return;
+        var normal = [], wide = [];
+        gj.features.forEach(function (f) { (f.properties.wide ? wide : normal).push(f); });
+        map.addSource("z-" + lv, { type: "geojson", data: { type: "FeatureCollection", features: normal }, promoteId: "school" });
+        map.addSource("zw-" + lv, { type: "geojson", data: { type: "FeatureCollection", features: wide } });
+        var w = wideCol(), B = "z-hi-shadow";
+        // 色塊不畫反鋸齒外框（fill-antialias：每一層每一格都要多畫一圈邊）；上面本來就有學區邊線蓋著
+        for (var k = 0; k < 5; k++) {
+          map.addLayer({ id: "z-" + lv + "-f" + k, type: "fill", source: "z-" + lv, filter: ["==", CI, k], layout: hid(),
+            paint: { "fill-color": pal()[k][0], "fill-opacity": 0, "fill-antialias": false, "fill-translate": [0, 10], "fill-translate-anchor": "viewport" } }, B);
+        }
+        map.addLayer({ id: "zw-" + lv + "-fill", type: "fill", source: "zw-" + lv, layout: hid(), paint: { "fill-color": w[1], "fill-opacity": 0, "fill-antialias": false } }, B);
+        // 整區學區的外框帶：不加 line-blur（寬線加模糊每格都要多算，改用較細、低透明度）
+        map.addLayer({ id: "zw-" + lv + "-band", type: "line", source: "zw-" + lv, layout: hid(J), paint: { "line-color": w[1], "line-width": 5, "line-opacity": 0 } }, B);
+        // 滑過的學區：一圈琥珀金的亮邊（跟查詢命中的金邊同色系）。⚠ 只畫被滑過的那一塊（filter），沒滑過時整層 visibility none；
+        // 不能靠「透明度 0」藏：透明度是看 feature-state 的式子時，MapLibre 每一格還是會把全市邊界都用模糊光暈畫一次
+        map.addLayer({ id: "z-" + lv + "-glow", type: "line", source: "z-" + lv, filter: ["==", ["get", "school"], ""], layout: hid(J), paint: { "line-color": glowCol(), "line-width": 3.2, "line-blur": 1.2, "line-opacity": 0 } }, B);
+        // 學區邊線：固定 1px（不看 feature-state：線寬是逐筆算的式子時，每格都要對全市邊界重算）
+        map.addLayer({ id: "z-" + lv + "-ln", type: "line", source: "z-" + lv, filter: ["!=", ["get", "approx"], true], layout: hid(J), paint: { "line-color": lineCol(), "line-width": 1, "line-opacity": 0 } }, B);
+        map.addLayer({ id: "z-" + lv + "-lnd", type: "line", source: "z-" + lv, filter: ["==", ["get", "approx"], true], layout: hid(J), paint: { "line-color": lineCol(), "line-width": 1, "line-dasharray": [3, 2], "line-opacity": 0 } }, B);
+        map.addLayer({ id: "zw-" + lv + "-ln", type: "line", source: "zw-" + lv, layout: hid(J), paint: { "line-color": w[0], "line-width": 1.4, "line-opacity": 0 } }, B);
+        built[lv] = true;
+      }
+      // map.setPaintProperty／setLayoutProperty 的短名（這頁叫很多次）
+      function sp(id, prop, val) { map.setPaintProperty(id, prop, val); }
+      function sl(id, prop, val) { map.setLayoutProperty(id, prop, val); }
+      function setP(id, prop, val, t) {
+        if (t) sp(id, prop + "-transition", t);
+        sp(id, prop, val);
+      }
+      // 邊線、色塊透明度（有命中學區時其他學區淡化）
+      // stagger：升降轉場時各 ci 層錯開（一層一層升起）；其他時候（淡化、切深淺色）整組一起變
+      function setOpacities(lv, on, stagger) {
+        var dim = on && hasHi();
+        var t = stagger ? tr(on ? 700 : 320, on ? 300 : 0) : tr(650);
+        for (var k = 0; k < 5; k++) setP("z-" + lv + "-f" + k, "fill-opacity", on ? opZ(baseOpacity()) : 0, stagger ? tr(on ? 800 : 420, on ? 120 + k * 110 : k * 35) : t);
+        setP("z-" + lv + "-glow", "line-opacity", on ? 0.9 : 0, t);
+        setP("z-" + lv + "-ln", "line-opacity", on ? lineOp(dim) : 0, t);
+        setP("z-" + lv + "-lnd", "line-opacity", on ? lineOp(dim) : 0, t);
+        setP("zw-" + lv + "-ln", "line-opacity", on ? 0.6 : 0, t);
+        setP("zw-" + lv + "-band", "line-opacity", on ? 0.22 : 0, t);
+        setP("zw-" + lv + "-fill", "fill-opacity", on ? 0.04 : 0, t);
+      }
+      // 國小／國中切換：色塊一層一層（依 ci）淡入、由下往上滑進定位；舊的那組往下淡出
+      function riseLevel(lv) {
+        for (var k = 0; k < 5; k++) setP("z-" + lv + "-f" + k, "fill-translate", [0, 0], tr(900, 120 + k * 110));
+        setOpacities(lv, true, true);
+      }
+      function sinkLevel(lv) {
+        shown[lv] = false;
+        if (map.getLayer("z-" + lv + "-glow")) sl("z-" + lv + "-glow", "visibility", "none");
+        for (var k = 0; k < 5; k++) setP("z-" + lv + "-f" + k, "fill-translate", [0, 8], tr(420, k * 35));
+        setOpacities(lv, false, true);
+        setTimeout(function () {
+          if (shown[lv] || !map) return;
+          lvIds(lv).forEach(function (id) { sl(id, "visibility", "none"); });
+        }, reduced ? 0 : 900);
+      }
+      var stageTok = 0;
+      function showLevel(lv) {
+        ["gs", "jh"].forEach(function (x) { if (x !== lv && shown[x]) sinkLevel(x); });
+        if (shown[lv]) { setOpacities(lv, true); return; }
+        shown[lv] = true;
+        for (var k = 0; k < 5; k++) setP("z-" + lv + "-f" + k, "fill-translate", [0, 10], { duration: 0, delay: 0 });
+        lvIds(lv).forEach(function (id) { sl(id, "visibility", "visible"); });
+        var tok = ++stageTok;
+        // 等地圖進到畫面（露出 25%）、鏡頭停下來再升起（在畫面外升起就白做了）
+        cm.whenSettled(function () { if (tok === stageTok && level === lv && shown[lv]) riseLevel(lv); }, 0.25);
+      }
+
       function drawZones() {
         var lv = level;
+        if (!map) return Promise.resolve();
         mapMsg("載入" + LV[lv] + "學區地圖中……");
         return ensureZones(lv).then(function (gj) {
-          if (lv !== level) return;
-          if (zoneLayer) map.removeLayer(zoneLayer);
-          // 整區學區（中科實中國小部、和平國中）先畫、壓在最底層，不蓋住一般學區
-          var feats = gj.features.slice().sort(function (a, b) {
-            return (b.properties.wide ? 1 : 0) - (a.properties.wide ? 1 : 0);
-          });
-          zoneLayer = L.geoJSON({ type: "FeatureCollection", features: feats }, {
-            renderer: canvas,
-            style: function (f) { return zoneStyle(f.properties, false); },
-            onEachFeature: function (f, l) {
-              var p = f.properties;
-              if (canHover) {
-                l.bindTooltip(esc(p.name) + (p.wide ? "（整區學區）" : ""), { sticky: true, direction: "top", className: "sd-tip", opacity: 1 });
-                l.on("mouseover", function () {
-                  if (!hi[p.school]) l.setStyle({ weight: 2.6, fillOpacity: p.wide ? 0.08 : 0.28 });
-                });
-                l.on("mouseout", function () { l.setStyle(zoneStyle(p, !!hi[p.school])); });
-              }
-            }
-          }).addTo(map);
+          if (lv !== level || !map) return;
+          buildLevel(lv, gj);
+          showLevel(lv);
           applyHighlight(focusIds[lv]);
           mapMsg("");
         }).catch(function () {
@@ -798,63 +1243,224 @@ const chipCls =
         });
       }
 
+      /* ---------- 命中學區：升起＋光暈，其他學區淡化 ---------- */
+      var hiTok = 0, riseRaf = 0, pulseT = 0;
+      function easeOutBack(p) { var c1 = 1.25, c3 = c1 + 1, q = p - 1; return 1 + c3 * q * q * q + c1 * q * q; }
       function applyHighlight(ids) {
         hi = {};
         (ids || []).forEach(function (id) { hi[id] = 1; });
-        if (!zoneLayer) return;
-        zoneLayer.eachLayer(function (l) {
-          var p = l.feature.properties;
-          l.setStyle(zoneStyle(p, !!hi[p.school]));
-          if (hi[p.school]) l.bringToFront();
-        });
+        if (!map || !zones[level] || !map.getSource("z-hi")) return;
+        var feats = zones[level].features.filter(function (f) { return hi[f.properties.school]; });
+        var tok = ++hiTok;
+        cancelAnimationFrame(riseRaf);
+        clearTimeout(pulseT);
+        try { map.removeFeatureState({ source: "z-hi" }); } catch (e) {}
+        map.getSource("z-hi").setData({ type: "FeatureCollection", features: feats });
+        if (built[level] && shown[level]) setOpacities(level, true);
+        setP("z-hi-glow", "line-opacity", glowOp(), tr(0));
+        var ids2 = feats.filter(function (f) { return !f.properties.wide; }).map(function (f) { return f.properties.school; });
+        ["z-hi-shadow", "z-hi-glow", "z-hi-ln"].forEach(function (id) { sl(id, "visibility", feats.length ? "visible" : "none"); });
+        sl("z-hi-ext", "visibility", ids2.length ? "visible" : "none");
+        if (!ids2.length) return;
+        // 鏡頭真的停下來（含手機「捲到地圖才補播」的那段）、地圖露出 35% 以上才升起：在畫面外升起就沒人看到了
+        cm.whenSettled(function () { if (tok === hiTok && map) riseHi(ids2, tok); });
+      }
+      function riseHi(ids, tok) {
+        function set(v) { ids.forEach(function (id) { map.setFeatureState({ source: "z-hi", id: id }, { t: v }); }); }
+        if (reduced) { set(1); return; }
+        var t0 = performance.now(), D = 1250;
+        (function step(now) {
+          if (tok !== hiTok || !map) return;
+          var p = Math.min(1, Math.max(0, (now - t0) / D));
+          set(easeOutBack(p));
+          if (p < 1) riseRaf = requestAnimationFrame(step);
+          else pulse(tok, 0);
+        })(t0);
+      }
+      // 光暈呼吸幾次就停（不讓地圖一直重繪耗電）；分頁在背景時不跑
+      function pulse(tok, n) {
+        if (tok !== hiTok || !map) return;
+        if (n >= 6 || document.hidden) { setP("z-hi-glow", "line-opacity", glowOp(), tr(900)); return; }
+        setP("z-hi-glow", "line-opacity", n % 2 ? 0.95 : 0.35, { duration: 1300, delay: 0 });
+        pulseT = setTimeout(function () { pulse(tok, n + 1); }, 1350);
       }
 
+      /* ---------- 學校點 ---------- */
+      var markersOn = false;
+      function clearMarkers() {
+        markers.forEach(function (m) { m.remove(); });
+        markers = [];
+        markerEl = {};
+        markersOn = false;
+      }
+      function showMarkers(on) {
+        markersOn = on;
+        markers.forEach(function (m) {
+          if (on) {
+            m.addTo(map);
+            var d = m.getElement();
+            d.setAttribute("aria-label", d.getAttribute("data-name"));
+          } else m.remove();
+        });
+      }
+      // 全市視角：學校是 circle 圖層的小圓點；放大到 SCH_Z 以上才掛上可點的光點標記（239 個 HTML 標記不必每格都算位置）
+      function syncMarkers() {
+        if (!map) return;
+        var want = el.showSchools.checked && map.getZoom() >= SCH_Z;
+        if (want !== markersOn) showMarkers(want);
+      }
+      function schoolFC() {
+        var info = infoOf(level), feats = [];
+        Object.keys(info).forEach(function (id) {
+          var s = info[id];
+          if (s.lat && s.lng) feats.push({ type: "Feature", properties: { id: id, name: s.name }, geometry: { type: "Point", coordinates: [s.lng, s.lat] } });
+        });
+        return { type: "FeatureCollection", features: feats };
+      }
+      // 全市視角點到（或滑到）學校小圓點：手指粗一點給寬一點的範圍
+      function schoolAt(pt) {
+        if (!map || !el.showSchools.checked || map.getZoom() >= SCH_Z || !map.getLayer("sd-sch-c")) return null;
+        var r = isTouch ? 14 : 7, best = null, bd = 1e9;
+        map.queryRenderedFeatures([[pt.x - r, pt.y - r], [pt.x + r, pt.y + r]], { layers: ["sd-sch-c"] }).forEach(function (f) {
+          var q = map.project(f.geometry.coordinates), dd = (q.x - pt.x) * (q.x - pt.x) + (q.y - pt.y) * (q.y - pt.y);
+          if (dd < bd) { bd = dd; best = f; }
+        });
+        return best ? { id: best.properties.id, name: best.properties.name, ll: best.geometry.coordinates } : null;
+      }
       function drawSchools() {
         if (!INFO || !map) return;
-        if (schoolLayer) map.removeLayer(schoolLayer);
-        schoolLayer = L.layerGroup();
-        var info = infoOf(level);
-        var sz = isTouch ? 40 : 24;
+        clearMarkers();
+        var info = infoOf(level), lv = level;
         Object.keys(info).forEach(function (id) {
           var s = info[id];
           if (!(s.lat && s.lng)) return;
-          var m = L.marker([s.lat, s.lng], {
-            icon: L.divIcon({
-              className: "sd-school",
-              html: '<span class="sd-school-dot"></span><span class="sd-school-name">' + esc(s.name) + "</span>",
-              iconSize: [sz, sz],
-              iconAnchor: [sz / 2, sz / 2]
-            }),
-            title: s.name,
-            alt: s.name,
-            keyboard: false        // 239 個學校點不進 Tab 順序；鍵盤使用者用校名搜尋或下方清單找學校
+          var d = document.createElement("div");
+          d.className = "sd-school";
+          d.title = s.name;
+          d.setAttribute("data-name", s.name);
+          d.innerHTML = '<span class="sd-school-dot"></span><span class="sd-school-name">' + esc(s.name) + "</span>";
+          d.addEventListener("click", function (ev) {
+            ev.stopPropagation();
+            claimCamera();
+            openSchool(lv, id, [s.lng, s.lat]);
           });
-          m.on("click", function () { openSchool(level, id, L.latLng(s.lat, s.lng)); });
-          schoolLayer.addLayer(m);
+          markers.push(new ML.Marker({ element: d, anchor: "center" }).setLngLat([s.lng, s.lat]));
+          markerEl[id] = d;
         });
-        if (el.showSchools.checked) schoolLayer.addTo(map);
+        var src = map.getSource("sd-sch");
+        if (src) src.setData(schoolFC());
+        syncMarkers();
         updateLabels();
       }
-
+      function setActiveMarker(id) {
+        for (var k in markerEl) markerEl[k].classList.toggle("is-on", k === id);
+      }
       function updateLabels() {
         if (!map) return;
-        var on = el.showLabels.checked && el.showSchools.checked && map.getZoom() >= 14;
-        el.map.classList.toggle("sd-labels-on", on);
-        el.map.classList.toggle("sd-z-low", map.getZoom() < 13);   // 全市視角時學校點縮小，不擋學區顏色
+        var z = map.getZoom();
+        el.map.classList.toggle("sd-labels-on", el.showLabels.checked && el.showSchools.checked && z >= 14);
+        el.map.classList.toggle("sd-z-low", z < 13);    // 全市視角時學校點縮小，不擋學區顏色
       }
 
+      /* ---------- 滑過學區顯示校名（桌機） ---------- */
+      var hoverRaf = 0, lastMove = null;
+      function onHover(e) {
+        lastMove = e;
+        if (!hoverRaf) hoverRaf = requestAnimationFrame(doHover);
+      }
+      function doHover() {
+        hoverRaf = 0;
+        var e = lastMove;
+        if (!e || !map || !zoneIdx[level] || !shown[level] || map.isMoving()) { hideTip(); return; }
+        var t = e.originalEvent && e.originalEvent.target;
+        if (t && t.closest && t.closest(".sd-school,.sd-pin-hit")) { hideTip(); return; }
+        var sc = schoolAt(e.point);
+        map.getCanvas().style.cursor = sc ? "pointer" : "";
+        if (sc) {
+          setHover(null);
+          tipEl.textContent = sc.name;
+          tipEl.style.transform = "translate(" + Math.round(e.point.x + 14) + "px," + Math.round(e.point.y - 34) + "px)";
+          tipEl.classList.add("is-on");
+          return;
+        }
+        var hits = zonesAt(level, e.lngLat.lat, e.lngLat.lng);
+        var normal = hits.filter(function (z) { return !z.p.wide; });
+        setHover(normal.length ? normal[0].id : null);
+        if (!hits.length) { tipEl.classList.remove("is-on"); return; }
+        tipEl.textContent = normal.length ? normal.map(function (z) { return z.p.name; }).join("、") : hits[0].p.name + "（整區學區）";
+        tipEl.style.transform = "translate(" + Math.round(e.point.x + 14) + "px," + Math.round(e.point.y - 34) + "px)";
+        tipEl.classList.add("is-on");
+      }
+      function setHover(id) {
+        if (hovered === id || !map) return;
+        try {
+          if (hovered) map.setFeatureState({ source: "z-" + level, id: hovered }, { hover: false });
+          if (id && built[level]) map.setFeatureState({ source: "z-" + level, id: id }, { hover: true });
+          // 光暈線：只畫被滑過的那一塊；沒滑過就整層不畫
+          ["gs", "jh"].forEach(function (lv) {
+            var gid = "z-" + lv + "-glow", on = !!id && lv === level && shown[lv];
+            if (!map.getLayer(gid)) return;
+            if (on) map.setFilter(gid, ["==", ["get", "school"], id]);
+            sl(gid, "visibility", on ? "visible" : "none");
+          });
+        } catch (x) {}
+        hovered = id;
+      }
+      function hideTip() {
+        if (tipEl) tipEl.classList.remove("is-on");
+        setHover(null);
+      }
+
+      /* ---------- 彈窗 ---------- */
       function popW() {
         var w = el.map.clientWidth || 320;
         var mh = el.map.clientHeight || 400;
-        // 上方留白：桌機避開左上角放大縮小鈕（觸控裝置沒有縮放鈕，只留一點邊）
-        var padTop = Math.min(isTouch ? 24 : 84, Math.round(mh * 0.3));
-        // 彈窗內容最高＝地圖高度 − 上方留白 − 下方留白（避開右下角出處標示 34）− 內距與邊框 26 − 箭頭 20 − 預留 10；
+        var padTop = Math.min(20, Math.round(mh * 0.08));
+        // 彈窗內容最高＝地圖高度 − 上方留白 − 下方留白（避開右下角出處 34）− 內距 24 − 箭頭 10 − 離點 14 − 預留 10；
         // 矮地圖（手機橫放、iPhone SE）內容改成在彈窗裡捲，底部按鈕捲得到、不會掉出地圖
-        var maxH = Math.max(100, Math.min(isDesktop() ? 460 : 400, mh - padTop - 34 - 26 - 20 - 10));
-        return {
-          maxWidth: Math.min(340, w - 72), minWidth: Math.min(240, w - 72), maxHeight: maxH,
-          autoPanPaddingTopLeft: [16, padTop], autoPanPaddingBottomRight: [16, 34]
-        };
+        var maxH = Math.max(100, Math.min(isDesktop() ? 460 : 400, mh - padTop - 34 - 24 - 10 - 14 - 10));
+        return { maxWidth: Math.min(340, w - 40), minWidth: Math.min(240, w - 72), maxH: maxH, padTop: padTop };
+      }
+      function wrapPop(inner, pw) {
+        return '<div class="sd-pop" style="max-height:' + pw.maxH + "px;min-width:" + pw.minWidth + 'px">' + inner + "</div>";
+      }
+      function closePopup() {
+        if (!popup) return;
+        var p = popup;
+        popup = null;
+        p.remove();
+      }
+      function openPopup(ll, inner, offset) {
+        if (!map) return null;
+        closePopup();
+        hideTip();
+        var pw = popW();
+        var p = new ML.Popup({ className: "sd-popup", maxWidth: pw.maxWidth + "px", anchor: "bottom", offset: offset == null ? 14 : offset, focusAfterOpen: false, closeOnClick: false });
+        p.setLngLat(ll).setHTML(wrapPop(inner, pw)).addTo(map);
+        popup = p;
+        p.on("close", function () {
+          if (popup === p) { popup = null; popCtx = null; setActiveMarker(null); }
+        });
+        fitPopup(p, pw);
+        return p;
+      }
+      // 彈窗整個看得到：超出地圖框就把地圖挪一下（Leaflet 的 autoPan）
+      function fitPopup(p, pw) {
+        requestAnimationFrame(function () {
+          if (popup !== p || !map) return;
+          var pe = p.getElement();
+          if (!pe) return;
+          var r = pe.getBoundingClientRect(), mr = el.map.getBoundingClientRect();
+          var dx = 0, dy = 0, pad = 12;
+          if (r.top < mr.top + pw.padTop) dy = r.top - (mr.top + pw.padTop);
+          else if (r.bottom > mr.bottom - 34) dy = r.bottom - (mr.bottom - 34);
+          if (r.left < mr.left + pad) dx = r.left - (mr.left + pad);
+          else if (r.right > mr.right - pad) dx = r.right - (mr.right - pad);
+          if (Math.abs(dx) <= 1 && Math.abs(dy) <= 1) return;
+          // 斜視時 panBy 只在畫面中心準；改成「把彈窗那一點移到指定的螢幕位置」（easeTo＋offset，平移相機、透視下也準）
+          var ll = p.getLngLat(), pt = map.project(ll);
+          map.easeTo({ center: ll, offset: [Math.round(pt.x - dx - el.map.clientWidth / 2), Math.round(pt.y - dy - el.map.clientHeight / 2)], duration: reduced ? 0 : 320 });
+        });
       }
 
       /* ---------- 學校彈窗 ---------- */
@@ -909,15 +1515,16 @@ const chipCls =
         return h;
       }
 
-      function openSchool(lv, id, latlng) {
+      function openSchool(lv, id, ll) {
         applyHighlight([id]);
         popCtx = null;
-        L.popup(popW())
-          .setLatLng(latlng)
-          .setContent('<div class="sd-pop">' + schoolHtml(lv, id) + "</div>")
-          .openOn(map);
+        openPopup(ll, schoolHtml(lv, id), 14);
+        setActiveMarker(id);
       }
 
+      function linsTxt(lins) {
+        return typeof SchoolDistrict !== "undefined" ? SchoolDistrict.linsText(lins) : lins.join("、") + "鄰";
+      }
       // 地圖上任一點：看落在哪個學區多邊形（依門牌位置推估，判斷不到門牌號）
       function hereHtml(ctx) {
         var n = ctx.normal, lv = ctx.lv;
@@ -936,43 +1543,55 @@ const chipCls =
         if (n.length && ctx.wide.length) {
           h += '<p class="sd-pop-warn">另外，這裡也在「' + esc(ctx.wide.map(function (z) { return z.p.name; }).join("、")) + "」的整區學區內。</p>";
         }
+        // 學區表在這幾鄰只寫了附帶條件的範圍（例：高速公路西側部分），條件以外的部分沒列學校
+        if (ctx.cond) {
+          h += '<p class="sd-pop-warn">' + esc("學區表在這一帶（" + ctx.cond.dist + ctx.cond.li + " " + linsTxt(ctx.cond.lins) + "）另有條件：" + ctx.cond.c.join("／") + "。") + "</p>";
+        }
         h += '<p class="sd-pop-warn">' + (ctx.edge ? "這裡在學區交界附近。" : "") + "點地圖是依門牌位置推估，要確認請輸入門牌地址。</p>";
         h += '<button type="button" class="sd-pop-inline" data-act="focus-input">輸入地址查詢</button>';
         return h + "</div>";
       }
       function renderPop() {
-        if (!popCtx) return;
-        var html = '<div class="sd-pop">' + hereHtml(popCtx) + schoolHtml(popCtx.lv, popCtx.sel) + "</div>";
-        popCtx.popup.setContent(html);
+        if (!popCtx || !popCtx.popup) return;
+        var pw = popW();
+        popCtx.popup.setHTML(wrapPop(hereHtml(popCtx) + schoolHtml(popCtx.lv, popCtx.sel), pw));
         applyHighlight(popCtx.normal.length ? [popCtx.sel] : []);
+        fitPopup(popCtx.popup, pw);
       }
       function onMapClick(e) {
+        var t = e.originalEvent && e.originalEvent.target;
+        if (t && t.closest && t.closest(".sd-school,.sd-pin-hit,.maplibregl-popup")) return;
+        claimCamera();          // 使用者已經在看地圖了：開場飛行不要再把鏡頭拉走
         var lv = level;
+        var sc = schoolAt(e.point);
+        if (sc) { openSchool(lv, sc.id, sc.ll); return; }
         if (!zoneIdx[lv]) return;
-        var hits = zonesAt(lv, e.latlng.lat, e.latlng.lng);
+        var lat = e.lngLat.lat, lng = e.lngLat.lng;
+        var hits = zonesAt(lv, lat, lng);
         var normal = hits.filter(function (z) { return !z.p.wide; });
         var wide = hits.filter(function (z) { return z.p.wide; });
-        var popup = L.popup(popW()).setLatLng(e.latlng);
+        setActiveMarker(null);
         if (!hits.length) {
           popCtx = null;
           applyHighlight([]);
-          popup.setContent('<div class="sd-pop"><p class="sd-pop-t">這裡沒有' + LV[lv] + '學區資料</p>' +
+          openPopup([lng, lat], '<p class="sd-pop-t">這裡沒有' + LV[lv] + '學區資料</p>' +
             '<p class="sd-pop-warn">這裡可能不在臺中市，或是河川、港區等沒有編定村里的地方。要查特定地址，請在上方輸入門牌。</p>' +
-            '<button type="button" class="sd-pop-inline" data-act="focus-input">輸入地址查詢</button></div>').openOn(map);
+            '<button type="button" class="sd-pop-inline" data-act="focus-input">輸入地址查詢</button>', 8);
           return;
         }
-        var edge = normal.length > 0 && ringSets(lv, e.latlng.lat, e.latlng.lng, 25).mixed;
-        popCtx = { lv: lv, normal: normal, wide: wide, sel: (normal[0] || wide[0]).id, popup: popup, edge: edge };
-        popup.openOn(map);
-        renderPop();
+        var edge = normal.length > 0 && ringSets(lv, lat, lng, 25).mixed;
+        var ctx = { lv: lv, normal: normal, wide: wide, sel: (normal[0] || wide[0]).id, popup: null, edge: edge, cond: normal.length ? condAt(lv, lat, lng, 0) : null };
+        ctx.popup = openPopup([lng, lat], hereHtml(ctx) + schoolHtml(ctx.lv, ctx.sel), 8);
+        popCtx = ctx;
+        applyHighlight(normal.length ? [ctx.sel] : []);
       }
       function onPopupClick(e) {
         var t = e.target && e.target.closest ? e.target.closest("[data-pop-school],[data-act='focus-input']") : null;
         if (!t) return;
         e.preventDefault();
         if (t.getAttribute("data-act") === "focus-input") {
-          map.closePopup();
-          el.addr.scrollIntoView({ behavior: "smooth", block: "center" });
+          closePopup();
+          el.addr.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" });
           setTimeout(function () { try { el.addr.focus({ preventScroll: true }); } catch (x) { el.addr.focus(); } }, 350);
           return;
         }
@@ -982,12 +1601,15 @@ const chipCls =
       function setLevel(lv, silent) {
         if (lv !== "gs" && lv !== "jh") return Promise.resolve();
         var changed = lv !== level;
+        if (changed) hideTip();
         level = lv;
         Array.prototype.forEach.call(document.querySelectorAll("[data-level-btn]"), function (b) {
           b.setAttribute("aria-pressed", b.getAttribute("data-level-btn") === lv ? "true" : "false");
         });
+        if (el.seg) el.seg.setAttribute("data-lv", lv);
         if (!changed) return Promise.resolve();
-        if (map) map.closePopup();
+        closePopup();
+        popCtx = null;
         el.school.placeholder = lv === "gs" ? "搜尋校名，例：四維" : "搜尋校名，例：北新";
         closeSchoolList();
         drawSchools();
@@ -995,20 +1617,27 @@ const chipCls =
         return drawZones();
       }
 
-      // 從結果卡／學校清單／搜尋跳到某所學校：地圖不在畫面裡就先捲過去（桌機也一樣），捲完再開彈窗
+      // 從結果卡／學校清單／搜尋跳到某所學校：地圖不在畫面裡就先捲過去（桌機也一樣），鏡頭飛到學區再開彈窗
       function focusSchool(lv, id) {
-        if (!map) return;
-        var rect = el.map.getBoundingClientRect();
+        if (!cm || !cm.available) return;
+        var rect = el.frame.getBoundingClientRect();
         var needScroll = !isDesktop() || rect.bottom < 80 || rect.top > window.innerHeight - 80;
-        if (needScroll) el.map.scrollIntoView({ behavior: "smooth", block: "center" });
-        setLevel(lv, true).then(function () {
+        if (needScroll) el.frame.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" });
+        setLevel(lv, true).then(function () { return cm.ready; }).then(function (m) {
+          if (!m) return;
           var s = infoOf(lv)[id];
-          var layer = null;
-          if (zoneLayer) zoneLayer.eachLayer(function (l) { if (l.feature.properties.school === id) layer = l; });
-          if (layer && !(zoneById[lv][id] || {}).wide) map.fitBounds(layer.getBounds(), { padding: [24, 24], maxZoom: 16, animate: !isTouch });
-          else if (s) map.setView([s.lat, s.lng], 14, { animate: !isTouch });
-          var ll = s && s.lat ? L.latLng(s.lat, s.lng) : (layer ? layer.getBounds().getCenter() : map.getCenter());
-          setTimeout(function () { openSchool(lv, id, ll); }, needScroll ? 450 : (isTouch ? 50 : 300));
+          var z = null;
+          (zoneIdx[lv] || []).forEach(function (x) { if (x.id === id) z = x; });
+          var p = zoneById[lv][id] || {};
+          var ll = s && s.lat ? [s.lng, s.lat] : (z ? [(z.bb[0] + z.bb[2]) / 2, (z.bb[1] + z.bb[3]) / 2] : null);
+          var fly = null;
+          claimCamera();
+          if (z && !p.wide) fly = cm.fitBounds([[z.bb[0], z.bb[1]], [z.bb[2], z.bb[3]]], { maxZoom: 16, padding: isDesktop() ? 64 : 28 });
+          else if (s) fly = cm.flyTo([s.lng, s.lat], 14);
+          Promise.resolve(fly).then(function () {
+            if (!ll) { var c = map.getCenter(); ll = [c.lng, c.lat]; }
+            openSchool(lv, id, ll);
+          });
         });
       }
 
@@ -1062,9 +1691,9 @@ const chipCls =
 
       /* ================= 結果卡 ================= */
       var TONE = {
-        green: { box: "border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/40", dot: "sd-dot-green", label: "綠燈：只有一所" },
-        yellow: { box: "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40", dot: "sd-dot-yellow", label: "黃燈：可能不只一所，請再確認" },
-        none: { box: "border-border bg-muted", dot: "sd-dot-none", label: "查無：學區表沒有這個里鄰" }
+        green: { box: "sd-lv sd-lv--green", orb: "cine-orb--green", label: "綠燈：只有一所" },
+        yellow: { box: "sd-lv sd-lv--yellow", orb: "cine-orb--yellow", label: "黃燈：可能不只一所，請再確認" },
+        none: { box: "sd-lv sd-lv--none", orb: "cine-orb--grey", label: "查無：學區表沒有這個里鄰" }
       };
       // 門牌號的「-」是之號：12-1 → 12之1
       function fmtNo(no) { return String(no == null ? "" : no).replace(/-/g, "之"); }
@@ -1082,8 +1711,8 @@ const chipCls =
 
       function levelBlock(lv, x, showVia) {
         var tone = TONE[x.status] || TONE.none;
-        var h = '<div class="rounded-lg border p-3 ' + tone.box + '">';
-        h += '<div class="flex flex-wrap items-center gap-x-2 gap-y-1"><span class="sd-dot ' + tone.dot + '" aria-hidden="true"></span>' +
+        var h = '<div class="' + tone.box + '">';
+        h += '<div class="flex flex-wrap items-center gap-x-2 gap-y-1"><span class="cine-orb ' + tone.orb + '" aria-hidden="true"></span>' +
           '<span class="font-bold">' + LV[lv] + '</span><span class="text-sm font-medium">' + esc(x.label || tone.label) + "</span></div>";
         if (x.schools && x.schools.length) {
           h += '<ul class="mt-2 space-y-2">';
@@ -1091,8 +1720,8 @@ const chipCls =
             h += '<li><button type="button" class="text-accent min-h-11 text-left text-base font-bold underline underline-offset-2" data-goto-school="' + esc(s.id) + '" data-goto-level="' + lv + '">' + esc(s.name) + "</button>";
             var via = showVia ? groupVia(s.via) : [];
             if (via.length) {
-              var shown = via.slice(0, 4).join("、") + (via.length > 4 ? " 等 " + via.length + " 個里" : "");
-              h += '<span class="text-muted-foreground ms-1 text-sm">（' + esc(shown) + "）</span>";
+              var shown2 = via.slice(0, 4).join("、") + (via.length > 4 ? " 等 " + via.length + " 個里" : "");
+              h += '<span class="text-muted-foreground ms-1 text-sm">（' + esc(shown2) + "）</span>";
             }
             if (s.free) h += ' <span class="rounded-full bg-black/5 px-2 py-0.5 text-sm dark:bg-white/10">自由學區</span>';
             if (s.cond && x.reason !== "split" && x.reason !== "cond") {
@@ -1131,8 +1760,8 @@ const chipCls =
       // noOfficial：卡片上已經有「到教育局學區查詢確認」的連結（查無）→ 底部不再放一次
       function footHtml(noOfficial) {
         return '<div class="mt-4 flex flex-wrap gap-2">' +
-          '<button type="button" data-act="show-map" class="border-border bg-background inline-flex min-h-11 items-center rounded-md border px-4 text-sm lg:hidden">在地圖上看 ↓</button>' +
-          '<a class="btn-line px-4 text-sm" href="' + LINE_HREF + '">LINE 問這個學區</a>' +
+          '<button type="button" data-act="show-map" class="sd-chip lg:hidden">在地圖上看 ↓</button>' +
+          '<a class="btn-line cine-btn px-4 text-sm" href="' + LINE_HREF + '">LINE 問這個學區</a>' +
           "</div>" +
           (noOfficial ? "" : '<p class="mt-3 text-sm leading-relaxed">正式查詢：' +
           '<a class="text-accent underline" href="' + esc(OFFICIAL) + '" target="_blank" rel="noopener">臺中市政府教育局 學區查詢</a></p>');
@@ -1143,6 +1772,8 @@ const chipCls =
           ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/50 dark:text-emerald-100"
           : "bg-amber-100 text-amber-900 dark:bg-amber-900/50 dark:text-amber-100";
       }
+      var CARD = "cine-glass sd-card cine-stagger p-4";
+      var BASIS = "sd-basis mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm";
 
       var lastCands = [];
       // 候選按鈕：點了用 lastCands[i].query 重查（按鈕文字用 label）
@@ -1150,7 +1781,7 @@ const chipCls =
         var h = '<div class="mt-2 flex flex-wrap gap-2">';
         list.forEach(function (x) {
           var i = lastCands.push(x) - 1;
-          h += '<button type="button" data-cand="' + i + '" class="border-border bg-background hover:border-accent inline-flex min-h-11 items-center rounded-md border px-3 text-sm">' + esc(x.label) + "</button>";
+          h += '<button type="button" data-cand="' + i + '" class="sd-chip">' + esc(x.label) + "</button>";
         });
         return h + "</div>";
       }
@@ -1167,7 +1798,7 @@ const chipCls =
           by[d].forEach(function (x) {
             var i = lastCands.push(x) - 1;
             var lab = String(x.label).indexOf(d) === 0 ? String(x.label).slice(d.length) : x.label;
-            h += '<button type="button" data-cand="' + i + '" class="border-border bg-background hover:border-accent inline-flex min-h-11 items-center rounded-md border px-3 text-sm">' + esc(lab) + "</button>";
+            h += '<button type="button" data-cand="' + i + '" class="sd-chip">' + esc(lab) + "</button>";
           });
           h += "</div></div>";
         });
@@ -1180,7 +1811,7 @@ const chipCls =
       function renderAddress(r, res, raw) {
         var b = res.basis;
         lastCands = [];
-        var h = '<div class="card-surface p-4">';
+        var h = '<div class="' + CARD + '">';
         h += '<p class="text-muted-foreground text-sm">查詢結果</p>';
         // 查無此號時，標題放使用者輸入的地址（只在本機顯示），不要讓人誤以為查到的是別的號碼
         h += '<p class="mt-0.5 text-base font-bold break-words">' + esc(r.precision === "near-number" || (r.ambNo && b.ambMulti) ? raw : b.label) + "</p>";
@@ -1231,11 +1862,11 @@ const chipCls =
           h += '<p class="text-muted-foreground mt-2 text-sm">不是這裡？改選：</p>' + candButtons(r.choices.slice(1, 13));
         }
 
-        h += '<dl class="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">';
+        h += '<dl class="' + BASIS + '">';
         h += '<dt class="text-muted-foreground">定位精度</dt><dd><span class="inline-block rounded px-2 py-1 text-sm leading-snug font-semibold ' + precTone(b.ambMulti ? "amb" : b.precision) + '">' +
           esc(b.ambMulti ? "門牌寫法有兩種讀法，門牌資料裡都有" : b.precisionText) + "</span></dd>";
         h += '<dt class="text-muted-foreground">行政區</dt><dd>' + esc(b.dist) + (/dist/.test(b.inferred || "") ? "（依門牌號推測）" : "") + "</dd>";
-        h += '<dt class="text-muted-foreground">系統判定的<br>里、鄰</dt><dd>';
+        h += '<dt class="text-muted-foreground">系統判定的里、鄰</dt><dd>';
         if (b.precision === "near-number" && r.neighbors && r.neighbors.length) {
           var SIDE = { lower: "前一個門牌", upper: "後一個門牌", same: "同一號" };
           h += '<ul class="space-y-0.5">';
@@ -1279,7 +1910,7 @@ const chipCls =
         }
         h += "</dl>";
         var many = b.pairs.length > 1;
-        h += '<div class="mt-4 space-y-3">' + levelBlock("gs", res.gs, many) + levelBlock("jh", res.jh, many) + "</div>";
+        h += '<div class="cine-stagger mt-4 space-y-3">' + levelBlock("gs", res.gs, many) + levelBlock("jh", res.jh, many) + "</div>";
         // 共同學區、自由學區、「可選…就讀」註記：實際怎麼分發，整張卡只講一次（各燈號的說明裡不再重複）
         var ZONE_REASONS = { "co-zone": 1, choice: 1, free: 1, "wide-free": 1, "wide-extra": 1 };
         if (ZONE_REASONS[res.gs.reason] || ZONE_REASONS[res.jh.reason]) {
@@ -1292,7 +1923,7 @@ const chipCls =
 
       function renderFail(r) {
         lastCands = [];
-        var h = '<div class="card-surface p-4">';
+        var h = '<div class="' + CARD + '">';
         h += '<p class="font-bold">' + esc(r.message || "查不到這個地址。") + "</p>";
         var c = r.candidates || [];
         if (r.reason === "ambiguous" && c.length) {
@@ -1318,7 +1949,7 @@ const chipCls =
       // 只打里名／里鄰：列學區表上這個里的學校（不給燈號，還沒對到門牌）
       function liHtml(sum) {
         var where = sum.dist + sum.li + (sum.lin ? " " + sum.lin + " 鄰" : "");
-        var h = '<div class="border-border mt-3 rounded-lg border p-3">';
+        var h = '<div class="sd-basis mt-3">';
         h += '<p class="text-sm font-semibold">學區表上，「' + esc(where) + '」列的學校：</p>';
         ["gs", "jh"].forEach(function (lv) {
           var x = sum[lv];
@@ -1356,20 +1987,51 @@ const chipCls =
       function showResult(html) {
         el.result.innerHTML = html;
         el.result.hidden = false;
+        el.result.removeAttribute("aria-busy");
         var rect = el.result.getBoundingClientRect();
-        if (rect.top < 0 || rect.top > window.innerHeight * 0.6) el.result.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (rect.top < 0 || rect.top > window.innerHeight * 0.6) el.result.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+      }
+      // 載入中：骨架閃光（沒有文字，讀螢幕軟體聽到的是上面的狀態列）
+      function showSkeleton() {
+        el.result.innerHTML = '<div class="cine-glass sd-card p-4" aria-hidden="true">' +
+          '<span class="cine-skeleton cine-skeleton--line" style="width:5rem"></span>' +
+          '<span class="cine-skeleton cine-skeleton--title"></span>' +
+          '<span class="cine-skeleton cine-skeleton--block"></span>' +
+          '<span class="cine-skeleton cine-skeleton--block" style="margin-top:.75rem"></span></div>';
+        el.result.hidden = false;
+        el.result.setAttribute("aria-busy", "true");
       }
 
-      function placePin(lat, lng, html, zoom) {
-        if (!map) return;
-        pinLayer.clearLayers();
-        L.marker([lat, lng], {
-          icon: L.divIcon({ className: "sd-pin", html: "", iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -28] }),
-          zIndexOffset: 1000,
-          keyboard: false
-        }).bindPopup('<div class="sd-pop">' + html + "</div>", popW()).addTo(pinLayer);
-        map.closePopup();
-        map.setView([lat, lng], zoom, { animate: !isTouch && isDesktop() });
+      function addPinHit() {
+        if (!map || !pinLL) return;
+        var d = document.createElement("div");
+        d.className = "sd-pin-hit";
+        d.title = "查詢位置";
+        d.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          setActiveMarker(null);
+          popCtx = null;
+          openPopup(pinLL, pinHtml, [0, -40]);
+        });
+        pinHit = new ML.Marker({ element: d, anchor: "bottom" }).setLngLat(pinLL).addTo(map);
+      }
+      function clearPin() {
+        if (cm) cm.clearPins();
+        if (pinHit) { pinHit.remove(); pinHit = null; }
+        pinLL = null;
+        closePopup();
+      }
+      // 查詢位置：光環圖釘（鏡頭飛完才落下）＋點了看摘要的彈窗
+      function placePin(lat, lng, html, zoom, variant, label) {
+        if (!cm || !cm.available) return;
+        clearPin();
+        pinLL = [lng, lat];
+        pinHtml = html;
+        cm.addPulsePin(pinLL, { variant: variant || "pin", label: label || "查詢的地址" });
+        addPinHit();
+        claimCamera();
+        // 地圖在不在畫面內由 cine-map 判斷：看得到（含只露一截）→ 帶轉場飛過去；完全看不到 → 預備機位，捲到地圖才補播
+        cm.flyTo(pinLL, zoom);
       }
 
       // 紅色圖釘的彈窗：跟結果卡講同一件事。查無此號、門牌有兩種讀法時，標題用使用者輸入的地址（只在本機顯示），
@@ -1426,7 +2088,7 @@ const chipCls =
         data = d;
         infoFailed = false;
         if (!INFO) INFO = { meta: d.meta, info: d.info };
-        if (!schoolLayer) drawSchools();       // 開頁時學校清單沒載到 → 查詢成功後補畫學校點
+        if (!markers.length) drawSchools();       // 開頁時學校清單沒載到 → 查詢成功後補畫學校點
       }
 
       // opts：TcAddr.lookup 的選項（「改選」按鈕帶 {exactRoad:true}：照選的那條路查，不再推測到別條路）
@@ -1440,6 +2102,7 @@ const chipCls =
         }
         setBusy(true);
         setStatus("查詢中……（第一次查詢要下載門牌資料，約 1～3 秒）");
+        showSkeleton();
         Promise.all([TcAddr.lookup(raw, opts || undefined), SchoolDistrict.load()])
           .then(function (a) {
             var r = a[0];
@@ -1447,9 +2110,9 @@ const chipCls =
             if (!r.ok) {
               showResult(renderFail(r));
               setStatus("");
-              // 上一次查詢的紅色圖釘、學校高亮都清掉（不然點圖釘看到的是上一次的地址和學校）；
+              // 上一次查詢的圖釘、學校高亮都清掉（不然點圖釘看到的是上一次的地址和學校）；
               // 只打里名、對得到區時，改高亮學區表上這個里列的學校
-              if (map) { pinLayer.clearLayers(); map.closePopup(); }
+              clearPin();
               focusIds = { gs: [], jh: [] };
               if (r.liOnly && r.liOnly.dist) {
                 var sum = SchoolDistrict.liSummary(data, r.liOnly.dist, r.liOnly.li, r.liOnly.lin);
@@ -1472,7 +2135,7 @@ const chipCls =
               jh: res.jh.schools.map(function (s) { return s.id; })
             };
             applyHighlight(focusIds[level]);
-            placePin(r.lat, r.lng, pinPopHtml(r, res, raw), res.basis.needNumber ? 15 : 16);
+            placePin(r.lat, r.lng, pinPopHtml(r, res, raw), res.basis.needNumber ? 15 : 16, "pin", "查詢的地址");
             track("school_district_query", {
               method: "address", result: "ok", precision: r.precision, district: r.dist,
               gs_status: res.gs.status, jh_status: res.jh.status
@@ -1480,7 +2143,7 @@ const chipCls =
           })
           .catch(function (e) {
             if (window.console) console.error(e);
-            showResult('<div class="card-surface p-4"><p class="font-bold">資料載入失敗</p><p class="text-muted-foreground mt-1 text-sm">可能是網路不穩，請重新整理再試一次。也可以先用 <a class="text-accent underline" href="' + esc(OFFICIAL) + '" target="_blank" rel="noopener">教育局學區查詢</a>。</p></div>');
+            showResult('<div class="' + CARD + '"><p class="font-bold">資料載入失敗</p><p class="text-muted-foreground mt-1 text-sm">可能是網路不穩，請重新整理再試一次。也可以先用 <a class="text-accent underline" href="' + esc(OFFICIAL) + '" target="_blank" rel="noopener">教育局學區查詢</a>。</p></div>');
             setStatus("");
             track("school_district_query", { method: "address", result: "load-error" });
           })
@@ -1511,7 +2174,9 @@ const chipCls =
           }
           return x;
         }
-        var ring = ringSets(lv, lat, lng, Math.max(30, Math.min(acc || 0, 300)));
+        var rm = Math.max(30, Math.min(acc || 0, 300));
+        var ring = ringSets(lv, lat, lng, rm);
+        var cz = null;
         if (ring.mixed) {
           x.status = "yellow";
           x.label = "黃燈：在學區交界附近";
@@ -1533,6 +2198,13 @@ const chipCls =
           // 西屯區、大雅區的國小：整區另列中科實中國小部為共同學區 → 跟地址查詢一樣不說「只有一所」
           x.status = "yellow";
           x.label = "黃燈：整區另列" + x.wide.map(function (w) { return w.name; }).join("、") + "為共同學區";
+        } else if ((cz = condAt(lv, lat, lng, rm))) {
+          // 學區表在這幾鄰只寫了附帶條件的範圍（例：永隆國小「新里里(11-13、17鄰26-28鄰)（國光路以西，德芳路二段以北）」），
+          // 條件以外的部分學區表沒列學校 → 跟地址查詢一樣亮黃燈「學區表另有條件」，不說「只有一所」
+          x.status = "yellow";
+          x.reason = "cond";
+          x.label = "黃燈：學區表另有條件";
+          x.note = "你附近的門牌在" + cz.dist + cz.li + " " + linsTxt(cz.lins) + "，學區表列「" + nameOf(cz.school, zoneById[lv][cz.school]) + "」，另有條件：" + cz.c.join("／") + "。請輸入門牌地址確認。";
         } else {
           x.status = "green";
           x.label = "綠燈：附近門牌都屬同一學區（依位置推估）";
@@ -1546,24 +2218,30 @@ const chipCls =
           return;
         }
         setStatus("比對學區中……");
+        var prev = el.result.hidden ? null : el.result.innerHTML;
+        showSkeleton();
         Promise.all([ensureZones("gs"), ensureZones("jh"), SchoolDistrict.load()]).then(function (a) {
           gotData(a[2]);
           var gs = pointLevel("gs", lat, lng, acc);
           var jh = pointLevel("jh", lat, lng, acc);
-          var h = '<div class="card-surface p-4">';
+          var h = '<div class="' + CARD + '">';
           h += '<p class="text-muted-foreground text-sm">查詢結果</p><p class="mt-0.5 text-base font-bold">你目前的位置</p>';
-          h += '<dl class="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">';
+          h += '<dl class="' + BASIS + '">';
           h += '<dt class="text-muted-foreground">定位精度</dt><dd><span class="inline-block rounded px-2 py-1 text-sm leading-snug font-semibold ' + precTone("gps") + '">手機定位，誤差約 ' + Math.round(acc || 0) + " 公尺</span></dd>";
           h += '<dt class="text-muted-foreground">判斷方式</dt><dd>看你附近的門牌屬於哪個學區，<b>判斷不到門牌號碼</b>；依鄰劃分的地方，輸入門牌地址才準。</dd></dl>';
-          h += '<div class="mt-4 space-y-3">' + levelBlock("gs", gs, false) + levelBlock("jh", jh, false) + "</div>";
+          h += '<div class="cine-stagger mt-4 space-y-3">' + levelBlock("gs", gs, false) + levelBlock("jh", jh, false) + "</div>";
           h += footHtml() + "</div>";
           showResult(h);
           setStatus("");
           focusIds = { gs: gs.schools.map(function (s) { return s.id; }), jh: jh.schools.map(function (s) { return s.id; }) };
           applyHighlight(focusIds[level]);
-          placePin(lat, lng, '<p class="sd-pop-t" style="font-size:16px">你目前的位置</p><p class="sd-pop-s">誤差約 ' + Math.round(acc || 0) + " 公尺</p>", 16);
+          placePin(lat, lng, '<p class="sd-pop-t" style="font-size:16px">你目前的位置</p><p class="sd-pop-s">誤差約 ' + Math.round(acc || 0) + " 公尺</p>", 16, "dot", "你目前的位置");
           track("school_district_query", { method: "gps", result: "ok", gs_status: gs.status, jh_status: jh.status });
         }).catch(function () {
+          // 載入失敗：放回上一次的結果（沒有就收起來）
+          el.result.innerHTML = prev || "";
+          el.result.hidden = !prev;
+          el.result.removeAttribute("aria-busy");
           setStatus("資料載入失敗，請重新整理再試一次。");
         });
       }
@@ -1608,7 +2286,7 @@ const chipCls =
           } else if (t.hasAttribute("data-goto-school")) {
             focusSchool(t.getAttribute("data-goto-level"), t.getAttribute("data-goto-school"));
           } else if (t.getAttribute("data-act") === "show-map") {
-            el.map.scrollIntoView({ behavior: "smooth", block: "center" });
+            el.frame.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" });
           }
         });
         Array.prototype.forEach.call(document.querySelectorAll("button[data-goto-school]"), function (b) {
@@ -1620,9 +2298,11 @@ const chipCls =
         el.here.addEventListener("click", function () {
           if (!navigator.geolocation) { setStatus("這個瀏覽器不支援定位，請輸入地址。"); return; }
           setStatus("定位中……（瀏覽器會先問你要不要允許）");
+          el.here.setAttribute("aria-busy", "true");
           navigator.geolocation.getCurrentPosition(
-            function (pos) { locate(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy); },
+            function (pos) { el.here.removeAttribute("aria-busy"); locate(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy); },
             function (err) {
+              el.here.removeAttribute("aria-busy");
               setStatus(err && err.code === 1 ? "沒有拿到定位權限，請直接輸入地址查詢。" : "暫時拿不到位置，請改用輸入地址。");
             },
             { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
@@ -1643,23 +2323,18 @@ const chipCls =
           if (!el.schoolList.hidden && !el.schoolList.contains(e.target) && e.target !== el.school) closeSchoolList();
         });
 
-        if (typeof L === "undefined") {
-          mapMsg("地圖元件載入失敗，請重新整理再試一次。上面的地址查詢還是可以用。");
-          el.map.style.minHeight = "120px";
-          return;
-        }
-        initMap();
         Array.prototype.forEach.call(document.querySelectorAll("[data-level-btn]"), function (b) {
           b.addEventListener("click", function () { setLevel(b.getAttribute("data-level-btn")); });
         });
         el.showSchools.addEventListener("change", function () {
-          if (!schoolLayer) return;
-          if (el.showSchools.checked) schoolLayer.addTo(map); else map.removeLayer(schoolLayer);
+          if (!map) return;
+          if (map.getLayer("sd-sch-c")) sl("sd-sch-c", "visibility", el.showSchools.checked ? "visible" : "none");
+          syncMarkers();
           updateLabels();
         });
         el.showLabels.addEventListener("change", updateLabels);
 
-        drawZones();
+        initMap();
         // 開頁只載學校清單（畫學校點、校名搜尋）；查地址要的查詢表等第一次查詢再載
         if (typeof SchoolDistrict !== "undefined") {
           SchoolDistrict.loadInfo().then(function (d) { infoFailed = false; if (!INFO) INFO = d; drawSchools(); }).catch(function () {

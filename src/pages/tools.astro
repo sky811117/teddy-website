@@ -2,9 +2,10 @@
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
-import Main from "@/components/Main.astro";
+import CinematicHero from "@/components/cinematic/CinematicHero.astro";
 import config, { loan } from "@/config";
 import { safeJsonLd } from "@/utils/safeJsonLd";
+import { getRelativeLocaleUrl } from "astro:i18n";
 
 // 一般房貸參考利率：跟物件頁「月付試算」共用 src/config.ts 的 loan，改那邊兩處就同步。
 // 2.306% → "2.306"；0.021 → "2.1"（去掉尾端 0）
@@ -51,6 +52,7 @@ const buyerTools = [
     url: "/tools/school-district/",
     external: false,
     status: "上線",
+    isNew: true,
   },
   {
     icon: "🚛",
@@ -60,6 +62,7 @@ const buyerTools = [
     url: "/tools/garbage-truck/",
     external: false,
     status: "上線",
+    isNew: true,
   },
   {
     icon: "🗺️",
@@ -172,6 +175,20 @@ const breadcrumbSchema = {
   ],
 };
 
+// 主視覺關鍵數字：只用本頁工具說明裡已經寫出來、有出處的數字
+const heroStats = [
+  { prefix: "約", value: 76, suffix: "萬", label: "筆門牌" },
+  { prefix: "約", value: 2, suffix: "萬", label: "個垃圾車清運點" },
+  { value: 4028, label: "筆嫌惡設施點位" },
+  { value: 28, label: "個行政區可查行情" },
+];
+
+// 原本 <Main> 做的事：記下返回網址（文章頁「返回」鈕用）
+const locale = Astro.currentLocale ?? config.site.lang;
+const backUrl = config.features.showBackButton
+  ? Astro.url.pathname
+  : getRelativeLocaleUrl(locale, "");
+
 const externalResources = [
   {
     icon: "🏛️",
@@ -234,40 +251,58 @@ const externalResources = [
   </Fragment>
   <Header />
 
-  <Main
-    pageTitle="給客戶的工具 + 資源"
-    pageDesc="你買賣房路上會用到的東西，都先在這裡列好。能不用 LINE 問就不用問。有問題隨時 LINE sky811117。"
-  >
+  <main id="main-content" data-backUrl={backUrl} class="pb-4">
+    {/* id 不用預設的 "hero"：總覽頁主視覺裡沒有搜尋卡，也沒有 LINE 鈕，
+        FloatingCTA 看到 #hero 會把手機 LINE 浮動鈕藏到捲過主視覺才出現 → 首屏就沒有 LINE 入口 */}
+    <CinematicHero
+      id="tools-hero"
+      variant="hub"
+      eyebrow="免費使用・不用登入"
+      title="給客戶的工具 + 資源"
+      subtitle="你買賣房路上會用到的東西，都先在這裡列好。能不用 LINE 問就不用問。有問題隨時 LINE sky811117。"
+      stats={heroStats}
+      container="app-layout"
+    />
+
+    <div class="app-layout">
     {/* ===== 給買方 ===== */}
-    <section class="mt-8">
-      <h2 class="text-foreground border-accent border-b-2 pb-2 text-2xl font-bold">
+    <section class="mt-2">
+      <h2 class="cine-reveal text-foreground border-accent border-b-2 pb-2 text-2xl font-bold">
         🏠 給買方
       </h2>
       <ul class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {
-          buyerTools.map(t => {
+          buyerTools.map((t, i) => {
             const isLive = t.status === "上線";
+            const isNew = "isNew" in t && t.isNew === true;
             return (
               <li
                 class:list={[
-                  "rounded-lg border p-5",
+                  "cine-card cine-reveal rounded-lg border p-5",
                   isLive
                     ? "border-border bg-card"
                     : "border-border/50 bg-card/50 opacity-75",
                 ]}
+                style={`--cine-d:${(i % 2) * 90}ms`}
+                data-cine-tilt="5"
               >
+                <span class="cine-card__fx" aria-hidden="true"><span class="cine-card__sweep" /></span>
+                <span class="cine-card__fx cine-card__fx--glow" aria-hidden="true"><span class="cine-card__glow" /></span>
                 <div class="flex items-start justify-between gap-3">
                   <div class:list={["text-3xl", !isLive && "grayscale-[40%]"]}>{t.icon}</div>
-                  <span
-                    class:list={[
-                      "rounded px-2 py-0.5 text-xs whitespace-nowrap",
-                      isLive
-                        ? "bg-accent text-accent-foreground"
-                        : "border border-border text-muted-foreground",
-                    ]}
-                  >
-                    {t.status}
-                  </span>
+                  <div class="flex shrink-0 items-center gap-1.5">
+                    {isNew && <span class="cine-badge-new">NEW</span>}
+                    <span
+                      class:list={[
+                        "rounded px-2 py-0.5 text-xs whitespace-nowrap",
+                        isLive
+                          ? "bg-accent text-accent-foreground"
+                          : "border border-border text-muted-foreground",
+                      ]}
+                    >
+                      {t.status}
+                    </span>
+                  </div>
                 </div>
                 {t.external && (
                   <p class="text-muted-foreground mt-2 text-xs">
@@ -307,34 +342,42 @@ const externalResources = [
 
     {/* ===== 給賣方 ===== */}
     <section class="mt-12">
-      <h2 class="text-foreground border-accent border-b-2 pb-2 text-2xl font-bold">
+      <h2 class="cine-reveal text-foreground border-accent border-b-2 pb-2 text-2xl font-bold">
         💰 給賣方
       </h2>
       <ul class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {
-          sellerTools.map(t => {
+          sellerTools.map((t, i) => {
             const isLive = t.status === "上線";
+            const isNew = "isNew" in t && t.isNew === true;
             return (
               <li
                 class:list={[
-                  "rounded-lg border p-5",
+                  "cine-card cine-reveal rounded-lg border p-5",
                   isLive
                     ? "border-border bg-card"
                     : "border-border/50 bg-card/50 opacity-75",
                 ]}
+                style={`--cine-d:${(i % 2) * 90}ms`}
+                data-cine-tilt="5"
               >
+                <span class="cine-card__fx" aria-hidden="true"><span class="cine-card__sweep" /></span>
+                <span class="cine-card__fx cine-card__fx--glow" aria-hidden="true"><span class="cine-card__glow" /></span>
                 <div class="flex items-start justify-between gap-3">
                   <div class:list={["text-3xl", !isLive && "grayscale-[40%]"]}>{t.icon}</div>
-                  <span
-                    class:list={[
-                      "rounded px-2 py-0.5 text-xs whitespace-nowrap",
-                      isLive
-                        ? "bg-accent text-accent-foreground"
-                        : "border border-border text-muted-foreground",
-                    ]}
-                  >
-                    {t.status}
-                  </span>
+                  <div class="flex shrink-0 items-center gap-1.5">
+                    {isNew && <span class="cine-badge-new">NEW</span>}
+                    <span
+                      class:list={[
+                        "rounded px-2 py-0.5 text-xs whitespace-nowrap",
+                        isLive
+                          ? "bg-accent text-accent-foreground"
+                          : "border border-border text-muted-foreground",
+                      ]}
+                    >
+                      {t.status}
+                    </span>
+                  </div>
                 </div>
                 {t.external && (
                   <p class="text-muted-foreground mt-2 text-xs">
@@ -370,7 +413,7 @@ const externalResources = [
     </section>
 
     {/* ===== 工具說明 CTA ===== */}
-    <div class="text-muted-foreground mt-6 text-center text-sm">
+    <div class="cine-reveal text-muted-foreground mt-6 text-center text-sm">
       以上工具都是我做給客戶免費用的，不用登入、手機就能開。用起來有問題、或想要其他工具，隨時 <a
         href="/go/line?src=tools-top"
         class="text-accent font-medium hover:underline"
@@ -378,7 +421,7 @@ const externalResources = [
     </div>
 
     {/* ===== 政府 / 民間公開資源 ===== */}
-    <section class="mt-12">
+    <section class="cine-reveal mt-12">
       <h2 class="text-foreground border-accent border-b-2 pb-2 text-2xl font-bold">
         📚 政府 / 民間公開資源
       </h2>
@@ -393,7 +436,7 @@ const externalResources = [
                 href={r.url}
                 target="_blank"
                 rel="noopener"
-                class="border-border bg-card hover:border-accent block rounded-lg border p-4 no-underline transition-colors"
+                class="border-border bg-card hover:border-accent block rounded-lg border p-4 no-underline transition-[border-color,translate] duration-300 hover:-translate-y-0.5"
               >
                 <div class="text-2xl">{r.icon}</div>
                 <h3 class="text-foreground mt-2 font-medium">{r.name}</h3>
@@ -410,7 +453,7 @@ const externalResources = [
 
     {/* ===== CTA ===== */}
     <section
-      class="border-border mt-12 rounded-lg border border-dashed p-6 text-center"
+      class="cine-reveal border-border mt-12 rounded-lg border border-dashed p-6 text-center"
     >
       <p class="text-foreground font-medium">沒找到你要的工具？</p>
       <p class="text-muted-foreground mt-2 text-sm">
@@ -420,19 +463,29 @@ const externalResources = [
       <div class="mt-4 flex flex-col items-center justify-center gap-3 sm:flex-row">
         <a
           href="/go/line?src=tools-bottom"
-          class="bg-accent text-accent-foreground inline-block rounded px-6 py-2 font-medium no-underline"
+          class="cine-btn bg-accent text-accent-foreground inline-block rounded px-6 py-2 font-medium no-underline"
         >
           💬 LINE 私訊 sky811117
         </a>
         <a
           href="/contact"
-          class="border-accent text-accent inline-block rounded border-2 px-6 py-2 font-medium no-underline hover:bg-accent hover:text-accent-foreground transition-colors"
+          class="cine-btn border-accent text-accent inline-block rounded border-2 px-6 py-2 font-medium no-underline hover:bg-accent hover:text-accent-foreground"
         >
           📝 用表單留聯絡方式 →
         </a>
       </div>
     </section>
-  </Main>
+    </div>
+  </main>
 
   <Footer />
+
+  <script is:inline>
+    // 原本 <Main> 的行為：記下返回網址給文章頁「返回」鈕
+    document.addEventListener("astro:page-load", function () {
+      var m = document.getElementById("main-content");
+      var u = m && m.dataset && m.dataset.backurl;
+      if (u) sessionStorage.setItem("backUrl", u);
+    });
+  </script>
 </Layout>

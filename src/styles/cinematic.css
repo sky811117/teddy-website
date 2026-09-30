@@ -1,0 +1,1409 @@
+/* =====================================================================
+ * cinematic.css — 電影感共用樣式（黃金時刻暖光／體積光／玻璃面板／光球）
+ *
+ * 用法：元件 src/components/cinematic/CineFx.astro 會 import 這支＋掛捲動淡入等小腳本；
+ *       用了 <CinematicHero> 就自動帶進來，不必重複 import。
+ *
+ * 品牌界線：米色／淺木色北歐風。只用暖金、奶油、木色；⛔ 不用霓虹、紫藍、快速閃爍。
+ * 效能界線：動畫只動 transform / opacity；prefers-reduced-motion 全部停在最終狀態。
+ *
+ * class 一覽（詳細見各段註解）
+ *   .cine-glass            玻璃面板（毛玻璃＋漸層描邊＋柔光陰影）
+ *   .cine-orb(--green|--yellow|--grey)(--sm|--lg)  會發光、帶脈動光暈的燈號光球；--static＝不脈動（圖例、說明文字用）
+ *   .cine-tool-wrap / .cine-input / .cine-cta   工具頁共用格線（80rem）、地址輸入框、查詢鈕（學區、垃圾車同一套）
+ *   .cine-stagger          容器：子元素依序滑入（innerHTML 換掉就會重播）
+ *   .cine-skeleton(--line|--title|--block|--pill)  骨架＋閃光
+ *   .cine-reveal           捲動到才淡入（CineFx 腳本處理；可用 style="--cine-d:120ms" 加延遲）
+ *   .cine-btn              按鈕光澤掃過＋按下回饋（疊在 btn-primary 等既有按鈕上）
+ *   .cine-mapframe         地圖外框（圓角、描邊光、載入閃光、isolation）
+ *   .cine-map / .cine-map-grade / .cine-map-fallback   cine-map.js 自動加的地圖層
+ *   .cine-pin(--dot)       地圖 HTML 標記：落下彈跳＋地面擴散光環（cine-map.js addPulsePin 產生）
+ *   .cine-card / .cine-badge-new   工具卡 3D 傾斜、邊框光掃、hover 發光；NEW 光澤徽章
+ * ===================================================================== */
+
+/* ---------- tokens ---------- */
+:root {
+  --cine-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --cine-ease-soft: cubic-bezier(0.45, 0, 0.2, 1);
+  --cine-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* 淺色：黃金時刻（午後斜陽穿過米色室內）。
+     亮部要有暗部襯：天空壓深一階＋光束之間夾淡暗帶，光束用 screen 疊上去才看得到（米白底上 lighter 加不上去） */
+  --cine-sky-1: #d8bb90;
+  --cine-sky-2: #e2cba7;
+  --cine-sky-3: #ecdcc3;
+  --cine-sky-top: 18%;
+  --cine-sun-core: rgb(255 251 240 / 1);
+  --cine-sun: rgb(255 230 182 / 0.95);
+  --cine-sun-2: rgb(250 206 140 / 0.5);
+  --cine-ray: rgb(255 228 174 / 1);
+  --cine-ray-core: rgb(255 247 226 / 1);
+  --cine-ray-wmul: 1.8;
+  --cine-ray-omul: 1.5;
+  --cine-band: rgb(110 72 30 / 0.09);
+  --cine-vignette: rgb(96 62 26 / 0.23);
+  --cine-rays-opacity: 1;
+  --cine-shade: rgb(128 88 44 / 0.2);
+  --cine-grain-opacity: 0.07;
+  --cine-title: var(--foreground);
+  --cine-glint: #b0701f;
+  --cine-glint-glow: rgb(255 196 110 / 0.9);
+  --cine-eyebrow: #523a1c; /* 比 accent 深兩階：在壓深、帶暗角的暖色底上小字也過 WCAG AA */
+  --cine-sub: #4f433a;
+  --cine-beam: rgb(255 238 205 / 0.5);
+  --cine-num: #7a5731;
+  --cine-num-glow: rgb(217 164 91 / 0.35);
+
+  --cine-glass-bg: rgb(255 255 255 / 0.62);
+  --cine-glass-bg-solid: rgb(255 253 249 / 0.94);
+  --cine-glass-bg-hero: rgb(255 253 249 / 0.78); /* 主視覺裡（手機）：留一點透明，光束從卡片後面透出來 */
+  --cine-glass-border: rgb(255 255 255 / 0.7);
+  --cine-glass-edge-a: rgb(255 255 255 / 0.95);
+  --cine-glass-edge-b: rgb(217 164 91 / 0.45);
+  --cine-glass-shadow:
+    0 1px 0 rgb(255 255 255 / 0.85) inset, 0 18px 44px -18px rgb(92 62 28 / 0.38),
+    0 2px 8px rgb(92 62 28 / 0.06);
+
+  --cine-glow: 217 164 91; /* 暖金 rgb 三元組 */
+  --cine-skel: #ece3d6;
+  --cine-skel-shine: rgb(255 255 255 / 0.65);
+
+  --cine-map-bg: #efe6d8;
+  --cine-map-sky-1: rgb(255 241 216 / 0.82);
+  --cine-map-sky-2: rgb(250 226 186 / 0.3);
+  --cine-map-vignette: rgb(70 44 18 / 0.26);
+  --cine-pin-hi: #f6d9a4;
+  --cine-pin: #c98f45;
+  --cine-pin-lo: #7c5429;
+  --cine-pin-ring: rgb(176 112 40 / 0.9);
+}
+
+:root[data-theme="dark"] {
+  /* 深色：夜晚＋暖色燈光（深咖啡夜色、琥珀燈暈） */
+  --cine-sky-1: #120d09;
+  --cine-sky-2: #18120d;
+  --cine-sky-3: #1d1813;
+  --cine-sky-top: 26%;
+  --cine-sun-core: rgb(255 226 176 / 0.5);
+  --cine-sun: rgb(214 160 92 / 0.34);
+  --cine-sun-2: rgb(150 98 44 / 0.2);
+  --cine-ray: rgb(236 190 124 / 0.5);
+  --cine-ray-core: rgb(250 214 160 / 0.62);
+  --cine-ray-wmul: 1.3;
+  --cine-ray-omul: 1.2;
+  --cine-band: rgb(0 0 0 / 0.16);
+  --cine-vignette: rgb(0 0 0 / 0.38);
+  --cine-rays-opacity: 1;
+  --cine-shade: rgb(0 0 0 / 0.3);
+  --cine-grain-opacity: 0.09;
+  --cine-title: #f8f1e6;
+  --cine-glint: #fff4de;
+  --cine-glint-glow: rgb(236 186 110 / 0.95);
+  --cine-eyebrow: #d9b98c;
+  --cine-sub: #c9bcaf;
+  --cine-beam: rgb(230 180 110 / 0.07);
+  --cine-num: #e2bf8c;
+  --cine-num-glow: rgb(226 180 110 / 0.45);
+
+  --cine-glass-bg: rgb(44 37 34 / 0.55);
+  --cine-glass-bg-solid: rgb(40 33 28 / 0.95);
+  --cine-glass-bg-hero: rgb(40 33 28 / 0.86);
+  --cine-glass-border: rgb(255 236 205 / 0.1);
+  --cine-glass-edge-a: rgb(255 232 196 / 0.32);
+  --cine-glass-edge-b: rgb(201 168 124 / 0.14);
+  --cine-glass-shadow:
+    0 1px 0 rgb(255 236 205 / 0.08) inset, 0 20px 50px -18px rgb(0 0 0 / 0.7),
+    0 0 0 1px rgb(0 0 0 / 0.2);
+
+  --cine-glow: 226 180 110;
+  --cine-skel: #2f2823;
+  --cine-skel-shine: rgb(255 226 180 / 0.1);
+
+  --cine-map-bg: #1a1511;
+  --cine-map-sky-1: rgb(18 12 8 / 0.92);
+  --cine-map-sky-2: rgb(92 60 28 / 0.32);
+  --cine-map-vignette: rgb(0 0 0 / 0.55);
+  --cine-pin-hi: #ffe3b0;
+  --cine-pin: #d9a45b;
+  --cine-pin-lo: #8a6539;
+  --cine-pin-ring: rgb(240 196 126 / 0.95);
+}
+
+/* =====================================================================
+ * 1. 主視覺 CinematicHero
+ * ===================================================================== */
+.cine-hero {
+  position: relative;
+  isolation: isolate;
+  color: var(--cine-title);
+  overflow-x: hidden;
+}
+@supports (overflow: clip) {
+  .cine-hero {
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+}
+.cine-hero__bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  /* 上緣從頁面底色漸進（接 Header 不會有一條接縫），中段是暖光，下緣再融回底色 */
+  background:
+    linear-gradient(236deg, transparent 18%, var(--cine-beam) 33%, transparent 50%),
+    radial-gradient(130% 80% at 0% 90%, var(--cine-shade), transparent 62%),
+    linear-gradient(
+      180deg,
+      var(--background) 0%,
+      var(--cine-sky-1) var(--cine-sky-top, 26%),
+      var(--cine-sky-2) 56%,
+      var(--cine-sky-3) 80%,
+      var(--background) 100%
+    );
+}
+.cine-hero__parallax {
+  position: absolute;
+  inset: -24px;
+  will-change: transform;
+}
+.cine-hero__sun {
+  position: absolute;
+  top: -30%;
+  right: -28%;
+  width: min(820px, 130vw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    var(--cine-sun-core) 0%,
+    var(--cine-sun) 16%,
+    var(--cine-sun-2) 38%,
+    transparent 66%
+  );
+  animation: cine-breathe 11s var(--cine-ease-soft) infinite alternate;
+}
+@media (min-width: 640px) {
+  .cine-hero__sun {
+    top: -34%;
+    right: -6%;
+    width: min(820px, 105vw);
+  }
+}
+/* 工具頁桌機左文右卡：太陽移到文字和搜尋卡之間，不被卡片蓋住 */
+@media (min-width: 1024px) {
+  .cine-hero--split .cine-hero__sun {
+    top: -48%;
+    right: 20%;
+  }
+  /* 光束跟著太陽：從文字和卡片之間往左下灑，落在文字區（不是全被卡片擋掉） */
+  .cine-hero--split .cine-hero__rays {
+    right: 24%;
+    width: 100%;
+  }
+  /* 淺色：左文右卡的主視覺比較矮，光束再亮一點才撐得起來 */
+  :root:not([data-theme="dark"]) .cine-hero--split {
+    --cine-ray-omul: 1.7;
+  }
+}
+.cine-hero__rays {
+  position: absolute;
+  top: -22%;
+  right: -4%;
+  width: 115%;
+  height: 170%;
+  transform-origin: 88% 0%;
+  transform: rotate(32deg);
+  opacity: var(--cine-rays-opacity);
+}
+/* 光束整組用 screen 疊在天空上（淺色底才看得出亮；深色是夜裡的暖燈光）。
+   ⚠ blend 要放在這層：.cine-hero__parallax 有 will-change 會自成一組，放在單條光束上會只跟透明底混 */
+.cine-hero__parallax--rays {
+  mix-blend-mode: screen;
+}
+/* 光束邊緣的柔焦直接做在漸層裡（多段、兩側慢慢淡掉），不用 filter: blur：
+   模糊濾鏡每條光束都是一個要逐格重算的合成層，地圖同時在畫時會拖到兩邊都掉格 */
+.cine-ray {
+  --oo: calc(var(--o) * var(--cine-ray-omul, 1));
+  position: absolute;
+  top: 0;
+  height: 100%;
+  left: var(--x);
+  width: calc(var(--w) * var(--cine-ray-wmul, 1) * 1.2);
+  opacity: var(--oo);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--cine-ray) 18%, transparent) 14%,
+    color-mix(in srgb, var(--cine-ray) 62%, transparent) 30%,
+    var(--cine-ray-core, var(--cine-ray)) 50%,
+    color-mix(in srgb, var(--cine-ray) 62%, transparent) 70%,
+    color-mix(in srgb, var(--cine-ray) 18%, transparent) 86%,
+    transparent 100%
+  );
+  transform-origin: 50% 0;
+  transform: rotate(var(--r, 0deg));
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 12%, rgb(0 0 0 / 0.75) 48%, transparent 88%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 12%, rgb(0 0 0 / 0.75) 48%, transparent 88%);
+  animation: cine-ray-sway var(--d) var(--cine-ease-soft) infinite alternate;
+  animation-delay: var(--dl, 0s);
+  will-change: transform, opacity;
+}
+/* 看不到（捲出畫面、分頁在背景）或地圖正在飛：暫停擺動，把 GPU 讓給地圖（cine-hero.ts 切 .is-paused） */
+.cine-hero.is-paused .cine-hero__sun,
+.cine-hero.is-paused .cine-ray {
+  animation-play-state: paused;
+}
+/* 光束之間的淡暗帶（體積光的「暗部」）：寬、不模糊、不跟著 screen */
+.cine-ray--shade {
+  --oo: 1;
+  width: var(--w);
+  background: linear-gradient(90deg, transparent, var(--cine-band) 50%, transparent);
+}
+.cine-hero__dust {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.cine-hero__grain {
+  position: absolute;
+  inset: 0;
+  opacity: var(--cine-grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .32 0 0 0 0 .18 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.cine-hero__vignette {
+  /* 電影感暗角：離太陽越遠越暗（淺色是暖棕、深色是夜色），亮部才有暗部襯。
+     上緣不壓暗（遮罩）：主視覺最上面一排要跟 Header 同色，不然會出現一條硬接縫 */
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 95% 125% at 80% 6%, transparent 40%, var(--cine-vignette) 100%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 22%);
+}
+.cine-hero__grain {
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 16%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 16%);
+}
+/* 上緣接 Header：從頁面底色漸進到場景（蓋在太陽、光束、光塵上面；只佔最上面一小段） */
+.cine-hero__bg::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: clamp(36px, 9%, 72px);
+  background: linear-gradient(180deg, var(--background) 0%, transparent 100%);
+  background: linear-gradient(180deg, var(--background) 0%, color-mix(in srgb, var(--background) 70%, transparent) 40%, transparent 100%);
+  pointer-events: none;
+}
+.cine-hero__fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 38%;
+  background: linear-gradient(180deg, transparent, var(--background));
+}
+
+.cine-hero__inner {
+  position: relative;
+  padding-top: 2.75rem;
+  padding-bottom: 3rem;
+}
+.cine-hero--tool .cine-hero__inner {
+  padding-top: 1.25rem;
+  padding-bottom: 1.5rem;
+}
+/* 手機橫拿（矮螢幕）：再收一點，搜尋框留在第一屏 */
+@media (max-height: 500px) and (orientation: landscape) {
+  .cine-hero--tool .cine-hero__inner {
+    padding-top: 0.75rem !important;
+  }
+  .cine-hero--tool .cine-hero__title {
+    font-size: 1.4rem !important;
+  }
+}
+@media (min-width: 640px) {
+  .cine-hero__inner {
+    padding-top: 4.5rem;
+    padding-bottom: 4.25rem;
+  }
+  .cine-hero--tool .cine-hero__inner {
+    padding-top: 2.5rem;
+    padding-bottom: 2.25rem;
+  }
+}
+.cine-hero__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--cine-eyebrow);
+}
+.cine-hero__eyebrow::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgb(var(--cine-glow));
+  box-shadow: 0 0 0 3px rgb(var(--cine-glow) / 0.2), 0 0 12px 2px rgb(var(--cine-glow) / 0.7);
+}
+
+/* 標題：光線從左掃過、字跟著浮現（兩層反向位移＝只動 transform） */
+.cine-hero__title {
+  position: relative;
+  margin: 0.5rem 0 0;
+  overflow: hidden;
+  padding: 0.06em 0 0.1em;
+  font-size: 1.75rem;
+  line-height: 1.28;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  color: var(--cine-title);
+}
+.cine-hero--tool .cine-hero__title {
+  font-size: 1.5rem;
+  margin-top: 0.35rem;
+}
+@media (min-width: 640px) {
+  .cine-hero__title {
+    font-size: 2.5rem;
+  }
+  .cine-hero--tool .cine-hero__title {
+    font-size: 2rem;
+  }
+}
+@media (min-width: 1024px) {
+  .cine-hero--hub .cine-hero__title {
+    font-size: 3rem;
+  }
+}
+.cine-wipe {
+  display: block;
+  margin-right: -4em;
+  padding-right: 4em;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 4em), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 4em), transparent);
+  animation: cine-wipe-out 1.25s var(--cine-ease-out) 0.12s backwards;
+}
+.cine-wipe__in {
+  display: block;
+  animation: cine-wipe-in 1.25s var(--cine-ease-out) 0.12s backwards;
+}
+/* 標題文字的外框（寬＝文字寬）：光掃的寬度、位移都以它為準 */
+.cine-title-box {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: top;
+}
+/* 光帶＝文字寬的 14%，在字面上由左到右走一趟（標題浮現到約六成才出發） */
+.cine-glint {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 14%;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 40%, #000 60%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 40%, #000 60%, transparent);
+  opacity: 0;
+  transform: translateX(-100%);
+  animation: cine-glint-out 1.1s var(--cine-ease-soft) 0.55s backwards;
+}
+.cine-glint__in {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% / 0.14);
+  animation: cine-glint-in 1.1s var(--cine-ease-soft) 0.55s backwards;
+}
+.cine-glint__in::before {
+  content: attr(data-text);
+  display: block;
+  color: var(--cine-glint);
+  text-shadow: 0 0 18px var(--cine-glint-glow), 0 0 4px var(--cine-glint-glow);
+}
+@keyframes cine-wipe-out {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+@keyframes cine-wipe-in {
+  from { transform: translateX(calc(100% + 4em)); }
+  to { transform: translateX(0); }
+}
+/* 視窗走 -100% → 100%/0.14（整段文字寬）；內層反向走，字永遠對齊原位 */
+@keyframes cine-glint-out {
+  0% { transform: translateX(-100%); opacity: 1; }
+  88% { opacity: 1; }
+  100% { transform: translateX(714.3%); opacity: 0; }
+}
+@keyframes cine-glint-in {
+  0% { transform: translateX(14%); }
+  100% { transform: translateX(-100%); }
+}
+
+/* 副標、搜尋卡是 LCP 候選：進場只小幅位移、透明度從 0.9 起（延遲期間也已經畫出來），不拖慢 LCP */
+.cine-hero__sub {
+  margin-top: 0.75rem;
+  max-width: 44rem;
+  color: var(--cine-sub);
+  line-height: 1.7;
+  animation: cine-rise-lite 0.9s var(--cine-ease-out) 0.35s backwards;
+}
+.cine-hero--tool .cine-hero__sub {
+  margin-top: 0.4rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+/* 工具頁：搜尋卡直接放在主視覺裡 */
+.cine-hero__slot {
+  position: relative;
+  margin-top: 0.9rem;
+  animation: cine-rise-lite 0.9s var(--cine-ease-out) 0.25s backwards;
+}
+/* 手機：搜尋卡上緣多留一點，光束從卡片後面透出來 */
+@media (max-width: 639px) {
+  .cine-hero--tool .cine-hero__slot {
+    margin-top: 1.15rem;
+  }
+}
+.cine-hero--tool .cine-hero__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 1024px) {
+  .cine-hero--split .cine-hero__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(380px, 460px);
+    column-gap: 3rem;
+    align-items: center;
+  }
+  .cine-hero--split .cine-hero__slot {
+    margin-top: 0;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}
+
+/* 關鍵數字 */
+.cine-hero__stats {
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.625rem;
+}
+@media (min-width: 640px) {
+  .cine-hero__stats {
+    grid-template-columns: repeat(var(--cine-cols, 4), minmax(0, 1fr));
+    gap: 0.875rem;
+    margin-top: 2rem;
+  }
+}
+.cine-stat {
+  position: relative;
+  padding: 0.75rem 0.875rem 0.7rem;
+  border-radius: 0.875rem;
+  animation: cine-rise 0.8s var(--cine-ease-out) backwards;
+  animation-delay: calc(0.55s + var(--i, 0) * 90ms);
+}
+.cine-stat__num {
+  display: block;
+  font-size: 1.5rem;
+  line-height: 1.15;
+  font-weight: 800;
+  color: var(--cine-num);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-shadow: 0 0 22px var(--cine-num-glow);
+}
+.cine-stat__num small {
+  font-size: 0.6em;
+  font-weight: 700;
+  margin: 0 0.08em;
+}
+.cine-stat__label {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+:root[data-theme="dark"] .cine-stat__label {
+  color: #b9ab9d;
+}
+@media (min-width: 640px) {
+  .cine-stat__num {
+    font-size: 1.875rem;
+  }
+}
+/* 工具頁：數字縮成一排小膠囊，不搶搜尋卡的第一屏（手機兩欄對齊，不會剩一顆落單） */
+.cine-hero--tool .cine-hero__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem 0.5rem;
+  margin-top: 0.85rem;
+}
+@media (min-width: 640px) {
+  .cine-hero--tool .cine-hero__stats {
+    display: flex;
+    flex-wrap: wrap;
+  }
+}
+.cine-hero--tool .cine-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+}
+.cine-hero--tool .cine-stat__num {
+  display: inline;
+  font-size: 1rem;
+  text-shadow: none;
+}
+.cine-hero--tool .cine-stat__label {
+  display: inline;
+  margin: 0;
+  font-size: 0.8125rem;
+  white-space: nowrap; /* 「個國定假日定點」不要在詞中間斷行 */
+}
+/* 很窄的手機（320）：膠囊內距、說明字級收一點，兩顆膠囊還是一行排得下 */
+@media (max-width: 359px) {
+  .cine-hero--tool .cine-hero__stats {
+    gap: 0.4rem 0.4rem;
+  }
+  .cine-hero--tool .cine-stat {
+    gap: 0.25rem;
+    padding: 0.3rem 0.55rem;
+  }
+  .cine-hero--tool .cine-stat__label {
+    font-size: 0.75rem;
+  }
+}
+
+@keyframes cine-breathe {
+  from { transform: scale(1); opacity: 0.88; }
+  to { transform: scale(1.07); opacity: 1; }
+}
+@keyframes cine-ray-sway {
+  from { transform: rotate(calc(var(--r, 0deg) - 2.2deg)) scaleX(1); opacity: var(--oo); }
+  to { transform: rotate(calc(var(--r, 0deg) + 2.4deg)) scaleX(1.3); opacity: calc(var(--oo) * 0.5); }
+}
+@keyframes cine-rise {
+  from { opacity: 0; transform: translate3d(0, 14px, 0); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes cine-rise-lite {
+  from { opacity: 0.9; transform: translate3d(0, 12px, 0); }
+  to { opacity: 1; transform: none; }
+}
+
+/* =====================================================================
+ * 2. 玻璃面板
+ * ===================================================================== */
+.cine-glass {
+  position: relative;
+  background: var(--cine-glass-bg);
+  border: 1px solid var(--cine-glass-border);
+  border-radius: var(--radius-card, 1rem);
+  box-shadow: var(--cine-glass-shadow);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35);
+  backdrop-filter: blur(18px) saturate(1.35);
+}
+@supports ((-webkit-mask-composite: xor) or (mask-composite: exclude)) {
+  .cine-glass::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(155deg, var(--cine-glass-edge-a), transparent 38%, transparent 62%, var(--cine-glass-edge-b));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    pointer-events: none;
+  }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .cine-glass {
+    background: var(--cine-glass-bg-solid);
+  }
+}
+/* 手機：玻璃後面是一直在動的粒子畫布，逐格重算模糊太吃電 → 改半實心（留一點透明，光束透得出來） */
+@media (pointer: coarse) {
+  .cine-hero .cine-glass {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--cine-glass-bg-hero);
+  }
+}
+/* 深色：桌機玻璃是半透明，剛好蓋在太陽光暈上 → 次要小字提亮，維持 WCAG AA */
+:root[data-theme="dark"] .cine-hero .text-muted-foreground {
+  color: #bfb2a5;
+}
+
+/* =====================================================================
+ * 3. 燈號光球
+ * ===================================================================== */
+.cine-orb {
+  --c: #a8a29e;
+  --c-hi: #f5f5f4;
+  --c-lo: #78716c;
+  --c-glow: rgb(168 162 158 / 0.45);
+  --orb: 12px;
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: var(--orb);
+  height: var(--orb);
+  border-radius: 50%;
+  vertical-align: -0.1em;
+  background: radial-gradient(circle at 34% 30%, #fff 0 9%, var(--c-hi) 20%, var(--c) 56%, var(--c-lo) 100%);
+  box-shadow: 0 0 6px 1px var(--c-glow), 0 0 16px 3px var(--c-glow);
+}
+.cine-orb::after {
+  content: "";
+  position: absolute;
+  inset: -45%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--c-glow) 0%, transparent 68%);
+  animation: cine-orb-pulse 2.4s var(--cine-ease-soft) infinite;
+  pointer-events: none;
+}
+/* 綠：往暖色偏、降飽和的鼠尾草綠（米色底、夜晚琥珀底上都不會像霓虹） */
+.cine-orb--green {
+  --c: #4f9a5e;
+  --c-hi: #c3e6c8;
+  --c-lo: #2e6a3b;
+  --c-glow: rgb(79 154 94 / 0.5);
+}
+:root[data-theme="dark"] .cine-orb--green {
+  --c: #7fbf86;
+  --c-hi: #e0f3e2;
+  --c-lo: #3f7a4a;
+  --c-glow: rgb(127 191 134 / 0.45);
+}
+.cine-orb--yellow {
+  --c: #f0a020;
+  --c-hi: #fde7a6;
+  --c-lo: #a65f0c;
+  --c-glow: rgb(240 160 32 / 0.6);
+}
+.cine-orb--grey {
+  --c: #a8a29e;
+  --c-hi: #f5f5f4;
+  --c-lo: #6f6964;
+  --c-glow: rgb(168 162 158 / 0.4);
+}
+.cine-orb--grey::after {
+  animation-duration: 3.6s;
+  opacity: 0.6;
+}
+/* 靜態光球（圖例、說明文字裡用）：有光暈、不脈動 → 同一畫面只有結果卡的主燈號在呼吸 */
+.cine-orb--static::after {
+  animation: none;
+  transform: scale(1.3);
+  opacity: 0.45;
+}
+.cine-orb--sm {
+  --orb: 10px;
+}
+.cine-orb--lg {
+  --orb: 18px;
+}
+@keyframes cine-orb-pulse {
+  0% { transform: scale(0.75); opacity: 0.95; }
+  70%, 100% { transform: scale(1.9); opacity: 0; }
+}
+
+/* =====================================================================
+ * 4. 結果卡依序滑入
+ * ===================================================================== */
+.cine-stagger > * {
+  animation: cine-rise-in 0.6s var(--cine-ease-out) backwards;
+}
+.cine-stagger > :nth-child(2) { animation-delay: 70ms; }
+.cine-stagger > :nth-child(3) { animation-delay: 140ms; }
+.cine-stagger > :nth-child(4) { animation-delay: 210ms; }
+.cine-stagger > :nth-child(5) { animation-delay: 280ms; }
+.cine-stagger > :nth-child(6) { animation-delay: 340ms; }
+.cine-stagger > :nth-child(7) { animation-delay: 400ms; }
+.cine-stagger > :nth-child(8) { animation-delay: 450ms; }
+.cine-stagger > :nth-child(n + 9) { animation-delay: 500ms; }
+@keyframes cine-rise-in {
+  from { opacity: 0; transform: translate3d(0, 18px, 0) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+/* =====================================================================
+ * 5. 骨架閃光
+ * ===================================================================== */
+.cine-skeleton {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: var(--cine-skel);
+}
+.cine-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(100deg, transparent 20%, var(--cine-skel-shine) 50%, transparent 80%);
+  animation: cine-shimmer 1.35s var(--cine-ease-soft) infinite;
+}
+.cine-skeleton--line { height: 0.85rem; margin: 0.55rem 0; }
+.cine-skeleton--title { height: 1.35rem; width: 62%; margin: 0.2rem 0 0.75rem; }
+.cine-skeleton--pill { height: 1.6rem; width: 7rem; border-radius: 999px; }
+.cine-skeleton--block { height: 5.5rem; border-radius: 0.875rem; }
+@keyframes cine-shimmer {
+  to { transform: translateX(100%); }
+}
+
+/* =====================================================================
+ * 6. 捲動淡入（CineFx 腳本在 <html> 加 .cine-reveal-on 後才生效；沒 JS 一律可見）
+ * ===================================================================== */
+.cine-reveal-on .cine-reveal {
+  transition:
+    opacity 0.85s var(--cine-ease-out) var(--cine-d, 0ms),
+    transform 0.85s var(--cine-ease-out) var(--cine-d, 0ms);
+}
+.cine-reveal-on .cine-reveal:not(.is-in) {
+  opacity: 0;
+  transform: translate3d(0, 22px, 0);
+}
+
+/* =====================================================================
+ * 7. 按鈕光澤＋按下回饋（疊加在 btn-primary / btn-outline 等）
+ * ===================================================================== */
+.cine-btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform 0.18s var(--cine-ease-out), box-shadow 0.25s ease, background-color 0.2s ease;
+}
+.cine-btn::after {
+  content: "";
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  left: 0;
+  width: 55%;
+  background: linear-gradient(100deg, transparent, rgb(255 255 255 / 0.5) 50%, transparent);
+  transform: translateX(-170%) skewX(-18deg);
+  pointer-events: none;
+}
+@media (hover: hover) {
+  .cine-btn:hover::after {
+    transition: transform 0.85s var(--cine-ease-out);
+    transform: translateX(260%) skewX(-18deg);
+  }
+}
+.cine-btn:active {
+  transform: translateY(1px) scale(0.965);
+}
+
+/* 「用我的位置」的定位光點（學區、垃圾車兩頁同一顆）：平常是靜止的暖金光點；
+   按下去、正在定位時（按鈕 aria-busy="true"）才往外擴散，當作「正在找你的位置」的回饋 */
+.cine-locate-dot {
+  position: relative;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgb(var(--cine-glow));
+  box-shadow: 0 0 0 2px rgb(var(--cine-glow) / 0.22), 0 0 8px 1px rgb(var(--cine-glow) / 0.8);
+}
+.cine-locate-dot::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 1.5px solid rgb(var(--cine-glow) / 0.8);
+  opacity: 0;
+  pointer-events: none;
+}
+[aria-busy="true"] > .cine-locate-dot::after {
+  animation: cine-locate-ping 1.3s var(--cine-ease-out) infinite;
+}
+@keyframes cine-locate-ping {
+  0% { transform: scale(0.4); opacity: 1; }
+  75%, 100% { transform: scale(1.7); opacity: 0; }
+}
+
+/* ---------- 工具頁共用：格線、地址輸入框、查詢鈕（學區、垃圾車兩頁同一套） ---------- */
+.cine-tool-wrap {
+  width: 100%;
+  max-width: 80rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+@media (min-width: 640px) {
+  .cine-tool-wrap {
+    padding-inline: 1.5rem;
+  }
+}
+.cine-input {
+  min-width: 0;
+  min-height: 48px;
+  padding: 0.5rem 0.85rem;
+  font-size: 16px;
+  color: var(--foreground);
+  background: rgb(255 255 255 / 0.92);
+  border: 1px solid rgb(var(--cine-glow) / 0.5);
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px rgb(92 62 28 / 0.08) inset;
+  transition: border-color 0.2s ease, box-shadow 0.3s ease;
+}
+:root[data-theme="dark"] .cine-input {
+  background: rgb(20 16 12 / 0.55);
+  border-color: rgb(var(--cine-glow) / 0.32);
+}
+.cine-input::placeholder {
+  color: var(--muted-foreground);
+  opacity: 0.85;
+}
+.cine-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgb(var(--cine-glow) / 0.26), 0 0 22px -4px rgb(var(--cine-glow) / 0.7);
+}
+.cine-cta {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 1.25rem;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  color: var(--accent-foreground);
+  background: var(--accent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 93%, #fff) 0%,
+    var(--accent) 50%,
+    color-mix(in srgb, var(--accent) 84%, #000) 100%
+  );
+  border: 1px solid var(--accent);
+  box-shadow: 0 6px 16px -8px rgb(var(--cine-glow) / 0.9), 0 1px 0 rgb(255 255 255 / 0.35) inset;
+}
+.cine-cta:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* =====================================================================
+ * 8. 地圖（cine-map.js）
+ * ===================================================================== */
+.cine-mapframe {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--cine-map-bg);
+  box-shadow: 0 0 0 1px rgb(var(--cine-glow) / 0.28), 0 22px 50px -24px rgb(60 38 14 / 0.45);
+}
+:root[data-theme="dark"] .cine-mapframe {
+  box-shadow: 0 0 0 1px rgb(var(--cine-glow) / 0.2), 0 24px 60px -24px rgb(0 0 0 / 0.8);
+}
+/* 地圖還沒畫出來前：暖色閃光底 */
+.cine-mapframe::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 25%, rgb(var(--cine-glow) / 0.16) 50%, transparent 75%);
+  transform: translateX(-100%);
+  animation: cine-shimmer 1.6s var(--cine-ease-soft) infinite;
+  transition: opacity 0.6s ease;
+}
+.cine-mapframe.is-ready::before,
+.cine-mapframe.is-fallback::before {
+  opacity: 0;
+  animation: none;
+}
+.cine-map {
+  isolation: isolate;
+  background: var(--cine-map-bg);
+  font-family: inherit;
+}
+.cine-map .maplibregl-canvas {
+  opacity: 0;
+  transition: opacity 0.9s ease;
+}
+.cine-map.is-ready .maplibregl-canvas {
+  opacity: 1;
+}
+.cine-map-grade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.cine-map-grade::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 32%;
+  background: linear-gradient(180deg, var(--cine-map-sky-1) 0%, var(--cine-map-sky-2) 30%, transparent 100%);
+}
+:root[data-theme="dark"] .cine-map-grade::before {
+  background:
+    radial-gradient(70% 55% at 50% 0%, rgb(226 170 96 / 0.22), transparent 70%),
+    linear-gradient(180deg, var(--cine-map-sky-1) 0%, var(--cine-map-sky-2) 32%, transparent 100%);
+}
+.cine-map-grade::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 75% 70% at 50% 58%, transparent 55%, var(--cine-map-vignette) 100%);
+}
+.cine-map-fallback {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  text-align: center;
+}
+.cine-map-fallback > p {
+  max-width: 22rem;
+  margin: 0;
+  padding: 0.9rem 1.1rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--foreground);
+}
+.cine-map-fallback strong {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-size: 1rem;
+}
+
+/* MapLibre 介面：暖色玻璃 */
+.cine-map .maplibregl-ctrl-group {
+  background: var(--cine-glass-bg-solid);
+  border-radius: 12px;
+  box-shadow: 0 6px 18px -6px rgb(60 38 14 / 0.35), 0 0 0 1px rgb(var(--cine-glow) / 0.25);
+  overflow: hidden;
+}
+.cine-map .maplibregl-ctrl-group button {
+  width: 36px;
+  height: 36px;
+}
+.cine-map .maplibregl-ctrl-group button + button {
+  border-top-color: rgb(var(--cine-glow) / 0.22);
+}
+:root[data-theme="dark"] .cine-map .maplibregl-ctrl-icon {
+  filter: invert(0.92) sepia(0.25);
+}
+.cine-map .maplibregl-ctrl-attrib {
+  font-size: 11px;
+}
+:root[data-theme="dark"] .cine-map .maplibregl-ctrl-attrib {
+  background: rgb(26 20 15 / 0.72);
+  color: #cdbfb0;
+}
+:root[data-theme="dark"] .cine-map .maplibregl-ctrl-attrib a {
+  color: #e2c79f;
+}
+:root[data-theme="dark"] .cine-map .maplibregl-ctrl-attrib-button {
+  filter: invert(0.9);
+}
+/* 「兩指操作」提示：手指離開 0.35 秒後就淡出（MapLibre 預設停 1 秒再花 1 秒淡出，會蓋住圖釘落地） */
+.cine-map .maplibregl-cooperative-gesture-screen:not(.maplibregl-show) {
+  transition: opacity 0.4s ease 0.35s;
+}
+.cine-map .maplibregl-cooperative-gesture-screen {
+  z-index: 5;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: radial-gradient(ellipse at center, rgb(36 26 16 / 0.62), rgb(20 14 9 / 0.72));
+  color: #fff3de;
+  text-shadow: 0 0 12px rgb(236 186 110 / 0.6);
+}
+.cine-map .maplibregl-popup {
+  z-index: 4;
+}
+.cine-map .maplibregl-popup-content {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: 0 16px 40px -14px rgb(40 26 10 / 0.5), 0 0 0 1px rgb(var(--cine-glow) / 0.28);
+  line-height: 1.55;
+}
+.cine-map .maplibregl-popup-close-button {
+  width: 40px;
+  height: 40px;
+  font-size: 22px;
+  color: var(--muted-foreground);
+  border-radius: 0 14px 0 10px;
+}
+.cine-map .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.cine-map .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.cine-map .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--card);
+}
+.cine-map .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.cine-map .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.cine-map .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--card);
+}
+.cine-map .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--card);
+}
+.cine-map .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--card);
+}
+
+/* ---------- 地圖標記：落下彈跳＋地面光環 ---------- */
+/* 直立的圖釘（anchor: bottom）；MapLibre 會改 root 的 transform，所以動畫都放子元素 */
+.cine-pin {
+  width: 34px;
+  height: 40px; /* 30px 方塊轉 45° 後尖端落在 y≈38px：anchor bottom 就是尖端踩在查詢點上 */
+  pointer-events: none;
+  z-index: 3;
+}
+.cine-pin__drop {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform-origin: 50% 100%;
+}
+.cine-pin.is-live .cine-pin__drop {
+  opacity: 1;
+  animation: cine-pin-drop 1s var(--cine-ease-out) backwards;
+}
+.cine-pin__head {
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  width: 30px;
+  height: 30px;
+  margin-left: -15px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: radial-gradient(circle at 38% 32%, var(--cine-pin-hi) 0 14%, var(--cine-pin) 55%, var(--cine-pin-lo) 100%);
+  box-shadow:
+    0 0 0 2.5px #fff,
+    0 6px 14px rgb(60 36 12 / 0.45),
+    0 0 22px 4px rgb(var(--cine-glow) / 0.55);
+}
+.cine-pin__head::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: #fffaf0;
+  box-shadow: 0 0 8px 2px rgb(255 240 210 / 0.9);
+}
+:root[data-theme="dark"] .cine-pin__head {
+  box-shadow:
+    0 0 0 2.5px #fff4df,
+    0 6px 16px rgb(0 0 0 / 0.6),
+    0 0 28px 8px rgb(var(--cine-glow) / 0.6);
+}
+/* 平貼地面的光環（pitchAlignment: map，會跟著地圖透視） */
+.cine-pin-ground {
+  width: 120px;
+  height: 120px;
+  pointer-events: none;
+}
+.cine-pin-ground__ring,
+.cine-pin-ground__core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+}
+.cine-pin-ground__core {
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  background: radial-gradient(circle, rgb(var(--cine-glow) / 0.9) 0%, rgb(var(--cine-glow) / 0.35) 40%, transparent 70%);
+  opacity: 0;
+}
+.cine-pin-ground__ring {
+  width: 120px;
+  height: 120px;
+  margin: -60px 0 0 -60px;
+  border: 3px solid var(--cine-pin-ring);
+  box-shadow: 0 0 18px rgb(var(--cine-glow) / 0.7), inset 0 0 18px rgb(var(--cine-glow) / 0.5);
+  opacity: 0;
+  transform: scale(0.1);
+}
+.cine-pin-ground.is-live .cine-pin-ground__core {
+  opacity: 1;
+  animation: cine-fade-in 0.5s ease 0.45s backwards;
+}
+.cine-pin-ground.is-live .cine-pin-ground__ring {
+  animation: cine-ring 2.6s var(--cine-ease-out) 0.5s infinite;
+}
+.cine-pin-ground.is-live .cine-pin-ground__ring--2 {
+  animation-delay: 1.8s;
+}
+/* 「我的位置」小圓點（variant: dot） */
+.cine-pin--dot {
+  width: 22px;
+  height: 22px;
+}
+.cine-pin--dot .cine-pin__head {
+  top: 2px;
+  width: 18px;
+  height: 18px;
+  margin-left: -9px;
+  border-radius: 50%;
+  transform: none;
+}
+.cine-pin--dot .cine-pin__head::after {
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+}
+@keyframes cine-pin-drop {
+  0% { opacity: 0; transform: translate3d(0, -150px, 0) scale(0.9, 1.1); }
+  12% { opacity: 1; }
+  52% { transform: translate3d(0, 0, 0) scale(1.14, 0.84); }
+  66% { transform: translate3d(0, -16px, 0) scale(0.96, 1.05); }
+  80% { transform: translate3d(0, 0, 0) scale(1.05, 0.95); }
+  90% { transform: translate3d(0, -3px, 0) scale(1, 1); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes cine-ring {
+  0% { transform: scale(0.1); opacity: 1; }
+  60% { opacity: 0.55; }
+  100% { transform: scale(1); opacity: 0; }
+}
+@keyframes cine-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* =====================================================================
+ * 9. 工具卡（總覽頁）
+ * ===================================================================== */
+.cine-card {
+  position: relative;
+  isolation: isolate;
+  transform-style: flat;
+  transition: transform 0.6s var(--cine-ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .cine-card:hover {
+    will-change: transform;
+  }
+}
+.cine-card::before {
+  /* 內層面板：蓋住光掃層，只露出 1.5px 的邊 */
+  content: "";
+  position: absolute;
+  inset: 1.5px;
+  z-index: -2;
+  border-radius: inherit;
+  background: var(--card);
+}
+.cine-card::after {
+  /* 外發光：hover 才亮（只改 opacity） */
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -4;
+  border-radius: inherit;
+  box-shadow: 0 0 0 1px rgb(var(--cine-glow) / 0.55), 0 18px 44px -14px rgb(var(--cine-glow) / 0.6), 0 0 36px -6px rgb(var(--cine-glow) / 0.35);
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  pointer-events: none;
+}
+.cine-card__fx {
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.cine-card__fx--glow {
+  z-index: -1;
+}
+.cine-card__sweep {
+  position: absolute;
+  left: -75%;
+  top: 50%;
+  width: 250%;
+  aspect-ratio: 1;
+  margin-top: -125%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 58%,
+    rgb(var(--cine-glow) / 0.35) 68%,
+    rgb(255 244 222 / 0.95) 74%,
+    rgb(var(--cine-glow) / 0.55) 79%,
+    transparent 88% 100%
+  );
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  animation: cine-spin 3.4s linear infinite;
+  animation-play-state: paused;
+}
+.cine-card.is-sweeping .cine-card__sweep,
+.cine-card:hover .cine-card__sweep,
+.cine-card:focus-within .cine-card__sweep {
+  opacity: 1;
+  animation-play-state: running;
+}
+.cine-card__glow {
+  position: absolute;
+  left: -170px;
+  top: -170px;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(var(--cine-glow) / 0.2), transparent 64%);
+  opacity: 0;
+  transform: translate3d(var(--mx, 50%), var(--my, 50%), 0);
+  transition: opacity 0.35s ease;
+}
+.cine-card:hover::after,
+.cine-card:focus-within::after,
+.cine-card:hover .cine-card__glow {
+  opacity: 1;
+}
+.cine-card:hover,
+.cine-card:focus-within {
+  border-color: transparent;
+}
+@keyframes cine-spin {
+  to { transform: rotate(1turn); }
+}
+
+/* NEW 光澤徽章 */
+.cine-badge-new {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  isolation: isolate;
+  padding: 0.125rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #3a2810;
+  background: linear-gradient(135deg, #f7e1b5 0%, #e0b06a 48%, #b98543 100%);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.45) inset, 0 2px 10px -2px rgb(var(--cine-glow) / 0.8);
+}
+.cine-badge-new::after {
+  content: "";
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: 0;
+  width: 45%;
+  z-index: 1;
+  background: linear-gradient(100deg, transparent, rgb(255 255 255 / 0.85) 50%, transparent);
+  transform: translateX(-160%) skewX(-20deg);
+  animation: cine-badge-sheen 4.2s var(--cine-ease-soft) 1s infinite;
+}
+@keyframes cine-badge-sheen {
+  0% { transform: translateX(-160%) skewX(-20deg); }
+  38%, 100% { transform: translateX(320%) skewX(-20deg); }
+}
+
+/* =====================================================================
+ * 10. 減少動態：全部停在最終狀態
+ * ===================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .cine-hero__sun,
+  .cine-ray,
+  .cine-wipe,
+  .cine-wipe__in,
+  .cine-hero__sub,
+  .cine-hero__slot,
+  .cine-stat,
+  .cine-stagger > *,
+  .cine-card__sweep,
+  .cine-badge-new::after,
+  .cine-mapframe::before {
+    animation: none !important;
+  }
+  .cine-glint {
+    display: none;
+  }
+  [aria-busy="true"] > .cine-locate-dot::after {
+    animation: none;
+    opacity: 0.6;
+    transform: scale(1.2);
+  }
+  .cine-orb::after {
+    animation: none;
+    transform: scale(1.35);
+    opacity: 0.45;
+  }
+  .cine-skeleton::after {
+    animation: none;
+    opacity: 0;
+  }
+  .cine-reveal-on .cine-reveal,
+  .cine-reveal-on .cine-reveal:not(.is-in) {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .cine-card,
+  .cine-btn {
+    transition: none;
+  }
+  .cine-btn:active {
+    transform: none;
+  }
+  .cine-pin.is-live .cine-pin__drop,
+  .cine-pin__drop {
+    animation: none;
+    opacity: 1;
+  }
+  .cine-pin-ground.is-live .cine-pin-ground__core {
+    animation: none;
+    opacity: 1;
+  }
+  .cine-pin-ground.is-live .cine-pin-ground__ring {
+    animation: none;
+    opacity: 0.55;
+    transform: scale(0.42);
+  }
+  .cine-pin-ground.is-live .cine-pin-ground__ring--2 {
+    opacity: 0;
+  }
+  .cine-map .maplibregl-canvas {
+    transition: none;
+  }
+}
+
+@media print {
+  .cine-hero__bg {
+    display: none;
+  }
+  .cine-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

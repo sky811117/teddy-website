@@ -1,0 +1,12 @@
+---
+/**
+ * CineFx — 電影感共用樣式＋小腳本（捲動淡入、卡片 3D 傾斜）。
+ * 用了 <CinematicHero> 就已經帶進來；沒有主視覺的頁面要用 .cine-* class 時，放一個 <CineFx /> 即可。
+ * Astro 會自動去重，同頁放多次也只載一份。
+ */
+import "@/styles/cinematic.css";
+---
+
+<script>
+  import "./cine-fx";
+</script>

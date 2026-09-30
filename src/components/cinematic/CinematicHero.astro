@@ -1,0 +1,217 @@
+---
+/**
+ * CinematicHero — 電影感主視覺（黃金時刻暖光／體積光／光塵粒子／標題光掃／數字 count-up）
+ *
+ * <CinematicHero
+ *   variant="tool"                       // "hub"（總覽頁，大）| "tool"（工具頁，精簡，搜尋卡放 slot）
+ *   layout="split"                       // tool 才有意義："stack"（預設，全部直排）| "split"（≥1024px 左文右搜尋卡）
+ *   eyebrow="免費工具・不用登入"          // 標題上的小字（可省略）
+ *   title="台中學區查詢（國小・國中）"     // 會渲染成 <h1>
+ *   subtitle="輸入門牌地址……"             // 純文字；要放連結改用 <Fragment slot="sub">…</Fragment>
+ *   stats={[{ value: 239, suffix: "所", label: "國小學區" }, { value: 76, prefix: "約", suffix: "萬", label: "筆門牌" }]}
+ *   container="cine-tool-wrap"            // 內容寬度，對齊頁面格線（預設 app-layout-wide；工具頁用 cine-tool-wrap＝80rem、左右 1～1.5rem）
+ * >
+ *   <form …>搜尋卡（建議外層加 class="cine-glass"）</form>
+ * </CinematicHero>
+ *
+ * - 預設 id="hero"：FloatingCTA（手機 LINE 浮動鈕）看到 #hero 在畫面內就先藏起來，不會壓到搜尋鈕。
+ * - stats 的數字只能用頁面上已經有、有出處的數字（CLAUDE.md 文案鐵則）。
+ * - 高度只由內容決定（canvas 絕對定位、count-up 預留寬度），不會有版面跳動。
+ * - 標題浮現完會在 <html> 加 data-cine-hero-done 並發出 document 事件 "cine:hero-done"（cine-map.js 的開場飛行會等它）。
+ */
+import CineFx from "./CineFx.astro";
+
+export type CineStat = {
+  value: number;
+  label: string;
+  prefix?: string;
+  suffix?: string;
+  decimals?: number;
+};
+
+type Props = {
+  title: string;
+  subtitle?: string;
+  eyebrow?: string;
+  stats?: CineStat[];
+  variant?: "hub" | "tool";
+  layout?: "stack" | "split";
+  container?: string;
+  id?: string;
+  titleId?: string;
+  class?: string;
+};
+
+const {
+  title,
+  subtitle,
+  eyebrow,
+  stats = [],
+  variant = "hub",
+  layout = "stack",
+  container = "app-layout-wide",
+  id = "hero",
+  titleId = "cine-hero-title",
+  class: className,
+} = Astro.props;
+
+const hasSlot = Astro.slots.has("default");
+const hasSub = Astro.slots.has("sub");
+const nf = (v: number, dec = 0) =>
+  new Intl.NumberFormat("zh-TW", { minimumFractionDigits: dec, maximumFractionDigits: dec }).format(v);
+
+// 體積光：幾道寬窄不一的光束，由右上的太陽往左下呈扇形散開（r＝各自的基準角度），各自慢慢擺（週期錯開，不會同步閃）
+const rays = [
+  { x: "4%", w: "3.5%", o: 0.75, r: "7deg", d: "13s", dl: "0s" },
+  { x: "11%", w: "7%", o: 0.5, r: "5deg", d: "17s", dl: "-4s" },
+  { x: "22%", w: "4%", o: 0.8, r: "3deg", d: "11s", dl: "-7s" },
+  { x: "31%", w: "9%", o: 0.45, r: "1.5deg", d: "19s", dl: "-2s" },
+  { x: "45%", w: "3%", o: 0.85, r: "0deg", d: "15s", dl: "-9s" },
+  { x: "53%", w: "8%", o: 0.5, r: "-1.5deg", d: "21s", dl: "-5s" },
+  { x: "66%", w: "4.5%", o: 0.7, r: "-3deg", d: "14s", dl: "-11s" },
+  { x: "78%", w: "7%", o: 0.5, r: "-4.5deg", d: "18s", dl: "-3s" },
+];
+// 光束之間的淡暗帶（亮部要有暗部襯，體積光才立得起來）
+const shades = [
+  { x: "15%", w: "6%", o: 1, r: "4deg", d: "23s", dl: "-3s" },
+  { x: "37%", w: "7%", o: 1, r: "1deg", d: "19s", dl: "-11s" },
+  { x: "60%", w: "6%", o: 1, r: "-2deg", d: "25s", dl: "-6s" },
+  { x: "86%", w: "8%", o: 1, r: "-5deg", d: "21s", dl: "-8s" },
+];
+---
+
+<CineFx />
+<section
+  id={id}
+  class:list={[
+    "cine-hero",
+    `cine-hero--${variant}`,
+    variant === "tool" && layout === "split" && "cine-hero--split",
+    className,
+  ]}
+  data-cine-hero
+  data-variant={variant}
+  aria-labelledby={titleId}
+>
+  <div class="cine-hero__bg" aria-hidden="true">
+    <div class="cine-hero__parallax" data-depth="0.5">
+      <div class="cine-hero__sun"></div>
+    </div>
+    <div class="cine-hero__parallax" data-depth="1">
+      <div class="cine-hero__rays">
+        {
+          shades.map(r => (
+            <span
+              class="cine-ray cine-ray--shade"
+              style={`--x:${r.x};--w:${r.w};--o:${r.o};--r:${r.r};--d:${r.d};--dl:${r.dl}`}
+            />
+          ))
+        }
+      </div>
+    </div>
+    <div class="cine-hero__parallax cine-hero__parallax--rays" data-depth="1">
+      <div class="cine-hero__rays">
+        {
+          rays.map(r => (
+            <span
+              class="cine-ray"
+              style={`--x:${r.x};--w:${r.w};--o:${r.o};--r:${r.r};--d:${r.d};--dl:${r.dl}`}
+            />
+          ))
+        }
+      </div>
+    </div>
+    <canvas class="cine-hero__dust"></canvas>
+    <div class="cine-hero__grain"></div>
+    <div class="cine-hero__vignette"></div>
+    <div class="cine-hero__fade"></div>
+  </div>
+
+  <div class:list={["cine-hero__inner", container]}>
+    <div class="cine-hero__grid">
+      <div class="cine-hero__text">
+        {eyebrow && <p class="cine-hero__eyebrow">{eyebrow}</p>}
+        <h1 id={titleId} class="cine-hero__title">
+          {/* 光掃依「文字寬」算（不是整個 h1 區塊寬），光帶只在字上走 */}
+          <span class="cine-title-box">
+            <span class="cine-wipe"><span class="cine-wipe__in">{title}</span></span>
+            <span class="cine-glint" aria-hidden="true"><span class="cine-glint__in" data-text={title}></span></span>
+          </span>
+        </h1>
+        {
+          hasSub ? (
+            <div class="cine-hero__sub">
+              <slot name="sub" />
+            </div>
+          ) : (
+            subtitle && <p class="cine-hero__sub">{subtitle}</p>
+          )
+        }
+      </div>
+
+      {
+        hasSlot && (
+          <div class="cine-hero__slot">
+            <slot />
+          </div>
+        )
+      }
+
+      {
+        stats.length > 0 && (
+          <ul class="cine-hero__stats" style={`--cine-cols:${Math.min(stats.length, 4)}`}>
+            {stats.map((s, i) => {
+              const dec = s.decimals ?? 0;
+              const fin = nf(s.value, dec);
+              // 預留數字寬度（count-up 時不跳動）：數字 1ch、逗號小數點約 0.4ch，寧可略小不要留白
+              const digits = fin.replace(/[^0-9]/g, "").length;
+              const minW = (digits + (fin.length - digits) * 0.4).toFixed(1);
+              return (
+                <li class="cine-stat cine-glass" style={`--i:${i}`}>
+                  <span class="cine-stat__num" aria-hidden="true">
+                    {s.prefix && <small>{s.prefix}</small>}
+                    <span
+                      data-cine-count
+                      data-value={s.value}
+                      data-decimals={dec}
+                      style={`display:inline-block;text-align:right;min-width:${minW}ch`}
+                    >
+                      {fin}
+                    </span>
+                    {s.suffix && <small>{s.suffix}</small>}
+                  </span>
+                  <span class="cine-stat__label">
+                    <span class="sr-only">
+                      {s.prefix}
+                      {fin}
+                      {s.suffix}
+                    </span>
+                    {s.label}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )
+      }
+    </div>
+  </div>
+</section>
+{/* 數字先歸零再由腳本數上去；腳本 4 秒內沒跑起來就放回最終值（不會卡在 0） */}
+<script is:inline>
+  (function () {
+    var s = document.currentScript, h = s && s.previousElementSibling;
+    if (!h || !h.hasAttribute("data-cine-hero")) return;
+    try { if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return; } catch (e) {}
+    var n = h.querySelectorAll("[data-cine-count]");
+    for (var i = 0; i < n.length; i++) { n[i].setAttribute("data-final", n[i].textContent); n[i].textContent = "0"; }
+    setTimeout(function () {
+      if (h.classList.contains("cine-counted")) return;
+      for (var j = 0; j < n.length; j++) n[j].textContent = n[j].getAttribute("data-final");
+    }, 4000);
+  })();
+</script>
+
+<script>
+  import "./cine-hero";
+</script>

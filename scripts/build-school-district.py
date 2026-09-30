@@ -65,6 +65,11 @@ zones_gs.json / zones_jh.json：FeatureCollection，每校一個 Feature（Polyg
                 shared: [學區表寫明共同學區的其他校id], split?: [同一鄰依路段／條件拆給的其他校id],
                 approx: 學區裡有依鄰劃分的里, ci?: 配色序號 0–4（相鄰學區不同號）, free?: 有自由學區,
                 wide?: 整區學區, wide_dists?: [區], wide_raw?: 學區表原文}
+  cond?（FeatureCollection 外加成員，地圖不畫）：[{school, dist, li, lins:[鄰], c:[條件文字], geometry}]
+    ＝「學區表另有條件」的鄰（只有一校、片段帶條件；地址查詢亮黃燈「學區表另有條件」）的門牌 Voronoi 範圍。
+    這種鄰在學區多邊形裡只屬一校、不跟別校重疊；頁面「用我的位置」命中（含半徑內八方向）就改黃燈，不說「只有一所」
+    （例：永隆國小「新里里(11-13、17鄰26-28鄰)（國光路以西，德芳路二段以北）」，條件以外的部分學區表沒列學校）。
+    建置時 check_cond_areas 確認這些鄰的門牌點全部落在範圍裡。
 lookup_gs.json / lookup_jh.json：
   {"區|里": {all:[校id], lin:{"鄰":[校id]}, free?:{校id:"all"|[鄰]},
              fr?:{"鄰"|"all": [{s:[校id], c:"條件文字", co:1?, f:[自由學區校id]?}]}},
@@ -144,7 +149,10 @@ SIMP_FIX = {'\u7efc': '綜'}
 # 籌備中 / 預定設校：不列入（校名或狀態含這些字就排除，並寫進報告）
 NOT_OPEN_RE = re.compile(r'籌備|預定|擬設|規劃中')
 
+COND_JOIN_RE = re.compile(r'及\s*[；;]\s*')   # 條件文字「A及；B」→「A及B」（見 main 的 join_fix）
+
 VORONOI_SMOOTH_M = 10.0     # 學區交界修順容差（公尺）；10m 時門牌點落到別校範圍約 0.01%
+COND_SIMPLIFY_M = 2.0       # 「學區表另有條件」範圍（zones.cond）的簡化容差（公尺）
 MIN_HOLE_M2 = 40.0          # 小於這個面積的洞（多半是切割誤差）補起來
 MIN_PART_M2 = 15.0          # 小於這個面積的碎片丟掉
 
@@ -935,20 +943,63 @@ def clean_m(g):
     return shapely.make_valid(shapely.MultiPolygon(polys)) if len(polys) > 1 else polys[0]
 
 
+def cond_single_at(lk, dist, li, lin):
+    """地址查詢會判成「cond」（黃燈：學區表另有條件）的里鄰：這一鄰只有一校、而且片段帶條件、不是自由學區
+    （跟 public/js/sd-lookup.js 的 classify 同一套：只有一校＋任何片段有條件 → cond）。
+    這種鄰在學區多邊形裡只落在一校的範圍、不跟別校重疊，「用我的位置」若只看多邊形會亮綠燈，
+    等於替學區表沒寫的部分（條件以外）指定學校 → 另外輸出範圍（zones.cond），頁面命中就改黃燈。
+    回傳 (校id, [條件…]) 或 None。"""
+    k = f'{dist}|{li}'
+    e = lk.get(k)
+    if not e:
+        return None
+    L = str(lin)
+    frs = web_frags(lk, k, L)
+    ids = []
+    for f in frs:
+        for s in f['s']:
+            if s not in ids:
+                ids.append(s)
+    if len(ids) != 1 or not any(f['c'] for f in frs):
+        return None
+    sid = ids[0]
+    fz = (e.get('free') or {}).get(sid)
+    if fz == 'all' or (isinstance(fz, list) and int(lin) in [int(x) for x in fz]):
+        return None
+    fr = e.get('fr') or {}
+    if any(sid in (f.get('f') or []) for f in fr.get(L, []) + fr.get('all', [])):
+        return None
+    return sid, sorted({f['c'] for f in frs if f['c']})
+
+
 def label_pieces(lk, pts_xy, pts_meta, city_m, stats):
     """全市門牌 Voronoi：標籤＝門牌里鄰對到的學校組合（不含整區學區）。
-    回傳 [(標籤 tuple, 修順後的多邊形)]，彼此不重疊、不留縫（coverage）。"""
+    回傳 ([(標籤 tuple, 修順後的多邊形)]，[「學區表另有條件」範圍])；前者彼此不重疊、不留縫（coverage）。
+    後者＝cond_single_at 的鄰的門牌 Voronoi 格（同一校、同一里、同一組條件合成一塊），
+    [{'school', 'dist', 'li', 'lins', 'c', 'geom'(公尺)}]；不影響學區多邊形本身。"""
     labels = [tuple(sorted(schools_at(lk, d, li, lin, with_wide=False))) for d, li, lin in pts_meta]
+    cache = {}
+
+    def cond_key(m):
+        if m not in cache:
+            r = cond_single_at(lk, *m)
+            cache[m] = (r[0], m[0], m[1], tuple(r[1])) if r else None
+        return cache[m]
+    conds = [cond_key(m) for m in pts_meta]
     # 同一個位置（1 公尺內）多個門牌 → 一個點，標籤取多數
     key = np.round(pts_xy, 0)
     groups = collections.defaultdict(list)
     for i, k in enumerate(map(tuple, key)):
         groups[k].append(i)
-    xy, lab = [], []
+    xy, lab, cnd = [], [], []
     for ids in groups.values():
         c = collections.Counter(labels[i] for i in ids)
         xy.append(pts_xy[ids[0]])
-        lab.append(c.most_common(1)[0][0])
+        l0 = c.most_common(1)[0][0]
+        lab.append(l0)
+        # 條件範圍：跟著多數標籤那幾個門牌的里鄰（同位置少數別的里鄰不算）
+        cc = collections.Counter(conds[i] for i in ids if labels[i] == l0)
+        cnd.append(cc.most_common(1)[0][0])
     xy = np.array(xy)
     stats['voronoi_points'] = len(xy)
     minx, miny = xy.min(axis=0)
@@ -981,7 +1032,30 @@ def label_pieces(lk, pts_xy, pts_meta, city_m, stats):
             stats['smooth'] = 'coverage-invalid（用未修順的邊）'
     except Exception as ex:   # 修順失敗就用原始鋸齒邊（仍然正確，只是邊比較碎、檔案比較大）
         stats['smooth'] = 'error: ' + str(ex)[:60]
-    return [(l, g) for l, g in zip(labs, geoms) if g is not None and not g.is_empty]
+    pieces = [(l, g) for l, g in zip(labs, geoms) if g is not None and not g.is_empty]
+
+    # 「學區表另有條件」範圍：Voronoi 格照（校、里、條件）合併，不修順（只做小幅簡化），不影響上面的學區多邊形
+    lins_of = collections.defaultdict(set)
+    for m, ck in zip(pts_meta, conds):
+        if ck:
+            lins_of[ck].add(int(m[2]))
+    cby = collections.defaultdict(list)
+    for c, ck in zip(cells, cnd):
+        if ck:
+            cby[ck].append(c)
+    cond_out = []
+    for ck in sorted(cby):
+        g = shapely.intersection(shapely.coverage_union_all(np.array(cby[ck], dtype=object)), city_m)
+        g = shapely.make_valid(g)
+        g = shapely.union_all([p for p in shapely.get_parts(g) if p.geom_type == 'Polygon'])
+        g = shapely.simplify(g, COND_SIMPLIFY_M, preserve_topology=True)
+        g = clean_m(g)
+        if g is None or g.is_empty:
+            continue
+        sid, d, li, cs = ck
+        cond_out.append({'school': sid, 'dist': d, 'li': li, 'lins': sorted(lins_of[ck]), 'c': list(cs), 'geom': g})
+    stats['cond_areas'] = [f'{x["school"]} {x["dist"]}{x["li"]} 第{compress_lins(x["lins"])}鄰（{"／".join(x["c"])}）' for x in cond_out]
+    return pieces, cond_out
 
 
 def color_schools(feats_m, wide_ids):
@@ -1053,7 +1127,7 @@ def school_relations(lk):
     return shared, split, choice
 
 
-def build_zones(level_key, level, zones, lk, pieces, vill_m, geo_by_id, stats):
+def build_zones(level_key, level, zones, lk, pieces, vill_m, geo_by_id, stats, cond_areas=()):
     by_school = collections.defaultdict(list)
     for lab, g in pieces:
         for s in lab:
@@ -1117,7 +1191,53 @@ def build_zones(level_key, level, zones, lk, pieces, vill_m, geo_by_id, stats):
         feats.append({'type': 'Feature', 'properties': props, 'geometry': round_geom(gd)})
     stats[f'{level_key}_empty_zone'] = empty
     stats[f'{level_key}_colors'] = max(colors.values()) + 1 if colors else 0
-    return {'type': 'FeatureCollection', 'meta': {'level': level, 'year': YEAR}, 'features': feats}
+    fc = {'type': 'FeatureCollection', 'meta': {'level': level, 'year': YEAR}, 'features': feats}
+    # 「學區表另有條件」範圍（GeoJSON 外加成員，地圖不畫；頁面「用我的位置」／點地圖命中時改說「學區表另有條件」）
+    cond = []
+    for x in cond_areas:
+        gd = shapely.make_valid(shapely.set_precision(to_deg(x['geom']), 1e-5))
+        gd = shapely.union_all([p for p in shapely.get_parts(gd) if p.geom_type == 'Polygon'])
+        if gd.is_empty:
+            continue
+        cond.append({'school': x['school'], 'dist': x['dist'], 'li': x['li'], 'lins': x['lins'], 'c': x['c'],
+                     'geometry': round_geom(gd)})
+    if cond:
+        fc['cond'] = cond
+    return fc
+
+
+def check_cond_areas(level, lk, fc, pts_lnglat, pts_meta):
+    """一致性檢查：地址查詢會亮「學區表另有條件」黃燈的鄰（cond_single_at），它的門牌點都要落在 zones.cond 同一校、
+    同一里、同一組條件的範圍裡 → 「用我的位置」／點地圖在這些鄰不會只看學區多邊形就說「只有一所」。
+    回傳 (錯誤清單, 統計)。"""
+    areas = []
+    for x in fc.get('cond') or []:
+        g = shape(x['geometry'])
+        shapely.prepare(g)
+        areas.append(((x['school'], x['dist'], x['li'], tuple(x['c'])), g))
+    cache, need, miss = {}, collections.Counter(), collections.Counter()
+    X = np.array([p[0] for p in pts_lnglat])
+    Y = np.array([p[1] for p in pts_lnglat])
+    idx = collections.defaultdict(list)
+    for i, m in enumerate(pts_meta):
+        if m not in cache:
+            r = cond_single_at(lk, *m)
+            cache[m] = (r[0], m[0], m[1], tuple(r[1])) if r else None
+        if cache[m]:
+            idx[cache[m]].append(i)
+    for ck, ids in idx.items():
+        ids = np.array(ids)
+        g = next((g for k, g in areas if k == ck), None)
+        inside = shapely.contains_xy(g, X[ids], Y[ids]) if g is not None else np.zeros(len(ids), bool)
+        for i, ok in zip(ids, inside):
+            m = pts_meta[i]
+            need[f'{m[0]}{m[1]}{m[2]}鄰'] += 1
+            if not ok:
+                miss[f'{m[0]}{m[1]}{m[2]}鄰'] += 1
+    cells = sorted(need)
+    bad = [f'{level} {k}：學區表另有條件的鄰，{miss[k]}/{need[k]} 個門牌點不在「另有條件」範圍裡' for k in cells if miss[k]]
+    return bad, {'cells': len(cells), 'points': sum(need.values()), 'points_outside': sum(miss.values()),
+                 'areas': len(areas), 'detail': {k: [need[k] - miss[k], need[k]] for k in cells}}
 
 
 def check_polygons(level, lk, fc, pts_lnglat, pts_meta):
@@ -1430,6 +1550,25 @@ def main():
     report['cond_tail_fixed'] = cond_fix
     log(f'  條件拿掉接在後面的另一校原文：{len(cond_fix)} 筆')
 
+    # 上游拆「第15鄰之A及15鄰:B」時把第二個「15鄰:」換成「；」→ 條件變成「A及；B」（上安國小上安里 15 鄰），讀起來不通。
+    # 同一鄰的兩段本來就是「A 及 B」→ 併回「及」（原文仍在學校 raw）
+    join_fix = []
+    for lv, _ in LEVELS:
+        for z in zones[lv]:
+            for r in z['ranges']:
+                part = r.get('partial') or {}
+                for L in list(part):
+                    c = part[L] or ''
+                    if COND_JOIN_RE.search(c):
+                        part[L] = COND_JOIN_RE.sub('及', c)
+                        join_fix.append(f'{z["id"]} {r["dist"]}{r["li"]} 第{L}鄰：{c} → {part[L]}')
+                if r.get('cond') and COND_JOIN_RE.search(r['cond']):
+                    c = r['cond']
+                    r['cond'] = COND_JOIN_RE.sub('及', c)
+                    join_fix.append(f'{z["id"]} {r["dist"]}{r["li"]}：{c} → {r["cond"]}')
+    report['cond_join_fixed'] = join_fix
+    log(f'  條件「及；」併回「及」：{join_fix}')
+
     log('[3] 學區表里名 × 村里界')
     for lv, level in LEVELS:
         fixed, bad = check_range_villages(level, zones[lv], vill_keys, li_dists)
@@ -1529,10 +1668,15 @@ def main():
     zones_out, stats = {}, {}
     for lv, level in LEVELS:
         st = {}
-        pieces = label_pieces(lookups[lv], pts_xy, pts_meta, city_m, st)
-        zones_out[lv] = build_zones(lv, level, zones[lv], lookups[lv], pieces, vill_m, geo_by[lv], st)
+        pieces, cond_areas = label_pieces(lookups[lv], pts_xy, pts_meta, city_m, st)
+        zones_out[lv] = build_zones(lv, level, zones[lv], lookups[lv], pieces, vill_m, geo_by[lv], st, cond_areas)
         pc = check_polygons(level, lookups[lv], zones_out[lv], pts, pts_meta)
         st['point_check'] = pc
+        cbad, cst = check_cond_areas(level, lookups[lv], zones_out[lv], pts, pts_meta)
+        st['cond_check'] = cst
+        fail += cbad
+        log(f'  {level}：學區表另有條件的鄰 {cst["cells"]} 個（{cst["points"]} 個門牌點），範圍 {cst["areas"]} 塊，'
+            f'門牌點不在範圍裡 {cst["points_outside"]}')
         stats[lv] = st
         log(f'  {level}：{len(zones_out[lv]["features"])} 校，{st["voronoi_points"]} 個門牌點、{st["labels"]} 種學校組合，'
             f'修順 {st.get("smooth")}，配色 {st[lv + "_colors"]} 色，無範圍 {st[lv + "_empty_zone"]}；'
