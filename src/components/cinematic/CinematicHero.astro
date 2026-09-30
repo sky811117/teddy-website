@@ -4,6 +4,8 @@
  *
  * <CinematicHero
  *   variant="tool"                       // "hub"（總覽頁，大）| "tool"（工具頁，精簡，搜尋卡放 slot）
+ *   scene="zones"                        // 背景場景（每頁只下載自己那一支，程式在 scenes/*.ts）：
+ *                                        //   "dust"（預設）金色光塵｜"zones" 學區拼圖｜"routes" 傍晚光軌｜"radar" 雷達掃描
  *   layout="split"                       // tool 才有意義："stack"（預設，全部直排）| "split"（≥1024px 左文右搜尋卡）
  *   eyebrow="免費工具・不用登入"          // 標題上的小字（可省略）
  *   title="台中學區查詢（國小・國中）"     // 會渲染成 <h1>
@@ -18,6 +20,8 @@
  * - stats 的數字只能用頁面上已經有、有出處的數字（CLAUDE.md 文案鐵則）。
  * - 高度只由內容決定（canvas 絕對定位、count-up 預留寬度），不會有版面跳動。
  * - 標題浮現完會在 <html> 加 data-cine-hero-done 並發出 document 事件 "cine:hero-done"（cine-map.js 的開場飛行會等它）。
+ * - scene="radar" 可以讓雷達「鎖定」一次（查詢完呼叫；只動畫面，不帶任何地址）：
+ *     document.dispatchEvent(new CustomEvent("cine:radar-ping", { detail: { radius: 500 } }))   // 範圍公尺數
  */
 import CineFx from "./CineFx.astro";
 
@@ -29,12 +33,15 @@ export type CineStat = {
   decimals?: number;
 };
 
+export type CineScene = "dust" | "zones" | "routes" | "radar";
+
 type Props = {
   title: string;
   subtitle?: string;
   eyebrow?: string;
   stats?: CineStat[];
   variant?: "hub" | "tool";
+  scene?: CineScene;
   layout?: "stack" | "split";
   container?: string;
   id?: string;
@@ -48,6 +55,7 @@ const {
   eyebrow,
   stats = [],
   variant = "hub",
+  scene = "dust",
   layout = "stack",
   container = "app-layout-wide",
   id = "hero",
@@ -91,6 +99,7 @@ const shades = [
   ]}
   data-cine-hero
   data-variant={variant}
+  data-scene={scene}
   aria-labelledby={titleId}
 >
   <div class="cine-hero__bg" aria-hidden="true">

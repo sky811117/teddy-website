@@ -334,6 +334,63 @@
     padding-bottom: 2.25rem;
   }
 }
+/* 場景舞台（手機／平板直排）：學區拼圖的圖釘、雷達中心、清運路線放在標題上方這一條空地。
+   ≥1024 左文右卡時場景放在字和搜尋卡之間，不需要；手機橫拿（矮螢幕）上面 !important 會蓋掉、不加。
+   高度是固定的 padding（不等 JS），主視覺不會跳版 */
+@media (max-width: 1023px) {
+  .cine-hero--tool:is([data-scene="zones"], [data-scene="routes"], [data-scene="radar"]) .cine-hero__inner {
+    padding-top: 5.25rem;
+  }
+}
+@media (min-width: 640px) and (max-width: 1023px) {
+  .cine-hero--tool:is([data-scene="zones"], [data-scene="routes"], [data-scene="radar"]) .cine-hero__inner {
+    padding-top: 7.5rem;
+  }
+}
+
+/* 各場景的色調（體積光、太陽、標題光掃跟著場景走；同一個暖色家族） */
+.cine-hero[data-scene="zones"] {
+  --cine-rays-opacity: 0.72;
+}
+.cine-hero[data-scene="routes"] {
+  /* 傍晚：天色偏暖橙、太陽低一點橘一點 */
+  --cine-sky-1: #d9b087;
+  --cine-sky-2: #e3c29d;
+  --cine-sun: rgb(255 216 162 / 0.95);
+  --cine-sun-2: rgb(242 168 96 / 0.5);
+  --cine-ray: rgb(255 214 158 / 1);
+  --cine-glint: #b35e1d;
+  --cine-glint-glow: rgb(255 176 96 / 0.9);
+}
+.cine-hero[data-scene="radar"] {
+  /* 琥珀／赤陶 */
+  --cine-sky-1: #d9b394;
+  --cine-sky-2: #e3c7ad;
+  --cine-sun: rgb(255 222 196 / 0.95);
+  --cine-sun-2: rgb(232 156 116 / 0.45);
+  --cine-ray: rgb(255 216 190 / 1);
+  --cine-glint: #a4532b;
+  --cine-glint-glow: rgb(240 150 100 / 0.85);
+}
+:root[data-theme="dark"] .cine-hero[data-scene="routes"] {
+  --cine-sky-1: #140d08;
+  --cine-sky-2: #1b120b;
+  --cine-sun: rgb(226 144 66 / 0.32);
+  --cine-sun-2: rgb(160 88 34 / 0.2);
+  --cine-ray: rgb(240 168 96 / 0.45);
+  --cine-glint: #fff0d8;
+  --cine-glint-glow: rgb(244 164 84 / 0.95);
+}
+:root[data-theme="dark"] .cine-hero[data-scene="radar"] {
+  --cine-sky-1: #140c09;
+  --cine-sky-2: #1a120e;
+  --cine-sun: rgb(214 128 84 / 0.3);
+  --cine-sun-2: rgb(140 70 40 / 0.2);
+  --cine-ray: rgb(232 150 104 / 0.42);
+  --cine-glint: #ffeede;
+  --cine-glint-glow: rgb(236 140 92 / 0.95);
+}
+
 .cine-hero__eyebrow {
   display: inline-flex;
   align-items: center;
@@ -342,6 +399,12 @@
   font-weight: 700;
   letter-spacing: 0.16em;
   color: var(--cine-eyebrow);
+  /* 場景的光軌、體積光掃過眉標時（垃圾車淺色傍晚光、學區深色色塊光暈）小字局部對比會掉到 4.0～4.4
+     → 跟副標一樣用頁面底色做柔和字暈托出來，深淺色一次解決 */
+  text-shadow:
+    0 0 2px var(--background),
+    0 0 8px var(--background),
+    0 0 14px var(--background);
 }
 .cine-hero__eyebrow::before {
   content: "";
@@ -648,6 +711,16 @@
     backdrop-filter: none;
     background: var(--cine-glass-bg-hero);
   }
+}
+/* 主視覺搜尋卡裡的外框按鈕（垃圾車、嫌惡設施的「用我的位置」）：傍晚光軌、雷達場景把玻璃卡底染成桃橘色，
+   accent #8a6539 的字只剩 4.0～4.3（AA 要 4.5）→ 淺色改深一階 #6f4f2a（在這兩種卡底約 5.4～5.8）。深色版原本就過，不動 */
+:root:not([data-theme="dark"]) .cine-hero__slot :is(.gt-btn-outline, .uf-btn-outline) {
+  color: #6f4f2a;
+  border-color: #6f4f2a;
+}
+:root:not([data-theme="dark"]) .cine-hero__slot :is(.gt-btn-outline, .uf-btn-outline):hover {
+  background: #6f4f2a;
+  color: #fffaf3;
 }
 /* 深色：桌機玻璃是半透明，剛好蓋在太陽光暈上 → 次要小字提亮，維持 WCAG AA */
 :root[data-theme="dark"] .cine-hero .text-muted-foreground {

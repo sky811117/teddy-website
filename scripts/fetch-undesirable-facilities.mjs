@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 /**
- * 從 OpenStreetMap 抓台中市的嫌惡設施，產出 public/data/undesirable-facilities.json
+ * 從 OpenStreetMap 抓台中市的嫌惡設施（OSM 那一份），交給 scripts/build-undesirable-facilities.py 跟官方資料合併
+ *
+ * ⚠ 2026-09-30 起這支**不再直接寫** public/data/undesirable-facilities.json：
+ *   網站用的檔案改由 build-undesirable-facilities.py 產（官方開放資料＋OSM 合併去重，每筆標來源 s）。
+ *   這支只負責 OSM 那一段，輸出中介檔（預設 <系統暫存>/teddy-uf-cache/osm.json，可用 --out 指定）。
+ *   直接跑這支不會動到網站資料；要更新網站請跑：python scripts/build-undesirable-facilities.py --refresh-osm
  *
  * 為什麼要做這支：
  * GSC 實測「嫌惡設施查詢」113 曝、「嫌惡設施地圖」31 曝、「不動產嫌惡設施查詢」7 曝、
@@ -16,9 +21,21 @@
  *    公開的 Overpass 有速率限制，讓每個訪客直接打會被擋、也會很慢。
  *
  * 用法：node scripts/fetch-undesirable-facilities.mjs
- *      （手動跑即可，資料不常變。要更新就重跑一次再 commit。）
+ *      node scripts/fetch-undesirable-facilities.mjs --out <路徑>
+ *      （通常不用手動跑：build-undesirable-facilities.py --refresh-osm 會呼叫它）
  */
 import { writeFile, mkdir } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { tmpdir } from "node:os";
+
+const rawArg = process.argv.indexOf("--raw"); // 除錯用：另存 Overpass 原始回應
+const RAW = rawArg > 0 ? process.argv[rawArg + 1] : null;
+const fromArg = process.argv.indexOf("--from-raw"); // 除錯用：不連網，直接用上次 --raw 存的回應重算
+const FROM_RAW = fromArg > 0 ? process.argv[fromArg + 1] : null;
+const outArg = process.argv.indexOf("--out");
+const OUT = outArg > 0 && process.argv[outArg + 1]
+  ? process.argv[outArg + 1]
+  : join(tmpdir(), "teddy-uf-cache", "osm.json");
 
 const ENDPOINTS = [
   "https://overpass-api.de/api/interpreter",
@@ -32,7 +49,7 @@ const CATEGORIES = [
   { key: "cemetery", label: "公墓・墓地", why: "心理因素影響轉手", q: '["landuse"="cemetery"]' },
   { key: "cemetery", label: "公墓・墓地", why: "心理因素影響轉手", q: '["amenity"="grave_yard"]' },
   { key: "funeral", label: "殯葬設施", why: "心理因素、法會與車流", q: '["amenity"="funeral_hall"]' },
-  { key: "funeral", label: "殯葬設施", why: "心理因素、法會與車流", q: '["shop"="funeral_directors"]' },
+  // ⛔ 2026-09-30 起不收 shop=funeral_directors：禮儀社、禮儀用品店依殯葬管理條例第 2 條是「殯葬服務業」，不是殯葬設施
   { key: "substation", label: "變電所", why: "外觀與電磁疑慮影響接受度", q: '["power"="substation"]' },
   { key: "tower", label: "高壓電塔", why: "外觀與電磁疑慮影響接受度", q: '["power"="tower"]' },
   { key: "mast", label: "基地台・通訊塔", why: "電磁疑慮，住戶常有意見", q: '["man_made"="mast"]' },
@@ -53,10 +70,80 @@ ${body}
 out center tags;`;
 }
 
+// 「宮廟」只收佛道教與民間信仰。amenity=place_of_worship 也包含教會、清真寺，
+// 2026-08-28 版把它們一起算成宮廟（1,014 筆裡混了教會），2026-09-30 起排除。
+const TEMPLE_RELIGIONS = new Set(["buddhist", "taoist", "chinese_folk", "folk", "confucian", "yiguandao", "tenrikyo", "shinto", "multifaith"]);
+const NON_TEMPLE_RELIGIONS = new Set(["christian", "muslim", "jewish", "hindu", "sikh", "bahai", "scientologist", "happyscience", "fortune_teller"]);
+const NOT_TEMPLE_NAME = /教會|禮拜堂|天主|基督|浸信|浸禮|長老|清真|摩門|耶穌|福音|召會|會所|靈糧|貴格|門諾|行道會|信義會|凱歌|安息日|錫安|路德|宗親會|山達基|幸福科學|Church/i;
+const TEMPLE_NAME = /宮|廟|寺|殿|祠|壇|巖|岩|庵|院|亭|堂|府|觀|閣|精舍|禪|佛|福德|土地|道場|講堂|聖母|聖媽|百姓公|有應|萬善|將軍|王爺|伯公|大眾爺|地理|塔|公$/;
+function isTemple(tags) {
+  const name = tags["name:zh"] || tags.name || "";
+  if (NOT_TEMPLE_NAME.test(name)) return false;
+  const rel = tags.religion;
+  if (NON_TEMPLE_RELIGIONS.has(rel)) return false;
+  if (TEMPLE_RELIGIONS.has(rel)) return true;
+  // religion 沒標或亂標（例「媽祖廟」「百姓爺」「no」）→ 看名字
+  // 沒標宗教：有名字且像宮廟才收；沒名字的也收（台灣路邊沒名字的多半是土地公廟）
+  return !name || TEMPLE_NAME.test(name);
+}
+
+// 已廢止／興建中／規劃中的一律不收（CLAUDE.md：未完工的設施不寫）
+const LIFECYCLE = ["disused", "abandoned", "construction", "proposed", "planned", "demolished", "razed", "removed", "was"];
+// 名稱看得出不是現有設施的也不收（2026-09-30 查核：「變電所用地」是重劃區的土地使用分區、「開關場(土石流淹沒)」已被土石流埋掉）
+const INACTIVE_NAME = /規劃|籌建|興建|預定|施工中|廢止|廢除|廢棄|已遷|遷移|已拆|拆除|停業|歇業|解散|撤銷|裁撤|用地|淹沒|舊址|原址/;
+function inactive(tags) {
+  for (const k of LIFECYCLE) {
+    if (tags[k] && tags[k] !== "no") return true;
+  }
+  if (tags.building === "construction" || tags.landuse === "construction") return true; // 臺中二次變電所：building=construction
+  if (tags.opening_date && tags.opening_date > new Date().toISOString().slice(0, 10)) return true;
+  const name = `${tags["name:zh"] || ""} ${tags.name || ""}`;
+  if (INACTIVE_NAME.test(name)) return true;
+  // 重劃區的地籍分區：description 寫重劃區、沒有 building 標籤、又沒有正式名稱，看不出已經蓋好
+  // （⚠ 不能只看 description：梧棲八德路的中油站也寫「臺中港市鎮中心市地重劃區」，但它有名稱、在營業）
+  if (/重劃區/.test(tags.description || "") && !tags.building && !(tags["name:zh"] || tags.name)) return true;
+  return false;
+}
+
+// 類別標錯的點（2026-09-30 查核）：便利商店被標成醫院／加油站、球場燈柱被標成基地台、充電站被標成變電所
+const STORE_BRAND = /7-?eleven|統一超商|全家|familymart|萊爾富|hi-?life|ok ?mart|OK超商/i;
+const NOT_TEMPLE_SHOP_NAME = /用品|紀念碑/; // 「宮廟慶典用品」是店家、「殉職員工紀念碑」是紀念碑
+const MARKET_SUBAREA = /^[A-Za-z甲乙丙丁戊己庚]區$/; // 上景興市場被拆成 A～F 區：併回市場本身（名稱改成 operator）
+const NOT_MARKET_NAME = /(?:商|果菜|菜|蔬果)行$|新村$|眷村|藝樹館|文創/; // 果菜行是店家、審計新村是文創聚落
+function miscategorized(key, tags) {
+  const name = tags["name:zh"] || tags.name || "";
+  const brand = `${tags.brand || ""} ${tags.operator || ""} ${name}`;
+  switch (key) {
+    case "hospital":
+      return Boolean(tags.shop) || STORE_BRAND.test(brand);
+    case "temple":
+      return Boolean(tags.shop) || NOT_TEMPLE_SHOP_NAME.test(name);
+    case "fuel":
+      return (tags.shop === "convenience" || STORE_BRAND.test(brand)) && !/加油/.test(name);
+    case "mast":
+      return tags["tower:type"] === "lighting";
+    case "substation":
+      return Boolean(tags.amenity) || /充電/.test(name);
+    case "landfill":
+    case "waste":
+      // 非正式傾倒點（informal=yes／waste_dump_site）不是掩埋場也不是轉運站
+      return tags.informal === "yes" || tags.amenity === "waste_dump_site";
+    case "market":
+      return NOT_MARKET_NAME.test(name);
+    default:
+      return false;
+  }
+}
+
 function classify(tags) {
+  if (inactive(tags)) return null;
   for (const c of CATEGORIES) {
     const m = c.q.match(/\["([^"]+)"="([^"]+)"\]/);
-    if (m && tags[m[1]] === m[2]) return c;
+    if (m && tags[m[1]] === m[2]) {
+      if (c.key === "temple" && !isTemple(tags)) return null;
+      if (miscategorized(c.key, tags)) return null;
+      return c;
+    }
   }
   return null;
 }
@@ -64,7 +151,12 @@ function classify(tags) {
 async function main() {
   const query = buildQuery();
   let data = null;
-  for (const url of ENDPOINTS) {
+  if (FROM_RAW) {
+    const { readFile } = await import("node:fs/promises");
+    data = JSON.parse(await readFile(FROM_RAW, "utf-8"));
+    console.log("[osm] 用快取的 Overpass 回應", FROM_RAW);
+  }
+  for (const url of FROM_RAW ? [] : ENDPOINTS) {
     try {
       console.log("[osm] 查詢", url);
       // ⚠️ 一定要帶 User-Agent：Overpass 會擋掉 node fetch 的預設 UA（回 406）。
@@ -83,13 +175,17 @@ async function main() {
         continue;
       }
       data = await res.json();
+      if (RAW) {
+        await mkdir(dirname(RAW), { recursive: true });
+        await writeFile(RAW, JSON.stringify(data), "utf-8");
+      }
       break;
     } catch (e) {
       console.log("[osm]  → 失敗:", e.message, "換下一個節點");
     }
   }
   if (!data) {
-    console.error("[osm] 所有節點都失敗，維持既有資料檔不動");
+    console.error("[osm] 所有節點都失敗（build-undesirable-facilities.py 會改用現有網站檔裡的 OSM 資料）");
     process.exit(1);
   }
 
@@ -103,7 +199,8 @@ async function main() {
     const lon = el.lon ?? el.center?.lon;
     if (typeof lat !== "number" || typeof lon !== "number") continue;
 
-    const name = (tags["name:zh"] || tags.name || "").trim();
+    let name = (tags["name:zh"] || tags.name || "").trim();
+    if (cat.key === "market" && MARKET_SUBAREA.test(name) && tags.operator) name = tags.operator.trim();
     // 去重：同類別、座標取到小數 4 位（約 11 公尺）視為同一點
     const key = `${cat.key}|${lat.toFixed(4)}|${lon.toFixed(4)}`;
     if (seen.has(key)) continue;
@@ -117,6 +214,14 @@ async function main() {
       // 座標壓到小數 5 位（約 1 公尺），檔案小一半
       y: Number(lat.toFixed(5)),
       x: Number(lon.toFixed(5)),
+      s: "osm",
+      // 以下兩欄只在中介檔：合併時判斷「沒名字」與追查原始 OSM 物件用，網站檔不會帶
+      id: `${el.type[0]}${el.id}`,
+      named: Boolean(name),
+      // 合併比對用（只在中介檔）：正式名稱、營運者、門牌（路＋號）
+      ...(tags.official_name ? { on: tags.official_name.trim() } : {}),
+      ...(tags.operator ? { op: tags.operator.trim() } : {}),
+      ...(tags["addr:street"] && tags["addr:housenumber"] ? { ad: `${tags["addr:street"]}${String(tags["addr:housenumber"]).replace(/號$/, "")}號` } : {}),
     });
   }
 
@@ -134,6 +239,7 @@ async function main() {
 
   const payload = {
     source: "OpenStreetMap contributors (ODbL)",
+    osmBase: data.osm3s?.timestamp_osm_base || null,
     area: "臺中市",
     fetchedAt: new Date().toISOString().slice(0, 10),
     count: out.length,
@@ -142,13 +248,9 @@ async function main() {
     items: out,
   };
 
-  await mkdir(new URL("../public/data/", import.meta.url), { recursive: true });
-  await writeFile(
-    new URL("../public/data/undesirable-facilities.json", import.meta.url),
-    JSON.stringify(payload),
-    "utf-8"
-  );
-  console.log(`[osm] 寫出 ${out.length} 筆`);
+  await mkdir(dirname(OUT), { recursive: true });
+  await writeFile(OUT, JSON.stringify(payload), "utf-8");
+  console.log(`[osm] 寫出 ${out.length} 筆 → ${OUT}`);
   for (const [k, v] of Object.entries(byCat).sort((a, b) => b[1] - a[1])) {
     console.log(`       ${k} ${v}`);
   }

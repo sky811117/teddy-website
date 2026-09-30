@@ -1,37 +1,281 @@
 ---
 /**
- * 嫌惡設施查詢工具 — /tools/undesirable-facilities/
+ * 台中嫌惡設施查詢地圖 — /tools/undesirable-facilities/（工具代號 undesirable-facilities）
  *
  * 為什麼做這頁：GSC 實測「嫌惡設施查詢」113 曝、「嫌惡設施地圖」31 曝、
  * 「不動產嫌惡設施查詢」7 曝、「300公尺內嫌惡設施查詢」6 曝，合計 157 次搜尋。
- * 但 Google 第一頁全是**地圖工具站** —— 搜這個字的人要的是可以點的東西，
- * 不是一篇教學文。站上原本只有 week-04 那篇文章（排 8.1），差的就是工具本身。
+ * Google 第一頁全是**地圖工具站** —— 搜這個字的人要的是可以點的東西，不是一篇教學文。
  *
- * 資料：建置前用 scripts/fetch-undesirable-facilities.mjs 從 OpenStreetMap 抓一次，
- * 存成 public/data/undesirable-facilities.json（4,028 筆、gzip 後約 38KB）。
- * ⚠️ 不讓訪客直接打 Overpass —— 公開節點有速率限制，會被擋也會很慢。
+ * 資料：public/data/undesirable-facilities.json（建置腳本 scripts/fetch-undesirable-facilities.mjs）
+ *   items[]：{k 類別代號, n 名稱, y 緯度, x 經度, s? 來源代號}
+ *   categories：{代號: {label, why}}（同一個 label 可以有好幾個代號，例：掩埋場＋轉運站 → 同一類）
+ *   sources?：[{id, name, org, url, version, license, count}]、builtAt?（新版才有；舊版只有 source／fetchedAt）
+ *   ⛔ 頁面上的筆數、類別數、來源清單一律從 JSON 算，不寫死在文案裡（資料更新時頁面跟著重建）。
+ *   ⚠️ 不讓訪客直接打 Overpass／任何外部 API：公開節點有速率限制，也會把位置送出去。
+ *
+ * ⛔ 隱私：使用者輸入的地址、定位座標只在瀏覽器比對（/js/tc-addr.js 本機門牌庫），不放 URL、不送 GA、不送任何 API。
+ *    GA4 事件只記 result（ok／empty／fail）、radius、cats（範圍內幾類）。舊版的 OSM Nominatim 地址搜尋已移除。
+ *    地圖底圖（國土測繪中心 EMAP）會下載正在看的那幾張圖磚，頁尾「資料來源」有寫。
+ * ⛔ 「嫌惡」是主觀的：頁面只講「附近有什麼、多遠」，不下「會不會影響房價」這種判斷。
+ * ⛔ 未完工／規劃中的設施不收、不寫（CLAUDE.md 紅線）；資料本身只有現存的點位。
+ * ⚠️ 不要在模板裡寫 TS 泛型（Record<...>），Astro 模板解析器會把 < 當標籤。
+ *
+ * 畫面（2026-09-30 電影感改版，主題「雷達掃描」——跟學區頁的「學區拼圖」、垃圾車頁的「傍晚光軌」刻意不同）：
+ *   - 主視覺 <CinematicHero variant="tool" scene="radar">（琥珀雷達：三圈同心圓＋旋轉光束，場景程式在 cinematic/ 由場景負責人維護），
+ *     搜尋卡放在主視覺裡（375×812 第一屏看得到輸入框和查詢鈕）；查詢成功發 document 事件 "cine:radar-ping"（detail 只有 {radius}）
+ *   - 地圖：MapLibre GL（/js/cine-map.js 共用）＋國土測繪中心 EMAP。全市總覽是熱度圖，放大轉成依類別上色的點；
+ *     查詢時三圈 300／500／1000 公尺＋一道雷達光束繞一圈，範圍內的設施在光束掃過它的方位時才亮起（小六角光柱升起）
+ *   - 結果：一句摘要＋距離尺（0 到範圍公尺，每處一個點）＋依距離排序的精簡清單；類別膠囊篩選（地圖、尺、清單同步）
+ *   - 前端程式在 src/components/uf/（uf-page.js 主程式、uf-sweep.js 雷達光束、uf-ruler.js 距離尺），Astro 打包壓縮、只有這頁下載
+ *   - WebGL 不能用時摘要、距離尺、清單照常可用；prefers-reduced-motion 時不掃描、不飛，全部直接顯示
  */
+import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
-import Main from "@/components/Main.astro";
+import CinematicHero from "@/components/cinematic/CinematicHero.astro";
 import config from "@/config";
+import { getRelativeLocaleUrl } from "astro:i18n";
 import { safeJsonLd } from "@/utils/safeJsonLd";
-import facilities from "../../../public/data/undesirable-facilities.json";
+import facilitiesRaw from "../../../public/data/undesirable-facilities.json";
 
-const canonicalURL = new URL("/tools/undesirable-facilities", Astro.site).href;
+const canonicalURL = new URL("/tools/undesirable-facilities/", Astro.site).href; // 全站 canonical 帶結尾斜線
 
-type Cat = { label: string; why: string };
-const cats = facilities.categories as Record<string, Cat>;
-const whyOf = new Map<string, string>();
-for (const c of Object.values(cats)) whyOf.set(c.label, c.why);
+// ---------- 資料（新舊兩版格式都吃） ----------
+type Src = {
+  id: string;
+  name: string;
+  org?: string;
+  url?: string;
+  version?: string;
+  license?: string;
+  licenseUrl?: string;
+  geo?: string; // 點位怎麼來的（例：「以臺中市門牌定位」），新版才有
+  geoRef?: { text: string; url: string }; // geo 裡提到的另一份資料（例：中油站點座標）的出處連結
+  versionKind?: string; // content 清冊日期／meta 資料集更新日／fetched 下載日期／osm 資料時間
+  short?: string; // 彈窗用的短名（清冊原名太長或容易誤解時）
+  note?: string; // 清冊原名的補充說明（例：攤販集中區清冊的「籌設」）
+  count?: number;
+};
+type Cat = { label?: string; why?: string };
+type Item = { k: string; n?: string; y: number; x: number; s?: string };
+type FData = {
+  source?: string;
+  fetchedAt?: string;
+  builtAt?: string;
+  categories?: { [k: string]: Cat };
+  sources?: Src[];
+  items?: Item[];
+};
+const F = facilitiesRaw as unknown as FData;
+const items: Item[] = Array.isArray(F.items) ? F.items.filter(it => typeof it.y === "number" && typeof it.x === "number") : [];
+const catDefs = F.categories ?? {};
 
-// 先在這裡把「類別 → 筆數 + 為什麼在意」組好。
-// ⚠️ 不要在下面的 JSX 裡寫 TS 泛型（Record<string, ...>）——
-//    Astro 的模板解析器會把 < 當成標籤開頭，build 直接失敗。
-const catRows = Object.entries(facilities.byCategory as Record<string, number>)
-  .sort((a, b) => b[1] - a[1])
-  .map(([label, n]) => ({ label, n, why: whyOf.get(label) ?? "" }));
+function isOsm(s: Src): boolean {
+  return s.id === "osm" || /openstreetmap/i.test(`${s.name} ${s.org ?? ""} ${s.url ?? ""}`);
+}
+const OSM_DEFAULT: Src = {
+  id: "osm",
+  name: "OpenStreetMap",
+  org: "OpenStreetMap 貢獻者",
+  url: "https://www.openstreetmap.org/copyright",
+  version: (F.fetchedAt ?? "").slice(0, 10),
+  license: "開放資料庫授權條款（ODbL）",
+};
+const sources: Src[] = Array.isArray(F.sources) && F.sources.length ? F.sources.filter(s => s && s.id) : [OSM_DEFAULT];
+const defSrc = (sources.find(isOsm) ?? sources[0]).id;
+const srcById: { [id: string]: Src } = {};
+sources.forEach(s => { srcById[s.id] = s; });
+
+// 類別配色（地圖點、光柱、距離尺、清單圓點、膠囊共用；[淺色, 深色]）。
+// 大地色系：赤陶、琥珀、赭黃、苔綠、灰青、暖灰、灰玫瑰……降飽和、往暖色偏（⛔ 不用霓虹、螢光綠、紫藍），米色與夜晚琥珀底上都不刺眼
+const PAL: { [k: string]: [string, string] } = {
+  fuel: ["#c9822e", "#eeb064"],
+  gas: ["#c9822e", "#eeb064"],
+  temple: ["#b04a36", "#e88f78"],
+  cemetery: ["#667a45", "#a9c088"],
+  funeral: ["#7d5a4f", "#c29d8f"],
+  crematorium: ["#7d5a4f", "#c29d8f"],
+  columbarium: ["#7d5a4f", "#c29d8f"],
+  substation: ["#3f7a80", "#8cbfc0"],
+  tower: ["#7a6e62", "#bcae9d"],
+  mast: ["#5b7486", "#a3b8c4"],
+  hospital: ["#b5606c", "#e3a3aa"],
+  market: ["#a8862a", "#dcc070"],
+  prison: ["#57524b", "#aea597"],
+  landfill: ["#8b5e3c", "#cfa280"],
+  waste: ["#8b5e3c", "#cfa280"],
+  incinerator: ["#8b5e3c", "#cfa280"],
+};
+const FALLBACK: [string, string][] = [
+  ["#9a5a2e", "#dca07a"],
+  ["#4f7a6a", "#9cc4b3"],
+  ["#8c7a3c", "#cdbd82"],
+  ["#8a5e66", "#cfa1a8"],
+  ["#6b6b4a", "#b5b58c"],
+  ["#5f6a66", "#a9b5b0"],
+];
+
+// 類別（依 label 分組）：代號、筆數、來源
+type Group = { label: string; keys: string[]; why: string; n: number; srcN: { [id: string]: number }; cl: string; cd: string };
+const groups: Group[] = [];
+const byLabel: { [label: string]: Group } = {};
+function groupFor(k: string): Group {
+  const c = catDefs[k] ?? {};
+  const label = (c.label ?? "").trim() || k;
+  let g = byLabel[label];
+  if (!g) {
+    g = { label, keys: [], why: "", n: 0, srcN: {}, cl: "", cd: "" };
+    byLabel[label] = g;
+    groups.push(g);
+  }
+  if (!g.keys.includes(k)) g.keys.push(k);
+  if (!g.why && c.why) g.why = c.why;
+  return g;
+}
+Object.keys(catDefs).forEach(k => groupFor(k));
+const srcN: { [id: string]: number } = {};
+const srcLabels: { [id: string]: string[] } = {};
+for (const it of items) {
+  const g = groupFor(it.k);
+  const sid = it.s && srcById[it.s] ? it.s : defSrc;
+  g.n++;
+  g.srcN[sid] = (g.srcN[sid] ?? 0) + 1;
+  srcN[sid] = (srcN[sid] ?? 0) + 1;
+}
+// 只留有資料的類別；依筆數排序（表格、膠囊預設順序）
+const liveGroups = groups.filter(g => g.n > 0).sort((a, b) => b.n - a.n);
+const usedCol = new Set<string>();
+let fb = 0;
+for (const g of liveGroups) {
+  let col = g.keys.map(k => PAL[k]).find(c => c && !usedCol.has(c[0]));
+  while (!col) {
+    const c = FALLBACK[fb % FALLBACK.length];
+    fb++;
+    if (!usedCol.has(c[0]) || fb > FALLBACK.length * 2) col = c;
+  }
+  usedCol.add(col[0]);
+  g.cl = col[0];
+  g.cd = col[1];
+  for (const sid of Object.keys(g.srcN)) (srcLabels[sid] = srcLabels[sid] ?? []).push(g.label);
+}
+
+const total = items.length;
+const nCats = liveGroups.length;
+const dataDate = (F.builtAt ?? F.fetchedAt ?? "").slice(0, 10);
+
+// 來源（實際有筆數的才列）
+const srcRows = sources
+  .map(s => ({ ...s, osm: isOsm(s), n: srcN[s.id] ?? 0, labels: srcLabels[s.id] ?? [] }))
+  .filter(r => r.n > 0);
+const officialRows = srcRows.filter(r => !r.osm);
+const osmRows = srcRows.filter(r => r.osm);
+const hasOsm = osmRows.length > 0;
+const allGov = officialRows.length > 0 && officialRows.every(r => /gov\.tw/i.test(r.url ?? "") || /政府|市府|公所|內政部|環境部|衛生福利部|法務部|經濟部|交通部|局|署/.test(r.org ?? ""));
+const officialWord = allGov ? "政府開放資料" : "官方公開資料";
+const srcPhrase = [officialRows.length ? officialWord : "", hasOsm ? "OpenStreetMap" : ""].filter(Boolean).join("與 ");
+// 類別的來源：同一個機關的清冊合併寫（例：臺中市政府經濟發展局（3 份清冊）），依筆數排序
+function catSrcText(g: Group): string {
+  const byOrg: { [o: string]: { n: number; ids: string[] } } = {};
+  for (const sid of Object.keys(g.srcN)) {
+    const src = srcById[sid];
+    const key = src ? (isOsm(src) ? "OpenStreetMap" : src.org || src.name) : sid;
+    const o = (byOrg[key] = byOrg[key] ?? { n: 0, ids: [] });
+    o.n += g.srcN[sid];
+    o.ids.push(sid);
+  }
+  return Object.keys(byOrg)
+    .sort((a, b) => byOrg[b].n - byOrg[a].n)
+    .map(k => {
+      const o = byOrg[k];
+      if (o.ids.length > 1) return `${k}（${o.ids.length} 份清冊）`;
+      const src = srcById[o.ids[0]];
+      return src && !isOsm(src) && src.org ? `${src.org}〈${src.name}〉` : k;
+    })
+    .join("、");
+}
+const isOffSid = (sid: string) => !!srcById[sid] && !isOsm(srcById[sid]);
+// 限制說明用：哪幾類有官方資料、哪幾類有（或全部是）OpenStreetMap
+const offLabels = liveGroups.filter(g => Object.keys(g.srcN).some(isOffSid)).map(g => g.label);
+const osmOnlyLabels = liveGroups.filter(g => !Object.keys(g.srcN).some(isOffSid)).map(g => g.label);
+const osmMixLabels = liveGroups.filter(g => Object.keys(g.srcN).some(isOffSid) && Object.keys(g.srcN).some(sid => !isOffSid(sid))).map(g => g.label);
+const offOrgs = [...new Set(officialRows.map(r => r.org || r.name))];
+const offN = officialRows.reduce((a, r) => a + r.n, 0);
+const osmN = osmRows.reduce((a, r) => a + r.n, 0);
+const geoByAddr = officialRows.some(r => /門牌/.test(r.geo ?? ""));
+const geoByRoad = officialRows.filter(r => /路段/.test(r.geo ?? "")).map(r => r.short ?? r.name); // 限制說明用短名（清冊原名與說明寫在資料來源段）
+const geoText = [
+  geoByAddr ? "有些清冊只有地址，點位是用臺中市門牌資料定位的，落在門牌的位置，不一定是設施的出入口。" : "",
+  geoByRoad.length ? `〈${geoByRoad.join("〉〈")}〉只寫路段，點位定在路口附近，實際範圍比一個點大。` : "",
+].join("");
+const osmText = [
+  osmOnlyLabels.length ? `${osmOnlyLabels.join("、")}全部來自 OpenStreetMap` : "",
+  osmMixLabels.length ? `${osmMixLabels.join("、")}除了官方清冊，也收了 OpenStreetMap 上的點` : "",
+]
+  .filter(Boolean)
+  .join("；");
+// 版本欄位的意思不一樣，照實寫（夜市清冊是 2018 年的內容，平台 2026 年只是改了欄位，不能寫成「版本 2026」）
+const VER_LABEL: { [k: string]: string } = { content: "清冊日期", meta: "資料集更新日", fetched: "下載日期", osm: "資料時間" };
+const verText = (r: Src) => (r.version ? `，${VER_LABEL[r.versionKind ?? ""] ?? "版本"} ${r.version}` : "");
+const licUrl = (lic?: string, url?: string) =>
+  url || (lic && /政府資料開放授權/.test(lic) ? "https://data.gov.tw/license" : lic && /ODbL/i.test(lic) ? "https://opendatacommons.org/licenses/odbl/" : "");
+
+// 表格：類別、筆數、來源、買方常見的考量
+const catRows = liveGroups.map(g => ({
+  label: g.label,
+  n: g.n,
+  why: g.why,
+  cl: g.cl,
+  cd: g.cd,
+  src: catSrcText(g),
+}));
+
+// ---------- 版本字樣（/data/* /js/* 有 1 天快取：檔案一改網址就換） ----------
+function fileVer(rel: string): string {
+  try {
+    return crypto.createHash("md5").update(fs.readFileSync(path.join(process.cwd(), rel))).digest("hex").slice(0, 10);
+  } catch {
+    return dataDate || "1";
+  }
+}
+const vAddr = fileVer("public/js/tc-addr.js");
+const vIdx = fileVer("public/data/tc-addr/index.json");
+const vMap = fileVer("public/js/cine-map.js");
+const vData = fileVer("public/data/undesirable-facilities.json");
+
+// 門牌庫的出處（跟 tc-addr.js 同一份建置）
+let addrSrc = { ver: "115年1月", src: "臺中市政府資料開放平臺「臺中市空間資訊建物及門牌號碼位置新版本資料」（臺中市政府數位發展局）", srcUrl: "https://opendata.taichung.gov.tw/search/50168dd2-4239-4f3e-89cf-f706617f0436", lic: "政府資料開放授權條款-第1版" };
+try {
+  const ix = JSON.parse(fs.readFileSync(path.join(process.cwd(), "public/data/tc-addr/index.json"), "utf8"));
+  addrSrc = { ver: ix.ver ?? addrSrc.ver, src: ix.src ?? addrSrc.src, srcUrl: ix.srcUrl ?? addrSrc.srcUrl, lic: ix.lic ?? addrSrc.lic };
+} catch {
+  /* 用預設文字 */
+}
+
+// 主視覺的數字：只用本頁「這份資料涵蓋什麼」已經列出來的數字
+const heroStats = [
+  { value: total, label: "筆設施位置" },
+  { value: nCats, label: "類設施" },
+];
+
+// 原本 <Main> 做的事：記下返回網址（文章頁「返回」鈕用）
+const locale = Astro.currentLocale ?? config.site.lang;
+const backUrl = config.features.showBackButton ? Astro.url.pathname : getRelativeLocaleUrl(locale, "");
+
+// 前端用的小資料直接內嵌（設施本體 JSON 另外下載，地圖快進畫面或第一次查詢時才抓）
+const boot = {
+  dataUrl: `/data/undesirable-facilities.json?v=${vData}`,
+  vIdx,
+  defSrc,
+  groups: liveGroups.map(g => ({ label: g.label, cl: g.cl, cd: g.cd })),
+  k2g: Object.fromEntries(liveGroups.flatMap((g, i) => g.keys.map(k => [k, i]))),
+  src: Object.fromEntries(sources.map(s => [s.id, { name: s.name, ...(s.short ? { short: s.short } : {}), org: s.org ?? "", osm: isOsm(s) }])),
+  fallback: FALLBACK,
+};
+
+const pageDesc = `輸入台中地址、用手機定位或在地圖上點一下，查周邊 300／500／1000 公尺內的加油站、宮廟、公墓、殯葬設施、變電所、高壓電塔、基地台與市場，列出直線距離與資料來源。${srcPhrase ? `資料來自${/^[A-Za-z]/.test(srcPhrase) ? " " : ""}${srcPhrase}，` : ""}看屋前先查一次。`;
 
 const appSchema = {
   "@context": "https://schema.org",
@@ -40,8 +284,7 @@ const appSchema = {
   applicationCategory: "UtilitiesApplication",
   operatingSystem: "Web",
   url: canonicalURL,
-  description:
-    "輸入台中的地址或在地圖上點一下，查出周邊 300／500／1000 公尺內的加油站、宮廟、公墓、變電所、高壓電塔、基地台、市場等嫌惡設施。",
+  description: pageDesc,
   offers: { "@type": "Offer", price: "0", priceCurrency: "TWD" },
   provider: { "@id": `${config.site.url}#realestateagent` },
 };
@@ -59,360 +302,951 @@ const breadcrumbSchema = {
 
 <Layout
   title={`嫌惡設施查詢地圖｜輸入台中地址，查周邊 300 公尺內有什麼 | ${config.site.title}`}
-  description="輸入台中的地址或在地圖上點一下，就查得到周邊 300／500／1000 公尺內的加油站、宮廟、公墓、殯葬設施、變電所、高壓電塔、基地台、市場與矯正機關。資料 4,028 筆，來自 OpenStreetMap。看屋前先查一次，不用到現場才發現。"
+  description={pageDesc}
   canonicalURL={canonicalURL}
+  ogImage="/og/page-tools.jpg"
+  showFloatingCTA={false}
 >
   <Fragment slot="head">
     <script type="application/ld+json" is:inline set:html={safeJsonLd(appSchema)} />
     <script type="application/ld+json" is:inline set:html={safeJsonLd(breadcrumbSchema)} />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-      crossorigin=""
-    />
   </Fragment>
   <Header />
 
-  <Main
-    pageTitle="嫌惡設施查詢地圖（台中）"
-    pageDesc="輸入地址或在地圖上點一下，查周邊有什麼。看屋前先查一次，不用等到現場才發現隔壁是變電所。"
-  >
-    <section class="mt-6">
-      <div class="border-border rounded-lg border p-4">
-        <label class="text-sm font-medium" for="addr">查地址</label>
-        <div class="mt-2 flex flex-wrap gap-2">
-          <input
-            id="addr"
-            type="text"
-            inputmode="text"
-            placeholder="例：台中市北屯區文心路四段"
-            class="border-border bg-background min-w-0 flex-1 rounded-md border px-3 py-2 text-base"
-          />
-          <button
-            id="go"
-            type="button"
-            class="bg-accent text-accent-foreground rounded-md px-4 py-2 text-base font-medium"
-          >查詢</button>
-          <button
-            id="here"
-            type="button"
-            class="border-border rounded-md border px-4 py-2 text-base"
-          >用我的位置</button>
+  <main id="main-content" data-backUrl={backUrl} class="uf-main pb-4">
+    <CinematicHero
+      variant="tool"
+      scene="radar"
+      layout="split"
+      eyebrow="免費工具・不用登入"
+      title="台中嫌惡設施查詢地圖"
+      subtitle="輸入地址、用手機定位或點地圖，看周邊有哪些加油站、宮廟、墓地、變電所、高壓電塔。"
+      stats={heroStats}
+      container="uf-wrap"
+    >
+      <section class="uf-search cine-glass" aria-label="查詢周邊設施">
+        <form id="uf-form" autocomplete="off" role="search">
+          <label for="uf-addr" class="uf-label">輸入台中的地址</label>
+          <div class="uf-row">
+            <input
+              id="uf-addr"
+              type="text"
+              inputmode="text"
+              enterkeyhint="search"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="例：北屯區崇德路二段46號"
+              class="uf-input cine-input"
+            />
+            <button type="submit" class="cine-cta cine-btn">查詢</button>
+          </div>
+          <div class="uf-row uf-row2">
+            <button type="button" id="uf-here" class="uf-btn uf-btn-outline uf-btn-here cine-btn"><span class="cine-locate-dot" aria-hidden="true"></span>用我的位置</button>
+            <div class="uf-seg" role="radiogroup" aria-label="查詢範圍">
+              <label><input type="radio" name="uf-r" value="300" checked /><span>300 公尺</span></label>
+              <label><input type="radio" name="uf-r" value="500" /><span>500 公尺</span></label>
+              <label><input type="radio" name="uf-r" value="1000" /><span>1 公里</span></label>
+            </div>
+          </div>
+        </form>
+        <p id="uf-status" class="uf-status" role="status" aria-live="polite">
+          也可以直接點地圖上的位置。你打的地址只在你的裝置上比對，不會送出。
+        </p>
+        <div id="uf-cands" class="uf-cands" hidden></div>
+      </section>
+    </CinematicHero>
+
+    <div class="uf-wrap uf-body">
+      <noscript>
+        <p class="uf-card">這個工具需要開啟 JavaScript 才能查詢。下面的類別說明與資料來源不受影響。</p>
+      </noscript>
+
+      <div class="uf-app" id="uf-app">
+        <div class="uf-a-summary">
+          <section id="uf-intro" class="uf-card uf-card-soft" aria-label="怎麼用">
+            <p class="uf-kicker">怎麼用</p>
+            <p class="uf-intro-t">查詢後會掃描周邊 300／500 公尺或 1 公里，列出範圍內有幾處、最近的是什麼、直線多遠。</p>
+            <p class="uf-small uf-mt-s">結果會排在一條距離尺上：越右邊越遠，顏色代表類別。</p>
+          </section>
+          {/* 第一次查詢還沒有結果時的骨架閃光（純裝飾，沒有文字） */}
+          <div id="uf-skel" class="uf-skel" aria-hidden="true" hidden>
+            <div class="uf-card">
+              <span class="cine-skeleton cine-skeleton--pill"></span>
+              <span class="cine-skeleton cine-skeleton--title"></span>
+              <span class="cine-skeleton cine-skeleton--line"></span>
+              <span class="cine-skeleton cine-skeleton--line" style="width:82%"></span>
+              <span class="cine-skeleton cine-skeleton--line" style="width:58%"></span>
+            </div>
+          </div>
+          <section id="uf-summary" aria-live="polite" hidden></section>
         </div>
 
-        <div class="mt-3 flex flex-wrap items-center gap-3 text-sm">
-          <span class="text-muted-foreground">範圍</span>
-          <label class="flex items-center gap-1"><input type="radio" name="r" value="300" checked /> 300 公尺</label>
-          <label class="flex items-center gap-1"><input type="radio" name="r" value="500" /> 500 公尺</label>
-          <label class="flex items-center gap-1"><input type="radio" name="r" value="1000" /> 1 公里</label>
+        <div class="uf-a-map" id="uf-mapcol">
+          <a class="uf-skip" href="#uf-list-h" id="uf-skip">跳過地圖，看設施清單</a>
+          <div class="uf-mapwrap cine-mapframe">
+            <div id="uf-map" role="application" aria-label="周邊設施地圖"></div>
+            <div class="uf-mapempty" id="uf-mapempty">輸入地址，或直接點地圖上的位置</div>
+          </div>
+          <div class="uf-legend" id="uf-legend">
+            <span class="uf-heatbar" aria-hidden="true"><i>少</i><i>多</i></span>
+            <p id="uf-legend-t">顏色越深代表設施越密集。放大地圖會變成一個個依類別上色的點，點了看名稱。</p>
+          </div>
         </div>
 
-        <p id="hint" class="text-muted-foreground mt-3 text-sm">
-          也可以直接在下面地圖上點一下你要查的位置。
+        <section class="uf-a-filters uf-card" id="uf-filters" aria-labelledby="uf-f-h">
+          <div class="uf-fhead">
+            <h2 class="uf-h3" id="uf-f-h">地圖上顯示的類別</h2>
+            <button type="button" id="uf-fall" class="uf-linkbtn uf-fall">全部取消</button>
+          </div>
+          <div id="uf-chips" class="uf-chips" role="group" aria-labelledby="uf-f-h">
+            {
+              liveGroups.map((g, i) => (
+                <button type="button" class="uf-chip" data-g={i} aria-pressed="true" style={`--cl:${g.cl};--cd:${g.cd}`}>
+                  <i class="uf-dot" aria-hidden="true"></i>
+                  <span>{g.label}</span>
+                </button>
+              ))
+            }
+          </div>
+          <p id="uf-fzero" class="uf-small uf-mt-s" hidden></p>
+        </section>
+
+        <section class="uf-a-ruler uf-card" id="uf-rulerwrap" aria-labelledby="uf-ruler-h" hidden>
+          <h2 class="uf-h3" id="uf-ruler-h">距離尺</h2>
+          <p id="uf-rinfo" class="uf-small uf-mt-s"></p>
+          <div id="uf-ruler"></div>
+        </section>
+
+        <section class="uf-a-list" id="uf-listwrap" hidden>
+          <div class="uf-listhead">
+            <h2 class="uf-h2" id="uf-list-h" tabindex="-1">範圍內的設施</h2>
+            <p id="uf-listinfo" class="uf-small"></p>
+          </div>
+          <ol id="uf-list" class="uf-list"></ol>
+          <button type="button" id="uf-more" class="uf-btn uf-btn-outline uf-btn-block cine-btn" hidden>顯示全部</button>
+        </section>
+      </div>
+
+      <div class="uf-prose">
+        <section class="cine-reveal" aria-labelledby="uf-data-h">
+          <h2 id="uf-data-h" class="uf-h2">這份資料涵蓋什麼</h2>
+          <p class="uf-small mt-2">
+            台中市共 {total.toLocaleString("zh-TW")} 筆、{nCats} 類{dataDate ? `，資料整理日期 ${dataDate}` : ""}。每一類的來源寫在類別名稱下面。
+          </p>
+          <div class="uf-tablewrap">
+            <table class="uf-table">
+              <thead>
+                <tr>
+                  <th scope="col">類別</th>
+                  <th scope="col" class="uf-num">筆數</th>
+                  <th scope="col">買方常見的考量</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  catRows.map(row => (
+                    <tr>
+                      <th scope="row" style={`--cl:${row.cl};--cd:${row.cd}`}>
+                        <span class="uf-tcat"><i class="uf-dot" aria-hidden="true"></i>{row.label}</span>
+                        <small>來源：{row.src}</small>
+                      </th>
+                      <td class="uf-num">{row.n.toLocaleString("zh-TW")}</td>
+                      <td class="uf-why">{row.why || "—"}</td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="uf-card uf-card-soft mt-8 cine-reveal" aria-labelledby="uf-lim-h">
+          <h2 id="uf-lim-h" class="uf-h3">這個工具的限制，先講清楚</h2>
+          <ul class="uf-ul">
+            {
+              offLabels.length > 0 && (
+                <li>
+                  <strong>官方資料</strong>：{offLabels.join("、")}的點位有 {offN.toLocaleString("zh-TW")} 筆來自{offOrgs.join("、")}公布的清冊（每一類用了哪份清冊，寫在上面表格的類別名稱下面）。以機關公布的版本為準，之後新設、遷移、裁撤的設施要等資料更新才會反映。
+                </li>
+              )
+            }
+            {geoText && <li>{geoText}</li>}
+            {
+              hasOsm && (
+                <li>
+                  <strong>OpenStreetMap</strong>：{osmText}，共 {osmN.toLocaleString("zh-TW")} 筆。這是志工社群標註的地圖，<strong>不保證完整</strong>，也可能留著已經拆除、搬走的點。
+                </li>
+              )
+            }
+            <li><strong>沒查到不等於沒有。</strong>小型宮廟、私人神壇、剛蓋好的設施，資料常常還沒有。</li>
+            <li>
+              距離是<strong>直線距離</strong>，從你查的位置算到設施的點位。公墓、變電所這類占地大的設施，資料只有一個代表點，實際邊界可能更近。
+            </li>
+            <li>
+              <strong>凶宅、輻射屋、海砂屋不在這份資料裡</strong>，查法寫在<a class="text-accent underline" href="/posts/faq-03-haunted-house-check/">凶宅怎麼查</a>與<a class="text-accent underline" href="/posts/viewing-04-sea-sand-radiation/">海砂屋年代怎麼判別</a>。
+            </li>
+            <li>
+              <strong>「嫌惡」是主觀的。</strong>有人不能接受宮廟，有人覺得熱鬧有人氣；有人在意變電所，有人只在意通勤。這個工具只告訴你附近有什麼、多遠，值不值得在意由你自己判斷。
+            </li>
+            <li>真正要下決定前，請到現場走一趟，並以<strong>不動產說明書</strong>（仲介或建商提供）的記載為準。</li>
+          </ul>
+        </section>
+
+        <section class="mt-10 cine-reveal">
+          <h2 class="uf-h2">看屋當天，再用眼睛確認一次</h2>
+          <p class="mt-2">
+            每一種設施買方常在意什麼，寫在這篇：<a class="text-accent underline" href="/posts/week-04-undesirable-facilities/">嫌惡設施怎麼查、到現場怎麼再確認一次</a>
+          </p>
+          <p class="mt-2">
+            同一個地址也可以順便查：<a class="text-accent underline" href="/tools/school-district/">台中學區查詢</a>、<a class="text-accent underline" href="/tools/garbage-truck/">台中垃圾車時間查詢</a>。
+          </p>
+        </section>
+
+        <section class="mt-10 cine-reveal" aria-labelledby="uf-src-h">
+          <h2 id="uf-src-h" class="uf-h2">資料來源與版本</h2>
+          <ul class="uf-ul uf-src">
+            {
+              srcRows.map(r => (
+                <li>
+                  {r.osm ? "設施點位（社群標註）：" : `設施點位：${r.org ?? ""}`}{r.url ? <a class="text-accent underline" href={r.url} rel="noopener" target="_blank">〈{r.name}〉</a> : `〈${r.name}〉`}{r.note ? `（${r.note}）` : ""}{`${verText(r)}，本頁用到 ${r.n.toLocaleString("zh-TW")} 筆（${r.labels.join("、")}）。`}{r.geo ? `位置：${r.geo}` : ""}{r.geo && r.geoRef ? (<>（中油站點出處：<a class="text-accent underline" href={r.geoRef.url} rel="noopener" target="_blank">{r.geoRef.text}</a>）</>) : ""}{r.geo ? "。" : ""}{r.osm ? (
+                    <>
+                      地圖資料 ©<a class="text-accent underline" href="https://www.openstreetmap.org/copyright" rel="noopener" target="_blank">OpenStreetMap 貢獻者</a>，採<a class="text-accent underline" href="https://opendatacommons.org/licenses/odbl/" rel="noopener" target="_blank">ODbL</a>授權。
+                    </>
+                  ) : r.license && licUrl(r.license, r.licenseUrl) ? (
+                    <>依<a class="text-accent underline" href={licUrl(r.license, r.licenseUrl)} rel="noopener" target="_blank">{r.license}</a>使用。</>
+                  ) : r.license ? (
+                    `依${r.license}使用。`
+                  ) : (
+                    ""
+                  )}
+                </li>
+              ))
+            }
+            <li>
+              地址比對：{addrSrc.src}（<a class="text-accent underline" href={addrSrc.srcUrl} rel="noopener" target="_blank">{addrSrc.ver} 版</a>，依{addrSrc.lic}使用）。你輸入的地址和手機定位的座標只在瀏覽器裡比對，不會傳到任何伺服器；頁面會下載你查的那一區的公開門牌資料檔。
+            </li>
+            <li>
+              地圖底圖 © <a class="text-accent underline" href="https://maps.nlsc.gov.tw/" rel="noopener" target="_blank">內政部國土測繪中心</a>「臺灣通用電子地圖」線上圖磚，會下載你正在看的那一塊。
+            </li>
+            <li>地圖元件：<a class="text-accent underline" href="https://maplibre.org/" rel="noopener" target="_blank">MapLibre GL JS</a> 4.7.1（BSD-3-Clause 授權）</li>
+          </ul>
+        </section>
+
+        <hr class="my-8 border-dashed" />
+
+        <p class="text-muted-foreground text-sm">
+          <strong>陳景泰 — 一品不動產（有巢氏房屋台中世界之心加盟店）</strong><br />
+          經紀人黃永隆 113 彰縣字第 324 號 / 營業員陳景泰 114 登字第 488296 號<br />
+          0920-118-756 / LINE <a class="text-accent underline" href="/go/line?src=undesirable-facilities">sky811117</a>
         </p>
       </div>
-
-      <div
-        id="map"
-        class="border-border mt-4 h-[420px] w-full rounded-lg border"
-        role="application"
-        aria-label="嫌惡設施地圖"
-      ></div>
-
-      <div id="result" class="mt-4"></div>
-    </section>
-
-    <hr class="my-8 border-dashed" />
-
-    <section>
-      <h2 class="text-xl font-semibold">這份資料涵蓋什麼</h2>
-      <p class="text-muted-foreground mt-2 text-sm">
-        台中市共 {facilities.count.toLocaleString("zh-TW")} 筆，資料日期 {facilities.fetchedAt}。
-      </p>
-      <div class="mt-4 overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-border border-b">
-              <th class="py-2 text-left">類別</th>
-              <th class="py-2 text-right">筆數</th>
-              <th class="py-2 text-left ps-4">為什麼買方在意</th>
-            </tr>
-          </thead>
-          <tbody>
-            {catRows.map(row => (
-              <tr class="border-border/50 border-b">
-                <td class="py-2">{row.label}</td>
-                <td class="py-2 text-right tabular-nums">{row.n.toLocaleString("zh-TW")}</td>
-                <td class="text-muted-foreground py-2 ps-4">{row.why}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div class="border-border mt-6 rounded-lg border p-4 text-sm">
-        <p class="font-medium">⚠️ 這個工具的限制，先講清楚</p>
-        <ul class="mt-2 space-y-1.5 ps-5" style="list-style:disc;">
-          <li>
-            資料來自 <strong>OpenStreetMap</strong> 的社群標註，<strong>不保證完整</strong>。
-            沒查到不等於沒有 —— 特別是小型宮廟、剛蓋好的設施、以及 OSM 上沒人標的地點。
-          </li>
-          <li>
-            <strong>凶宅、輻射屋、海砂屋不在這份資料裡</strong>，那些要走各自的查詢管道，
-            寫在 <a class="text-accent underline" href="/posts/faq-03-haunted-house-check/">凶宅怎麼查</a> 與
-            <a class="text-accent underline" href="/posts/viewing-04-sea-sand-radiation/">海砂屋年代怎麼判別</a>。
-          </li>
-          <li>
-            <strong>「嫌惡」是主觀的。</strong> 有人不能接受宮廟，有人覺得熱鬧有人氣；
-            有人怕變電所，有人只在意通勤。這個工具負責告訴你「附近有什麼」，
-            <strong>值不值得在意由你自己決定</strong>。
-          </li>
-          <li>
-            真正要下決定前，請以現場實地走一趟、以及賣方提供的
-            <strong>不動產說明書</strong>記載為準。
-          </li>
-        </ul>
-      </div>
-
-      <p class="text-muted-foreground mt-4 text-xs">
-        地圖與設施資料 ©
-        <a class="underline" href="https://www.openstreetmap.org/copyright" rel="noopener" target="_blank">
-          OpenStreetMap</a> 貢獻者，採 ODbL 授權。地址搜尋使用 OSM Nominatim 服務。
-      </p>
-
-      <p class="mt-6 text-sm">
-        想知道每一種設施實際會影響什麼、看屋當天怎麼自己再查一次，
-        看這篇：<a class="text-accent underline" href="/posts/week-04-undesirable-facilities/">嫌惡設施怎麼查？用 Google Map 揪出 10 大地雷</a>
-      </p>
-
-      <hr class="my-8 border-dashed" />
-
-      <p class="text-muted-foreground text-sm">
-        <strong>陳景泰 — 一品不動產（有巢氏房屋台中世界之心加盟店）</strong><br />
-        經紀人黃永隆 113 彰縣字第 324 號 / 營業員陳景泰 114 登字第 488296 號<br />
-        0920-118-756 / LINE <a class="text-accent underline" href="/go/line?src=tools">sky811117</a>
-      </p>
-    </section>
-  </Main>
+    </div>
+  </main>
 
   <Footer />
 
-  <script
-    is:inline
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""></script>
+  <script type="application/json" id="uf-boot" is:inline set:html={safeJsonLd(boot)} />
 
-  <script is:inline>
-    (function () {
-      var DATA_URL = "/data/undesirable-facilities.json";
-      var TAICHUNG = [24.1477, 120.6736];
-
-      var map, marker, circle, layer, data = null;
-      var mapEl = document.getElementById("map");
-      var resultEl = document.getElementById("result");
-      var hintEl = document.getElementById("hint");
-
-      function radius() {
-        var el = document.querySelector('input[name="r"]:checked');
-        return el ? Number(el.value) : 300;
-      }
-
-      // 兩點距離（公尺）。Haversine，這個尺度下誤差可以忽略。
-      function distance(aLat, aLon, bLat, bLon) {
-        var R = 6371000;
-        var p = Math.PI / 180;
-        var dLat = (bLat - aLat) * p;
-        var dLon = (bLon - aLon) * p;
-        var s =
-          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos(aLat * p) * Math.cos(bLat * p) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        return 2 * R * Math.asin(Math.sqrt(s));
-      }
-
-      function setStatus(msg) {
-        if (hintEl) hintEl.textContent = msg;
-      }
-
-      function initMap() {
-        map = L.map(mapEl).setView(TAICHUNG, 13);
-        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 19,
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> 貢獻者',
-        }).addTo(map);
-        layer = L.layerGroup().addTo(map);
-        map.on("click", function (e) {
-          check(e.latlng.lat, e.latlng.lng);
-        });
-      }
-
-      function loadData() {
-        if (data) return Promise.resolve(data);
-        return fetch(DATA_URL)
-          .then(function (r) {
-            if (!r.ok) throw new Error("HTTP " + r.status);
-            return r.json();
-          })
-          .then(function (j) {
-            data = j;
-            return j;
-          });
-      }
-
-      function render(lat, lon, found, r) {
-        layer.clearLayers();
-        if (marker) map.removeLayer(marker);
-        if (circle) map.removeLayer(circle);
-
-        marker = L.marker([lat, lon]).addTo(map);
-        circle = L.circle([lat, lon], {
-          radius: r,
-          color: "#6B8E23",
-          weight: 2,
-          fillOpacity: 0.06,
-        }).addTo(map);
-        map.fitBounds(circle.getBounds(), { padding: [20, 20] });
-
-        found.forEach(function (f) {
-          L.circleMarker([f.y, f.x], {
-            radius: 6,
-            color: "#c1440e",
-            weight: 2,
-            fillOpacity: 0.7,
-          })
-            .bindPopup(
-              "<strong>" + f.n + "</strong><br>" + f.label + "・約 " + Math.round(f.d) + " 公尺"
-            )
-            .addTo(layer);
-        });
-
-        if (!found.length) {
-          resultEl.innerHTML =
-            '<div class="border-border rounded-lg border p-4"><p class="font-medium">' +
-            r +
-            " 公尺內，這份資料裡沒有查到嫌惡設施。</p>" +
-            '<p class="text-muted-foreground mt-2 text-sm">⚠️ 沒查到不等於沒有 —— ' +
-            "OSM 是社群標註，小型宮廟或新設施可能還沒被標上去。現場還是要自己走一趟。</p></div>";
-          return;
-        }
-
-        var groups = {};
-        found.forEach(function (f) {
-          (groups[f.label] = groups[f.label] || []).push(f);
-        });
-
-        var html =
-          '<div class="border-border rounded-lg border p-4">' +
-          '<p class="font-medium">' + r + " 公尺內找到 " + found.length + " 個</p>" +
-          '<p class="text-muted-foreground mt-1 text-sm">由近到遠。點地圖上的紅點看名稱。</p>' +
-          '<div class="mt-3 overflow-x-auto"><table class="w-full text-sm"><thead><tr class="border-border border-b">' +
-          '<th class="py-2 text-left">距離</th><th class="py-2 text-left ps-3">類別</th>' +
-          '<th class="py-2 text-left ps-3">名稱</th></tr></thead><tbody>';
-
-        found.forEach(function (f) {
-          html +=
-            '<tr class="border-border/50 border-b"><td class="py-2 tabular-nums">' +
-            Math.round(f.d) +
-            ' m</td><td class="py-2 ps-3">' +
-            f.label +
-            '</td><td class="text-muted-foreground py-2 ps-3">' +
-            f.n +
-            "</td></tr>";
-        });
-        html += "</tbody></table></div>";
-
-        html += '<p class="text-muted-foreground mt-3 text-sm">';
-        html += Object.keys(groups)
-          .map(function (k) {
-            return k + " " + groups[k].length;
-          })
-          .join("・");
-        html += "</p></div>";
-
-        resultEl.innerHTML = html;
-      }
-
-      function check(lat, lon) {
-        setStatus("查詢中…");
-        loadData()
-          .then(function (j) {
-            var r = radius();
-            var cats = j.categories || {};
-            var found = [];
-            for (var i = 0; i < j.items.length; i++) {
-              var it = j.items[i];
-              // 先用經緯度做粗篩，省掉大部分的三角函數計算
-              if (Math.abs(it.y - lat) > 0.012 || Math.abs(it.x - lon) > 0.013) continue;
-              var d = distance(lat, lon, it.y, it.x);
-              if (d <= r) {
-                found.push({
-                  y: it.y, x: it.x, n: it.n, d: d,
-                  label: (cats[it.k] && cats[it.k].label) || it.k,
-                });
-              }
-            }
-            found.sort(function (a, b) { return a.d - b.d; });
-            render(lat, lon, found, r);
-            setStatus("點地圖上任一位置可以重新查。");
-          })
-          .catch(function (e) {
-            setStatus("資料載入失敗，請重新整理再試一次。");
-            console.error(e);
-          });
-      }
-
-      function geocode() {
-        var q = (document.getElementById("addr").value || "").trim();
-        if (!q) { setStatus("請先輸入地址。"); return; }
-        setStatus("搜尋地址中…");
-        var url =
-          "https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=tw&q=" +
-          encodeURIComponent(q.indexOf("台中") === -1 && q.indexOf("臺中") === -1 ? "台中市 " + q : q);
-        fetch(url, { headers: { Accept: "application/json" } })
-          .then(function (r) { return r.json(); })
-          .then(function (arr) {
-            if (!arr || !arr.length) {
-              setStatus("查不到這個地址，可以改成路名（例：北屯區文心路四段），或直接在地圖上點。");
-              return;
-            }
-            check(Number(arr[0].lat), Number(arr[0].lon));
-          })
-          .catch(function () {
-            setStatus("地址搜尋暫時無法使用，請直接在地圖上點你要查的位置。");
-          });
-      }
-
-      function boot() {
-        if (typeof L === "undefined" || !mapEl) {
-          setStatus("地圖元件載入失敗，請重新整理再試一次。");
-          return;
-        }
-        initMap();
-        document.getElementById("go").addEventListener("click", geocode);
-        document.getElementById("addr").addEventListener("keydown", function (e) {
-          if (e.key === "Enter") { e.preventDefault(); geocode(); }
-        });
-        document.getElementById("here").addEventListener("click", function () {
-          if (!navigator.geolocation) { setStatus("這個瀏覽器不支援定位。"); return; }
-          setStatus("定位中…");
-          navigator.geolocation.getCurrentPosition(
-            function (pos) { check(pos.coords.latitude, pos.coords.longitude); },
-            function () { setStatus("拿不到位置（可能是沒給權限）。請輸入地址或在地圖上點。"); }
-          );
-        });
-        Array.prototype.forEach.call(document.querySelectorAll('input[name="r"]'), function (el) {
-          el.addEventListener("change", function () {
-            if (marker) { var ll = marker.getLatLng(); check(ll.lat, ll.lng); }
-          });
-        });
-      }
-
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", boot);
-      } else {
-        boot();
-      }
-    })();
+  {/* 地圖：MapLibre GL 本體（含 SRI）由 cine-map.js 在地圖快進畫面時才下載 */}
+  <script is:inline src={`/js/cine-map.js?v=${vMap}`}></script>
+  <script is:inline src={`/js/tc-addr.js?v=${vAddr}`}></script>
+  {/* 頁面程式：Astro 打包壓縮，只有這一頁下載（雷達光束 uf-sweep.js、距離尺 uf-ruler.js 拆成小檔，第一次查詢才下載） */}
+  <script>
+    import "@/components/uf/uf-page.js";
   </script>
 </Layout>
+
+<style is:global>
+  /* ===== 版面：主視覺與內容共用同一條格線（手機 48rem、電腦 80rem；跟垃圾車頁同一套） ===== */
+  .uf-wrap {
+    width: 100%;
+    max-width: 48rem;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+  @media (min-width: 640px) {
+    .uf-wrap { padding-inline: 1.5rem; }
+  }
+  @media (min-width: 1024px) {
+    .uf-wrap { max-width: 80rem; }
+  }
+  /* 內容區後面的暖色環境光（純背景，不吃事件；左右不超出盒子，不會產生橫向捲軸） */
+  .uf-body {
+    position: relative;
+    isolation: isolate;
+  }
+  .uf-body::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    left: 0;
+    right: 0;
+    top: -10rem;
+    height: min(1800px, calc(100% + 10rem));
+    pointer-events: none;
+    background:
+      radial-gradient(closest-side, rgb(var(--cine-glow) / 0.14), transparent) 12% 22% / 60% 36% no-repeat,
+      radial-gradient(closest-side, rgb(var(--cine-glow) / 0.1), transparent) 88% 34% / 50% 32% no-repeat,
+      radial-gradient(closest-side, rgb(var(--cine-glow) / 0.07), transparent) 32% 70% / 64% 34% no-repeat;
+    -webkit-mask-image: linear-gradient(180deg, transparent, #000 10rem, #000 85%, transparent), linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(180deg, transparent, #000 10rem, #000 85%, transparent), linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+    mask-composite: intersect;
+  }
+  :root[data-theme="dark"] .uf-body::before {
+    background:
+      radial-gradient(closest-side, rgb(var(--cine-glow) / 0.09), transparent) 12% 22% / 60% 36% no-repeat,
+      radial-gradient(closest-side, rgb(var(--cine-glow) / 0.07), transparent) 88% 34% / 50% 32% no-repeat,
+      radial-gradient(closest-side, rgb(var(--cine-glow) / 0.05), transparent) 32% 70% / 64% 34% no-repeat;
+  }
+
+  /* 手機：摘要 → 地圖 → 類別 → 距離尺 → 清單；電腦：左欄摘要／類別／距離尺／清單，右欄地圖黏在畫面上 */
+  .uf-app {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "summary" "map" "filters" "ruler" "list";
+    column-gap: 1.5rem;
+  }
+  .uf-app > * { min-width: 0; margin-bottom: 1rem; }
+  .uf-app > .uf-a-summary { margin-bottom: 0; }
+  .uf-a-summary > * { margin-bottom: 1rem; }
+  .uf-app [hidden],
+  .uf-search [hidden],
+  .uf-app .uf-chip[hidden] {
+    display: none !important;
+  }
+  .uf-a-summary { grid-area: summary; }
+  .uf-a-map { grid-area: map; }
+  .uf-a-filters { grid-area: filters; }
+  .uf-a-ruler { grid-area: ruler; }
+  .uf-a-list { grid-area: list; }
+  @media (min-width: 1024px) {
+    .uf-app {
+      grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);
+      grid-template-rows: auto auto auto 1fr;
+      grid-template-areas: "summary map" "filters map" "ruler map" "list map";
+      align-items: start;
+    }
+    .uf-a-map {
+      position: sticky;
+      top: 1rem;
+      align-self: start;
+    }
+  }
+
+  /* ===== 玻璃面板（不加 backdrop-filter：後面是靜態環境光，省下手機繪圖） ===== */
+  .uf-card {
+    position: relative;
+    background: var(--cine-glass-bg);
+    border: 1px solid var(--cine-glass-border);
+    border-radius: 1rem;
+    padding: 1rem;
+    box-shadow: var(--cine-glass-shadow);
+  }
+  @supports ((-webkit-mask-composite: xor) or (mask-composite: exclude)) {
+    .uf-card::before {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(155deg, var(--cine-glass-edge-a), transparent 38%, transparent 62%, var(--cine-glass-edge-b));
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+      pointer-events: none;
+    }
+  }
+  .uf-card-soft {
+    background: linear-gradient(160deg, rgb(var(--cine-glow) / 0.1), rgb(var(--cine-glow) / 0.03) 60%), var(--cine-glass-bg);
+  }
+  .uf-h2 { font-size: 1.25rem; font-weight: 700; line-height: 1.4; }
+  .uf-h3 { font-size: 1.05rem; font-weight: 700; line-height: 1.4; }
+  .uf-h2:focus { outline: none; }
+  .uf-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* ===== 搜尋卡（放在主視覺裡） ===== */
+  .uf-search { padding: 1rem; }
+  .uf-label { display: block; font-weight: 700; margin-bottom: 0.5rem; }
+  .uf-row { display: flex; gap: 0.5rem; align-items: stretch; }
+  .uf-row2 { margin-top: 0.625rem; flex-wrap: wrap; }
+  .uf-input { flex: 1 1 auto; min-width: 0; }
+  .uf-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0.5rem 0.85rem;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .uf-btn-primary {
+    background: var(--accent);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, #fff) 0%, var(--accent) 55%, color-mix(in srgb, var(--accent) 86%, #000) 100%);
+    color: var(--accent-foreground);
+    border: 1px solid var(--accent);
+    box-shadow: 0 6px 16px -8px rgb(var(--cine-glow) / 0.9), 0 1px 0 rgb(255 255 255 / 0.35) inset;
+  }
+  .uf-btn-outline { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); }
+  .uf-btn-outline:hover { background: var(--accent); color: var(--accent-foreground); }
+  .uf-btn-here { gap: 0.5rem; }
+  .uf-btn-sm { font-size: 0.9rem; padding: 0.35rem 0.8rem; }
+  .uf-btn-block { width: 100%; margin-top: 0.75rem; }
+  .uf-seg {
+    display: inline-flex;
+    border: 1.5px solid var(--accent);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    flex: 0 0 auto;
+    background: rgb(255 255 255 / 0.35);
+  }
+  :root[data-theme="dark"] .uf-seg { background: rgb(0 0 0 / 0.15); }
+  .uf-seg label { position: relative; display: flex; }
+  .uf-seg input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .uf-seg span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 0.6rem;
+    font-size: 0.95rem;
+    color: var(--accent);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .uf-seg label + label span { border-left: 1.5px solid var(--accent); }
+  .uf-seg input:checked + span { background: var(--accent); color: var(--accent-foreground); font-weight: 600; }
+  .uf-seg input:focus-visible + span { outline: 2px dashed var(--accent); outline-offset: -4px; }
+  @media (max-width: 359px) {
+    .uf-seg span { padding: 0 0.45rem; font-size: 0.9rem; }
+  }
+  .uf-status { margin-top: 0.75rem; font-size: 0.9rem; color: var(--cine-sub, var(--muted-foreground)); line-height: 1.6; }
+  .uf-status.uf-err, .uf-err { color: #b3261e; }
+  [data-theme="dark"] .uf-status.uf-err, [data-theme="dark"] .uf-err { color: #ffb4ab; }
+  .uf-cands { margin-top: 0.5rem; }
+  .uf-cand-btns { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+  .uf-cand {
+    min-height: 44px;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid rgb(var(--cine-glow) / 0.45);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.7);
+    color: var(--foreground);
+    font-size: 0.95rem;
+    text-align: left;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  :root[data-theme="dark"] .uf-cand { background: rgb(0 0 0 / 0.2); }
+  .uf-cand:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ===== 共用小元件 ===== */
+  .uf-small { font-size: 0.875rem; color: var(--muted-foreground); line-height: 1.6; }
+  .uf-mt { margin-top: 0.75rem; }
+  .uf-mt-s { margin-top: 0.4rem; }
+  .uf-a { color: var(--accent); text-decoration: underline; }
+  .uf-kicker {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--cine-eyebrow, var(--muted-foreground));
+  }
+  .uf-kicker::before {
+    content: "";
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgb(var(--cine-glow));
+    box-shadow: 0 0 0 3px rgb(var(--cine-glow) / 0.2), 0 0 10px 2px rgb(var(--cine-glow) / 0.6);
+  }
+  .uf-intro-t { margin-top: 0.35rem; line-height: 1.65; }
+  .uf-warn-box {
+    border-left: 4px solid #c2410c;
+    background: rgb(194 65 12 / 0.08);
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.9rem;
+    margin-bottom: 0.6rem;
+  }
+  /* 類別圓點：跟地圖上的點同一個顏色（--cl 淺色、--cd 深色，從 JSON 類別算出來） */
+  .uf-dot {
+    display: inline-block;
+    flex: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--cl, #8a8a8a);
+    box-shadow: 0 0 0 1.5px rgb(255 250 240 / 0.9), 0 0 8px 1px color-mix(in srgb, var(--cl, #8a8a8a) 55%, transparent);
+    vertical-align: -0.05em;
+  }
+  :root[data-theme="dark"] .uf-dot {
+    background: var(--cd, #b5b5b5);
+    box-shadow: 0 0 0 1.5px rgb(40 33 28 / 0.9), 0 0 9px 1px color-mix(in srgb, var(--cd, #b5b5b5) 55%, transparent);
+  }
+
+  /* ===== 摘要：左邊一個小雷達錶（掃一圈停住），右邊查詢點；下面一句話講完 ===== */
+  .uf-sum-top { display: flex; align-items: center; gap: 0.9rem; }
+  .uf-sum-head { min-width: 0; flex: 1 1 auto; }
+  .uf-dial {
+    position: relative;
+    isolation: isolate;
+    flex: none;
+    width: 78px;
+    height: 78px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1.5px solid rgb(var(--cine-glow) / 0.75);
+    background:
+      radial-gradient(circle, transparent 0 30%, rgb(var(--cine-glow) / 0.45) 30.5% 31.5%, transparent 32% 62%, rgb(var(--cine-glow) / 0.4) 62.5% 63.5%, transparent 64%),
+      linear-gradient(transparent calc(50% - 0.5px), rgb(var(--cine-glow) / 0.28) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+      linear-gradient(90deg, transparent calc(50% - 0.5px), rgb(var(--cine-glow) / 0.28) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+      radial-gradient(circle, rgb(var(--cine-glow) / 0.2), rgb(var(--cine-glow) / 0.05) 72%);
+    box-shadow: 0 0 22px -4px rgb(var(--cine-glow) / 0.65), inset 0 0 14px rgb(var(--cine-glow) / 0.22);
+  }
+  .uf-dial-sweep {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, rgb(var(--cine-glow) / 0) 0deg 280deg, rgb(var(--cine-glow) / 0.6) 360deg);
+    animation: uf-dial 2.6s linear 0.15s 1 both;
+  }
+  @keyframes uf-dial {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .uf-dial b {
+    font-size: 1.55rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--cine-num);
+    text-shadow: 0 0 16px var(--cine-num-glow), 0 0 2px var(--background);
+    font-variant-numeric: tabular-nums;
+  }
+  .uf-dial small { margin-top: 2px; font-size: 0.72rem; font-weight: 600; color: var(--muted-foreground); }
+  .uf-dial.is-zero { border-color: rgb(var(--cine-glow) / 0.4); box-shadow: none; }
+  .uf-dial.is-zero b { color: var(--muted-foreground); text-shadow: none; }
+  .uf-sum-title { margin-top: 0.2rem; font-weight: 800; font-size: 1.08rem; line-height: 1.45; overflow-wrap: anywhere; }
+  .uf-note { margin-top: 0.6rem; font-size: 0.875rem; color: #9a3412; }
+  [data-theme="dark"] .uf-note { color: #fdba74; }
+  .uf-sum-line { margin-top: 0.75rem; font-size: 1.02rem; line-height: 1.7; overflow-wrap: anywhere; }
+  .uf-sum-line b { color: var(--cine-num); font-size: 1.2em; text-shadow: 0 0 18px var(--cine-num-glow); }
+  .uf-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
+  .uf-stale > .uf-card, .uf-stale > .uf-listhead, .uf-stale > .uf-list, .uf-stale.uf-card > * { opacity: 0.45; }
+  #uf-summary { overflow-wrap: anywhere; }
+  .uf-skel > .uf-card + .uf-card { margin-top: 1rem; }
+  #uf-summary > .uf-card > * { animation: cine-rise-in 0.6s var(--cine-ease-out) backwards; }
+  #uf-summary > .uf-card > :nth-child(2) { animation-delay: 80ms; }
+  #uf-summary > .uf-card > :nth-child(3) { animation-delay: 160ms; }
+  #uf-summary > .uf-card > :nth-child(n + 4) { animation-delay: 240ms; }
+
+  /* ===== 地圖 ===== */
+  .uf-mapwrap { position: relative; isolation: isolate; }
+  #uf-map { width: 100%; height: clamp(260px, 58vh, 540px); }
+  @media (min-width: 1024px) {
+    #uf-map { height: clamp(460px, calc(100vh - 9rem), 860px); }
+  }
+  .cine-mapframe.is-fallback #uf-map { height: 12rem; }
+  /* 雷達光束疊層（uf-sweep.js 插在地圖畫布與圖釘之間）；夜間用濾色混合，像暖燈打在地面 */
+  .uf-sweep { position: absolute; left: 0; top: 0; pointer-events: none; }
+  :root[data-theme="dark"] .uf-sweep { mix-blend-mode: screen; }
+  .uf-mapempty {
+    position: absolute;
+    left: 50%;
+    bottom: 2.75rem;
+    transform: translateX(-50%);
+    z-index: 6;
+    max-width: calc(100% - 2rem);
+    padding: 0.45rem 0.95rem;
+    border-radius: 999px;
+    background: var(--cine-glass-bg-solid);
+    color: var(--foreground);
+    border: 1px solid rgb(var(--cine-glow) / 0.35);
+    font-size: 0.875rem;
+    box-shadow: 0 10px 26px -12px rgb(60 38 14 / 0.5), 0 0 18px -4px rgb(var(--cine-glow) / 0.45);
+    pointer-events: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .uf-mapfail { padding: 2rem 1rem; text-align: center; color: var(--muted-foreground); }
+  .uf-legend { display: flex; align-items: flex-start; gap: 0.6rem; margin-top: 0.5rem; font-size: 0.85rem; color: var(--muted-foreground); line-height: 1.55; }
+  .uf-legend p { min-width: 0; flex: 1 1 auto; }
+  /* 熱度圖圖例（跟 uf-page.js heatRamp 同一組顏色） */
+  .uf-heatbar {
+    flex: none;
+    display: inline-flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 4.6rem;
+    height: 1.15rem;
+    margin-top: 0.15rem;
+    padding: 0 0.3rem;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgb(244 206 146 / 0.55), rgb(222 140 72 / 0.8), rgb(160 70 40 / 0.9), rgb(122 48 30));
+    font-size: 0.68rem;
+    font-weight: 700;
+  }
+  .uf-heatbar i { font-style: normal; }
+  .uf-heatbar i:first-child { color: #6b4a2a; }
+  .uf-heatbar i:last-child { color: #fff4e4; }
+  :root[data-theme="dark"] .uf-heatbar { background: linear-gradient(90deg, rgb(140 86 40 / 0.6), rgb(222 156 84 / 0.8), rgb(255 222 168 / 0.9), rgb(255 240 210)); }
+  :root[data-theme="dark"] .uf-heatbar i:first-child { color: #f5e6d0; }
+  :root[data-theme="dark"] .uf-heatbar i:last-child { color: #4a3016; }
+  .uf-legend.is-query .uf-heatbar { display: none; }
+  /* 鍵盤用：先給一個跳過地圖的連結（Tab 到才出現） */
+  .uf-skip {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+  .uf-skip:focus {
+    position: static;
+    clip: auto;
+    clip-path: none;
+    overflow: visible;
+    white-space: normal;
+    display: inline-flex;
+    align-items: center;
+    width: auto;
+    height: auto;
+    min-height: 44px;
+    margin: 0 0 0.5rem;
+    padding: 0.4rem 0.8rem;
+    border: 2px solid var(--accent);
+    border-radius: 0.5rem;
+    background: var(--card);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .uf-unlock-ctrl { margin: 10px 10px 0 0; }
+  .uf-unlock {
+    min-height: 44px;
+    padding: 0 0.85rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgb(var(--cine-glow) / 0.45);
+    background: var(--cine-glass-bg-solid);
+    color: var(--foreground);
+    font-size: 0.9rem;
+    font-weight: 600;
+    box-shadow: 0 6px 18px -6px rgb(60 38 14 / 0.35);
+  }
+  .uf-unlock[aria-pressed="true"] { background: var(--accent); color: var(--accent-foreground); border-color: var(--accent); }
+
+  /* 地圖彈窗：暖色玻璃 */
+  .uf-mapwrap .maplibregl-popup-content {
+    padding: 12px 36px 10px 14px;
+    background: rgb(255 253 249 / 0.86);
+    -webkit-backdrop-filter: blur(14px) saturate(1.3);
+    backdrop-filter: blur(14px) saturate(1.3);
+    border: 1px solid rgb(255 255 255 / 0.7);
+  }
+  .uf-mapwrap .uf-tip .maplibregl-popup-content,
+  .uf-mapwrap .maplibregl-popup-content:not(:has(.maplibregl-popup-close-button)) { padding: 8px 12px; }
+  .uf-mapwrap .uf-tip { pointer-events: none; }
+  .uf-mapwrap .uf-tip .uf-pop { font-size: 13px; }
+  .uf-mapwrap .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+  .uf-mapwrap .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+  .uf-mapwrap .maplibregl-popup-anchor-top-right .maplibregl-popup-tip { border-bottom-color: rgb(255 253 249 / 0.86); }
+  .uf-mapwrap .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+  .uf-mapwrap .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+  .uf-mapwrap .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip { border-top-color: rgb(255 253 249 / 0.86); }
+  .uf-mapwrap .maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: rgb(255 253 249 / 0.86); }
+  .uf-mapwrap .maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: rgb(255 253 249 / 0.86); }
+  :root[data-theme="dark"] .uf-mapwrap .maplibregl-popup-content { background: rgb(40 33 28 / 0.88); border-color: rgb(255 236 205 / 0.12); }
+  :root[data-theme="dark"] .uf-mapwrap .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+  :root[data-theme="dark"] .uf-mapwrap .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+  :root[data-theme="dark"] .uf-mapwrap .maplibregl-popup-anchor-top-right .maplibregl-popup-tip { border-bottom-color: rgb(40 33 28 / 0.88); }
+  :root[data-theme="dark"] .uf-mapwrap .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+  :root[data-theme="dark"] .uf-mapwrap .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+  :root[data-theme="dark"] .uf-mapwrap .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip { border-top-color: rgb(40 33 28 / 0.88); }
+  :root[data-theme="dark"] .uf-mapwrap .maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: rgb(40 33 28 / 0.88); }
+  :root[data-theme="dark"] .uf-mapwrap .maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: rgb(40 33 28 / 0.88); }
+  .uf-pop { font-size: 14px; line-height: 1.55; overflow-wrap: anywhere; }
+  .uf-pop strong { display: block; margin-bottom: 2px; }
+  .uf-pop-sub { display: flex; align-items: center; gap: 0.4rem; }
+  .uf-pop-note { color: #6b5e54; font-size: 12.5px; }
+  [data-theme="dark"] .uf-pop-note { color: #c9bdb3; }
+  .uf-linkbtn {
+    margin-top: 2px;
+    padding: 6px 0;
+    min-height: 44px;
+    color: #8a6539;
+    text-decoration: underline;
+    background: none;
+    border: 0;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  [data-theme="dark"] .uf-linkbtn { color: #c9a87c; }
+
+  /* ===== 類別膠囊 ===== */
+  .uf-fhead { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
+  .uf-fall { margin: 0; padding: 0 0.25rem; }
+  .uf-chips { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 0.5rem; }
+  .uf-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 40px;
+    padding: 0.3rem 0.8rem 0.3rem 0.65rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--cl) 45%, transparent);
+    background: color-mix(in srgb, var(--cl) 12%, rgb(255 255 255 / 0.7));
+    color: var(--foreground);
+    font-size: 0.92rem;
+    cursor: pointer;
+    transition: opacity 0.2s ease, background-color 0.2s ease, transform 0.18s var(--cine-ease-out);
+  }
+  .uf-chip b { font-weight: 800; color: var(--cine-num); font-variant-numeric: tabular-nums; }
+  .uf-chip:active { transform: scale(0.96); }
+  .uf-chip[aria-pressed="false"] {
+    background: transparent;
+    border-style: dashed;
+    border-color: rgb(var(--cine-glow) / 0.45);
+    color: var(--muted-foreground);
+  }
+  .uf-chip[aria-pressed="false"] .uf-dot { background: transparent; box-shadow: inset 0 0 0 2px var(--cl); }
+  .uf-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  :root[data-theme="dark"] .uf-chip {
+    border-color: color-mix(in srgb, var(--cd) 45%, transparent);
+    background: color-mix(in srgb, var(--cd) 14%, rgb(0 0 0 / 0.2));
+  }
+  :root[data-theme="dark"] .uf-chip[aria-pressed="false"] { background: transparent; border-color: rgb(var(--cine-glow) / 0.3); }
+  :root[data-theme="dark"] .uf-chip[aria-pressed="false"] .uf-dot { background: transparent; box-shadow: inset 0 0 0 2px var(--cd); }
+
+  /* ===== 距離尺（uf-ruler.js）：0 到範圍公尺，點依直線距離擺放、太擠往上疊 ===== */
+  .uf-ruler {
+    position: relative;
+    margin-top: 0.5rem;
+    padding-top: 3.2rem;
+    border-radius: 0.75rem;
+    outline: none;
+  }
+  .uf-ruler:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  .uf-r-plot { position: relative; margin: 0 10px; }
+  .uf-r-dots { position: relative; height: 18px; }
+  .uf-r-dot {
+    position: absolute;
+    bottom: 0;
+    width: var(--uf-rs, 14px);
+    height: var(--uf-rs, 14px);
+    margin-left: calc(var(--uf-rs, 14px) / -2);
+    padding: 0;
+    border-radius: 50%;
+    border: 1.5px solid rgb(255 250 240 / 0.95);
+    background: var(--cl);
+    box-shadow: 0 0 8px 1px color-mix(in srgb, var(--cl) 55%, transparent);
+    cursor: pointer;
+    transition: transform 0.2s var(--cine-ease-out), box-shadow 0.2s ease;
+  }
+  :root[data-theme="dark"] .uf-r-dot {
+    border-color: rgb(40 33 28 / 0.9);
+    background: var(--cd);
+    box-shadow: 0 0 10px 1px color-mix(in srgb, var(--cd) 60%, transparent);
+  }
+  /* 點很小：往外多給 4px 好點 */
+  .uf-r-dot::before { content: ""; position: absolute; inset: -4px; border-radius: 50%; }
+  .uf-r-dot:hover,
+  .uf-r-dot.is-sel { transform: scale(1.35); z-index: 2; }
+  .uf-r-dot.is-sel { box-shadow: 0 0 0 2.5px var(--accent), 0 0 16px 3px rgb(var(--cine-glow) / 0.65); }
+  .uf-r-dot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .uf-r-dot.is-ping::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: 50%;
+    border: 2px solid var(--cl);
+    animation: uf-rping 0.9s ease-out forwards;
+    pointer-events: none;
+  }
+  :root[data-theme="dark"] .uf-r-dot.is-ping::after { border-color: var(--cd); }
+  @keyframes uf-rping {
+    from { transform: scale(1); opacity: 0.95; }
+    to { transform: scale(2.8); opacity: 0; }
+  }
+  /* 出場：一道光從 0 掃到最遠，點依距離依序浮現 */
+  .uf-ruler.is-anim .uf-r-dot { animation: uf-rdot-in 0.5s var(--cine-ease-out) backwards; animation-delay: calc(var(--p, 0) * 1.1s + 0.1s); }
+  @keyframes uf-rdot-in {
+    from { opacity: 0; transform: translateY(10px) scale(0.4); }
+  }
+  .uf-r-scan {
+    position: absolute;
+    top: -0.6rem;
+    bottom: -8px;
+    left: 0;
+    width: 2px;
+    margin-left: -1px;
+    border-radius: 2px;
+    background: linear-gradient(to top, rgb(var(--cine-glow)), rgb(var(--cine-glow) / 0));
+    box-shadow: 0 0 12px 3px rgb(var(--cine-glow) / 0.55);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .uf-ruler.is-anim .uf-r-scan { animation: uf-rscan 1.35s var(--cine-ease-soft) 0.05s both; }
+  @keyframes uf-rscan {
+    0% { left: 0; opacity: 0; }
+    10% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { left: 100%; opacity: 0; }
+  }
+  .uf-r-tip {
+    position: absolute;
+    z-index: 3;
+    transform: translateX(-50%);
+    max-width: min(260px, 100%);
+    padding: 0.35rem 0.65rem;
+    border-radius: 0.6rem;
+    background: var(--cine-glass-bg-solid);
+    border: 1px solid rgb(var(--cine-glow) / 0.5);
+    box-shadow: 0 10px 24px -12px rgb(60 38 14 / 0.55), 0 0 16px -6px rgb(var(--cine-glow) / 0.6);
+    font-size: 0.82rem;
+    line-height: 1.4;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .uf-r-tip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: var(--ax, 50%);
+    width: 1.5px;
+    height: var(--drop, 0px);
+    margin-left: -0.75px;
+    background: linear-gradient(rgb(var(--cine-glow) / 0.85), rgb(var(--cine-glow) / 0.25));
+  }
+  .uf-ruler.is-anim .uf-r-tip.is-near { animation: uf-fade-in 0.5s ease 1s backwards; }
+  @keyframes uf-fade-in {
+    from { opacity: 0; }
+  }
+  .uf-r-tip b { display: block; overflow: hidden; text-overflow: ellipsis; }
+  .uf-r-tip span { display: block; color: var(--muted-foreground); overflow: hidden; text-overflow: ellipsis; }
+  .uf-r-axis { position: relative; height: 2.2rem; margin: 6px 10px 0; }
+  .uf-r-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, rgb(var(--cine-glow)), rgb(var(--cine-glow) / 0.4));
+    box-shadow: 0 0 10px rgb(var(--cine-glow) / 0.45);
+  }
+  .uf-r-mt { position: absolute; top: 0; width: 1px; height: 6px; background: rgb(var(--cine-glow) / 0.6); }
+  .uf-r-tk { position: absolute; top: 0; display: flex; flex-direction: column; align-items: center; transform: translateX(-50%); }
+  .uf-r-tk i { width: 1.5px; height: 10px; background: rgb(var(--cine-glow)); }
+  .uf-r-tk b { margin-top: 3px; font-size: 0.75rem; font-weight: 600; color: var(--muted-foreground); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .uf-r-tk.is-first { transform: none; align-items: flex-start; }
+  .uf-r-tk.is-last { transform: translateX(-100%); align-items: flex-end; }
+
+  /* ===== 精簡清單：一列一處，依距離 ===== */
+  .uf-listhead { margin-bottom: 0.6rem; }
+  .uf-listhead .uf-small { margin-top: 0.2rem; }
+  .uf-list { display: flex; flex-direction: column; gap: 0.4rem; overflow-wrap: anywhere; }
+  .uf-li { position: relative; }
+  .uf-li-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    min-height: 48px;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.8rem;
+    border: 1px solid var(--cine-glass-border);
+    border-left: 3px solid var(--cl);
+    background: var(--cine-glass-bg);
+    color: var(--foreground);
+    text-align: left;
+    cursor: pointer;
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.7) inset, 0 10px 24px -20px rgb(92 62 28 / 0.5);
+    transition: transform 0.3s var(--cine-ease-out), box-shadow 0.2s ease;
+  }
+  :root[data-theme="dark"] .uf-li-btn { border-left-color: var(--cd); box-shadow: 0 1px 0 rgb(255 236 205 / 0.06) inset, 0 12px 28px -20px rgb(0 0 0 / 0.8); }
+  @media (hover: hover) and (pointer: fine) {
+    .uf-li-btn:hover { transform: translateX(2px); }
+  }
+  .uf-li-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .uf-li.is-sel .uf-li-btn { box-shadow: 0 0 0 2px var(--accent), 0 0 20px -2px rgb(var(--cine-glow) / 0.55); }
+  .uf-li::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: 0.8rem;
+    box-shadow: 0 0 0 3px var(--accent), 0 0 26px 2px rgb(var(--cine-glow) / 0.55);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+  .uf-li.uf-flash::after { opacity: 1; }
+  .uf-li-d { flex: none; min-width: 4.4rem; font-weight: 800; color: var(--cine-num); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .uf-li-m { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
+  .uf-li-n { font-weight: 700; line-height: 1.4; }
+  .uf-li-n small { font-weight: 400; color: var(--muted-foreground); font-size: 0.8rem; }
+  .uf-li-c { font-size: 0.8rem; color: var(--muted-foreground); line-height: 1.45; }
+  @media (max-width: 359px) {
+    .uf-li-d { min-width: 3.9rem; font-size: 0.92rem; }
+  }
+  .uf-none { color: var(--muted-foreground); font-size: 0.92rem; padding: 0.5rem 0; }
+
+  /* ===== 下方文字區 ===== */
+  .uf-prose { max-width: 48rem; margin-top: 2rem; line-height: 1.75; overflow-wrap: anywhere; }
+  .uf-ul { margin-top: 0.5rem; padding-left: 1.25rem; list-style: disc; }
+  .uf-ul li::marker { color: rgb(var(--cine-glow)); }
+  .uf-ul li + li { margin-top: 0.45rem; }
+  .uf-src { font-size: 0.9rem; }
+  .uf-tablewrap { margin-top: 1rem; }
+  .uf-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+  .uf-table thead th { text-align: left; padding: 0.45rem 0.35rem; border-bottom: 1px solid rgb(var(--cine-glow) / 0.45); color: var(--muted-foreground); font-weight: 600; font-size: 0.85rem; }
+  .uf-table tbody th, .uf-table td { padding: 0.55rem 0.35rem; border-bottom: 1px solid rgb(var(--cine-glow) / 0.2); vertical-align: top; text-align: left; }
+  .uf-table tbody th { font-weight: 600; }
+  .uf-table .uf-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .uf-tcat { display: inline-flex; align-items: center; gap: 0.45rem; }
+  .uf-table tbody th small { display: block; margin-top: 0.1rem; padding-left: calc(10px + 0.45rem); font-weight: 400; font-size: 0.78rem; color: var(--muted-foreground); }
+  .uf-why { color: var(--muted-foreground); padding-left: 0.75rem !important; }
+  @media (max-width: 479px) {
+    .uf-table { font-size: 0.88rem; }
+    .uf-why { font-size: 0.84rem; }
+  }
+
+  /* ===== 減少動態：全部停在最終狀態（雷達錶停在掃完一圈的樣子） ===== */
+  @media (prefers-reduced-motion: reduce) {
+    #uf-summary > .uf-card > *,
+    .uf-ruler.is-anim .uf-r-dot,
+    .uf-ruler.is-anim .uf-r-tip.is-near,
+    .uf-r-dot.is-ping::after {
+      animation: none !important;
+    }
+    .uf-dial-sweep { animation: none; transform: none; }
+    .uf-ruler.is-anim .uf-r-scan { animation: none; opacity: 0; }
+    .uf-li-btn, .uf-li::after, .uf-chip, .uf-r-dot { transition: none; }
+    .uf-li-btn:hover { transform: none; }
+  }
+</style>

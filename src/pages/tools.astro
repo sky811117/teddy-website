@@ -6,6 +6,18 @@ import CinematicHero from "@/components/cinematic/CinematicHero.astro";
 import config, { loan } from "@/config";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 import { getRelativeLocaleUrl } from "astro:i18n";
+import ufData from "../../public/data/undesirable-facilities.json";
+
+// 嫌惡設施筆數：從工具頁同一份資料算（資料更新、重建時跟著變，不寫死）
+const ufTotal: number =
+  typeof (ufData as { count?: number }).count === "number"
+    ? (ufData as { count: number }).count
+    : Array.isArray((ufData as { items?: unknown[] }).items)
+      ? (ufData as { items: unknown[] }).items.length
+      : 0;
+const ufHasOfficial = Array.isArray((ufData as { sources?: { id: string }[] }).sources)
+  && (ufData as { sources: { id: string }[] }).sources.some(s => s.id !== "osm");
+const ufSrcNote = ufHasOfficial ? "政府開放資料與 OpenStreetMap" : "OSM 公開圖資";
 
 // 一般房貸參考利率：跟物件頁「月付試算」共用 src/config.ts 的 loan，改那邊兩處就同步。
 // 2.306% → "2.306"；0.021 → "2.1"（去掉尾端 0）
@@ -67,7 +79,7 @@ const buyerTools = [
   {
     icon: "🗺️",
     name: "嫌惡設施查詢地圖",
-    desc: "輸入台中地址或直接在地圖上點，查周邊 300／500／1000 公尺內的加油站、宮廟、公墓、殯葬設施、變電所、高壓電塔、基地台、市場、矯正機關。台中共 4,028 筆（OSM 公開圖資，輔助參考）。",
+    desc: `輸入台中地址或直接在地圖上點，查周邊 300／500／1000 公尺內的加油站、宮廟、公墓、殯葬設施、變電所、高壓電塔、基地台、市場、矯正機關。台中共 ${ufTotal.toLocaleString("en-US")} 筆（${ufSrcNote}，輔助參考）。`,
     // 2026-08-28 從 teddy-share-app.vercel.app 搬到站內：
     // 工具掛在別的網域，對官網 SEO 一點幫助都沒有 —— 而「嫌惡設施查詢」
     // 這群字有 157 次曝光、Google 第一頁全是地圖工具站。
@@ -179,7 +191,7 @@ const breadcrumbSchema = {
 const heroStats = [
   { prefix: "約", value: 76, suffix: "萬", label: "筆門牌" },
   { prefix: "約", value: 2, suffix: "萬", label: "個垃圾車清運點" },
-  { value: 4028, label: "筆嫌惡設施點位" },
+  { value: ufTotal, label: "筆嫌惡設施點位" },
   { value: 28, label: "個行政區可查行情" },
 ];
 

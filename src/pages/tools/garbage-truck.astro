@@ -14,7 +14,7 @@
  *   - 地址 → 座標：/js/tc-addr.js + /data/tc-addr/（115 年 1 月門牌，全在瀏覽器本機比對）
  *
  * ⛔ 隱私：使用者輸入的地址只在瀏覽器比對，不放 URL、不送 GA、不送任何 API。
- *    GA4 事件只記 result / via / district / radius（沒有地址、沒有座標）。
+ *    GA4 事件只記 result / via / radius（沒有地址、沒有座標、也不帶行政區）。
  * ⛔ 規則類敘述一律要有官方來源（rules.json evidence 的網址）；「週三、週日停收」只能當一般說明，
  *    不是環保局明文規定。106 年分日回收說明跟現況不一致，只當背景、不拿來判斷哪天收。
  * ⛔ 「這一點今天車子到了沒／預計幾點到」不做（那是環保局非開放查詢服務），一律連官方。
@@ -27,6 +27,15 @@
  *     最近的清運點是 fill-extrusion 光柱、路線是流動虛線、即時垃圾車是 HTML 呼吸光點
  *   - 查詢結果、清單的文字一字不動（功能基準 scratchpad/tools2/design/baseline/capture.py 逐筆比對）；
  *     「下一班倒數」光圈放在 #gt-summary 外面，不影響摘要全文
+ *
+ * 畫面（2026-09-30 第二版「傍晚光軌＋時間軸」，跟學區、嫌惡設施頁分開）：
+ *   - 主視覺 scene="routes"（傍晚光軌，場景本身在 CinematicHero）
+ *   - 結果主體＝時間軸（#gt-tl）：選的那天各清運點的垃圾／資源回收時段由早到晚排在一條垂直軸上，
+ *     同一分鐘開始的點聚成一組；今天有「現在」指示（Asia/Taipei），已過的淡化、下一班接倒數光圈；
+ *     那天沒有收 → 顯示下一次有收的那天並說明。原本依距離的卡片清單（#gt-list）變成第二個分頁「依距離」
+ *   - 地圖：每台車（開放資料登記的車號）在範圍內依時間的行車順序畫成光軌（line-gradient＋流動光點），
+ *     站牌依時間順序亮起一次；看路線時整條路線也是光軌。reduced-motion 不流動、不逐一亮起
+ *   - 時間軸只是「呈現方式」：資料、今天有沒有收、下一班、過時警示全部沿用原本的判斷（segs／nextPickup／isDrift）
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -253,6 +262,7 @@ const faqSchema = {
   <main id="main-content" data-backUrl={backUrl} class="gt-main pb-4">
     <CinematicHero
       variant="tool"
+      scene="routes"
       layout="split"
       eyebrow="臺中市環保局開放資料"
       title="台中垃圾車時間查詢"
@@ -337,6 +347,7 @@ const faqSchema = {
             <p class="gt-next-sub" data-n="sub"></p>
             <p class="gt-next-where" data-n="where"></p>
             <p class="gt-next-note">依開放資料的預定班表推算，僅供參考</p>
+            <button type="button" class="gt-next-go" data-act="tl-next" data-n="go" hidden>在時間軸上看</button>
           </div>
         </section>
         <section id="gt-summary" aria-live="polite" hidden></section>
@@ -373,19 +384,24 @@ const faqSchema = {
               <span>看哪一天</span>
               <select id="gt-day" class="gt-select"></select>
             </label>
-            <div class="gt-seg" role="radiogroup" aria-label="排序方式">
-              <label><input type="radio" name="gt-sort" value="dist" checked /><span>依距離</span></label>
-              <label><input type="radio" name="gt-sort" value="time" /><span>依時間</span></label>
+            <div class="gt-tabs" role="tablist" aria-label="清運點的排法">
+              <button type="button" role="tab" id="gt-tab-tl" data-tab="tl" aria-controls="gt-tl" aria-selected="true">時間軸</button>
+              <button type="button" role="tab" id="gt-tab-dist" data-tab="dist" aria-controls="gt-distpanel" aria-selected="false" tabindex="-1">依距離</button>
             </div>
-            <label class="gt-check gt-check-inline">
-              <input type="checkbox" id="gt-only" />
-              <span>只看這天有車的點</span>
-            </label>
           </div>
         </div>
         <div id="gt-dayinfo"></div>
-        <ol id="gt-list" class="gt-list cine-stagger"></ol>
-        <button type="button" id="gt-more" class="gt-btn gt-btn-outline gt-btn-block cine-btn" hidden>顯示更多</button>
+        {/* 時間軸（預設分頁）：那天的班次由早到晚；點一下地圖飛過去開彈窗 */}
+        <div id="gt-tl" class="gt-tl" role="tabpanel" aria-labelledby="gt-tab-tl"></div>
+        {/* 依距離（第二個分頁）：原本的清運點卡片清單，內容不變 */}
+        <div id="gt-distpanel" class="gt-distpanel" role="tabpanel" aria-labelledby="gt-tab-dist" hidden>
+          <label class="gt-check gt-check-inline gt-only-row">
+            <input type="checkbox" id="gt-only" />
+            <span>只看這天有車的點</span>
+          </label>
+          <ol id="gt-list" class="gt-list cine-stagger"></ol>
+          <button type="button" id="gt-more" class="gt-btn gt-btn-outline gt-btn-block cine-btn" hidden>顯示更多</button>
+        </div>
       </section>
     </div>
 
@@ -508,6 +524,7 @@ const faqSchema = {
           <li>
             清運點（84004）、垃圾車動態（83558）、門牌點位資料依<a class="text-accent underline" href={LICENSE_URL} rel="noopener" target="_blank">政府資料開放授權條款－第 1 版</a>使用。地圖底圖 © <a class="underline" href="https://maps.nlsc.gov.tw/" rel="noopener" target="_blank">內政部國土測繪中心</a>「臺灣通用電子地圖」。
           </li>
+          <li>地圖元件：<a class="text-accent underline" href="https://maplibre.org/" rel="noopener" target="_blank">MapLibre GL JS</a> 4.7.1（BSD-3-Clause 授權）</li>
         </ul>
       </section>
 
@@ -563,12 +580,13 @@ const faqSchema = {
         legend: $("gt-legend"), live: $("gt-live"), liveRow: $("gt-live-row"), liveSt: $("gt-live-status"),
         route: $("gt-route"), listwrap: $("gt-listwrap"), day: $("gt-day"), only: $("gt-only"),
         dayinfo: $("gt-dayinfo"), list: $("gt-list"), more: $("gt-more"),
+        tl: $("gt-tl"), distpanel: $("gt-distpanel"), tabTl: $("gt-tab-tl"), tabDist: $("gt-tab-dist"),
         holLeft: $("gt-hol-left"), holSel: $("gt-hol-dist"), holOut: $("gt-hol-out"),
         holMapcol: $("gt-hol-mapcol"), holMap: $("gt-hol-map"),
       };
       var S = {
         pt: null, via: "", label: "", note: "", dist: "", all: [], radius: 300,
-        sort: "dist", dayOff: 0, only: false, limit: PAGE, seq: 0, stale: false,
+        sort: "dist", dayOff: 0, only: false, limit: PAGE, seq: 0, stale: false, tab: "tl",
       };
       var isTouch = !!(window.matchMedia && window.matchMedia("(hover: none) and (pointer: coarse)").matches);
 
@@ -786,7 +804,7 @@ const faqSchema = {
         pts.forEach(function (p) { w = Math.min(w, p[0]); e = Math.max(e, p[0]); s = Math.min(s, p[1]); n = Math.max(n, p[1]); });
         return [[w, s], [e, n]];
       }
-      var MS = { q: fcol(), stops: fcol(), near: fcol(), nearPt: fcol(), route: fcol(), routePts: fcol(), holNear: [] };
+      var MS = { q: fcol(), stops: fcol(), near: fcol(), nearPt: fcol(), route: fcol(), routePts: fcol(), trails: fcol(), holNear: [] };
       function setSrc(k, data) { MS[k] = data; var src = M && M.getSource("gt-" + k); if (src) src.setData(data); }
       // 最近清運點的光柱：內芯分 4 段往上越來越淡（fill-extrusion 不能做透明漸層，用顏色往背景色退），外面包一層半透明光暈
       var BEAM_Z = [[0, 26], [26, 50], [50, 72], [72, 90]]; // 各段高度（公尺）
@@ -824,26 +842,63 @@ const faqSchema = {
       }
       function qLabel() { return S.via === "geo" ? "你的位置" : S.via === "address" ? "你查的地址" : "你在地圖上點的位置"; }
 
-      // 動態效果（只在地圖看得到、分頁在前景、沒有「減少動態」時跑）：查詢範圍的擴散光環、路線流動虛線、光柱升起
-      // 都有結束點：光環擴散 3 圈、虛線流 6 秒、光柱升到頂就停，之後地圖不再逐格重畫（省電、不發燙）。
-      // 新查詢、換 300／500 公尺、開新路線、地圖重新捲進畫面時再播一輪。
-      var DASH = [[0, 4, 3], [0.5, 4, 2.5], [1, 4, 2], [1.5, 4, 1.5], [2, 4, 1], [2.5, 4, 0.5], [3, 4, 0],
-        [0, 0.5, 3, 3.5], [0, 1, 3, 3], [0, 1.5, 3, 2.5], [0, 2, 3, 2], [0, 2.5, 3, 1.5], [0, 3, 3, 1], [0, 3.5, 3, 0.5]];
-      var PULSE_MS = 2800, PULSE_N = 3, DASH_MS = 6000;
-      // pq／pr：光環／虛線這一輪的開始時間（0＝沒在播、-1＝下一格開始計時）
-      var fx = { raf: 0, vis: true, last: 0, dash: -1, beam: 1, t0: 0, pq: 0, pr: 0 };
+      // 動態效果（只在地圖看得到、分頁在前景、沒有「減少動態」時跑）：查詢範圍的擴散光環、光軌流動、站牌依序亮起、光柱升起
+      // 都有結束點：光環擴散 3 圈、光軌流 3 趟、站牌亮完一輪、光柱升到頂就停，之後地圖不再逐格重畫（省電、不發燙）。
+      // 新查詢、換 300／500 公尺、換「看哪一天」、開新路線時再播；地圖重新捲進畫面時光環、光軌再播一輪（站牌只亮一次）。
+      var PULSE_MS = 2800, PULSE_N = 3, FLOW_MS = 3400, FLOW_N = 3, FLASH_TAIL = 2.6;
+      // pq／pr／pt／pl：光環／路線光點／範圍光軌光點／站牌亮起 這一輪的開始時間（0＝沒在播、-1＝下一格開始計時）
+      var fx = { raf: 0, vis: true, last: 0, beam: 1, t0: 0, pq: 0, pr: 0, pt: 0, pl: 0, flN: 0, flStep: 160, dim: false };
+      // 傍晚光軌：早 → 晚 由暖橙走到奶油白（深色＝夜裡的車燈，亮一點）；光點是一小段往前跑的亮光
+      var TRAIL = {
+        light: { a: "#c05a17", b: "#dc8a34", c: "#efbd6a", glow: "#f0913f", glowOp: 0.44, casing: "#fff6e6", casingOp: 0.75, hot: "255,251,238", comet: 1 },
+        dark: { a: "#ff8b3d", b: "#ffb862", c: "#fff0cc", glow: "#ff9442", glowOp: 0.45, casing: "#1c120a", casingOp: 0.55, hot: "255,244,214", comet: 1 },
+      };
+      // 地圖的傍晚色調：cine-map 的琥珀疊色層改成偏暖橙（只改顏色與濃度，在著色器裡算，不吃效能）
+      var EVE = { light: { tint: "#ee8438", op: 0.13 }, dark: { tint: "#e27a2a", op: 0.2 } };
+      function trailC() { return TRAIL[isDark() ? "dark" : "light"]; }
+      function trailGrad(C) { return ["interpolate", ["linear"], ["line-progress"], 0, C.a, 0.55, C.b, 1, C.c]; }
+      // 光點頭在 p（0～1 之外＝還沒進來／已經走完），後面拖一段 0.24 長的尾巴
+      function cometGrad(p, C) {
+        var st = [], N = 32;
+        for (var i = 0; i <= N; i++) {
+          var x = i / N, dx = p - x, al = 0;
+          if (dx >= 0 && dx < 0.24) al = Math.pow(1 - dx / 0.24, 2.2);
+          else if (dx < 0 && dx > -0.025) al = 1 + dx / 0.025;
+          st.push(x, "rgba(" + C.hot + "," + (al * C.comet).toFixed(3) + ")");
+        }
+        return ["interpolate", ["linear"], ["line-progress"]].concat(st);
+      }
+      // 站牌依時間順序亮起：o＝這個點在光軌那天的時間名次（同一分鐘同一名；-1＝那天沒有班次）
+      function flashExpr(k) {
+        return ["case", ["<", ["get", "o"], 0], 0, [">", ["get", "o"], k], 0,
+          ["max", 0, ["-", 1, ["/", ["-", k, ["get", "o"]], FLASH_TAIL]]]];
+      }
       function fxNeed() {
         return !!(M && !RM && fx.vis && document.visibilityState === "visible" &&
-          ((fx.pq && MS.q.features.length) || (fx.pr && MS.route.features.length) || (fx.beam < 1 && MS.near.features.length)));
+          ((fx.pq && MS.q.features.length) || (fx.pr && MS.route.features.length) || (fx.pt && MS.trails.features.length) ||
+           (fx.pl && MS.stops.features.length) || (fx.beam < 1 && MS.near.features.length)));
       }
       function fxKick() { if (!fx.raf && fxNeed()) fx.raf = requestAnimationFrame(fxTick); }
       function fxArmPulse() { if (!RM) fx.pq = -1; fxKick(); }
-      function fxArmDash() { if (!RM) fx.pr = -1; fxKick(); }
+      function fxArmRoute() { if (!RM) fx.pr = -1; fxKick(); }
+      function fxArmTrails() { if (!RM) fx.pt = -1; fxKick(); }
+      // 站牌亮起：等鏡頭停下、地圖露出來才播（查詢後鏡頭還在飛時先別亮）
+      function fxArmFlash(n) {
+        fx.pl = 0;
+        fx.flN = n;
+        if (RM || !n) return;
+        fx.flStep = Math.max(90, Math.min(260, 3600 / n));
+        var seq = S.seq, tok = ++fx.flTok;
+        var go = function () { if (seq === S.seq && tok === fx.flTok) { fx.pl = -1; fxKick(); } };
+        if (cm && cm.whenSettled) cm.whenSettled(go, 0.35); else go();
+      }
+      fx.flTok = 0;
       function fxTick(t) {
         fx.raf = 0;
         if (!fxNeed()) return;
         if (t - fx.last >= 40) {
           fx.last = t;
+          var busy = M.isMoving() || !!(cm && cm.isBusy && cm.isBusy());
           try {
             if (fx.pq && MS.q.features.length) {
               if (fx.pq < 0) fx.pq = t;
@@ -855,45 +910,101 @@ const faqSchema = {
                 M.setPaintProperty("gt-q-pulse", "line-opacity", 0.8 * (1 - p) * (1 - p));
               }
             }
-            if (fx.pr && MS.route.features.length) {
-              if (fx.pr < 0) fx.pr = t;
-              if (t - fx.pr >= DASH_MS) { fx.pr = 0; fx.dash = 0; M.setPaintProperty("gt-route-line", "line-dasharray", DASH[0]); }
-              else {
-                var st = Math.floor(t / 80) % DASH.length;
-                if (st !== fx.dash) { fx.dash = st; M.setPaintProperty("gt-route-line", "line-dasharray", DASH[st]); }
-              }
+            // 光點沿光軌往前跑（鏡頭在飛時先不動，等停下再從頭跑）
+            [["pr", "route", "gt-route-comet"], ["pt", "trails", "gt-trails-comet"]].forEach(function (x) {
+              var k = x[0];
+              if (!fx[k] || !MS[x[1]].features.length) return;
+              if (busy) { if (fx[k] > 0) { fx[k] = -1; M.setPaintProperty(x[2], "line-opacity", 0); } return; }
+              if (fx[k] < 0) fx[k] = t;
+              var el = t - fx[k];
+              if (el >= FLOW_MS * FLOW_N) { fx[k] = 0; M.setPaintProperty(x[2], "line-opacity", 0); return; }
+              M.setPaintProperty(x[2], "line-gradient", cometGrad((el % FLOW_MS) / FLOW_MS * 1.3 - 0.03, trailC()));
+              M.setPaintProperty(x[2], "line-opacity", k === "pt" && fx.dim ? 0 : 1);
+            });
+            if (fx.pl && MS.stops.features.length && !busy) {
+              if (fx.pl < 0) fx.pl = t;
+              var kk = (t - fx.pl) / fx.flStep;
+              if (kk > fx.flN + FLASH_TAIL) { fx.pl = 0; M.setPaintProperty("gt-stops-flash", "circle-opacity", 0); }
+              else M.setPaintProperty("gt-stops-flash", "circle-opacity", flashExpr(kk));
             }
-            if (fx.beam < 1 && MS.near.features.length && !M.isMoving() && !(cm && cm.isBusy && cm.isBusy())) {
+            if (fx.beam < 1 && MS.near.features.length && !busy) {
               if (!fx.t0) fx.t0 = t;
               fx.beam = Math.min(1, (t - fx.t0) / 1200);
               beamScale(1 - Math.pow(1 - fx.beam, 3));
             }
-          } catch (x) { fx.beam = 1; fx.pq = 0; fx.pr = 0; }
+          } catch (x) { fx.beam = 1; fx.pq = 0; fx.pr = 0; fx.pt = 0; fx.pl = 0; }
         }
         fx.raf = requestAnimationFrame(fxTick);
       }
+      // 焦點那一台（hi=1）全亮；其他車約 0.25 不透明、線寬減半
+      var HI = ["==", ["get", "hi"], 1];
+      function trOp(C, part) {
+        return part === "core" ? ["case", HI, 0.92, 0.25] : part === "glow" ? ["case", HI, C.glowOp, 0.05] : ["case", HI, C.casingOp, 0.12];
+      }
+      function trW(part) {
+        var W = { glow: [9, 12, 16], casing: [5, 6, 7.5], core: [2.4, 2.9, 3.6] }[part];
+        return ["interpolate", ["linear"], ["zoom"], 13, ["case", HI, W[0], W[0] / 2], 15, ["case", HI, W[1], W[1] / 2], 17, ["case", HI, W[2], W[2] / 2]];
+      }
+      // 看路線時：範圍內其他車的光軌退到後面（淡掉），路線那一條最亮
+      function trailDim(on) {
+        fx.dim = !!on;
+        if (!M) return;
+        var C = trailC();
+        try {
+          M.setPaintProperty("gt-trails-core", "line-opacity", on ? 0.22 : trOp(C, "core"));
+          M.setPaintProperty("gt-trails-glow", "line-opacity", on ? 0.08 : trOp(C, "glow"));
+          M.setPaintProperty("gt-trails-casing", "line-opacity", on ? 0.15 : trOp(C, "casing"));
+          if (on) M.setPaintProperty("gt-trails-comet", "line-opacity", 0);
+        } catch (e) { /* 圖層還沒建好 */ }
+      }
+      function evening() {
+        var ev = EVE[isDark() ? "dark" : "light"];
+        try {
+          M.setPaintProperty("cine-tint", "background-color", ev.tint);
+          M.setPaintProperty("cine-tint", "background-opacity", ev.op);
+        } catch (e) { /* 底圖樣式不同就算了 */ }
+      }
 
       function addLayers() {
-        ["q", "route", "routePts", "stops", "near", "nearPt"].forEach(function (k) { M.addSource("gt-" + k, { type: "geojson", data: MS[k] }); });
+        ["q", "routePts", "stops", "near", "nearPt"].forEach(function (k) { M.addSource("gt-" + k, { type: "geojson", data: MS[k] }); });
+        // 光軌要 line-progress（line-gradient），來源得開 lineMetrics
+        ["trails", "route"].forEach(function (k) { M.addSource("gt-" + k, { type: "geojson", data: MS[k], lineMetrics: true }); });
         var col = stCol();
-        var a = accent(), dk = isDark();
+        var a = accent(), dk = isDark(), C = trailC();
         var L = function (o) { M.addLayer(o); };
+        var RJ = { "line-join": "round", "line-cap": "round" };
         L({ id: "gt-q-fill", type: "fill", source: "gt-q", paint: { "fill-color": "#e0a95a", "fill-opacity": 0.09 } });
         L({ id: "gt-q-glow", type: "line", source: "gt-q", paint: { "line-color": "#f2c27c", "line-width": 10, "line-blur": 9, "line-opacity": 0.45 } });
         L({ id: "gt-q-pulse", type: "line", source: "gt-q", paint: { "line-color": "#f5c983", "line-width": 3, "line-blur": 2.5, "line-opacity": 0 } });
         L({ id: "gt-q-line", type: "line", source: "gt-q", paint: { "line-color": a, "line-width": 2, "line-opacity": 0.95 } });
-        L({ id: "gt-route-casing", type: "line", source: "gt-route", layout: { "line-join": "round", "line-cap": "round" },
-          paint: { "line-color": "#fff3dc", "line-width": 9, "line-blur": 4, "line-opacity": dk ? 0.3 : 0.65 } });
-        L({ id: "gt-route-line", type: "line", source: "gt-route", layout: { "line-join": "round" },
-          paint: { "line-color": a, "line-width": 3.2, "line-dasharray": DASH[0] } });
+        // 範圍內各車的光軌：外層柔光 → 底襯 → 漸層光芯 → 往前跑的光點
+        L({ id: "gt-trails-glow", type: "line", source: "gt-trails", layout: RJ,
+          paint: { "line-color": C.glow, "line-width": trW("glow"), "line-blur": 7, "line-opacity": trOp(C, "glow") } });
+        L({ id: "gt-trails-casing", type: "line", source: "gt-trails", layout: RJ,
+          paint: { "line-color": C.casing, "line-width": trW("casing"), "line-blur": 1.5, "line-opacity": trOp(C, "casing") } });
+        L({ id: "gt-trails-core", type: "line", source: "gt-trails", layout: RJ,
+          paint: { "line-gradient": trailGrad(C), "line-width": trW("core"), "line-opacity": trOp(C, "core") } });
+        L({ id: "gt-trails-comet", type: "line", source: "gt-trails", layout: RJ, filter: HI,
+          paint: { "line-gradient": cometGrad(-1, C), "line-width": ["interpolate", ["linear"], ["zoom"], 13, 4.5, 17, 6.5], "line-blur": 1.2, "line-opacity": 0 } });
+        // 看路線：同一套光軌，粗一點
+        L({ id: "gt-route-casing", type: "line", source: "gt-route", layout: RJ,
+          paint: { "line-color": C.glow, "line-width": 14, "line-blur": 9, "line-opacity": C.glowOp + 0.1 } });
+        L({ id: "gt-route-line", type: "line", source: "gt-route", layout: RJ,
+          paint: { "line-gradient": trailGrad(C), "line-width": 3.6 } });
+        L({ id: "gt-route-comet", type: "line", source: "gt-route", layout: RJ,
+          paint: { "line-gradient": cometGrad(-1, C), "line-width": 7, "line-blur": 1.5, "line-opacity": 0 } });
         L({ id: "gt-route-pts", type: "circle", source: "gt-routePts",
-          paint: { "circle-radius": 3.5, "circle-color": "#fffaf0", "circle-stroke-color": a, "circle-stroke-width": 1.5 } });
+          paint: { "circle-radius": 3.5, "circle-color": "#fffaf0", "circle-stroke-color": C.b, "circle-stroke-width": 1.6 } });
         L({ id: "gt-stops-halo", type: "circle", source: "gt-stops",
-          paint: { "circle-color": dk ? "#e2b46e" : "#d9a45b", "circle-radius": ["interpolate", ["linear"], ["zoom"], 11, 7, 15, 15, 18, 22], "circle-blur": 1, "circle-opacity": 0.35 } });
+          paint: { "circle-color": dk ? "#e2b46e" : "#d9a45b", "circle-radius": ["interpolate", ["linear"], ["zoom"], 11, 7, 15, 15, 18, 22], "circle-blur": 1, "circle-opacity": ["case", ["==", ["get", "st"], "n"], 0, 0.35] } });
+        // 站牌亮起的光暈（平常透明；fxTick 依時間名次一個一個點亮）
+        L({ id: "gt-stops-flash", type: "circle", source: "gt-stops",
+          paint: { "circle-color": dk ? "#ffe0a3" : "#ffae4a", "circle-radius": ["interpolate", ["linear"], ["zoom"], 11, 10, 15, 20, 18, 28], "circle-blur": 0.75, "circle-opacity": 0 } });
         L({ id: "gt-stops", type: "circle", source: "gt-stops",
           paint: {
             "circle-color": col, "circle-opacity": 0.96,
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 11, 4, 15, 7, 18, 9],
+            // 這天沒排班的點（灰）小一號：手機上一大片灰點會蓋掉連線
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 11, ["case", ["==", ["get", "st"], "n"], 2.6, 4], 15, ["case", ["==", ["get", "st"], "n"], 4.4, 7], 18, ["case", ["==", ["get", "st"], "n"], 6, 9]],
             "circle-stroke-color": dk ? "#fff4df" : "#fffaf0",
             // 位置約略的點：描邊細一點、淡一點（原本是虛線框）
             "circle-stroke-width": ["case", ["==", ["get", "ap"], 1], 1, 1.5],
@@ -909,19 +1020,29 @@ const faqSchema = {
           paint: { "fill-extrusion-color": "#ffd48a", "fill-extrusion-base": 0, "fill-extrusion-height": beamH(s0, "h"), "fill-extrusion-opacity": 0.28, "fill-extrusion-vertical-gradient": false } });
         // 光柱是「光」不是柱子：把立體的明暗壓到很淡
         try { M.setLight({ anchor: "viewport", intensity: 0.1, color: "#fff4e0" }); } catch (e) { /* 舊版沒有 setLight */ }
+        evening();
+        if (fx.dim) trailDim(true);
       }
       function restyle() {
         if (!M) return;
-        var a = accent(), dk = isDark();
+        var a = accent(), dk = isDark(), C = trailC();
         try {
+          evening();
           M.setPaintProperty("gt-q-line", "line-color", a);
-          M.setPaintProperty("gt-route-line", "line-color", a);
-          M.setPaintProperty("gt-route-pts", "circle-stroke-color", a);
-          M.setPaintProperty("gt-route-casing", "line-opacity", dk ? 0.3 : 0.65);
+          M.setPaintProperty("gt-trails-glow", "line-color", C.glow);
+          M.setPaintProperty("gt-trails-casing", "line-color", C.casing);
+          M.setPaintProperty("gt-trails-core", "line-gradient", trailGrad(C));
+          if (!fx.dim) trailDim(false); // 深淺色的柔光濃度不同
+          M.setPaintProperty("gt-route-casing", "line-color", C.glow);
+          M.setPaintProperty("gt-route-casing", "line-opacity", C.glowOp + 0.1);
+          M.setPaintProperty("gt-route-line", "line-gradient", trailGrad(C));
+          M.setPaintProperty("gt-route-pts", "circle-stroke-color", C.b);
+          M.setPaintProperty("gt-stops-flash", "circle-color", dk ? "#ffe0a3" : "#ffae4a");
           M.setPaintProperty("gt-stops", "circle-stroke-color", dk ? "#fff4df" : "#fffaf0");
           M.setPaintProperty("gt-stops", "circle-color", stCol());
           M.setPaintProperty("gt-stops-halo", "circle-color", dk ? "#e2b46e" : "#d9a45b");
           M.setPaintProperty("gt-near-beam", "fill-extrusion-color", beamColor());
+          trailDim(fx.dim);
         } catch (e) { /* 圖層還沒建好 */ }
       }
 
@@ -1042,7 +1163,10 @@ const faqSchema = {
           // 地圖露出 25% 以上才算看得到；重新捲進畫面時光環再播一輪（地圖只露一條邊時不重畫）
           new IntersectionObserver(function (es) {
             var en = es[es.length - 1], v = en.isIntersecting && en.intersectionRatio >= 0.25;
-            if (v && !fx.vis && MS.q.features.length && !RM) fx.pq = -1;
+            if (v && !fx.vis && !RM) {
+              if (MS.q.features.length) fx.pq = -1;
+              if (MS.trails.features.length) fx.pt = -1;
+            }
             fx.vis = v;
             fxKick();
           }, { threshold: [0, 0.25] }).observe(E.map);
@@ -1051,6 +1175,9 @@ const faqSchema = {
         if ("MutationObserver" in window) {
           new MutationObserver(restyle).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
         }
+        // 地圖比查詢晚載好：光軌、站牌亮起補播
+        if (MS.trails.features.length) fxArmTrails();
+        if (TL.rank) fxArmFlash(TL.rank);
         fxKick();
       }
       function tipHtml(it) {
@@ -1239,7 +1366,7 @@ const faqSchema = {
           renderAll(true);
           var n = inR().length;
           setStatus(n ? (mapOK() ? "想改查別的位置：點地圖，再按「改查這個位置」。" : "查好了，結果在下面。") : "這個位置附近沒有清運點資料，可以換個位置或放大範圍。");
-          track("gt_query", { result: n ? "ok" : "empty", via: via, district: S.dist || "", radius: S.radius });
+          track("gt_query", { result: n ? "ok" : "empty", via: via, radius: S.radius }); // ⛔ 不帶行政區：由地址／定位推出來的位置也不送
           maybeScroll();
         }).catch(function () {
           if (seq !== S.seq) return;
@@ -1549,11 +1676,11 @@ const faqSchema = {
             h.push("<p>3 公里內沒有國定假日定點" + (S.dist && BOOT.hol.pdf[S.dist] ? "，下面可以看" + esc(S.dist) + "完整的定點班表，或問清潔隊" : "，請看環保局公告附的各區定點表，或問當地清潔隊") + "。</p>");
           } else if (todayHol) {
             // 今天就是國定假日：三個都攤開
-            h.push("<p>離你最近的假日定點" + (mapOK() ? "（地圖上紫色 1～3）" : "") + "：</p><ol class=\"gt-ol\">");
+            h.push("<p>離你最近的假日定點" + (mapOK() ? "（地圖上灰青色方塊 1～3）" : "") + "：</p><ol class=\"gt-ol\">");
             arr.forEach(function (x) { h.push("<li>" + line(x) + "</li>"); });
             h.push("</ol>");
           } else if (arr.length) {
-            h.push("<p>當天離你最近的假日定點" + (mapOK() ? "（地圖上紫色 1）" : "") + "：" + line(arr[0]) + "</p>");
+            h.push("<p>當天離你最近的假日定點" + (mapOK() ? "（地圖上灰青色方塊 1）" : "") + "：" + line(arr[0]) + "</p>");
             if (arr.length > 1) {
               h.push('<details class="gt-more-d"><summary>再看 ' + (arr.length - 1) + ' 個</summary><ol class="gt-ol" start="2">');
               arr.slice(1).forEach(function (x) { h.push("<li>" + line(x) + "</li>"); });
@@ -1570,7 +1697,7 @@ const faqSchema = {
           box.innerHTML = head + '<p class="gt-small">假日定點資料載入失敗，請看下方「國定假日定點班表」或環保局公告。</p></div>';
         });
       }
-      // 主地圖上「離你最近的假日定點」紫色 1～3（地圖還沒載好就先記著，載好時補畫）
+      // 主地圖上「離你最近的假日定點」灰青色 1～3（地圖還沒載好就先記著，載好時補畫）
       var hMk = [];
       function drawHolNear(arr) {
         hMk.forEach(function (m) { m.remove(); });
@@ -1581,6 +1708,278 @@ const faqSchema = {
           var p = mkPop(popMain, E.map, { offset: 14 }).setHTML('<div class="gt-pop"><strong>國定假日定點 ' + (i + 1) + "</strong><br>" + esc(x.s.place) + "<br>" + esc(x.s.start) + "–" + esc(x.s.end) + "・" + mtxt(x.d) + "</div>");
           hMk.push(new ML.Marker({ element: holEl(i + 1, i) }).setLngLat([x.s.lng, x.s.lat]).setPopup(p).addTo(M));
         });
+      }
+
+      /* ---------- 時間軸（結果主體，預設分頁） ----------
+       * 選的那天（沒有收、或國定假日 → 往後找下一個有排班的日子）範圍內每個點的班次，依開始時間由早到晚；
+       * 同一分鐘開始的點聚成一組。資料判斷全部沿用上面的 segs／isDrift／nextPickup（跟摘要、清單同一套），這裡只管排版。 */
+      var TL_PAGE = 20;
+      var TL = { key: "", animKey: "", day: null, groups: [], all: false, rank: 0, ranks: {}, stKey: "", focus: "", focusWhy: "" };
+      // 一個點在某天的班次：垃圾與資源回收開始時間差 5 分鐘內（同一趟）併成一筆
+      function entriesOf(it, day) {
+        var gs = segs(it.s.g[day.slot]), rs = segs(it.s.r[day.slot]), out = [];
+        gs.forEach(function (g) { out.push({ it: it, a: g.a, b: g.b, g: g, r: null }); });
+        rs.forEach(function (r) {
+          for (var i = 0; i < out.length; i++) {
+            var e = out[i];
+            if (e.g && !e.r && Math.abs(r.a - e.g.a) <= 5) { e.r = r; e.a = Math.min(e.a, r.a); e.b = Math.max(e.b, r.b); return; }
+          }
+          out.push({ it: it, a: r.a, b: r.b, g: null, r: r });
+        });
+        return out;
+      }
+      function hasService(day) {
+        if (day.hol) return false;
+        return inR().some(function (it) { return segs(it.s.g[day.slot]).length > 0 || segs(it.s.r[day.slot]).length > 0; });
+      }
+      function tlPick() {
+        var base = dayInfo(S.dayOff);
+        if (hasService(base)) return { day: base, base: base, why: "" };
+        var why = base.hol ? "hol" : "none";
+        for (var k = S.dayOff + 1; k <= S.dayOff + 14; k++) {
+          var d = dayInfo(k);
+          if (hasService(d)) return { day: d, base: base, why: why };
+        }
+        return { day: null, base: base, why: why };
+      }
+      function tlGroups(day) {
+        var ents = [];
+        inR().forEach(function (it) { ents = ents.concat(entriesOf(it, day)); });
+        ents.sort(function (x, y) { return x.a - y.a || x.it.d - y.it.d; });
+        var gs = [], cur = null;
+        ents.forEach(function (e) {
+          if (!cur || cur.a !== e.a) { cur = { a: e.a, b: e.b, ents: [] }; gs.push(cur); }
+          cur.ents.push(e);
+          if (e.b > cur.b) cur.b = e.b;
+        });
+        return gs;
+      }
+      // 下一班垃圾車（跟倒數光圈同一個 nextPickup）剛好在時間軸這一天 → 高亮那一筆
+      function tlNext(day) {
+        if (!day) return null;
+        var n = nextPickup();
+        if (!n || !n.seg || !n.it) return null;
+        if ((n.today ? n.now.ymd : n.ymd) !== day.ymd) return null;
+        return { id: n.it.s.id, a: n.seg.a, today: n.today, now: n.now, seg: n.seg };
+      }
+      function isNx(e, nx) { return !!(nx && e.g && e.it.s.id === nx.id && e.g.a === nx.a); }
+      function tlLeft(nx) { return nx.today ? nx.seg.a - nx.now.min : 0; }
+      function tlNextTxt(nx) {
+        if (!nx.today) return "下一班垃圾車";
+        var m = tlLeft(nx);
+        return m <= 0 ? "照班表，車子這時候會到" :
+          "下一班・還有約 " + (m < 60 ? m + " 分鐘" : Math.floor(m / 60) + " 小時" + (m % 60 ? " " + (m % 60) + " 分" : ""));
+      }
+      function tlRingOff(nx) { var m = tlLeft(nx); return (100 - (m <= 0 ? 1 : Math.min(1, m / RING_MIN)) * 100).toFixed(1); }
+      function tlEntry(e, nx) {
+        var s = e.it.s, dr = isDrift(s), nxt = isNx(e, nx);
+        var meta = [dtxt(e.it), esc(s.method)];
+        if (s.route) meta.push(nw("車號 " + s.route));
+        var kinds = [], TG = '<span class="gt-tag gt-tag-g">垃圾・廚餘</span> ', TR = '<span class="gt-tag gt-tag-r">資源回收</span> ';
+        // 垃圾和資源回收同一個時間（同一趟一起來）→ 兩個標籤、時間只寫一次
+        if (e.g && e.r && segTxt(e.g) === segTxt(e.r)) kinds.push(TG + TR + nw(segTxt(e.g)));
+        else {
+          if (e.g) kinds.push(TG + nw(segTxt(e.g)));
+          if (e.r) kinds.push(TR + nw(segTxt(e.r)));
+        }
+        var badges = (nxt ? '<span class="gt-badge gt-badge-next" data-tl="nexttxt">' + esc(tlNextTxt(nx)) + "</span>" : "") + (dr ? driftBadge(s) : "");
+        return '<button type="button" class="gt-tl-it' + (nxt ? " is-next" : "") + (dr ? " gt-old" : "") + '" data-act="tl" data-id="' + esc(s.id) + '"' +
+          (e.g ? ' data-g="' + esc(segTxt(e.g)) + '"' : "") + (e.r ? ' data-r="' + esc(segTxt(e.r)) + '"' : "") + ">" +
+          '<span class="gt-tl-place">' + esc(s.place) + "</span>" +
+          '<span class="gt-tl-kinds">' + kinds.join('<span class="gt-tl-sep" aria-hidden="true"></span>') + "</span>" +
+          '<span class="gt-tl-meta">' + meta.join("・") + "</span>" +
+          (badges ? '<span class="gt-tl-badges">' + badges + "</span>" : "") + "</button>";
+      }
+      function tlState(g, day, now) {
+        if (!day.isToday) return "";
+        if (g.b + 5 < now.min) return "past";
+        if (g.a <= now.min) return "live";
+        return "";
+      }
+      // 「現在」線：放在第一個「開始時間晚於現在」的時段前面 → 已過、收運中的都在線上面，線下面只有還沒到的
+      // （2026-09-30 查核：原本用「第一個還沒結束的」，較早開始的長班次還在收運時，線下面會接著一串已過的時段）
+      function tlNowIdx(gs, day, now) {
+        if (!day || !day.isToday) return -1;
+        for (var i = 0; i < gs.length; i++) if (gs[i].a > now.min) return i;
+        return gs.length;
+      }
+      // 第一個還沒結束的時段（預設只顯示 20 個時段時，從它往前 2 個開始，收運中的那一組不會被切到畫面外）
+      function tlLiveIdx(gs, day, now) {
+        if (!day || !day.isToday) return -1;
+        for (var i = 0; i < gs.length; i++) if (gs[i].b + 5 >= now.min) return i;
+        return gs.length;
+      }
+      function tlStKey(gs, day, now, nx) {
+        return tlNowIdx(gs, day, now) + ":" + gs.map(function (g) { return tlState(g, day, now).charAt(0); }).join("") + ":" + (nx ? nx.id + "@" + nx.a + (tlLeft(nx) <= 0 ? "!" : "") : "");
+      }
+      function tlReset() {
+        TL.groups = []; TL.ranks = {}; TL.rank = 0; TL.key = ""; TL.day = null; TL.stKey = "";
+        E.tl.innerHTML = "";
+        setSrc("trails", fcol());
+        fxArmFlash(0);
+        var go = E.next && E.next.querySelector('[data-n="go"]');
+        if (go) go.hidden = true;
+      }
+      // 各車（開放資料登記的車號）在範圍內依時間的行車順序 → 連線（光軌）。
+      // 只連真正相鄰的站：隔 4 分鐘以上、或直線超過 150 公尺 → 斷成另一段（2026-09-30 查核：350 公尺／10 分鐘會斜穿街廓、交叉成 X）。
+      // 直線段＋圓角接頭，不做曲線平滑（平滑會外溢出站點、繞出小圈，看起來像實際行駛路線；這只是「依時間經過的點」）。
+      // 只有焦點那一台（下一班的車；點時間軸哪一筆就換成那一台）全亮，其他車淡、細
+      function tlTrails(gs) {
+        var by = {}, feats = [];
+        gs.forEach(function (g) {
+          g.ents.forEach(function (e) {
+            var s = e.it.s;
+            if (s.route) (by[s.route] = by[s.route] || []).push({ a: e.a, ll: [s.lng, s.lat] });
+          });
+        });
+        Object.keys(by).forEach(function (plate) {
+          var pts = [], last = null, hi = plate === TL.focus ? 1 : 0;
+          var flush = function () {
+            if (pts.length >= 2) feats.push({ type: "Feature", properties: { plate: plate, hi: hi }, geometry: { type: "LineString", coordinates: pts } });
+            pts = [];
+          };
+          by[plate].forEach(function (p) {
+            if (last && (p.a - last.a > 4 || haversine(last.ll[1], last.ll[0], p.ll[1], p.ll[0]) > 150)) flush();
+            var l = pts[pts.length - 1];
+            if (!l || l[0] !== p.ll[0] || l[1] !== p.ll[1]) pts.push(p.ll);
+            last = p;
+          });
+          flush();
+        });
+        feats.sort(function (x, y) { return x.properties.hi - y.properties.hi; }); // 焦點那一台畫在最上面
+        return fcol(feats);
+      }
+      // 焦點車：下一班那台 → 沒有下一班（看別天、今天都過了）就用這天最早到的那台
+      function tlFocus(gs, nx) {
+        var plate = "", why = "";
+        if (nx) gs.some(function (g) { return g.ents.some(function (e) { if (isNx(e, nx) && e.it.s.route) { plate = e.it.s.route; why = "next"; return true; } return false; }); });
+        if (!plate) gs.some(function (g) { return g.ents.some(function (e) { if (e.it.s.route) { plate = e.it.s.route; why = "first"; return true; } return false; }); });
+        TL.focus = plate;
+        TL.focusWhy = why;
+      }
+      // 點時間軸的一筆 → 那一台的連線亮起來
+      function tlPickFocus(id) {
+        var it = null;
+        TL.groups.some(function (g) { return g.ents.some(function (e) { if (e.it.s.id === id) { it = e.it; return true; } return false; }); });
+        if (!it || !it.s.route || it.s.route === TL.focus) return;
+        TL.focus = it.s.route;
+        TL.focusWhy = "pick";
+        if (mapOK()) { setSrc("trails", tlTrails(TL.groups)); fxArmTrails(); }
+        updateLegend();
+      }
+      function renderTimeline(still) {
+        var box = E.tl;
+        if (!box) return;
+        var pk = tlPick(), base = pk.base, day = pk.day;
+        var go = E.next && E.next.querySelector('[data-n="go"]');
+        var h = [];
+        if (pk.why) {
+          var head = pk.why === "hol" ?
+            base.full + "是<b>" + esc(base.hol.name) + "</b>：沿街收運暫停，改定時定點（" + '<a class="gt-a" href="#gt-hol">看假日定點班表</a>）。' :
+            base.full + "這附近的點<b>沒有排班</b>。";
+          h.push('<p class="gt-tl-note">' + head + (day ? "下面是下一個有排班的日子：<b>" + esc(day.full) + "</b>。" : "往後兩週也查不到排班。") + "</p>");
+        }
+        if (!day) {
+          box.innerHTML = h.join("");
+          TL.groups = []; TL.ranks = {}; TL.rank = 0; TL.day = null; TL.stKey = "";
+          TL.key = S.seq + "|none|" + S.radius;
+          setSrc("trails", fcol());
+          fxArmFlash(0);
+          if (go) go.hidden = true;
+          return;
+        }
+        var gs = tlGroups(day), n = gs.length, now = twNow(), nx = tlNext(day);
+        var key = S.seq + "|" + day.ymd + "|" + S.radius;
+        var fresh = key !== TL.key;
+        if (fresh) TL.all = false;
+        TL.day = day;
+        TL.groups = gs;
+        var nowIdx = tlNowIdx(gs, day, now), liveIdx = tlLiveIdx(gs, day, now);
+        TL.stKey = tlStKey(gs, day, now, nx);
+        var from = 0, to = n;
+        if (!TL.all && n > TL_PAGE) {
+          from = liveIdx > 0 ? Math.max(0, liveIdx - 2) : 0;
+          to = Math.min(n, from + TL_PAGE);
+          from = Math.max(0, to - TL_PAGE);
+        }
+        var aKey = key + "|" + TL.all;
+        var anim = !still && aKey !== TL.animKey;
+        TL.animKey = aKey;
+        // 上面的「當天說明」已經寫了日期；時間軸跳到下一個有排班的日子時才再寫一次日期
+        h.push('<p class="gt-tl-cap">' + (pk.why ? "<b>" + esc(day.full) + "</b>・" : "") + n + " 個時段，由早到晚" + (mapOK() ? "。點一下，地圖會移到那個點" : "") + "。</p>");
+        if (from > 0) h.push('<button type="button" class="gt-tl-more gt-tl-more-up" data-act="tl-all">再看稍早的 ' + from + " 個時段</button>");
+        h.push('<ol class="gt-tl-list' + (anim ? " gt-stag" : "") + '" aria-label="' + esc(day.full) + '的收運時間，由早到晚">');
+        for (var i = from; i < to; i++) {
+          if (i === nowIdx) h.push(tlNowHtml(now.min));
+          var g = gs[i], st = tlState(g, day, now), gNx = g.ents.some(function (e) { return isNx(e, nx); });
+          h.push('<li class="gt-tl-g' + (st ? " is-" + st : "") + (gNx ? " is-next" : "") + '">' +
+            '<div class="gt-tl-time"><b>' + hm(g.a) + "</b>" + (g.ents.length > 1 ? "<small>" + g.ents.length + " 個點</small>" : "") +
+            (gNx && nx.today ? '<span class="gt-tl-ring' + (tlLeft(nx) <= 0 ? " is-now" : "") + '" aria-hidden="true"><svg viewBox="0 0 36 36" focusable="false"><circle class="gt-tl-rt" cx="18" cy="18" r="15"></circle>' +
+              '<circle class="gt-tl-ra" cx="18" cy="18" r="15" pathLength="100" style="stroke-dashoffset:' + tlRingOff(nx) + '"></circle></svg></span>' : "") +
+            '</div><span class="gt-tl-dot" aria-hidden="true"></span><div class="gt-tl-items">' +
+            g.ents.map(function (e) { return tlEntry(e, nx); }).join("") + "</div></li>");
+        }
+        if (nowIdx === to && nowIdx >= from) h.push(tlNowHtml(now.min));
+        h.push("</ol>");
+        if (to < n) h.push('<button type="button" class="gt-tl-more" data-act="tl-all">顯示全部 ' + n + " 個時段（還有 " + (n - to) + " 個）</button>");
+        // 重畫時保留鍵盤焦點（每 30 秒更新「現在」時不會把使用者正在看的那一筆弄丟）
+        var ae = document.activeElement, fid = ae && box.contains(ae) && ae.getAttribute ? ae.getAttribute("data-id") : null;
+        box.innerHTML = h.join("");
+        if (fid) { var fe = box.querySelector('[data-id="' + fid + '"]'); if (fe) fe.focus({ preventScroll: true }); }
+        if (go) go.hidden = !(nx && box.querySelector(".gt-tl-it.is-next"));
+        if (fresh) {
+          TL.key = key;
+          // 站牌亮起的名次：各點在這一天第一次出現的時段序
+          var rk = {};
+          gs.forEach(function (g, gi) { g.ents.forEach(function (e) { if (!rk.hasOwnProperty(e.it.s.id)) rk[e.it.s.id] = gi; }); });
+          TL.ranks = rk;
+          TL.rank = n;
+          tlFocus(gs, nx);
+          setSrc("trails", mapOK() ? tlTrails(gs) : fcol());
+          fxArmTrails();
+          fxArmFlash(n);
+        }
+      }
+      function tlNowHtml(min) {
+        return '<li class="gt-tl-now"><span class="gt-tl-nowt">現在 <b>' + hm(min) + '</b></span><span class="gt-tl-nowdot" aria-hidden="true"></span><span class="gt-tl-nowline" aria-hidden="true"></span></li>';
+      }
+      // 每 30 秒：「現在」的時間、下一班剩幾分鐘；有班次剛過或輪到下一班 → 整個時間軸安靜重畫（不重播進場）
+      function tlTick() {
+        if (!TL.day || E.listwrap.hidden) return;
+        var now = twNow();
+        if (TL.day.isToday && TL.day.ymd !== now.ymd) { renderList(); return; } // 過了午夜
+        if (!TL.day.isToday) return;
+        var nx = tlNext(TL.day);
+        if (tlStKey(TL.groups, TL.day, now, nx) !== TL.stKey) { renderTimeline(true); return; }
+        var t = E.tl.querySelector(".gt-tl-nowt b");
+        if (t) t.textContent = hm(now.min);
+        if (nx) {
+          var b = E.tl.querySelector('[data-tl="nexttxt"]');
+          if (b) b.textContent = tlNextTxt(nx);
+          var ra = E.tl.querySelector(".gt-tl-ra");
+          if (ra) ra.style.strokeDashoffset = tlRingOff(nx);
+          var rg = E.tl.querySelector(".gt-tl-ring");
+          if (rg) rg.classList.toggle("is-now", tlLeft(nx) <= 0);
+        }
+      }
+      function setTab(t, focus) {
+        S.tab = t === "dist" ? "dist" : "tl";
+        var tl = S.tab === "tl";
+        E.tabTl.setAttribute("aria-selected", tl ? "true" : "false");
+        E.tabDist.setAttribute("aria-selected", tl ? "false" : "true");
+        E.tabTl.tabIndex = tl ? 0 : -1;
+        E.tabDist.tabIndex = tl ? -1 : 0;
+        E.tl.hidden = !tl;
+        E.distpanel.hidden = tl;
+        if (focus) (tl ? E.tabTl : E.tabDist).focus();
+      }
+      function tlGoNext() {
+        setTab("tl");
+        var el = E.tl.querySelector(".gt-tl-it.is-next");
+        if (!el) return;
+        el.classList.add("gt-flash");
+        setTimeout(function () { el.classList.remove("gt-flash"); }, 1600);
+        el.scrollIntoView({ behavior: RM ? "auto" : "smooth", block: "center" });
       }
 
       /* ---------- 清單 ---------- */
@@ -1667,7 +2066,7 @@ const faqSchema = {
         var day = dayInfo(S.dayOff);
         var now = twNow();
         var all = inR();
-        if (!all.length) { E.listwrap.hidden = true; E.list.innerHTML = ""; E.dayinfo.innerHTML = ""; drawStops([], day); return; }
+        if (!all.length) { E.listwrap.hidden = true; E.list.innerHTML = ""; E.dayinfo.innerHTML = ""; tlReset(); drawStops([], day); updateLegend(day); return; }
         E.listwrap.hidden = false;
         var list = sortedItems(day);
         var info = [];
@@ -1700,6 +2099,7 @@ const faqSchema = {
           '<li class="gt-none">這天附近沒有排班的點。</li>';
         E.more.hidden = list.length <= S.limit;
         E.more.textContent = "再顯示 " + Math.min(PAGE, list.length - S.limit) + " 個（共 " + list.length + " 個）";
+        renderTimeline(false); // 先排時間軸：站牌亮起的名次、光軌都從這裡來
         drawStops(all, day);
         updateLegend(day);
       }
@@ -1712,6 +2112,9 @@ const faqSchema = {
           '<span><i class="cine-orb cine-orb--sm cine-orb--grey gt-orb-still"></i>' + (day.hol ? "國定假日（沿街暫停）" : "沒排班") + "</span>" +
           '<span><i class="gt-sq"></i>國定假日定點</span>' +
           (S.pt ? '<span><i class="gt-beam-ic"></i>光柱：最近的清運點</span>' : "") +
+          (S.pt && TL.day && MS.trails.features.length ? '<span><i class="gt-trail-ic"></i>連線：' + (TL.day.isToday ? "今天" : dlabel(TL.day.ymd)) +
+            "同一台車依時間經過的點（不是實際行駛路線）；亮的是" + ({ next: "下一班那台", pick: "你在時間軸點的那台", first: "這天最早到的那台" }[TL.focusWhy] || "其中一台") +
+            (TL.day.ymd !== day.ymd ? "。站點顏色是" + lab + "的班次" : "") + "</span>" : "") +
           (live.on ? '<span><i class="gt-tk"></i>垃圾車大約位置</span>' : "");
       }
       function popupHtml(it, day) {
@@ -1733,15 +2136,18 @@ const faqSchema = {
         if (!mapOK()) return;
         setSrc("stops", fcol(items.map(function (it) {
           stopIdx[it.s.id] = it;
-          return ptF(it.s.lng, it.s.lat, { id: it.s.id, st: stateOf(it.s, day), ap: isApprox(it.s) ? 1 : 0 });
+          // o：時間軸那一天的時段名次（站牌依序亮起用；那天沒班次＝-1）
+          var o = TL.ranks.hasOwnProperty(it.s.id) ? TL.ranks[it.s.id] : -1;
+          return ptF(it.s.lng, it.s.lat, { id: it.s.id, st: stateOf(it.s, day), ap: isApprox(it.s) ? 1 : 0, o: o });
         })));
         drawNear();
       }
-      function openStop(id) {
+      // day：彈窗要講哪一天（從時間軸點進來＝時間軸那一天；其他＝「看哪一天」選的那天）
+      function openStop(id, day) {
         var it = stopIdx[id];
         if (!M || !it) return;
         if (tip) { tip.remove(); tipKey = ""; }
-        mkPop(popMain, E.map, { offset: 10 }).setLngLat([it.s.lng, it.s.lat]).setHTML(popupHtml(it, dayInfo(S.dayOff))).addTo(M);
+        mkPop(popMain, E.map, { offset: 10 }).setLngLat([it.s.lng, it.s.lat]).setHTML(popupHtml(it, day || dayInfo(S.dayOff))).addTo(M);
       }
       // 最近的清運點：3D 光柱（fill-extrusion 小圓柱）＋地面光暈；換了最近的點才重新升起
       var nearId = "";
@@ -1777,6 +2183,7 @@ const faqSchema = {
         return -1;
       }
       function goCard(id) {
+        if (S.tab !== "dist") setTab("dist"); // 一週班表在「依距離」分頁的卡片裡
         var el = $("gt-s-" + id);
         if (!el) {
           var day = dayInfo(S.dayOff);
@@ -1797,14 +2204,15 @@ const faqSchema = {
         setTimeout(function () { el.classList.remove("gt-flash"); }, 1600);
         el.scrollIntoView({ behavior: "smooth", block: "center" });
       }
-      function showOnMap(id) {
+      function showOnMap(id, day) {
         var it = stopIdx[id];
-        if (!mapOK() || !it) return;
+        if (!mapOK() || !it) return false;
         var r = E.map.getBoundingClientRect();
         var visible = r.top >= -40 && r.bottom <= window.innerHeight + 40;
         if (!visible) E.mapcol.scrollIntoView({ behavior: "smooth", block: "start" });
         closePop();
-        camTo([it.s.lng, it.s.lat], Math.max(M ? M.getZoom() : 17, 17)).then(function () { openStop(id); });
+        camTo([it.s.lng, it.s.lat], Math.max(M ? M.getZoom() : 17, 17)).then(function () { openStop(id, day); });
+        return true;
       }
 
       /* ---------- 這台車的路線 ---------- */
@@ -1813,6 +2221,8 @@ const faqSchema = {
         routeState = null;
         setSrc("route", fcol());
         setSrc("routePts", fcol());
+        fx.pr = 0;
+        trailDim(false);
         E.route.hidden = true;
         E.route.innerHTML = "";
         if (!silent && S.pt) camTo([S.pt.lng, S.pt.lat], zoomFor(S.radius));
@@ -1858,6 +2268,7 @@ const faqSchema = {
             E.route.innerHTML = h.join("");
             setSrc("route", fcol());
             setSrc("routePts", fcol());
+            trailDim(false);
             return;
           }
           // 「粗體」那句只在真的有粗體時才講（還沒查地址、或整條路線都在 1 公里外時，畫面上沒有粗體）
@@ -1878,14 +2289,15 @@ const faqSchema = {
           var curEl = E.route.querySelector("li.gt-cur");
           if (curEl) { var ol = curEl.parentNode; ol.scrollTop = Math.max(0, curEl.offsetTop - ol.offsetTop - 60); }
           if (mapOK()) {
-            // 路線：流動虛線（依停靠時間連線）＋各站小白點（電腦滑過、手機點一下看時間）
+            // 路線：傍晚光軌（依停靠時間連線，早→晚由暖橙到奶油白＋往前跑的光點）＋各站小白點（電腦滑過、手機點一下看時間）
             var pts = rows.map(function (x) { return [x.s.lng, x.s.lat]; });
             setSrc("route", fcol([{ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: pts } }]));
             setSrc("routePts", fcol(rows.map(function (x) { return ptF(x.s.lng, x.s.lat, { tip: segTxt(x.seg) + " " + esc(x.s.place) }); })));
+            trailDim(true);
             camFit(bbox(pts), { padding: 36, maxZoom: 17 });
-            fxArmDash();
+            fxArmRoute();
           }
-          track("gt_route", { district: (res.info.dists || [])[0] || "" });
+          track("gt_route", {});
         }).catch(function (err) {
           if (!routeState || routeState.plate !== plate) return;
           var msg = err && err.message === "noroute" ? "開放資料裡沒有車號 " + esc(plate) + " 的路線。" : "路線資料載入失敗，請檢查網路後再試。";
@@ -2069,12 +2481,12 @@ const faqSchema = {
           h.push("</ol>");
           E.holOut.innerHTML = h.join("");
           drawHolMap(list, dist);
-          track("gt_holiday", { district: dist });
+          track("gt_holiday", {});
         }).catch(function () {
           E.holOut.innerHTML = '<p class="gt-small gt-err">假日定點資料載入失敗，請重新整理，或看<a class="gt-a" href="' + esc(BOOT.hol.announcement) + '" rel="noopener" target="_blank">環保局公告</a>。</p>';
         });
       }
-      // 假日定點地圖（第二張 MapLibre；選了行政區才建）：紫色編號標記、你查的位置、鏡頭飛到那一區
+      // 假日定點地圖（第二張 MapLibre；選了行政區才建）：灰青色編號標記、你查的位置、鏡頭飛到那一區
       function drawHolMap(list, dist) {
         if (!CM || !CM.supported()) { E.holMapcol.hidden = true; return; }
         E.holMapcol.hidden = false;
@@ -2176,8 +2588,16 @@ const faqSchema = {
             if (S.pt) renderAll(true);
           });
         });
-        Array.prototype.forEach.call(document.querySelectorAll('input[name="gt-sort"]'), function (el) {
-          el.addEventListener("change", function () { S.sort = el.value; S.limit = PAGE; renderList(); });
+        // 分頁：時間軸／依距離（左右鍵、Home／End 切換，焦點跟著走）
+        [E.tabTl, E.tabDist].forEach(function (b) {
+          b.addEventListener("click", function () { setTab(b.getAttribute("data-tab")); });
+          b.addEventListener("keydown", function (e) {
+            var k = e.key;
+            if (k === "ArrowLeft" || k === "ArrowRight" || k === "Home" || k === "End") {
+              e.preventDefault();
+              setTab(k === "Home" ? "tl" : k === "End" ? "dist" : S.tab === "tl" ? "dist" : "tl", true);
+            }
+          });
         });
         E.day.addEventListener("change", function () {
           S.dayOff = Number(E.day.value) || 0;
@@ -2210,6 +2630,14 @@ const faqSchema = {
           if (!a) return;
           var act = a.getAttribute("data-act");
           if (act === "map") { e.preventDefault(); showOnMap(a.getAttribute("data-id")); }
+          else if (act === "tl") {
+            // 時間軸的一筆：地圖飛過去開彈窗（彈窗講時間軸那一天）；地圖不能用 → 改看「依距離」那張卡
+            e.preventDefault();
+            var tid = a.getAttribute("data-id");
+            tlPickFocus(tid);
+            if (!showOnMap(tid, TL.day)) goCard(tid);
+          } else if (act === "tl-all") { e.preventDefault(); TL.all = true; renderTimeline(true); }
+          else if (act === "tl-next") { e.preventDefault(); tlGoNext(); }
           else if (act === "route") {
             e.preventDefault();
             closePop();
@@ -2231,9 +2659,11 @@ const faqSchema = {
         });
         if (/^#gt-faq-/.test(location.hash)) openFaq(location.hash.slice(1));
         // 「看假日定點」連結：已經查過地址時，直接帶入那一區
-        E.today.addEventListener("click", function (e) {
-          var a = e.target.closest && e.target.closest('a[href="#gt-hol"]');
-          if (a && S.dist) { e.preventDefault(); openHol(S.dist); }
+        [E.today, E.tl].forEach(function (box) {
+          box.addEventListener("click", function (e) {
+            var a = e.target.closest && e.target.closest('a[href="#gt-hol"]');
+            if (a && S.dist) { e.preventDefault(); openHol(S.dist); }
+          });
         });
 
         setInterval(function () {
@@ -2244,9 +2674,10 @@ const faqSchema = {
         setInterval(function () {
           if (document.visibilityState !== "visible") return;
           renderNext(false);
+          tlTick();
         }, 30000);
         document.addEventListener("visibilitychange", function () {
-          if (document.visibilityState === "visible") renderNext(false);
+          if (document.visibilityState === "visible") { renderNext(false); tlTick(); }
         });
       }
 
@@ -2516,7 +2947,7 @@ const faqSchema = {
   [data-theme="dark"] .gt-drift { border-left-color: #ffb4ab; background: rgb(255 180 171 / 0.1); }
   .gt-old { opacity: 0.6; }
   /* 查新地址失敗：上一次的結果淡化 */
-  .gt-stale > .gt-card, .gt-stale > .gt-listhead, .gt-stale > #gt-dayinfo, .gt-stale > .gt-list, .gt-a-route.gt-stale, .gt-next.gt-stale { opacity: 0.45; }
+  .gt-stale > .gt-card, .gt-stale > .gt-listhead, .gt-stale > #gt-dayinfo, .gt-stale > .gt-list, .gt-stale > .gt-tl, .gt-stale > .gt-distpanel, .gt-a-route.gt-stale, .gt-next.gt-stale { opacity: 0.45; }
   .gt-stale-note { margin-bottom: 0.6rem; }
   .gt-sum-more { margin-top: 0.6rem; border-top: 1px solid rgb(var(--cine-glow) / 0.25); }
   .gt-sum-more > summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; font-size: 0.92rem; }
@@ -2525,16 +2956,16 @@ const faqSchema = {
   .gt-holnear {
     margin-top: 0.75rem;
     padding: 0.75rem;
-    border: 1px dashed #7a4a8c;
+    border: 1px dashed #b08a5a;
     border-radius: 0.75rem;
     font-size: 0.92rem;
     line-height: 1.6;
-    background: rgb(122 74 140 / 0.05);
+    background: rgb(79 111 107 / 0.06);
   }
   .gt-ol { list-style: decimal; padding-left: 1.3rem; margin: 0.3rem 0 0.6rem; }
   .gt-more-d { margin: 0.2rem 0 0.6rem; }
   .gt-more-d summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
-  #gt-summary, .gt-list, .gt-hol, #gt-route, .gt-next { overflow-wrap: anywhere; }
+  #gt-summary, .gt-list, .gt-tl, .gt-hol, #gt-route, .gt-next { overflow-wrap: anywhere; }
 
   /* ===== 結果依序滑入（摘要各段、清單卡片、路線與假日清單） ===== */
   #gt-summary > .gt-card > *,
@@ -2777,7 +3208,7 @@ const faqSchema = {
     --c-glow: rgb(127 166 200 / 0.45);
   }
   .gt-orb-still::after { animation: none; transform: scale(1.3); opacity: 0.45; }
-  .gt-sq { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: #7a4a8c; box-shadow: 0 0 0 1.5px #fffaf0, 0 1px 3px rgb(0 0 0 / 0.3); }
+  .gt-sq { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: #4f6f6b; box-shadow: 0 0 0 1.5px #fffaf0, 0 1px 3px rgb(0 0 0 / 0.3); }
   .gt-tk { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffb074, #e65100 60%, #a33a00); box-shadow: 0 0 8px 1px rgb(255 140 60 / 0.6); }
   .gt-beam-ic {
     display: inline-block;
@@ -2797,7 +3228,7 @@ const faqSchema = {
   .gt-hmk > span {
     display: flex; align-items: center; justify-content: center;
     width: 24px; height: 24px; border-radius: 6px;
-    background: linear-gradient(150deg, #9467a6 0%, #7a4a8c 55%, #5b3469 100%);
+    background: linear-gradient(150deg, #6f8f8a 0%, #4f6f6b 55%, #3b5552 100%);
     color: #fff; font-size: 12px; font-weight: 700;
     border: 1.5px solid #fffaf0; box-shadow: 0 2px 6px rgb(0 0 0 / 0.3), 0 0 10px rgb(var(--cine-glow) / 0.35);
     animation: gt-pop 0.55s var(--cine-ease-spring) backwards;
@@ -2953,6 +3384,272 @@ const faqSchema = {
   .gt-week tr.gt-cur { background: rgb(var(--cine-glow) / 0.14); }
   .gt-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
 
+  /* ===== 分頁：時間軸／依距離 ===== */
+  .gt-tabs {
+    display: inline-flex;
+    flex: 0 0 auto;
+    border: 1.5px solid var(--accent);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    background: rgb(255 255 255 / 0.35);
+  }
+  :root[data-theme="dark"] .gt-tabs { background: rgb(0 0 0 / 0.15); }
+  .gt-tabs [role="tab"] {
+    min-height: 44px;
+    padding: 0 0.95rem;
+    border: 0;
+    background: transparent;
+    color: var(--accent);
+    font-size: 0.95rem;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .gt-tabs [role="tab"] + [role="tab"] { border-left: 1.5px solid var(--accent); }
+  .gt-tabs [aria-selected="true"] { background: var(--accent); color: var(--accent-foreground); font-weight: 700; }
+  .gt-tabs [role="tab"]:focus-visible { outline: 2px dashed currentColor; outline-offset: -5px; }
+  .gt-only-row { margin: 0 0 0.35rem; }
+
+  /* ===== 時間軸（左：時間、中：光軌、右：清運點） ===== */
+  .gt-tl { --tl-t: 3.5rem; --tl-r: 1.25rem; --tl-gap: 0.45rem; }
+  @media (min-width: 400px) {
+    .gt-tl { --tl-t: 3.8rem; --tl-r: 1.4rem; --tl-gap: 0.55rem; }
+  }
+  .gt-tl-note {
+    margin-bottom: 0.6rem;
+    padding: 0.5rem 0.75rem;
+    border-left: 4px solid #d9822b;
+    border-radius: 0.375rem;
+    background: rgb(233 140 60 / 0.1);
+    font-size: 0.92rem;
+    line-height: 1.6;
+  }
+  :root[data-theme="dark"] .gt-tl-note { border-left-color: #f0a45a; background: rgb(240 164 90 / 0.1); }
+  .gt-tl-cap { font-size: 0.875rem; line-height: 1.6; color: var(--muted-foreground); }
+  .gt-tl-cap b { color: var(--foreground); }
+  .gt-tl-list { position: relative; margin-top: 0.35rem; }
+  .gt-tl-g,
+  .gt-tl-now {
+    position: relative;
+    display: grid;
+    grid-template-columns: var(--tl-t) var(--tl-r) minmax(0, 1fr);
+    column-gap: var(--tl-gap);
+  }
+  .gt-tl-g { padding: 0.3rem 0; }
+  /* 軸：每一格畫自己那一段，接起來是一條光軌；已經過的淡掉，還沒到的是暖橙→琥珀的光 */
+  .gt-tl-g::before,
+  .gt-tl-now::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--tl-t) + var(--tl-gap) + var(--tl-r) / 2 - 1.5px);
+    width: 3px;
+    border-radius: 3px;
+    background: #e39440;
+    box-shadow: 0 0 9px 1px rgb(236 140 60 / 0.42);
+  }
+  :root[data-theme="dark"] .gt-tl-g::before { background: #ffae5c; box-shadow: 0 0 12px 2px rgb(255 150 70 / 0.45); }
+  .gt-tl-list > :first-child::before { top: 1.05rem; }
+  .gt-tl-list > .gt-tl-g:last-child::before { bottom: auto; height: 1.05rem; }
+  .gt-tl-list > .gt-tl-now:last-child::before { bottom: 50%; }
+  .gt-tl-g.is-past::before,
+  .gt-tl-now::before {
+    background: rgb(var(--cine-glow) / 0.32);
+    box-shadow: none;
+  }
+  .gt-tl-dot {
+    position: relative;
+    z-index: 1;
+    justify-self: center;
+    width: 13px;
+    height: 13px;
+    margin-top: 0.62rem;
+    border-radius: 50%;
+    background: #fffaf0;
+    box-shadow: 0 0 0 2.5px #dc8a34, 0 0 10px 2px rgb(240 145 63 / 0.55);
+  }
+  .gt-tl-g.is-past .gt-tl-dot { background: var(--cine-glass-bg-solid); box-shadow: 0 0 0 2px rgb(var(--cine-glow) / 0.45); }
+  .gt-tl-g.is-live .gt-tl-dot,
+  .gt-tl-g.is-next .gt-tl-dot {
+    width: 15px;
+    height: 15px;
+    margin-top: 0.56rem;
+    background: #fff3dc;
+    box-shadow: 0 0 0 3px #ee9a2a, 0 0 16px 5px rgb(240 160 32 / 0.6);
+  }
+  .gt-tl-time {
+    padding-top: 0.38rem;
+    text-align: right;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+  }
+  .gt-tl-time b { display: block; font-size: 1.06rem; font-weight: 800; color: var(--cine-num); }
+  .gt-tl-time small { display: block; margin-top: 0.2rem; font-size: 0.72rem; color: var(--muted-foreground); }
+  .gt-tl-g.is-past .gt-tl-time b { color: var(--muted-foreground); font-weight: 700; }
+  .gt-tl-g.is-live .gt-tl-time b,
+  .gt-tl-g.is-next .gt-tl-time b { color: #a8500f; text-shadow: 0 0 14px rgb(240 160 32 / 0.45); }
+  :root[data-theme="dark"] .gt-tl-g.is-live .gt-tl-time b,
+  :root[data-theme="dark"] .gt-tl-g.is-next .gt-tl-time b { color: #ffc27a; }
+  /* 下一班的小倒數圈（跟上面的倒數光圈同一個算法：一小時內才開始走） */
+  /* 顏色跟著上面的倒數光圈：還沒到＝綠、這時候會到＝琥珀 */
+  .gt-tl-ring { --rc: 79 154 94; display: block; width: 30px; height: 30px; margin: 0.35rem 0 0 auto; }
+  :root[data-theme="dark"] .gt-tl-ring { --rc: 127 191 134; }
+  .gt-tl-ring.is-now { --rc: 240 160 32; }
+  .gt-tl-ring svg { width: 100%; height: 100%; overflow: visible; transform: rotate(-90deg); }
+  .gt-tl-rt { fill: none; stroke: rgb(var(--rc) / 0.2); stroke-width: 4; }
+  .gt-tl-ra {
+    fill: none;
+    stroke: rgb(var(--rc));
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-dasharray: 100 100;
+    filter: drop-shadow(0 0 3px rgb(var(--rc) / 0.6));
+    transition: stroke-dashoffset 0.9s var(--cine-ease-out);
+  }
+  .gt-tl-items { display: flex; flex-direction: column; gap: 0.45rem; min-width: 0; }
+  .gt-tl-it {
+    position: relative;
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    padding: 0.55rem 0.75rem 0.6rem;
+    border: 1px solid var(--cine-glass-border);
+    border-radius: 0.85rem;
+    background: var(--cine-glass-bg);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.75) inset, 0 10px 24px -18px rgb(92 62 28 / 0.45);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: transform 0.35s var(--cine-ease-out), border-color 0.2s ease;
+  }
+  :root[data-theme="dark"] .gt-tl-it { box-shadow: 0 1px 0 rgb(255 236 205 / 0.06) inset, 0 12px 28px -18px rgb(0 0 0 / 0.8); }
+  @media (hover: hover) and (pointer: fine) {
+    .gt-tl-it:hover { transform: translateX(3px); border-color: rgb(var(--cine-glow) / 0.75); }
+  }
+  .gt-tl-it:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .gt-tl-it > span { display: block; }
+  .gt-tl-place { font-weight: 700; line-height: 1.45; }
+  .gt-tl-kinds { margin-top: 0.2rem; font-size: 0.9rem; line-height: 1.75; font-variant-numeric: tabular-nums; }
+  .gt-tl-sep { display: inline-block; width: 0.55rem; }
+  .gt-tl-meta { margin-top: 0.1rem; font-size: 0.82rem; line-height: 1.5; color: var(--muted-foreground); }
+  .gt-tl-it > .gt-tl-badges { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.35rem; }
+  .gt-tl-g.is-past .gt-tl-it { opacity: 0.55; box-shadow: none; }
+  .gt-tl-it.gt-old { opacity: 0.75; }
+  .gt-tl-g.is-past .gt-tl-it.gt-old { opacity: 0.45; }
+  .gt-tl-it.is-next {
+    border-color: #e0913a;
+    box-shadow: 0 0 0 1px #e0913a inset, 0 14px 30px -16px rgb(224 145 58 / 0.65), 0 0 24px -8px rgb(240 160 32 / 0.55);
+  }
+  .gt-badge-next { border-color: #d9822b; background: rgb(255 214 150 / 0.4); color: #8a3f08; font-weight: 700; }
+  :root[data-theme="dark"] .gt-badge-next { border-color: #f0a45a; background: rgb(240 164 90 / 0.14); color: #ffd08a; }
+  /* 從倒數光圈跳過來：光框亮一下（只動 opacity） */
+  .gt-tl-it::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    box-shadow: 0 0 0 3px #e0913a, 0 0 26px 2px rgb(240 160 32 / 0.55);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+  .gt-tl-it.gt-flash::after { opacity: 1; }
+  /* 「現在」：軸上一顆暖燈＋往右淡出的一條線，時間在左 */
+  .gt-tl-now { align-items: center; min-height: 2.4rem; }
+  .gt-tl-nowt {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    line-height: 1.1;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #a8500f;
+    font-variant-numeric: tabular-nums;
+  }
+  .gt-tl-nowt b { font-size: 0.9rem; }
+  :root[data-theme="dark"] .gt-tl-nowt { color: #ffc27a; }
+  .gt-tl-nowdot {
+    position: relative;
+    z-index: 1;
+    justify-self: center;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #fff7e6, #f5a524 70%);
+    box-shadow: 0 0 0 4px rgb(245 165 36 / 0.22), 0 0 16px 5px rgb(245 165 36 / 0.5);
+  }
+  .gt-tl-nowdot::after {
+    content: "";
+    position: absolute;
+    inset: -7px;
+    border-radius: 50%;
+    border: 2px solid rgb(245 165 36 / 0.6);
+    animation: gt-now-ping 2.4s var(--cine-ease-out) infinite;
+  }
+  .gt-tl-nowline {
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #f5a524, rgb(245 165 36 / 0) 94%);
+    box-shadow: 0 0 8px rgb(245 165 36 / 0.45);
+  }
+  @keyframes gt-now-ping {
+    0% { transform: scale(0.6); opacity: 0.9; }
+    80%, 100% { transform: scale(1.5); opacity: 0; }
+  }
+  .gt-tl-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+    margin: 0.6rem 0 0;
+    padding: 0.4rem 0.8rem;
+    border: 1.5px dashed rgb(var(--cine-glow) / 0.65);
+    border-radius: 0.75rem;
+    background: rgb(255 255 255 / 0.3);
+    color: var(--accent);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  :root[data-theme="dark"] .gt-tl-more { background: rgb(0 0 0 / 0.15); }
+  .gt-tl-more-up { margin: 0.4rem 0 0.2rem; }
+  .gt-tl-more:hover { border-style: solid; }
+  .gt-next-go {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-top: 0.1rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .gt-trail-ic {
+    display: inline-block;
+    width: 18px;
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #c05a17, #dc8a34, #efbd6a);
+    box-shadow: 0 0 6px rgb(240 145 63 / 0.6);
+  }
+  /* 主地圖：傍晚的天色（地平線偏暖橙；深色＝入夜，地平線留一點餘暉） */
+  #gt-mapcol .gt-mapwrap {
+    --cine-map-sky-1: rgb(244 170 110 / 0.6);
+    --cine-map-sky-2: rgb(249 204 158 / 0.26);
+    --cine-map-vignette: rgb(96 48 14 / 0.3);
+  }
+  :root[data-theme="dark"] #gt-mapcol .gt-mapwrap {
+    --cine-map-sky-1: rgb(22 12 6 / 0.92);
+    --cine-map-sky-2: rgb(140 66 20 / 0.4);
+    --cine-map-vignette: rgb(0 0 0 / 0.58);
+  }
+
   /* ===== 路線 ===== */
   .gt-route-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
   .gt-route-list, .gt-hol-list {
@@ -2978,7 +3675,7 @@ const faqSchema = {
     flex: 0 0 auto;
     display: inline-flex; align-items: center; justify-content: center;
     width: 1.5rem; height: 1.5rem; border-radius: 6px;
-    background: linear-gradient(150deg, #9467a6 0%, #7a4a8c 55%, #5b3469 100%); color: #fff; font-size: 0.75rem; font-weight: 700;
+    background: linear-gradient(150deg, #6f8f8a 0%, #4f6f6b 55%, #3b5552 100%); color: #fff; font-size: 0.75rem; font-weight: 700;
   }
 
   /* ===== 國定假日區塊 ===== */
@@ -2986,7 +3683,7 @@ const faqSchema = {
   .gt-quote {
     margin-top: 0.35rem;
     padding: 0.6rem 0.8rem;
-    border-left: 4px solid #7a4a8c;
+    border-left: 4px solid #4f6f6b;
     background: rgb(var(--cine-glow) / 0.08);
     border-radius: 0.375rem;
     font-size: 0.92rem;
@@ -3029,12 +3726,18 @@ const faqSchema = {
     .gt-ring::before,
     .gt-ring-tip,
     .gt-hmk > span,
-    .gt-truck-halo {
+    .gt-truck-halo,
+    .gt-tl-nowdot::after {
       animation: none !important;
     }
+    .gt-tl-nowdot::after { opacity: 0; }
     .gt-ring-tipr,
     .gt-stop,
-    .gt-stop::after { transition: none; }
-    .gt-stop:hover { transform: none; }
+    .gt-stop::after,
+    .gt-tl-it,
+    .gt-tl-it::after,
+    .gt-tl-ra { transition: none; }
+    .gt-stop:hover,
+    .gt-tl-it:hover { transform: none; }
   }
 </style>
