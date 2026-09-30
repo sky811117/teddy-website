@@ -453,6 +453,11 @@
   max-width: 44rem;
   color: var(--cine-sub);
   line-height: 1.7;
+  /* 電腦版體積光的光束會掃過副標右半段（深色模式局部對比只剩 1.46）→ 用頁面底色做柔和字暈把字托出來 */
+  text-shadow:
+    0 0 2px var(--background),
+    0 0 10px var(--background),
+    0 0 18px var(--background);
   animation: cine-rise-lite 0.9s var(--cine-ease-out) 0.35s backwards;
 }
 .cine-hero--tool .cine-hero__sub {
