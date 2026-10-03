@@ -116,8 +116,8 @@ const titleFallback = [
 ]
   .filter(Boolean)
   .join(" ");
-const displayTitle = cleanPropertyTitle(rawTitle, titleFallback);
-const highlights = sanitizeHighlights(property.data.highlights);
+const displayTitle = cleanPropertyTitle(rawTitle, titleFallback, property.data.district);
+const highlights = sanitizeHighlights(property.data.highlights, property.data.district);
 
 // 類型（給規格卡用）：優先撈 markdown body 的「**類型**：XXX」，最準
 const propertyType = bodyPropertyType(property.body);
@@ -248,7 +248,7 @@ const relatedSections = [
 // 抽不到（格式跑掉）就退回 <Content />，下方 client script 會把重複段落拿掉。
 const introMatch = property.body?.match(/## 物件介紹\s*\n([\s\S]*?)(?=\n## |\n---|$)/);
 const introLines = introMatch
-  ? sanitizeCopy(introMatch[1].replace(/\*\*/g, ""))
+  ? sanitizeCopy(introMatch[1].replace(/\*\*/g, ""), property.data.district)
       .split("\n")
       .map(l => l.trim())
       .filter(Boolean)
@@ -364,7 +364,7 @@ const seoTitle = joinTitle(tailSegs);
 // 2026-10-03（稽核 F101）：只剩小標題（「物件亮點 :」）、只剩數字（「1」）、不到 8 字的殘段一律丟掉
 const isJunkBlurb = (s: string) =>
   /^[^。！？]{0,20}[:：]\s*$/.test(s) || /^\d{1,3}\.?$/.test(s) || charLen(s) < 8;
-let cleanBlurb = sanitizeCopy(property.data.description || "")
+let cleanBlurb = sanitizeCopy(property.data.description || "", property.data.district)
   .replace(/\n+/g, " ")
   .replace(/\s{2,}/g, " ")
   .replace(/^[\s，、。!！?？]+/, "")
@@ -1206,7 +1206,8 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
                   p.data.title,
                   [p.data.community?.trim() || p.data.district, p.data.layout]
                     .filter(Boolean)
-                    .join(" ")
+                    .join(" "),
+                  p.data.district
                 );
                 return (
                   <li class="card-interactive overflow-hidden">

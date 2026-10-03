@@ -18,6 +18,8 @@
  *     - 未完工建設（藍線 / 橘線 / 巨蛋 / 規劃中 / 即將 / 預計… / 過期「預計 20XX 年交屋」）— CLAUDE.md 法規紅線
  *     - 假第一人稱（我自己跑 / 客戶問過 / 我自己也住…）— 景泰鐵則：沒經歷過不准寫
  *     - 標題拿開發中園區當片語（夏田產業園區…，只掃 title）— 2026-10-03 景泰裁決
+ *     - 非綠線行政區的捷運宣稱（frontmatter district 非北屯/北區/西屯/南屯/南區/烏日，寫捷運生活圈/近捷運/捷運宅…；
+ *       否定寫法不報、點名綠線真實車站只 WARN）— 2026-10-04 0239000 大肚
  *     - 借鄰戶門牌定位本戶（隔壁221號）— 歸「完整門牌」
  *   WARN（只列出，不擋）
  *     - 第三人聯絡引導（營業員：/ LINE ID：/ 洽詢 / 聯絡人）
@@ -105,6 +107,57 @@ export const UNBUILT_RE = new RegExp(UNBUILT_SOURCE, "g");
 // （那兩邊是「吃掉片語」用的完整寫法；這裡只要偵測，命中核心字「夏田(產業)園區」就 ERROR）。
 export const UNBUILT_TITLE_PLACE_SOURCE = "(?:大里區?)?夏田(?:產業)?園區(?:範圍內?|內|旁)?";
 export const UNBUILT_TITLE_PLACE_RE = new RegExp(UNBUILT_TITLE_PLACE_SOURCE, "g");
+
+// 非綠線行政區的捷運宣稱（2026-10-04；0239000 大肚「大肚太平路捷運生活圈」）。
+// 台中捷運目前只有綠線通車，車站所在行政區：北屯、北區、西屯、南屯、南區、烏日。其他行政區寫
+// 「捷運生活圈／捷運宅／近捷運／捷運旁／捷運商圈」＝廣告不實（跟未完工建設同級）→ ERROR。
+// 跟 cleanPropertyTitle.ts、text_sanitize.py 的 MRT_* 三處逐字一致（改字三處一起改）；⛔ 不用 lookbehind。
+// 每個句段（不跨「，。；｜換行」）：有宣稱片語 → 否定寫法不報（單字「無／非／沒」必須緊貼「捷運」，
+// 多字否定詞「沒有／不是／不在／不近／遠離」才准隔 ≤4 字；「非常近捷運」「無敵近捷運」不是否定）→
+// frontmatter district 有值時只看 district（非綠線行政區 → ERROR；綠線區、外縣市不報，句段提到別區不算）；
+// district 空字串才退回看句段裡的非綠線行政區名 → ERROR；
+// 句段裡點名綠線真實車站（潭子「近捷運松竹站」）→ WARN 請人工確認距離（清洗端放行）。
+export const MRT_OFFLINE_DISTRICTS = [
+  "大肚", "沙鹿", "梧棲", "清水", "龍井", "大雅", "神岡", "豐原", "潭子", "太平", "大里",
+  "霧峰", "東區", "中區", "西區", "后里", "外埔", "大甲", "大安", "新社", "石岡", "東勢", "和平",
+];
+export const MRT_CLAIM_SOURCE =
+  "(?:鄰近|緊鄰|靠近|近|鄰)捷運(?:站)?(?:旁|口)?|捷運(?:站)?(?:生活圈|商圈|宅|旁|首排|第一排)|捷運站前";
+export const MRT_PLACE_SOURCE =
+  "(?:大肚|沙鹿|梧棲|清水|龍井|大雅|神岡|豐原|潭子|太平|大里|霧峰|后里|外埔|大甲|石岡|東勢)" +
+  "(?![路街巷弄道段溪洋港模])" +
+  "|新社(?![區路街巷弄道段])|(?:和平|大安)區|(?:^|[^北南竹義化])[東西]區|(?:^|[^台臺])中區";
+export const MRT_GREEN_STATION_SOURCE =
+  "(?:北屯總|舊社|松竹|四維國小|文心崇德|文心中清|文華高中|文心櫻花|市政府|水安宮|" +
+  "文心森林公園|南屯|豐樂公園|大慶|九張犁|九德|烏日|高鐵臺中|高鐵台中)站|[Gg]\\s?\\d{1,2}\\s?站";
+export const MRT_NEGATION_SOURCE =
+  "(?:無|非|並非|沒)捷運" +
+  "|(?:沒有|不是|不在|不近|遠離)[^，。；｜|│丨！？!?;,\\n]{0,4}捷運";
+const MRT_SEG_SPLIT_SOURCE = "([，。；｜|│丨！？!?;,\\n])";
+export function isOfflineMrtDistrict(district) {
+  const d = (district || "").trim().replace(/^(?:台中市|臺中市)/, "").replace(/區$/, "");
+  return MRT_OFFLINE_DISTRICTS.includes(d);
+}
+/** 句段判定：""＝沒事；"claim"＝不實宣稱；"station"＝非綠線物件但點名綠線車站 */
+export function offlineMrtSegment(seg, district) {
+  if (!seg || !new RegExp(MRT_CLAIM_SOURCE).test(seg) || new RegExp(MRT_NEGATION_SOURCE).test(seg)) return "";
+  if ((district || "").trim()) {
+    if (!isOfflineMrtDistrict(district)) return ""; // 有 district：只看 district
+  } else if (!new RegExp(MRT_PLACE_SOURCE).test(seg)) return ""; // 沒 district：才看句段裡的行政區名
+  return new RegExp(MRT_GREEN_STATION_SOURCE).test(seg) ? "station" : "claim";
+}
+/** 掃一個欄位，回傳 [{kind, matched, seg}] */
+export function findOfflineMrtClaims(value, district) {
+  const out = [];
+  if (!value || !new RegExp(MRT_CLAIM_SOURCE).test(value)) return out;
+  const pieces = value.split(new RegExp(MRT_SEG_SPLIT_SOURCE));
+  for (let i = 0; i < pieces.length; i += 2) {
+    const kind = offlineMrtSegment(pieces[i], district);
+    if (!kind) continue;
+    for (const m of pieces[i].matchAll(new RegExp(MRT_CLAIM_SOURCE, "g"))) out.push({ kind, matched: m[0], seg: pieces[i] });
+  }
+  return out;
+}
 // 「預計 2025 年第一季交屋」：年份 < 今年才算（過期交屋時程＝不實）
 export const EXPIRED_HANDOVER_RE = new RegExp("預計\\s*(20\\d\\d)\\s*年" + UB_NC + "{0,10}?交屋", "g");
 const THIS_YEAR = Number(new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Taipei" }).slice(0, 4));
@@ -209,7 +262,7 @@ function pushAll(findings, file, field, value, re, severity, rule, filter) {
   }
 }
 
-function scanField(name, value, findings, file) {
+function scanField(name, value, findings, file, district = "") {
   if (!value) return;
 
   // ERROR：完整門牌
@@ -247,6 +300,17 @@ function scanField(name, value, findings, file) {
   // ERROR：開發中園區當標題片語（只掃 title；2026-10-03 景泰裁決）
   if (name === "title") {
     pushAll(findings, file, name, value, UNBUILT_TITLE_PLACE_RE, UNBUILT_SEVERITY, "未完工建設(標題園區)");
+  }
+  // ERROR：非綠線行政區的捷運宣稱（2026-10-04）；點名綠線真實車站的只 WARN（人工確認距離）
+  for (const f of findOfflineMrtClaims(value, district)) {
+    findings.push({
+      file,
+      severity: f.kind === "claim" ? UNBUILT_SEVERITY : "WARN",
+      rule: f.kind === "claim" ? "非綠線捷運宣稱" : "非綠線捷運(點名綠線站，請人工確認距離)",
+      field: name,
+      matched: f.matched,
+      snippet: f.seg.trim().replace(/\s+/g, " ").slice(0, 60),
+    });
   }
 
   // WARN：第三人聯絡引導（「經紀人：黃永隆」正常頁尾也會命中，所以只 WARN；
@@ -295,6 +359,36 @@ function selfTest() {
   const dp = [];
   scanField("description", "✅ 位於夏田產業園區區段徵收範圍內 ✅ 位於大里夏田產業園區範圍，屬區段徵收範圍內", dp, "self-test");
   if (dp.some(f => f.severity === "ERROR")) fails.push("description 法定揭露被誤報：" + dp.map(f => f.matched).join("、"));
+  // 2026-10-04 非綠線行政區的捷運宣稱：[欄位值, district, 期望("ERROR"｜"WARN"｜"")]
+  const mrtCases = [
+    ["大肚太平路捷運生活圈｜黃金面寬美建地", "大肚區", "ERROR"], // 0239000 真實句子
+    ["大肚太平路捷運生活圈｜黃金面寬美建地", "", "ERROR"],       // 沒 district 靠句中「大肚」
+    ["捷運生活圈，機能完善", "太平區", "ERROR"],
+    ["⃣ 交通便利性｜近捷運松竹站、頭家厝火車站", "北屯區", ""],   // 北屯真實寫法
+    ["西屯捷運生活圈，步行可達捷運市政府站", "西屯區", ""],
+    ["北屯大雅路近捷運", "北屯區", ""],                          // 「大雅路」不是大雅區
+    ["交通便利性｜近捷運松竹站、頭家厝火車站", "潭子區", "WARN"], // 點名綠線站 → 人工看
+    ["- 要走路到捷運的買家（神岡沒有捷運，要開車）", "神岡區", ""], // 否定寫法
+    ["無捷運，但公車方便", "大里區", ""],
+    ["太平不是捷運網路強的區", "太平區", ""],
+    ["大里非常近捷運", "大里區", "ERROR"],                       // 單字「非」隔字不是否定
+    ["大肚無敵近捷運", "大肚區", "ERROR"],                       // 單字「無」隔字不是否定
+    ["太平非常靠近捷運站", "太平區", "ERROR"],
+    ["沙鹿無縫接軌捷運生活圈", "沙鹿區", "ERROR"],
+    ["北屯近捷運往潭子方便", "北屯區", ""],                      // 有 district 只看 district
+    ["南區捷運宅 鄰近東區", "南區", ""],
+    ["北屯捷運生活圈 大坑太平都近", "北屯區", ""],
+    ["西屯捷運宅 近大雅交流道", "西屯區", ""],
+    ["烏日捷運生活圈 近大肚山", "烏日區", ""],
+    ["大慶站可轉乘捷運綠線", "西區", ""],                        // 不是生活圈宣稱
+    ["台北東區捷運商圈", "信義區", ""],
+  ];
+  for (const [v, d, want] of mrtCases) {
+    const fs = [];
+    scanField("description", v, fs, "self-test", d);
+    const got = fs.find(f => f.rule.startsWith("非綠線捷運"))?.severity ?? "";
+    if (got !== want) fails.push(`捷運：${v}［${d || "無district"}］→ ${got || "不報"}（要 ${want || "不報"}）`);
+  }
   return fails;
 }
 
@@ -318,16 +412,16 @@ async function main() {
     const { meta, body, rawFm } = frontmatter(text);
     scanned++;
 
-    scanField("title", meta.title, findings, file);
-    scanField("streetArea", meta.streetArea, findings, file);
-    scanField("community", meta.community, findings, file);
-    scanField("description", meta.description, findings, file);
-    scanField("highlights", extractHighlights(rawFm), findings, file);
+    scanField("title", meta.title, findings, file, meta.district);
+    scanField("streetArea", meta.streetArea, findings, file, meta.district);
+    scanField("community", meta.community, findings, file, meta.district);
+    scanField("description", meta.description, findings, file, meta.district);
+    scanField("highlights", extractHighlights(rawFm), findings, file, meta.district);
     // body 結尾的 `> 委編：UG1234567` 是產生腳本固定加的物件編號 footer（每一筆都有），
     // 先剝掉再掃，否則 INTERNAL 規則會把 382 筆全擋掉。footer 以外任何地方出現
     // 「委編 / UG… / UA…」照樣 ERROR。（待辦：產生腳本改成「物件編號」後可拿掉這行豁免）
     const bodyForScan = body.replace(/^>\s*委編[:：].*$/gm, "");
-    scanField("body", bodyForScan, findings, file);
+    scanField("body", bodyForScan, findings, file, meta.district);
 
     // 證號揭露（WARN：頁面 footer 會用 frontmatter 自動補，不算違規）
     const hasBroker = BROKER_RE.test(body);

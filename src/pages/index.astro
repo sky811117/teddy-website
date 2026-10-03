@@ -883,7 +883,7 @@ const bigKanBanAccounts = [
                       )}
                     </div>
                     <div class="p-4">
-                      <h3 class="text-foreground font-bold">{cleanPropertyTitle(p.data.title)}</h3>
+                      <h3 class="text-foreground font-bold">{cleanPropertyTitle(p.data.title, undefined, p.data.district)}</h3>
                       <p class="text-muted-foreground mt-1 flex items-center gap-1 text-sm">
                         <IconMapPin class="size-4 shrink-0" aria-hidden="true" />
                         {p.data.district}

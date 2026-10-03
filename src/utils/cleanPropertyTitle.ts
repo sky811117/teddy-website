@@ -107,6 +107,80 @@ const UNBUILT_TITLE_RE = new RegExp(
 export const UNBUILT_TITLE_PLACE_SOURCE = "(?:大里區?)?夏田(?:產業)?園區(?:範圍內?|內|旁)?";
 const UNBUILT_TITLE_PLACE_RE = new RegExp(UNBUILT_TITLE_PLACE_SOURCE, "g");
 
+/**
+ * 非綠線行政區的捷運宣稱（2026-10-04；0239000 大肚「大肚太平路捷運生活圈」）。
+ * 台中捷運目前只有綠線通車，車站所在行政區：北屯、北區、西屯、南屯、南區、烏日。其他行政區寫
+ * 「捷運生活圈／捷運宅／近捷運／捷運旁／捷運商圈」＝廣告不實（跟未完工建設同級的法規紅線）。
+ * text_sanitize.py、scripts/audit-properties.mjs 的 MRT_* 三處逐字一致（改字三處一起改）；⛔ 不用 lookbehind。
+ * 判斷（每個句段，不跨「，。；｜換行」）：有宣稱片語 → 否定寫法放行（單字「無／非／沒」必須緊貼「捷運」，
+ * 多字否定詞「沒有／不是／不在／不近／遠離」才准隔 ≤4 字；「非常近捷運」「無敵近捷運」不是否定）→ 點名綠線真實車站放行
+ * （audit 報 WARN 請人工看距離）→ district 有值時只看 district（非綠線行政區才刪；綠線區、外縣市放行，句段提到別區不算）；
+ * district 空字串才退回看句段裡的非綠線行政區名 → 只刪片語。
+ * 「太平路」（大肚的路名）、「大雅路」（北屯／北區）、「清水模」、「新社區」（＝新的社區）不算行政區名。
+ */
+export const MRT_OFFLINE_DISTRICTS = [
+  "大肚", "沙鹿", "梧棲", "清水", "龍井", "大雅", "神岡", "豐原", "潭子", "太平", "大里",
+  "霧峰", "東區", "中區", "西區", "后里", "外埔", "大甲", "大安", "新社", "石岡", "東勢", "和平",
+];
+export const MRT_CLAIM_SOURCE =
+  "(?:鄰近|緊鄰|靠近|近|鄰)捷運(?:站)?(?:旁|口)?|捷運(?:站)?(?:生活圈|商圈|宅|旁|首排|第一排)|捷運站前";
+export const MRT_PLACE_SOURCE =
+  "(?:大肚|沙鹿|梧棲|清水|龍井|大雅|神岡|豐原|潭子|太平|大里|霧峰|后里|外埔|大甲|石岡|東勢)" +
+  "(?![路街巷弄道段溪洋港模])" +
+  "|新社(?![區路街巷弄道段])|(?:和平|大安)區|(?:^|[^北南竹義化])[東西]區|(?:^|[^台臺])中區";
+export const MRT_GREEN_STATION_SOURCE =
+  "(?:北屯總|舊社|松竹|四維國小|文心崇德|文心中清|文華高中|文心櫻花|市政府|水安宮|" +
+  "文心森林公園|南屯|豐樂公園|大慶|九張犁|九德|烏日|高鐵臺中|高鐵台中)站|[Gg]\\s?\\d{1,2}\\s?站";
+export const MRT_NEGATION_SOURCE =
+  "(?:無|非|並非|沒)捷運" +
+  "|(?:沒有|不是|不在|不近|遠離)[^，。；｜|│丨！？!?;,\\n]{0,4}捷運";
+const MRT_SEG_SPLIT_SOURCE = "([，。；｜|│丨！？!?;,\\n])";
+const MRT_CLAIM_RE = new RegExp(MRT_CLAIM_SOURCE);
+const MRT_PLACE_RE = new RegExp(MRT_PLACE_SOURCE);
+const MRT_GREEN_STATION_RE = new RegExp(MRT_GREEN_STATION_SOURCE);
+const MRT_NEGATION_RE = new RegExp(MRT_NEGATION_SOURCE);
+
+/** 物件 district 是台中非綠線行政區？（「大肚區」「台中市大肚區」→ true；北屯／彰化市／信義區 → false） */
+export function isOfflineMrtDistrict(district?: string): boolean {
+  const d = (district || "").trim().replace(/^(?:台中市|臺中市)/, "").replace(/區$/, "");
+  return MRT_OFFLINE_DISTRICTS.includes(d);
+}
+
+/** 句段判定：""＝沒事；"claim"＝不實宣稱（要刪）；"station"＝非綠線物件但點名綠線車站（放行，人工看距離） */
+export function offlineMrtSegment(seg: string, district?: string): "" | "claim" | "station" {
+  if (!seg || !MRT_CLAIM_RE.test(seg) || MRT_NEGATION_RE.test(seg)) return "";
+  if ((district || "").trim()) {
+    if (!isOfflineMrtDistrict(district)) return ""; // 有 district：只看 district（北屯物件句中提到潭子也不算）
+  } else if (!MRT_PLACE_RE.test(seg)) return ""; // 沒 district：才退回看句段裡的行政區名
+  return MRT_GREEN_STATION_RE.test(seg) ? "station" : "claim";
+}
+
+/**
+ * 刪「非綠線行政區的捷運宣稱」片語（只刪片語、不整句刪；text_sanitize.py strip_offline_mrt_claims 同一套）。
+ * 「大肚太平路捷運生活圈｜黃金面寬美建地」→「大肚太平路｜黃金面寬美建地」；北屯「近捷運松竹站」不動。
+ */
+export function stripOfflineMrtClaims(text: string, district?: string): string {
+  if (!text || !MRT_CLAIM_RE.test(text)) return text;
+  const pieces = text.split(new RegExp(MRT_SEG_SPLIT_SOURCE)); // 偶數位是句段、奇數位是分隔符
+  const out: string[] = [];
+  for (let i = 0; i < pieces.length; i += 2) {
+    let seg = pieces[i];
+    const delim = i + 1 < pieces.length ? pieces[i + 1] : "";
+    if (offlineMrtSegment(seg, district) === "claim") {
+      seg = seg.replace(new RegExp(MRT_CLAIM_SOURCE, "g"), "").replace(/[ \t]{2,}/g, " ");
+      if (!seg.trim()) {
+        // 句段只剩宣稱片語 → 連同它後面的分隔符一起拿掉（換行留著；最後一段改拿掉前一個分隔符）
+        if (delim === "\n") out.push(delim);
+        else if (!delim && out.length && out[out.length - 1] !== "\n") out.pop();
+        continue;
+      }
+    }
+    out.push(seg);
+    if (delim) out.push(delim);
+  }
+  return out.join("");
+}
+
 function thisYear(): number {
   return Number(new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Taipei" }).slice(0, 4));
 }
@@ -241,9 +315,11 @@ function tidySeparators(s: string): string {
  * 標題清洗。回傳一定非空：清完 < 4 字（或全砍光）就用 fallback，
  * fallback 沒給再退回去 emoji 後的原字串（總比空白好）。
  */
-export function cleanPropertyTitle(raw: string, fallback?: string): string {
+export function cleanPropertyTitle(raw: string, fallback?: string, district?: string): string {
   let s = stripEmoji(raw || "").replace(INTERNAL_PREFIX_RE, "");
   s = s.replace(INTERNAL_WORDS_RE, "");
+  // 非綠線行政區的捷運宣稱（2026-10-04）：district 有給就用行政區判斷，沒給就看句段裡的行政區名
+  s = stripOfflineMrtClaims(s, district);
   for (const re of TITLE_PHRASES) s = s.replace(re, "");
   // 片語吃不到的單詞再掃一次（例如「無敵景觀」「破盤」）
   s = s.replace(new RegExp(EXAGGERATED_RE.source, "g"), "");
@@ -280,12 +356,14 @@ function hasThirdPartyContact(line: string): boolean {
  * - 內部代號（專任／委編）字詞刪
  * 保留原本的換行結構，讓呼叫端自己決定怎麼排版。
  */
-export function sanitizeCopy(text: string): string {
+export function sanitizeCopy(text: string, district?: string): string {
   if (!text) return "";
   const lines = text.split(/\r?\n/);
   const out: string[] = [];
-  for (const rawLine of lines) {
-    if (hasThirdPartyContact(rawLine)) continue;
+  for (const origLine of lines) {
+    if (hasThirdPartyContact(origLine)) continue;
+    // 非綠線行政區的捷運宣稱（2026-10-04）：只刪片語，不整句刪
+    const rawLine = stripOfflineMrtClaims(origLine, district);
     // 切句時保留句末標點：先把標點後面插一個切點。
     // 2026-10-03：emoji（✅①🌈…）拿掉時換成切點、「•」「・」前面與兩個以上空白也切
     // （同 text_sanitize.py _SENT_SPLIT），條列才不會整段被當成一句一起刪光。
@@ -321,10 +399,10 @@ export function sanitizeCopy(text: string): string {
 /** 同事文案常把「✨ 物件亮點」「🏢 社區規劃」這種小標題也塞進 highlights，去掉 */
 const HIGHLIGHT_JUNK_RE = /^\s*(?:物件亮點|物件特色|社區規劃|賣點)\s*[:：]?\s*$/;
 
-export function sanitizeHighlights(list: readonly string[] | undefined): string[] {
+export function sanitizeHighlights(list: readonly string[] | undefined, district?: string): string[] {
   if (!list) return [];
   return list
-    .map(h => sanitizeCopy(h).replace(/\n+/g, " ").trim())
+    .map(h => sanitizeCopy(h, district).replace(/\n+/g, " ").trim())
     .filter(h => h.length > 0 && !HIGHLIGHT_JUNK_RE.test(h));
 }
 
@@ -382,5 +460,56 @@ export function unbuiltSelfTest(year = 2026): string[] {
     const got = sanitizeCopy(t);
     if (got !== want) fails.push(`文案：${t} → ${JSON.stringify(got)}（要 ${JSON.stringify(want)}）`);
   }
+  return [...fails, ...mrtSelfTest()];
+}
+
+/** 非綠線行政區的捷運宣稱（2026-10-04；跟 text_sanitize.py MRT_CASES 同一組）：[文字, district, 期望] */
+export const MRT_CASES: [string, string, string][] = [
+  // 0239000 大肚真實句子：district 有給、沒給（靠句中「大肚」）都要清
+  ["大肚太平路捷運生活圈｜黃金面寬美建地", "大肚區", "大肚太平路｜黃金面寬美建地"],
+  ["大肚太平路捷運生活圈｜黃金面寬美建地", "", "大肚太平路｜黃金面寬美建地"],
+  ["捷運生活圈，機能完善", "太平區", "機能完善"],
+  ["大里捷運宅｜三房平車", "", "大里｜三房平車"],
+  // 綠線行政區的真實寫法要保留
+  ["⃣ 交通便利性｜近捷運松竹站、頭家厝火車站", "北屯區", "⃣ 交通便利性｜近捷運松竹站、頭家厝火車站"],
+  ["西屯捷運生活圈，步行可達捷運市政府站", "西屯區", "西屯捷運生活圈，步行可達捷運市政府站"],
+  ["北屯大雅路近捷運", "北屯區", "北屯大雅路近捷運"],
+  ["北屯大雅路近捷運", "", "北屯大雅路近捷運"],
+  ["開放式廚房規劃中島，捷運綠線文心中清站旁", "北區", "開放式廚房規劃中島，捷運綠線文心中清站旁"],
+  // 非綠線行政區但點名綠線真實車站：放行（audit 報 WARN 請人工看距離）
+  ["交通便利性｜近捷運松竹站、頭家厝火車站", "潭子區", "交通便利性｜近捷運松竹站、頭家厝火車站"],
+  // 否定寫法不動
+  ["- 要走路到捷運的買家（神岡沒有捷運，要開車）", "神岡區", "- 要走路到捷運的買家（神岡沒有捷運，要開車）"],
+  ["太平沒有捷運生活圈這回事", "太平區", "太平沒有捷運生活圈這回事"],
+  ["無捷運，但公車方便", "大里區", "無捷運，但公車方便"],
+  ["太平不是捷運網路強的區", "太平區", "太平不是捷運網路強的區"],
+  // 單字「非／無」後面隔字不是否定（2026-10-04 收緊）→ 照刪
+  ["大里非常近捷運", "大里區", "大里非常"],
+  ["大肚無敵近捷運", "大肚區", "大肚無敵"],
+  ["太平非常靠近捷運站", "太平區", "太平非常"],
+  ["沙鹿無縫接軌捷運生活圈", "沙鹿區", "沙鹿無縫接軌"],
+  // 有 district 時只看 district：綠線區句段提到非綠線區名不算不實（2026-10-04 修）
+  ["北屯近捷運往潭子方便", "北屯區", "北屯近捷運往潭子方便"],
+  ["南區捷運宅 鄰近東區", "南區", "南區捷運宅 鄰近東區"],
+  ["北屯捷運生活圈 大坑太平都近", "北屯區", "北屯捷運生活圈 大坑太平都近"],
+  ["西屯捷運宅 近大雅交流道", "西屯區", "西屯捷運宅 近大雅交流道"],
+  ["烏日捷運生活圈 近大肚山", "烏日區", "烏日捷運生活圈 近大肚山"],
+  // 不是捷運宣稱的事實句不動
+  ["大慶站可轉乘捷運綠線", "西區", "大慶站可轉乘捷運綠線"],
+  // 台北東區有捷運：district 不是台中非綠線、句中「台北東區」不算台中東區
+  ["台北東區捷運商圈", "信義區", "台北東區捷運商圈"],
+];
+export function mrtSelfTest(): string[] {
+  const fails: string[] = [];
+  for (const [text, district, want] of MRT_CASES) {
+    const got = stripOfflineMrtClaims(text, district);
+    if (got !== want) fails.push(`捷運：${text}［${district || "無district"}］→ ${JSON.stringify(got)}（要 ${JSON.stringify(want)}）`);
+  }
+  const t = cleanPropertyTitle("大肚太平路捷運生活圈｜黃金面寬美建地", "FALLBACK");
+  if (t !== "大肚太平路｜黃金面寬美建地") fails.push(`捷運標題：${t}`);
+  const c = sanitizeCopy("大肚太平路捷運生活圈｜黃金面寬美建地\n＊＊本案擁 9.5 米超大面寬＊＊", "大肚區");
+  if (c !== "大肚太平路｜黃金面寬美建地\n＊＊本案擁 9.5 米超大面寬＊＊") fails.push(`捷運文案：${JSON.stringify(c)}`);
+  const hl = sanitizeHighlights(["大肚太平路捷運生活圈｜黃金面寬美建地", "捷運宅"], "大肚區");
+  if (JSON.stringify(hl) !== JSON.stringify(["大肚太平路｜黃金面寬美建地"])) fails.push(`捷運亮點：${JSON.stringify(hl)}`);
   return fails;
 }

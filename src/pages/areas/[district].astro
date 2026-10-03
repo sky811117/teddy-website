@@ -527,7 +527,8 @@ const areaTools = [
                 property.data.title,
                 [property.data.community?.trim() || property.data.district, property.data.layout]
                   .filter(Boolean)
-                  .join(" ")
+                  .join(" "),
+                property.data.district
               );
               return (
                 <li class="border-border bg-card overflow-hidden rounded-lg border transition-shadow hover:shadow-lg">

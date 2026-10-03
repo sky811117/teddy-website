@@ -141,7 +141,8 @@ function fmtPrice(n?: number): string {
             p.data.title,
             [p.data.community?.trim() || p.data.district, p.data.layout]
               .filter(Boolean)
-              .join(" ")
+              .join(" "),
+            p.data.district
           );
           return (
             <li class="border-border overflow-hidden rounded-lg border">

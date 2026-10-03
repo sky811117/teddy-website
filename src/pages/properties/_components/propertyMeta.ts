@@ -113,7 +113,8 @@ export function buildCardMeta(p: PropertyEntry, idx: number, now: number = Date.
   // 對外顯示標題：清誇大詞／內部用語／emoji（src/utils/cleanPropertyTitle.ts）
   const title = cleanPropertyTitle(
     p.data.title,
-    [community || district, p.data.layout].filter(Boolean).join(" ")
+    [community || district, p.data.layout].filter(Boolean).join(" "),
+    p.data.district
   );
   return {
     p,
