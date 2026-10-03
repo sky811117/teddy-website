@@ -17,6 +17,7 @@
  *     - 屋主稱謂 / 姓氏 / 身分證
  *     - 未完工建設（藍線 / 橘線 / 巨蛋 / 規劃中 / 即將 / 預計… / 過期「預計 20XX 年交屋」）— CLAUDE.md 法規紅線
  *     - 假第一人稱（我自己跑 / 客戶問過 / 我自己也住…）— 景泰鐵則：沒經歷過不准寫
+ *     - 標題拿開發中園區當片語（夏田產業園區…，只掃 title）— 2026-10-03 景泰裁決
  *     - 借鄰戶門牌定位本戶（隔壁221號）— 歸「完整門牌」
  *   WARN（只列出，不擋）
  *     - 第三人聯絡引導（營業員：/ LINE ID：/ 洽詢 / 聯絡人）
@@ -98,6 +99,12 @@ export const UNBUILT_SOURCE =
   "|區段徵收.{0,12}(?:卡位|潛力|可期|成形|利多)" +
   "|(?:置產|提早|輕鬆|優先)卡位";
 export const UNBUILT_RE = new RegExp(UNBUILT_SOURCE, "g");
+// 開發中園區當標題賣點（2026-10-03 景泰裁決）：夏田產業園區還在區段徵收中＝未完工建設，**只掃 title**。
+// description／body 的「位於夏田產業園區區段徵收範圍內」是法定狀態揭露，不報。
+// 跟 cleanPropertyTitle.ts UNBUILT_TITLE_PLACE_SOURCE、text_sanitize.py UNBUILT_TITLE_PLACE_SOURCE 同一份
+// （那兩邊是「吃掉片語」用的完整寫法；這裡只要偵測，命中核心字「夏田(產業)園區」就 ERROR）。
+export const UNBUILT_TITLE_PLACE_SOURCE = "(?:大里區?)?夏田(?:產業)?園區(?:範圍內?|內|旁)?";
+export const UNBUILT_TITLE_PLACE_RE = new RegExp(UNBUILT_TITLE_PLACE_SOURCE, "g");
 // 「預計 2025 年第一季交屋」：年份 < 今年才算（過期交屋時程＝不實）
 export const EXPIRED_HANDOVER_RE = new RegExp("預計\\s*(20\\d\\d)\\s*年" + UB_NC + "{0,10}?交屋", "g");
 const THIS_YEAR = Number(new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Taipei" }).slice(0, 4));
@@ -237,6 +244,10 @@ function scanField(name, value, findings, file) {
     Number(m[1]) < THIS_YEAR
   );
   pushAll(findings, file, name, value, FAKE_FIRST_PERSON_RE, UNBUILT_SEVERITY, "假第一人稱");
+  // ERROR：開發中園區當標題片語（只掃 title；2026-10-03 景泰裁決）
+  if (name === "title") {
+    pushAll(findings, file, name, value, UNBUILT_TITLE_PLACE_RE, UNBUILT_SEVERITY, "未完工建設(標題園區)");
+  }
 
   // WARN：第三人聯絡引導（「經紀人：黃永隆」正常頁尾也會命中，所以只 WARN；
   // 真正的問題 — 電話、非黃永隆的經紀人 — 上面已經 ERROR）
@@ -277,6 +288,13 @@ function selfTest() {
   const nb = ADDR_PATTERNS[ADDR_PATTERNS.length - 1];
   if (!nb.test("1.與隔壁221號為雙店面")) fails.push("鄰戶門牌沒中");
   if (nb.test("緊鄰74號快速道路")) fails.push("鄰戶門牌誤中「緊鄰74號快速道路」");
+  // 2026-10-03 景泰裁決：標題園區規則只看 title，description 的法定揭露不報
+  const tp = [];
+  scanField("title", "夏田產業園區內｜臨路大面寬｜都計節稅農地", tp, "self-test");
+  if (!tp.some(f => f.rule === "未完工建設(標題園區)")) fails.push("標題園區沒中");
+  const dp = [];
+  scanField("description", "✅ 位於夏田產業園區區段徵收範圍內 ✅ 位於大里夏田產業園區範圍，屬區段徵收範圍內", dp, "self-test");
+  if (dp.some(f => f.severity === "ERROR")) fails.push("description 法定揭露被誤報：" + dp.map(f => f.matched).join("、"));
   return fails;
 }
 

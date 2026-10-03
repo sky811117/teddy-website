@@ -5,7 +5,7 @@ pubDatetime: 2026-09-08T09:00:00+08:00
 slug: 2026-09-W02-city-taichung-major-projects-timeline
 ogImage: /og/2026-09-W02-city-taichung-major-projects-timeline.jpg
 featured: false
-draft: false
+draft: true  # 2026-10-03 景泰裁決下架：整篇主題是未完工建設（CLAUDE.md 法規紅線），301 轉到相關頁
 tags:
   - monthly-market
   - 台中重大建設

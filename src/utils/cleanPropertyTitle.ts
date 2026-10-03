@@ -98,6 +98,15 @@ const UNBUILT_TITLE_RE = new RegExp(
   "g"
 );
 
+/**
+ * 開發中園區當標題賣點（2026-10-03 景泰裁決）：夏田產業園區還在區段徵收中＝未完工建設，
+ * 標題不准拿它當片語（0240900／0240901／0240903「夏田產業園區｜…」「夏田產業園區內｜…」）。
+ * 只砍標題；description／body 的「位於夏田產業園區區段徵收範圍內」是法定狀態揭露，要留。
+ * text_sanitize.py UNBUILT_TITLE_PLACE、scripts/audit-properties.mjs UNBUILT_TITLE_PLACE_RE 三處同一份。
+ */
+export const UNBUILT_TITLE_PLACE_SOURCE = "(?:大里區?)?夏田(?:產業)?園區(?:範圍內?|內|旁)?";
+const UNBUILT_TITLE_PLACE_RE = new RegExp(UNBUILT_TITLE_PLACE_SOURCE, "g");
+
 function thisYear(): number {
   return Number(new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Taipei" }).slice(0, 4));
 }
@@ -158,6 +167,8 @@ export function dropUnbuiltClauses(sentence: string): string {
 const TITLE_PHRASES: RegExp[] = [
   // 未完工建設片語（「西區捷運藍線站前電梯套房」→「西區電梯套房」；text_sanitize.py UNBUILT_TITLE 同一份）
   UNBUILT_TITLE_RE,
+  // 開發中園區片語（2026-10-03 景泰裁決：「夏田產業園區｜74旁…」→「74旁…」）
+  UNBUILT_TITLE_PLACE_RE,
   // 「屋主賠售」「屋主割愛甜甜價」「急售」— 先吃，免得下一條的前綴吃到「售」
   /(?:屋主)?(?:賠售|割愛|急售)(?:甜甜價)?/g,
   // 「全社區最便宜」「彰化市最低價」「全棟最便宜」「社區最低」…含前綴整段
@@ -345,6 +356,11 @@ export function unbuiltSelfTest(year = 2026): string[] {
     "土地20坪東山機捷｜一層一戶大四房雙車": "土地20坪東山｜一層一戶大四房雙車",
     "南屯鎮南段｜區段徵收潛力農地｜多塊可選A": "南屯鎮南段｜多塊可選A",
     "近74快速道路捷運G7站三房": "近74快速道路捷運G7站三房",
+    // 2026-10-03 景泰裁決：夏田產業園區（區段徵收中）不當標題片語
+    "夏田產業園區｜74旁｜環河首排置產節稅農地": "74旁｜環河首排置產節稅農地",
+    "夏田產業園區｜40米環河路首排｜近74出口": "40米環河路首排｜近74出口",
+    "夏田產業園區內｜臨路大面寬｜都計節稅農地": "臨路大面寬｜都計節稅農地",
+    "大里夏田產業園區旁農地": "FALLBACK",
   };
   for (const [t, want] of Object.entries(titles)) {
     const got = cleanPropertyTitle(t, "FALLBACK");

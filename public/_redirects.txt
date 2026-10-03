@@ -27,3 +27,9 @@
 
 # 2026-10-03 GSC 回報 /rss.xml/ 404（舊版 Layout 曾宣告帶尾斜線的 RSS 網址）
 /rss.xml/ /rss.xml 301
+
+# 2026-10-03 景泰裁決：兩篇以未完工建設為主題的文章下架（draft: true），301 到相關頁
+/posts/2026-09-W01-district-coastal-blue-line-bc11/ /posts/2026-08-W02-city-taichung-q2-top10-hot-districts/ 301
+/posts/2026-09-W01-district-coastal-blue-line-bc11 /posts/2026-08-W02-city-taichung-q2-top10-hot-districts/ 301
+/posts/2026-09-W02-city-taichung-major-projects-timeline/ /posts/ 301
+/posts/2026-09-W02-city-taichung-major-projects-timeline /posts/ 301
