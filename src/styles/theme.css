@@ -20,9 +20,12 @@
    * 同組色，深一點反而更清楚。⚠️ 不要改回 #06c755 除非把字改成深色。 */
   --color-line: #0c8540;
   --color-line-hover: #0a7a38;
-  --font-app: var(--font-app-cjk), var(--font-google-sans-code);
-  /* 標題字體：Noto Sans TC（webfont，700/900、woff2 unicode-range 切片）→ 系統字 fallback */
-  --font-heading: var(--font-noto-sans-tc), var(--font-app-cjk);
+  /* Google Sans Code 已從 Layout 拿掉（全站 0 glyph 使用），這裡只留系統 CJK 字；
+   * ⚠️ 兩處要一起改，留著引用不存在的變數會讓整條 font-family 失效 */
+  --font-app: var(--font-app-cjk);
+  /* 標題字體：透過 --font-heading-face 依螢幕寬度切換（定義在檔尾 @theme 外面）。
+   * @theme inline 會把值直接寫死進 .font-heading，所以必須多繞這一層變數才切得動。 */
+  --font-heading: var(--font-heading-face);
   /* elevation 三層（暖棕色調陰影，不用 Tailwind 預設冷灰） */
   --shadow-card: var(--elev-1);
   --shadow-card-hover: var(--elev-2);
@@ -80,4 +83,17 @@
 :root {
   --font-app-cjk:
     "PingFang TC", "Heiti TC", "Microsoft JhengHei", "微軟正黑體", sans-serif;
+}
+
+/* 標題字面：手機走系統字（Android 系統字本來就是 Noto Sans CJK、iOS 是 PingFang），
+ * ≥768px 才掛 Noto Sans TC webfont（700/900、woff2 unicode-range 切片）。
+ * 手機上沒有任何元素引用 Noto 的 family，瀏覽器就不會去抓切片（每頁 330–734KB，LCP 主因）。
+ * Tailwind 不允許 @media 寫在 @theme 裡，所以放這裡。 */
+:root {
+  --font-heading-face: var(--font-app-cjk);
+}
+@media (min-width: 768px) {
+  :root {
+    --font-heading-face: var(--font-noto-sans-tc), var(--font-app-cjk);
+  }
 }

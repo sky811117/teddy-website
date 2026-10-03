@@ -4,6 +4,7 @@ import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Main from "@/components/Main.astro";
 import config from "@/config";
+import { YT_CHANNEL_URL, YT_HANDLE } from "@/astro-paper.config";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 
 const personalAccounts = [
@@ -17,9 +18,18 @@ const personalAccounts = [
     color: "from-pink-500/20 to-purple-500/20",
   },
   {
+    platform: "Threads",
+    handle: "@nov__817",
+    role: "文字短評",
+    desc: "跟 IG 主帳同一個帳號名。房市觀察、政策重點用短文寫，適合不想看影片、想快速掃過的人。",
+    url: "https://www.threads.com/@nov__817",
+    icon: "🧵",
+    color: "from-stone-500/20 to-neutral-400/20",
+  },
+  {
     platform: "Facebook",
-    handle: "陳景泰",
-    role: "個人主頁",
+    handle: "泰迪 房仲大看板",
+    role: "FB 主頁",
     desc: "日常 + 房仲業務分享，看我每天在跑什麼物件、做什麼決定。長文比較完整。",
     url: "https://www.facebook.com/profile.php?id=61575492127872",
     icon: "📘",
@@ -27,10 +37,10 @@ const personalAccounts = [
   },
   {
     platform: "YouTube",
-    handle: "@泰迪001",
+    handle: YT_HANDLE,
     role: "影片頻道",
     desc: "房屋開箱、看屋現場、講解小知識。比短影音更完整，適合一邊吃飯一邊看。",
-    url: "https://www.youtube.com/@%E6%B3%B0%E8%BF%AA001",
+    url: YT_CHANNEL_URL,
     icon: "📺",
     color: "from-red-500/20 to-red-300/20",
   },
@@ -96,8 +106,8 @@ const accounts = [
 
 <Layout
   title={`找景泰 + 房仲大看板 | ${config.site.title}`}
-  description="景泰個人 4 平台 + 公司房仲大看板 BigKanBan 4 帳號 — 8 個觸點都找得到我。"
-  canonicalURL={new URL("/media", Astro.site).href}
+  description="景泰個人 5 平台（IG／Threads／FB／YouTube／TikTok）＋ LINE 私訊，加上公司房仲大看板 BigKanBan 4 帳號 — 9 個社群帳號都找得到我。"
+  canonicalURL={new URL("/media/", Astro.site).href}
 >
   <Fragment slot="head">
     <script
@@ -106,9 +116,9 @@ const accounts = [
       set:html={safeJsonLd({
         "@context": "https://schema.org",
         "@type": "CollectionPage",
-        "@id": `${new URL("/media", Astro.site).href}#collectionpage`,
-        name: "景泰 + 房仲大看板 8 個觸點",
-        description: "景泰個人 4 平台 (IG/FB/YouTube/TikTok) + 公司房仲大看板 BigKanBan 4 帳號",
+        "@id": `${new URL("/media/", Astro.site).href}#collectionpage`,
+        name: "景泰 + 房仲大看板 9 個社群帳號",
+        description: "景泰個人 5 平台 (IG/Threads/FB/YouTube/TikTok) + LINE 私訊 + 公司房仲大看板 BigKanBan 4 帳號",
         mainEntity: { "@id": `${new URL("/", Astro.site).href}#realestateagent` },
       })}
     />
@@ -120,7 +130,7 @@ const accounts = [
         "@type": "BreadcrumbList",
         itemListElement: [
           { "@type": "ListItem", position: 1, name: "首頁", item: new URL("/", Astro.site).href },
-          { "@type": "ListItem", position: 2, name: "找景泰", item: new URL("/media", Astro.site).href },
+          { "@type": "ListItem", position: 2, name: "找景泰", item: new URL("/media/", Astro.site).href },
         ],
       })}
     />
@@ -129,7 +139,7 @@ const accounts = [
 
   <Main
     pageTitle="找景泰 + 大看板"
-    pageDesc="你看哪個平台順手就追哪個。景泰個人 4 個 + 公司房仲大看板 4 個 — 8 個觸點都會看到我們在跑什麼。"
+    pageDesc="你看哪個平台順手就追哪個。景泰個人 5 個平台＋LINE、公司房仲大看板 4 個帳號 — 哪一個都看得到我們在跑什麼。"
   >
     {/* 上方 highlight — 連到 /shorts 短影音作品集 */}
     <a
@@ -148,7 +158,7 @@ const accounts = [
         看短影音 →
       </span>
     </a>
-    {/* ===== 景泰個人 4 帳號 ===== */}
+    {/* ===== 景泰個人 5 平台 + LINE ===== */}
     <section class="mt-8">
       <h2 class="text-foreground border-accent border-b-2 pb-2 text-2xl font-bold">
         👤 景泰個人

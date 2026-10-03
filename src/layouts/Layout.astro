@@ -1,12 +1,16 @@
 ---
 import { Font } from "astro:assets";
 import { getRelativeLocaleUrl } from "astro:i18n";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import sharp from "sharp";
 import { resolveDefaultOgImagePath } from "@/utils/resolveDefaultOgImagePath";
 import { getAssetPath } from "@/utils/withBase";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 import FloatingCTA from "@/components/FloatingCTA.astro";
 import Analytics from "@/components/Analytics.astro";
 import config from "@/config";
+import { YT_CHANNEL_URL } from "@/astro-paper.config";
 import "@/styles/global.css";
 
 type Props = {
@@ -18,6 +22,8 @@ type Props = {
   prevURL?: string;
   nextURL?: string;
   showFloatingCTA?: boolean;
+  // og:type 只輸出一個（ogp.me 以第一個為準）；文章頁由 PostLayout 傳 "article"
+  ogType?: "website" | "article";
 };
 
 const { site } = config;
@@ -31,21 +37,59 @@ const {
   prevURL,
   nextURL,
   showFloatingCTA = true,
+  ogType = "website",
 } = Astro.props;
 
 // Cloudflare Pages 一律 308 轉址到帶尾斜線的網址（實測 /properties/0066565 →
 // /properties/0066565/），所以 canonical 也必須帶尾斜線，否則等於告訴 Google
 // 「我的標準網址是那個會跳轉的」，索引報告就會累積「頁面會重新導向」。
 // 各頁自己傳進來的 canonicalURL 也一併正規化，只放過帶副檔名的檔案路徑。
-const canonicalHref = (() => {
-  const u = new URL(canonicalURL);
+// rel=prev/next 也套同一個函式（posts／tags 分頁傳進來的是無尾斜線網址，每跳都 308）。
+const withTrailingSlash = (href: string) => {
+  // 相對路徑（frontmatter canonicalURL 寫 /posts/x/）以站台網址補全，換網域不用改文章
+  const u = new URL(href, Astro.site ?? Astro.url);
   if (!u.pathname.endsWith("/") && !/\.[a-zA-Z0-9]+$/.test(u.pathname)) {
     u.pathname += "/";
   }
   return u.href;
-})();
+};
+const canonicalHref = withTrailingSlash(canonicalURL);
+const prevHref = prevURL ? withTrailingSlash(prevURL) : undefined;
+const nextHref = nextURL ? withTrailingSlash(nextURL) : undefined;
 
 const socialImageURL = new URL(ogImage, Astro.site ?? Astro.url);
+
+// og:image 寬高照實際檔案輸出（物件頁多是 1024×768、區域頁 1600×896，不能一律寫 1200×630）。
+// - 同網域且 public/ 底下有檔 → sharp 只讀檔頭拿尺寸（模組層快取，800 多頁 build 不重讀）
+// - 動態產生的 /og.png、/posts/*/index.png → 固定 1200×630（og.png.ts／index.png.ts 的輸出尺寸）
+// - 外部網址、找不到檔、讀失敗 → 不輸出這兩行
+const ogSizeCache: Map<string, { w: number; h: number } | null> =
+  ((globalThis as Record<string, unknown>).__teddyOgSizeCache as Map<string, { w: number; h: number } | null>) ??
+  ((globalThis as Record<string, unknown>).__teddyOgSizeCache = new Map());
+const ogSize = await (async (): Promise<{ w: number; h: number } | null> => {
+  try {
+    const siteOrigin = new URL(Astro.site ?? Astro.url).origin;
+    if (socialImageURL.origin !== siteOrigin) return null;
+    const pathname = decodeURIComponent(socialImageURL.pathname);
+    if (pathname === "/og.png" || /^\/posts\/.+\/index\.png$/.test(pathname)) {
+      return { w: 1200, h: 630 };
+    }
+    if (pathname.includes("..")) return null;
+    const cached = ogSizeCache.get(pathname);
+    if (cached !== undefined) return cached;
+    const filePath = join(process.cwd(), "public", pathname);
+    let size: { w: number; h: number } | null = null;
+    if (existsSync(filePath)) {
+      const meta = await sharp(filePath).metadata();
+      if (meta.width && meta.height) size = { w: meta.width, h: meta.height };
+    }
+    ogSizeCache.set(pathname, size);
+    return size;
+  } catch {
+    return null;
+  }
+})();
+
 // ⚠️ getRelativeLocaleUrl 會依 trailingSlash 設定在後面補一個斜線，
 //    產出 /rss.xml/ —— 那個網址實測回 404（正確的是 /rss.xml）。
 //    等於全站每一頁都在宣告一個壞掉的 RSS 位置，所以這裡把尾斜線去掉。
@@ -71,9 +115,10 @@ const rssHref = getRelativeLocaleUrl(
     <link rel="apple-touch-icon" sizes="180x180" href={getAssetPath("apple-touch-icon.png")} />
     <link rel="manifest" href={getAssetPath("manifest.json")} />
     <link rel="canonical" href={canonicalHref} />
-    {prevURL && <link rel="prev" href={prevURL} />}
-    {nextURL && <link rel="next" href={nextURL} />}
-    {noindex && <meta name="robots" content="noindex, follow" />}
+    {prevHref && <link rel="prev" href={prevHref} />}
+    {nextHref && <link rel="next" href={nextHref} />}
+    {/* 可收錄頁宣告大圖預覽（Discover／搜尋結果用大圖）；noindex 頁照舊 */}
+    <meta name="robots" content={noindex ? "noindex, follow" : "max-image-preview:large"} />
     <meta name="generator" content={Astro.generator} />
     <meta name="format-detection" content="telephone=no" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -84,11 +129,8 @@ const rssHref = getRelativeLocaleUrl(
     <link rel="dns-prefetch" href="https://www.google-analytics.com" />
     <link rel="dns-prefetch" href="https://line.me" />
 
-    <!-- Font -->
-    <Font
-      cssVariable="--font-google-sans-code"
-      preload={[{ subset: "latin", weight: 400, style: "normal" }]}
-    />
+    {/* Google Sans Code 等寬字已拿掉（全站 0 glyph 使用、每頁白 preload 35KB）；
+        theme.css 的 --font-app 同步改成只用 --font-app-cjk，兩處必須一起改。 */}
     {/* 標題層中文字體（700/900）。astro.config.ts 這個 entry 沒指定 formats →
         預設 woff2，Google provider 才會回 unicode-range 切片，瀏覽器只抓標題實際
         用到的字塊；不 preload（CJK 切片上百個、preload 反而搶頻寬）。
@@ -106,14 +148,14 @@ const rssHref = getRelativeLocaleUrl(
     <link rel="sitemap" href={getAssetPath("sitemap-index.xml")} />
 
     <!-- Open Graph -->
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content={site.title} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content={site.author} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalHref} />
     <meta property="og:image" content={socialImageURL} />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    {ogSize && <meta property="og:image:width" content={String(ogSize.w)} />}
+    {ogSize && <meta property="og:image:height" content={String(ogSize.h)} />}
     <meta property="og:image:alt" content={title} />
     <meta property="og:locale" content="zh_TW" />
 
@@ -152,16 +194,66 @@ const rssHref = getRelativeLocaleUrl(
             name: "陳景泰",
             alternateName: ["Teddy Chen", "Teddy", "泰迪", "景泰", "房仲大看板 泰迪"],
             url: site.url,
-            image: socialImageURL.href,
+            // 本人代表圖固定用人像，不能跟著每頁 og:image 跑（同一個 @id 跨頁要一致；
+            // 頁尾每頁都有他的頭像，與可見內容相符）。og:image／twitter:image 仍用各頁自己的圖。
+            image: {
+              "@type": "ImageObject",
+              "@id": `${site.url}#teddy-photo`,
+              url: `${site.url}photos/teddy-portrait.jpg`,
+              contentUrl: `${site.url}photos/teddy-portrait.jpg`,
+              width: 815,
+              height: 1041,
+              caption: "陳景泰（泰迪）｜一品不動產 有巢氏房屋 台中世界之心加盟店 不動產營業員",
+            },
+            description:
+              "台中市不動產營業員（114年登字第488296號），任職一品不動產 有巢氏房屋 台中世界之心加盟店。2025 年 3 月由 13 年廚師轉行，短影音與房仲大看板 BigKanBan 用名「泰迪」，自己寫程式做官網與房市工具。",
+            // 正向寫法、不點名也不否定任何第三人
+            disambiguatingDescription:
+              "有巢氏房屋台中世界之心店的不動產營業員陳景泰（Teddy／泰迪），房仲大看板 BigKanBan 團隊成員。",
             telephone: "+886-920-118-756",
             email: "a0920118756@gmail.com",
-            jobTitle: "不動產營業員 Real Estate Agent",
+            jobTitle: "不動產營業員（Real Estate Salesperson）",
+            hasOccupation: {
+              "@type": "Occupation",
+              name: "不動產營業員",
+              occupationLocation: { "@type": "City", name: "台中市" },
+            },
+            knowsLanguage: "zh-TW",
+            // 可聯絡時段跟 contact.astro 可見文字（09:00–22:00）一致，有出處；
+            // 公司節點的營業時間沒有來源，已整段拿掉。
+            contactPoint: {
+              "@type": "ContactPoint",
+              contactType: "customer service",
+              telephone: "+886-920-118-756",
+              availableLanguage: "zh-TW",
+              hoursAvailable: {
+                "@type": "OpeningHoursSpecification",
+                dayOfWeek: [
+                  "Monday",
+                  "Tuesday",
+                  "Wednesday",
+                  "Thursday",
+                  "Friday",
+                  "Saturday",
+                  "Sunday",
+                ],
+                opens: "09:00",
+                closes: "22:00",
+              },
+            },
             worksFor: { "@id": `${site.url}#organization` },
             memberOf: {
               "@type": "Organization",
+              "@id": `${site.url}#bigkanban`,
               name: "房仲大看板 BigKanBan",
               alternateName: ["BigKanBan", "大看板"],
               url: "https://instagram.com/bigkanban",
+              // 只列組織帳號；bigkanban.boss 是個人帳號不放
+              sameAs: [
+                "https://instagram.com/bigkanban",
+                "https://www.tiktok.com/@bigkanban2.0",
+                "https://www.facebook.com/bigkanban",
+              ],
             },
             workLocation: { "@type": "City", name: "台中市", alternateName: "Taichung" },
             sameAs: [
@@ -170,7 +262,7 @@ const rssHref = getRelativeLocaleUrl(
               "https://www.instagram.com/nov_817taidi/",
               "https://www.threads.com/@nov__817",
               "https://www.facebook.com/profile.php?id=61575492127872",
-              "https://www.youtube.com/@%E6%B3%B0%E8%BF%AA001",
+              YT_CHANNEL_URL,
               "https://www.tiktok.com/@sky811117",
               "https://realtor.houseprice.tw/agent/buy/0920118756/",
               "https://github.com/sky811117",
@@ -217,23 +309,6 @@ const rssHref = getRelativeLocaleUrl(
               addressRegion: "Taichung",
               addressCountry: "TW",
             },
-            // 標準營業時間：週一到週日 09:00-21:00 (房仲業典型)
-            openingHoursSpecification: [
-              {
-                "@type": "OpeningHoursSpecification",
-                dayOfWeek: [
-                  "Monday",
-                  "Tuesday",
-                  "Wednesday",
-                  "Thursday",
-                  "Friday",
-                  "Saturday",
-                  "Sunday",
-                ],
-                opens: "09:00",
-                closes: "21:00",
-              },
-            ],
             areaServed: [
               { "@type": "City", name: "台中市" },
               { "@type": "AdministrativeArea", name: "南投縣" },
@@ -264,15 +339,19 @@ const rssHref = getRelativeLocaleUrl(
             "@type": "WebSite",
             "@id": `${site.url}#website`,
             url: site.url,
-            name: site.title,
+            // 站名＝人名（跟 Person 同名）；title 後綴「陳景泰｜台中房仲」不當站名
+            name: site.author,
+            alternateName: ["泰迪", "Teddy Chen", "陳景泰 台中房仲"],
             description: site.description,
             inLanguage: "zh-TW",
             publisher: { "@id": `${site.url}#organization` },
+            author: { "@id": `${site.url}#realestateagent` },
+            copyrightHolder: { "@id": `${site.url}#realestateagent` },
             potentialAction: {
               "@type": "SearchAction",
               target: {
                 "@type": "EntryPoint",
-                urlTemplate: `${site.url}search?q={search_term_string}`,
+                urlTemplate: `${site.url}search/?q={search_term_string}`,
               },
               "query-input": "required name=search_term_string",
             },

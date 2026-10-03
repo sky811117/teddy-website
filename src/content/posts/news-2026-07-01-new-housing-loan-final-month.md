@@ -2,7 +2,7 @@
 title: "新青安補貼倒數最後 1 個月：7/31 到期、8 月首批寬限期屆滿月付恐從 1.5 萬跳到 3.3 萬"
 author: 陳景泰
 pubDatetime: 2026-07-01T08:30:00+08:00
-canonicalURL: "https://teddy-website-blog.pages.dev/posts/new-housing-loan-3-2026/"
+canonicalURL: "/posts/new-housing-loan-3-2026/"
 slug: new-housing-loan-final-month-2026
 ogImage: /og/new-housing-loan-final-month-2026.jpg
 featured: true

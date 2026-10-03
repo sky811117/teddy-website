@@ -93,6 +93,13 @@ const priceBand =
 // 類型分布（描述用，例「大樓 12・華廈 4・店面 3」）
 const typeCount: Record<string, number> = {};
 for (const m of metas) typeCount[m.type] = (typeCount[m.type] || 0) + 1;
+// title 用的前 2 名類型（2026-10-03 F124：依該區實際分布取，不寫死類型；「其他」不進標題）
+const topTypes = Object.entries(typeCount)
+  .filter(([t]) => t !== "其他")
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 2)
+  .map(([t]) => t)
+  .join("・");
 const typeSummary = Object.entries(typeCount)
   .sort((a, b) => b[1] - a[1])
   .slice(0, 4)
@@ -115,7 +122,10 @@ const noindex = total < THIN_MIN_LISTINGS;
 
 // ============ SEO + JSON-LD ============
 const canonicalURL = new URL(`/properties/${slug}/`, Astro.site).href;
+// pageTitle 同時是 H1（經 <Main pageTitle> 傳入），筆數留在 H1；
+// <title> 改用 seoTitle：帶「房屋出售」查詢字、不隨每晚筆數變動（F124，建議 10/6 之後才部署）
 const pageTitle = `${district}在售物件 ${total} 筆`;
+const seoTitle = `台中${district}房屋出售｜${topTypes ? `${topTypes}在售列表` : "在售物件列表"} | ${config.site.title}`;
 const seoDescription = [
   `台中${district}目前站上在售 ${total} 筆物件`,
   priceBand ? `總價 ${priceBand}` : "",
@@ -151,10 +161,10 @@ const breadcrumbSchema = {
 ---
 
 <Layout
-  title={`${pageTitle}（台中） | ${config.site.title}`}
+  title={seoTitle}
   description={seoDescription}
   canonicalURL={canonicalURL}
-  ogImage={area?.heroImage ?? "/og/page-properties.jpg"}
+  ogImage={area?.heroImage?.src ?? "/og/page-properties.jpg"}
   noindex={noindex}
 >
   <Fragment slot="head">

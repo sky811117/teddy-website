@@ -5,8 +5,11 @@ on:
     branches: [main]
   workflow_dispatch:
   schedule:
-    # 排程文的門檻是 pubDatetime − 15 分鐘（postFilter），月報 / 新聞文都排台灣 09:00，
-    # 所以 rebuild 要落在 00:45Z 之後才有意義。
+    # 排程文的門檻是 pubDatetime − 15 分鐘（postFilter）：在門檻之前 push 的那次 build 不會包含它，
+    # 要等下一次 push 或下面這兩條 cron 保底 rebuild 才上線。
+    # 現況（2026-10-03 查）：每日新聞文 frontmatter 排台灣 08:00、社區評價文 07:00，
+    # 但新聞產線 07:30 就 push → 新聞文常要等下一次部署（F047，源頭修正在新聞產線，不在這裡）。
+    # 這兩條 cron 只是保底，不要拿來當準時上線的保證。
     # ⚠️ 實測（gh run list --event schedule，2026-08-27 起）：GitHub 對 "0 3 * * *" 這種
     # 整點 cron 的延遲是 4–11 小時（實際 07:11Z–14:41Z 才跑，= 台灣 15:11–22:41），
     # 不是文件寫的「5–15 分鐘」。改成非整點分鐘數 + 兩班，只能降低機率、不保證準時；
@@ -93,6 +96,8 @@ jobs:
       # 2026-08-26 補：同一個根因漏掉的第二步。dist/_headers.txt 沒被改名成
       # dist/_headers，Cloudflare 完全不吃 public/_headers.txt 的快取規則
       # （實測線上圖片回 max-age=0, must-revalidate，等於每次都回源）。
+      # 2026-10-03 起另外做：dist/sitemap.xml、下架物件 301（_redirects 超過 2,000 條會讓這步失敗）、
+      # 刪 dist 裡沒產頁的物件照片、本站絕對網址少尾斜線的 WARN。
       - name: Postbuild (_headers rename + pagefind copy + 尾斜線)
         run: pnpm exec node scripts/postbuild-headers.mjs
 
@@ -101,6 +106,7 @@ jobs:
           test -f dist/_headers || (echo "dist/_headers missing" && exit 1)
           test -f dist/pagefind/pagefind.js || (echo "dist/pagefind/pagefind.js missing" && exit 1)
           test -f dist/index.html || (echo "dist/index.html missing" && exit 1)
+          test -f dist/sitemap.xml || (echo "dist/sitemap.xml missing" && exit 1)
 
       # 2026-09-29 補：IndexNow（Bing / Yandex / Naver；ChatGPT 搜尋、Copilot 吃的是 Bing 索引）。
       # 部署「前」先把線上現有的 sitemap 存成舊版（放 runner.temp，不進 dist、不會被上傳），

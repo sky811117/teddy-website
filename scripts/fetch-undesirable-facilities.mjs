@@ -232,7 +232,7 @@ async function main() {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
           // ⚠️ HTTP 標頭只能放 ASCII，這裡寫中文會噴 ByteString 轉換錯誤
-          "User-Agent": "teddy-website/1.0 (+https://teddy-website-blog.pages.dev)",
+          "User-Agent": "teddy-website/1.0 (+https://teddy-house.tw)",
         },
       });
       if (!res.ok) {

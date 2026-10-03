@@ -2,7 +2,7 @@
 title: "青安3.0 定案 8/1 上路：台中房價上限 2000 萬、年收 200 萬排富、婚育最高貸 1500 萬"
 author: 陳景泰
 pubDatetime: 2026-07-26T08:00:00+08:00
-canonicalURL: "https://teddy-website-blog.pages.dev/posts/new-housing-loan-3-2026/"
+canonicalURL: "/posts/new-housing-loan-3-2026/"
 slug: new-housing-loan-3-launch-2026
 ogImage: /og/new-housing-loan-3-launch-2026.jpg
 featured: true

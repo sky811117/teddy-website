@@ -16,6 +16,12 @@ import {
   sanitizeCopy,
   sanitizeHighlights,
 } from "@/utils/cleanPropertyTitle";
+import { areaIncludesParking, bodyPropertyType } from "@/utils/parkingCaliber";
+import {
+  photoAlt,
+  publicCommunityName,
+  stripAddressDetail,
+} from "@/utils/propertyPhotoAlt";
 import IconMapPin from "@/assets/icons/IconMapPin.svg";
 import IconPhone from "@/assets/icons/IconPhone.svg";
 import IconClipboardList from "@/assets/icons/IconClipboardList.svg";
@@ -87,9 +93,9 @@ const showNewBadge =
   siteNewCount / properties.length <= NEW_BADGE_MAX_RATIO;
 
 // 位置去重：streetArea 帶行政區前綴時去掉（標題下 / sticky bar 共用）
-const streetAreaClean = cleanStreetArea(
-  property.data.streetArea,
-  property.data.district
+// stripAddressDetail：地號／巷弄號碼保險切（HG0238992 的 streetArea 是「南興段717、718地號」）
+const streetAreaClean = stripAddressDetail(
+  cleanStreetArea(property.data.streetArea, property.data.district)
 );
 
 // 委編 / 專任 badge：
@@ -114,8 +120,24 @@ const displayTitle = cleanPropertyTitle(rawTitle, titleFallback);
 const highlights = sanitizeHighlights(property.data.highlights);
 
 // 類型（給規格卡用）：優先撈 markdown body 的「**類型**：XXX」，最準
-const bodyTypeMatch = property.body?.match(/\*\*類型\*\*：\s*([^\n\r]+)/);
-const propertyType = bodyTypeMatch?.[1]?.trim();
+const propertyType = bodyPropertyType(property.body);
+
+// 權狀／單價是否含車位（大樓／華廈的產權固定車位；判斷規則見 src/utils/parkingCaliber.ts）
+// 沒有「類型」行的 HG/UA 物件拿原始案名代替做排除比對（只會更嚴，不會多標）
+const includesParking = areaIncludesParking(
+  property.data.parking,
+  propertyType ?? rawTitle
+);
+const parkingSuffix = includesParking ? "（含車位）" : "";
+
+// 對外可用的社區名（≤12 字、不含誇大字；SEO 標題、描述、事實句、照片 alt 共用）
+const publicCommunity = publicCommunityName(property.data);
+
+// 資料日期：Asia/Taipei 的 YYYY-MM-DD。toISOString() 是 UTC，台灣 08:00 前的時間戳
+// 會少一天（8/23 06:36 被印成 8/22）
+const twDate = (d: Date) =>
+  new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Taipei" }).format(d);
+const dataDate = property.data.lastSeen ?? property.data.pubDatetime;
 
 // 住宅型才顯示月付試算：土地／店面／廠房／商辦／農舍的貸款成數與年限依銀行鑑價而定，
 // 用 8 成 30 年算出來的數字對買方是錯的（實例：69,990 萬農建地印出「月付約 215.6 萬」）
@@ -143,6 +165,8 @@ const useCollage = photos.length >= 3;
 const collageSide = photos.slice(1, 5);
 // 沒露出的張數（疊在最後一格的「+N 張」遮罩）
 const collageHiddenCount = photos.length - 1 - collageSide.length;
+// 照片 alt：「社區名・格局 照片 第 N 張」（只用事實欄位，不帶行銷標題與路段；見 propertyPhotoAlt.ts）
+const photoAlts = photos.map((_, i) => photoAlt(property.data, i));
 
 // ── 內鏈：同社區 → 社區文 → 區域頁 → 同縣市 ────────────────────────────
 // ⚠️ community 沒填的物件（約 45%）兩邊都是 undefined，直接 === 會把整站當同社區，先 guard
@@ -230,6 +254,14 @@ const introLines = introMatch
       .filter(Boolean)
   : null;
 
+// 亮點去重（稽核 F037）：properties-sync 的 highlights 是從物件介紹逐行抽的，九成頁面
+// 「物件亮點」跟「物件介紹」逐句相同。比對前去掉開頭的 ・·• 項目符號與多餘空白
+// （EMOJI_RE 不含這三個字元，0397192 就是卡在前綴差異）。全部重複時亮點整塊不渲染。
+const normLine = (s: string) =>
+  s.replace(/^[・·•\s]+/, "").replace(/\s{2,}/g, " ").trim();
+const introSet = new Set((introLines ?? []).map(normLine));
+const uniqueHighlights = highlights.filter(h => !introSet.has(normLine(h)));
+
 // ============ SEO + JSON-LD ============
 // 尾斜線：Cloudflare Pages 會 308 到帶尾斜線的網址，canonical / Offer.url / breadcrumb 都要一致
 const canonicalURL = new URL(`/properties/${property.id}/`, Astro.site).href;
@@ -259,43 +291,109 @@ function smartTruncate(s: string, max: number): string {
   return head + "…";
 }
 
-// ── SEO 標題與描述（2026-08-28 重寫、2026-09-06 改用共用清洗）──────────
-// 買方實際會搜的是「北屯 三房 1500萬」這種組合，所以把行政區、格局、坪數、
-// 總價補進標題，並把誇大字眼濾掉（也避免踩不實廣告與 lint-seo 的誇大詞檢查）。
+// ── SEO 標題與描述（2026-08-28 重寫、2026-09-06 改用共用清洗、2026-10-03 改公式）──
+// 2026-10-03（稽核 F040）：買方搜的「區＋社區＋格局＋總價」以前放在最後，常超過 30 字被 SERP
+// 截掉；非住宅印「—」、億級印成「45000萬」。改成事實段（lead）放前面、案名段（tail）放後面：
+//   lead ＝ 行政區 社區名（不能用就路段） N房（抓不到就坪數） 總價（億級寫 X.X億）
+//   tail ＝ 清過的案名以「｜」切段，丟掉跟 lead 重複的整段
+// 總長超過 32 字從 tail 尾端整段丟（只在「｜」「，」邊界切），lead 永遠不截。
+// H1 不動；物件頁不掛站名後綴 —— 後綴要 19 個字，會把買方搜的詞擠出 SERP 可見範圍。
+const SEO_TITLE_MAX = 32;
+const charLen = (s: string) => [...s].length;
 const areaNum = Number(property.data.area);
-// 案名裡若已經有行政區（例如「北區｜麗園道｜…」）就不要再重複一次
-const districtInTitle =
-  !!property.data.district && displayTitle.includes(property.data.district);
-const seoFacts = [
-  districtInTitle ? "" : property.data.district,
-  property.data.layout,
-  Number.isFinite(areaNum) && areaNum > 0 ? `${Math.round(areaNum)}坪` : "",
-  property.data.totalPrice ? `${property.data.totalPrice}萬` : "",
+const hasArea = Number.isFinite(areaNum) && areaNum > 0;
+const layoutText = (property.data.layout ?? "").trim();
+const layoutKnown = layoutText !== "" && layoutText !== "—";
+const roomMatch = layoutText.match(/(\d+)\s*房/);
+const roomText = roomMatch ? `${roomMatch[1]}房` : "";
+// 格局抓不到「N房」（「—」、空白、土地）時改放坪數；不用 propertyType（1211236 類型是電梯大樓、實際是商場）
+const roomSlot = roomText || (hasArea ? `${Math.round(areaNum)}坪` : "");
+const totalPrice = property.data.totalPrice;
+// ⚠️ 不要在模板字串的 ${} 裡寫除號（例 `${(totalPrice / 10000)…}`）：Astro 編譯器會把 / 當成正規式開頭，
+//    前置區塊判讀錯亂、getStaticPaths 被留在元件內，build 直接失敗（2026-10-03 踩過）。
+const priceYi = Number((totalPrice * 0.0001).toFixed(2));
+const priceShort = !totalPrice
+  ? ""
+  : totalPrice >= 10000
+    ? String(priceYi) + "億"
+    : String(totalPrice) + "萬";
+const seoLead = [
+  property.data.district,
+  publicCommunity || streetAreaClean,
+  roomSlot,
+  priceShort,
 ]
   .filter(Boolean)
   .join(" ");
 
-// 物件頁不掛站名後綴 —— 後綴要 19 個字，等於把買方搜的詞擠出 SERP 可見範圍。
-// 頁面本身與 JSON-LD 都有景泰的身分資訊，品牌訊號不靠標題後綴。
-const seoTitle = [displayTitle, seoFacts].filter(Boolean).join("｜");
+// tail：案名段落裡「整段都是 lead 已經講過的字」（行政區／社區名／格局／N房）就丟掉，
+// 修掉 HG0212841 那種「南投中寮區3房2廳3衛」整段跟事實段重複
+const leadFacts = [
+  property.data.district,
+  property.data.community?.trim() ?? "",
+  publicCommunity,
+  layoutText,
+  roomText,
+].filter(s => s && s !== "—");
+const isCoveredByLead = (seg: string) => {
+  let rest = seg;
+  for (const f of [...leadFacts].sort((a, b) => b.length - a.length)) {
+    rest = rest.split(f).join("");
+  }
+  return rest.replace(/[\s、，,・·\-—–]/g, "") === "";
+};
+let tailSegs = displayTitle
+  .split("｜")
+  .map(seg => seg.trim())
+  .filter(seg => seg && !isCoveredByLead(seg));
+const joinTitle = (segs: string[]) => [seoLead, ...segs].join("｜");
+while (charLen(joinTitle(tailSegs)) > SEO_TITLE_MAX && tailSegs.length > 1) {
+  tailSegs = tailSegs.slice(0, -1);
+}
+if (charLen(joinTitle(tailSegs)) > SEO_TITLE_MAX && tailSegs.length === 1) {
+  // 只剩一段還太長：在「，」邊界往前收；收不進來就留 lead＋第一段，讓 Google 自己加「…」
+  let seg = tailSegs[0];
+  while (charLen(joinTitle([seg])) > SEO_TITLE_MAX && /[，,]/.test(seg)) {
+    seg = seg.replace(/[，,][^，,]*$/, "").trim();
+  }
+  tailSegs = seg ? [seg] : tailSegs;
+}
+const seoTitle = joinTitle(tailSegs);
 
 // 描述：先給事實，再接乾淨的賣點（去 emoji、去誇大句、去第三人聯絡、門牌砍到路段）
-const cleanBlurb = sanitizeCopy(property.data.description || "")
+// 2026-10-03（稽核 F101）：只剩小標題（「物件亮點 :」）、只剩數字（「1」）、不到 8 字的殘段一律丟掉
+const isJunkBlurb = (s: string) =>
+  /^[^。！？]{0,20}[:：]\s*$/.test(s) || /^\d{1,3}\.?$/.test(s) || charLen(s) < 8;
+let cleanBlurb = sanitizeCopy(property.data.description || "")
   .replace(/\n+/g, " ")
   .replace(/\s{2,}/g, " ")
   .replace(/^[\s，、。!！?？]+/, "")
   .trim();
+if (isJunkBlurb(cleanBlurb)) cleanBlurb = "";
+// 太短（< 40 字，例 1195641 線上只有 42 字的描述）改用物件介紹前幾行接到約 120 字
+if (charLen(cleanBlurb) < 40 && introLines && introLines.length > 0) {
+  let acc = "";
+  for (const raw of introLines) {
+    const line = normLine(raw.replace(/^#+\s*/, "").replace(/^[-*]\s+/, ""));
+    if (!line || isJunkBlurb(line)) continue;
+    acc = acc ? (/[。！？!?]$/.test(acc) ? acc + line : `${acc}。${line}`) : line;
+    if (charLen(acc) >= 120) break;
+  }
+  if (charLen(acc) > charLen(cleanBlurb)) cleanBlurb = acc;
+}
 
+// 事實句（稽核 F101／F128）：補樓層、屋齡、社區名，同建案多戶的描述才不會逐字相同
 const factSentence = [
-  // streetArea 本身通常已含行政區（「北屯區環中東路二段」），別再前綴一次
-  property.data.streetArea
-    ? (property.data.streetArea.startsWith(property.data.district)
-        ? property.data.streetArea
-        : `${property.data.district}・${property.data.streetArea}`)
+  // 位置用去掉行政區前綴、砍過地號／巷弄的路段
+  streetAreaClean
+    ? `${property.data.district}・${streetAreaClean}`
     : property.data.district,
-  property.data.layout,
-  Number.isFinite(areaNum) && areaNum > 0 ? `${areaNum}坪` : "",
-  property.data.totalPrice ? `總價 ${formatPrice(property.data.totalPrice)}` : "",
+  publicCommunity && publicCommunity !== displayTitle ? publicCommunity : "",
+  layoutKnown ? layoutText : "",
+  property.data.floor ?? "",
+  hasArea ? `${areaNum}坪` : "",
+  property.data.age !== undefined ? `屋齡${property.data.age}年` : "",
+  totalPrice ? `總價 ${formatPrice(totalPrice)}` : "",
 ]
   .filter(Boolean)
   .join("，");
@@ -322,27 +420,43 @@ const numberOfRooms = roomsMatch ? parseInt(roomsMatch[1], 10) : undefined;
 // 把「萬」轉成「元」(Google offers 用 TWD 標準幣別單位)
 const priceInNTD = property.data.totalPrice * 10000;
 
-// priceValidUntil: 預設廣告 90 天後 (跟物件刊登週期對齊)
-const priceValidUntil = new Date(
-  Date.now() + 90 * 24 * 60 * 60 * 1000
-).toISOString().slice(0, 10);
+// priceValidUntil 已拿掉（2026-10-03，稽核 X006）：以前是 build 當天＋90 天，網站拿不出
+// 可信的價格有效期限，與其每次 build 都假裝「再 90 天有效」不如不輸出（非必填）。
+// 改在頁面價格下方印「資料更新日」，JSON-LD 輸出 dateModified。
 
-// 物件類型 → schema.org 的「about」型別。
-// 廠房／店面以前標 LocalBusiness，會被當成一家營業中的商家（可能餵進 Maps），改回 Place。
+// 物件類型 → schema.org 的「about」型別（2026-10-03，稽核 F080／X007 改成依優先序判斷）。
+// 以前把類型、案名、格局串在一起比對，「台中清水農地套房價…」這種案名的「套房」會把
+// 土地判成 Apartment；33 筆沒有「類型」行的 HG/UA 物件（含 1500 坪農地）全部預設 Apartment。
+// 廠房／店面以前標 LocalBusiness，會被當成一家營業中的商家（可能餵進 Maps），維持 Place。
+const NON_RESIDENTIAL_TITLE_RE = /農地|建地|土地|林地|農舍|車位|停車|店面|廠房|商辦/;
 function getSchemaType(): string {
-  const t = `${propertyType || ""} ${rawTitle} ${property.data.layout || ""}`;
-  if (/透天|別墅/.test(t)) return "SingleFamilyResidence";
-  if (/公寓|套房|大樓|華廈/.test(t)) return "Apartment";
-  if (/店面|商辦|廠房|土地|農地|建地|林地|農舍|辦公/.test(t)) return "Place";
-  // 預設大樓/華廈
+  // 1. 有「類型」行就只看它
+  if (propertyType) {
+    if (/透天|別墅/.test(propertyType)) return "SingleFamilyResidence";
+    if (/電梯大樓|大樓|華廈|公寓|套房/.test(propertyType)) return "Apartment";
+    return "Place"; // 土地、店面、廠房、農舍…
+  }
+  // 2. 沒有類型：格局寫「土地」或「—」（非住宅）
+  if (layoutText === "土地" || layoutText === "—") return "Place";
+  // 3. 只看原始案名的非住宅字（不看描述、不用面積門檻）
+  if (NON_RESIDENTIAL_TITLE_RE.test(rawTitle)) return "Place";
+  // 4. 路段欄位是地段名（「先驅段」「高西段」，不是「XX路二段」）：用地段定位的是農地／農舍，
+  //    不是公寓大樓（HG0212841 先驅段 1500 坪農地＋農舍就是這種）
+  const street = streetAreaClean || "";
+  if (street && !/[路街道巷]/.test(street) && /[^一二三四五六七八九十]段$/.test(street)) {
+    return "Place";
+  }
+  if (/透天|別墅/.test(rawTitle)) return "SingleFamilyResidence";
+  // 5. 最後才預設大樓／華廈
   return "Apartment";
 }
 const schemaType = getSchemaType();
-
-// 證號前綴防雙重 (frontmatter 若已含 "經紀人 X" / "營業員 X" 就不加)
-function withPrefix(prefix: string, value: string): string {
-  return value.startsWith(prefix) ? value : `${prefix}${value}`;
-}
+// 土地物件：「權狀坪數」其實是土地坪數（JSON-LD 與事實句改名）
+const isLand =
+  schemaType === "Place" &&
+  (propertyType
+    ? /土地|農地|建地|林地/.test(propertyType)
+    : layoutText === "土地" || /農地|建地|土地|林地/.test(rawTitle));
 
 // 圖片 array: 至多 6 張避免 JSON-LD payload 過大
 const MAX_SCHEMA_IMAGES = 6;
@@ -351,6 +465,12 @@ const schemaImages = property.data.photos.length > 0
       .slice(0, MAX_SCHEMA_IMAGES)
       .map(p => new URL(p, Astro.site).href)
   : [ogImagePath];
+
+// floorSize 用的坪數：住宅型別才有；主建物優先，沒有就用權狀
+const floorPing =
+  schemaType !== "Place"
+    ? (property.data.indoorArea ?? property.data.area)
+    : undefined;
 
 // 主 schema：RealEstateListing（schema.org 有這個型別；不動產不是 Product，
 // 標 Product 拿不到 rich result 還可能被當實體商品）。住宅型別放在 about。
@@ -363,13 +483,19 @@ const aboutSchema = {
     addressLocality: property.data.district,
     ...(thisCounty !== OTHER_COUNTY ? { addressRegion: thisCounty } : {}),
     addressCountry: "TW",
-    ...(property.data.streetArea ? { streetAddress: property.data.streetArea } : {}),
+    // 地號／巷弄號碼保險切（本戶只寫到路名）
+    ...(stripAddressDetail(property.data.streetArea)
+      ? { streetAddress: stripAddressDetail(property.data.streetArea) }
+      : {}),
   },
-  ...(property.data.area
+  // floorSize：只有住宅型別輸出（schema.org 的 Place 沒有這個屬性）。用主建物坪數，
+  // 沒有 indoorArea 代表主建物＝權狀（apply_utrust.py 只在兩者不同時才寫 indoorArea）。
+  // 以前用含公設、含車位的權狀坪數（稽核 X007）。
+  ...(floorPing
     ? {
         floorSize: {
           "@type": "QuantitativeValue",
-          value: property.data.area,
+          value: floorPing,
           unitText: "坪",
         },
       }
@@ -387,7 +513,9 @@ const listingSchema = {
   description: seoDescription,
   image: schemaImages,
   inLanguage: "zh-TW",
-  datePosted: property.data.pubDatetime.toISOString().slice(0, 10),
+  // 台灣日期（toISOString 是 UTC，8/23 06:36 會被印成 8/22）
+  datePosted: twDate(property.data.pubDatetime),
+  dateModified: twDate(dataDate),
   about: aboutSchema,
   offers: {
     "@type": "Offer",
@@ -398,17 +526,17 @@ const listingSchema = {
         ? "https://schema.org/InStock"
         : "https://schema.org/OutOfStock",
     url: canonicalURL,
-    priceValidUntil,
+    // 2026-10-03（稽核 X003／F009）：以前 seller 內嵌「陳景泰 RealEstateAgent」＋ hasCredential
+    // ［經紀人 黃永隆…, 營業員 陳景泰…］，等於把經紀人證號掛在景泰名下。改成只用 @id 指回
+    // Layout.astro @graph 的 Person（#realestateagent）與公司（#organization）節點，
+    // 證照由那兩個節點各自表達。⛔ 不要加 broker（Offer 上不合法）。
+    // 頁尾看得到的「經紀人 {brokerLicense}・營業員 {agentLicense}」是法規揭露，照舊保留。
     seller: {
-      "@type": "RealEstateAgent",
+      "@type": "Person",
+      "@id": `${config.site.url}#realestateagent`,
       name: "陳景泰",
-      telephone: "+886-920-118-756",
-      email: "a0920118756@gmail.com",
-      hasCredential: [
-        withPrefix("經紀人 ", property.data.brokerLicense),
-        withPrefix("營業員 ", property.data.agentLicense),
-      ],
     },
+    offeredBy: { "@id": `${config.site.url}#organization` },
   },
   // 額外屬性（Google 認 additionalProperty）
   additionalProperty: [
@@ -419,9 +547,12 @@ const listingSchema = {
     },
     {
       "@type": "PropertyValue",
-      name: "權狀坪數",
+      name: isLand ? "土地坪數" : `權狀坪數${parkingSuffix}`,
       value: `${property.data.area} 坪`,
     },
+    ...(property.data.indoorArea !== undefined
+      ? [{ "@type": "PropertyValue", name: "主建物坪數", value: `${property.data.indoorArea} 坪` }]
+      : []),
     ...(property.data.age !== undefined
       ? [{ "@type": "PropertyValue", name: "屋齡", value: `${property.data.age} 年` }]
       : []),
@@ -462,6 +593,38 @@ const breadcrumbSchema = {
     },
   ],
 };
+
+// 規格卡下方的事實句（稽核 F037）：規格卡的散文版，給 snippet 與 AI 擷取用。
+// 只用既有欄位、沒值就省略；不接 areas.ts 的區域文字（帶資料期、貼進同區幾十頁會變樣板又會過期）。
+const specAreaNotes = [
+  includesParking ? "含車位" : "",
+  property.data.indoorArea !== undefined ? `主建物 ${property.data.indoorArea} 坪` : "",
+].filter(Boolean);
+const specFactText =
+  [
+    `${property.data.district}${streetAreaClean ? `・${streetAreaClean}` : ""}${
+      publicCommunity && publicCommunity !== displayTitle ? `「${publicCommunity}」` : ""
+    }`,
+    layoutKnown ? layoutText : "",
+    hasArea
+      ? `${isLand ? "土地" : "權狀"} ${property.data.area} 坪${
+          specAreaNotes.length > 0 ? `（${specAreaNotes.join("，")}）` : ""
+        }`
+      : "",
+    property.data.floor ? `樓層 ${property.data.floor}` : "",
+    property.data.age !== undefined ? `屋齡 ${property.data.age} 年` : "",
+    property.data.parking ? `車位 ${property.data.parking}` : "",
+    property.data.pricePerPing
+      ? `單價 ${property.data.pricePerPing.toFixed(1)} 萬/坪${parkingSuffix}`
+      : "",
+    totalPrice ? `總價 ${formatPrice(totalPrice)}` : "",
+  ]
+    .filter(Boolean)
+    .join("，") + "。";
+// 月付句只給住宅型（沿用 isResidential）：土地／廠房／店面的成數年限依銀行鑑價，不能套 8 成 30 年
+const specLoanText = isResidential
+  ? `以貸款 ${loanRatioText}、${loan.years} 年、利率 ${loanRatePct}% 試算，月付約 ${monthlyPaymentText} 萬（參考利率，以銀行核定為準，${loan.asOf} 更新）。`
+  : "";
 
 // 底部 CTA bar 的 bottom：cookie 同意橫幅出現時 Analytics.astro 會把橫幅高度寫進
 // --consent-h，CTA 就往上讓開；沒橫幅時是 0px。
@@ -618,28 +781,30 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
         {
           property.data.pricePerPing && (
             <span class="text-muted-foreground text-base font-normal">
-              單坪 {property.data.pricePerPing.toFixed(1)} 萬
+              單坪{parkingSuffix} {property.data.pricePerPing.toFixed(1)} 萬
             </span>
           )
         }
       </div>
+      {/* 資料日期（稽核 X006）：用「資料更新日」不寫「核對日」——目前沒有每晚比價 */}
+      <p class="text-muted-foreground mt-1 text-xs">資料更新日 {twDate(dataDate)}・價格、格局與屋況以委託契約及現場說明為準</p>
 
       {/* 月付試算（住宅型才顯示；參數在 src/config.ts 的 loan）*/}
       {
         isResidential ? (
           <p class="text-muted-foreground mt-2 text-sm">
             {loanRatioText} {loan.years} 年・利率 {loanRatePct}% 試算 → 月付約 {monthlyPaymentText} 萬
-            <span class="text-muted-foreground/80 ml-1 text-xs">
+            <span class="text-muted-foreground ml-1 text-xs">
               （{loan.note}，{loan.asOf} 更新）
             </span>
-            <a href="/tools/" class="text-accent ml-1 no-underline hover:underline">
+            <a href="/tools/" class="text-accent ml-1 underline underline-offset-2">
               試算工具 →
             </a>
           </p>
         ) : (
           <p class="text-muted-foreground mt-2 text-sm">
             這類物件的貸款成數與年限依銀行鑑價而定，要試算月付
-            <a href="/go/line?src=property" class="text-accent ml-1 no-underline hover:underline">
+            <a href="/go/line?src=property" class="text-accent ml-1 underline underline-offset-2">
               LINE 問景泰 →
             </a>
           </p>
@@ -663,7 +828,7 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
                 >
                   <img
                     src={photos[0]}
-                    alt={`${displayTitle}（第 1 張，共 ${photos.length} 張）`}
+                    alt={photoAlts[0]}
                     width="800"
                     height="600"
                     class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -696,7 +861,7 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
                     >
                       <img
                         src={p}
-                        alt={`${displayTitle}（第 ${i + 2} 張，共 ${photos.length} 張）`}
+                        alt={photoAlts[i + 1]}
                         width="400"
                         height="300"
                         class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -725,7 +890,7 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
               >
                 <img
                   src={photos[0]}
-                  alt={`${displayTitle}（第 1 張，共 ${photos.length} 張）`}
+                  alt={photoAlts[0]}
                   width="800"
                   height="600"
                   class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
@@ -766,7 +931,7 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
                     >
                       <img
                         src={p}
-                        alt={`${displayTitle} 縮圖 ${i + 1}`}
+                        alt=""
                         width="120"
                         height="90"
                         loading="lazy"
@@ -808,7 +973,7 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
               <img
                 data-gallery-lightbox-img
                 src={property.data.photos[0]}
-                alt={displayTitle}
+                alt={photoAlts[0]}
                 loading="lazy"
                 decoding="async"
                 class="max-h-[92vh] max-w-[96vw] object-contain"
@@ -861,7 +1026,7 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
           <div class="mt-1 text-lg font-bold">{property.data.layout}</div>
         </div>
         <div>
-          <div class="text-muted-foreground text-xs">權狀</div>
+          <div class="text-muted-foreground text-xs">權狀{parkingSuffix}</div>
           <div class="mt-1 text-lg font-bold">{property.data.area} 坪</div>
         </div>
         {
@@ -909,7 +1074,7 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
         {
           property.data.pricePerPing && (
             <div>
-              <div class="text-muted-foreground text-xs">單價</div>
+              <div class="text-muted-foreground text-xs">單價{parkingSuffix}</div>
               <div class="mt-1 text-lg font-bold">
                 {property.data.pricePerPing.toFixed(1)} 萬/坪
               </div>
@@ -917,10 +1082,23 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
           )
         }
       </div>
-
-      {/* 社區深度文 + 區域頁：物件頁的內容出口（沒有就整段不出現） */}
       {
-        (communityPosts.length > 0 || area) && (
+        includesParking && (
+          <p class="text-muted-foreground mt-2 text-xs">
+            單價＝總價÷權狀坪數（含車位），車位坪數與價格未拆分，以不動產說明書為準。
+          </p>
+        )
+      }
+
+      {/* 規格卡的散文版（稽核 F037）：只用既有欄位，給 snippet 與 AI 擷取 */}
+      <p class="text-foreground mt-4 leading-relaxed" data-property-facts>
+        {specFactText}
+        {specLoanText && <span class="text-muted-foreground"> {specLoanText}</span>}
+      </p>
+
+      {/* 社區深度文 + 區域頁 + 分區列表：物件頁的內容出口（三者皆無才整段不出現） */}
+      {
+        (communityPosts.length > 0 || area || districtActiveCount > 0) && (
           <div class="mt-6 space-y-3" data-pagefind-ignore>
             {communityPosts.length > 0 && (
               <div class="card-surface p-5">
@@ -929,6 +1107,7 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
                 </h2>
                 <p class="text-muted-foreground mt-1 text-sm">
                   看這戶之前，先看這個社區的實價登錄、優缺點、適合誰。
+                  {includesParking && "社區中位數為扣車位口徑，與本戶含車位單價計算方式不同。"}
                 </p>
                 <ul class="mt-3 space-y-3">
                   {communityPosts.slice(0, 3).map(post => (
@@ -956,7 +1135,7 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
                 想先看{area.shortName}整體行情、哪些人適合買？
                 <a
                   href={`/areas/${area.slug}/`}
-                  class="text-accent ml-1 no-underline hover:underline"
+                  class="text-accent ml-1 underline underline-offset-2"
                 >
                   {area.shortName}買房指南 →
                 </a>
@@ -977,11 +1156,11 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
       }
 
       {
-        highlights.length > 0 && (
+        uniqueHighlights.length > 0 && (
           <div class="mt-6">
             <h2 class="text-lg font-bold">物件亮點</h2>
             <ul class="mt-2 list-disc space-y-1 ps-6">
-              {highlights.map(h => (
+              {uniqueHighlights.map(h => (
                 <li>{h}</li>
               ))}
             </ul>
@@ -1048,7 +1227,7 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
                                 ? p.data.coverImage
                                 : p.data.coverImage.src
                             }
-                            alt={cardTitle}
+                            alt=""
                             width="400"
                             height="300"
                             class="h-full w-full object-cover"
@@ -1143,7 +1322,7 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
   is:inline
   define:vars={{
     photos: property.data.photos,
-    title: displayTitle,
+    alts: photoAlts,
     total: property.data.photos.length,
   }}
 >
@@ -1170,7 +1349,8 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
     function setIndex(i) {
       current = ((i % total) + total) % total;
       const src = photos[current];
-      const label = `${title}（第 ${current + 1} 張，共 ${total} 張）`;
+      // alt 由 build-time 的 photoAlts 傳進來，切圖時才不會把舊的「標題（第 N 張）」寫回去
+      const label = alts[current] || "";
       if (mainImg) {
         mainImg.src = src;
         mainImg.alt = label;

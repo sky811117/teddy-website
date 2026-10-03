@@ -251,5 +251,6 @@ timezone: Asia/Taipei
 
 **同系列文章:**
 - [嫌惡設施 Google Map 10 大設施](/posts/week-04-undesirable-facilities) — 說明書揭露的「鄰近嫌惡設施」怎麼看
+- [台中嫌惡設施查詢地圖](/tools/undesirable-facilities/) — 輸入地址，列出周邊 300／500／1000 公尺內的嫌惡設施與距離
 - [買房前該查清楚的 7 件事](/posts/week-03-negotiation-7) — 說明書之外還有 6 件事要查
 - [新青安 vs 一般房貸 30 年實算](/posts/week-02-new-housing-loan) — 說明書揭露的屋況影響貸款成數

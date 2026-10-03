@@ -2,7 +2,7 @@
 title: 新青安 1.0 只剩 3 天：門票是 7/31 前「完成撥款」，不是送件——最後檢查清單
 author: 陳景泰
 pubDatetime: 2026-07-28T09:00:00+08:00
-canonicalURL: "https://teddy-website-blog.pages.dev/posts/new-housing-loan-3-2026/"
+canonicalURL: "/posts/new-housing-loan-3-2026/"
 slug: 2026-07-W04-news-xinqingan-sunset-final-3-days-checklist
 ogImage: /og/2026-07-W04-news-xinqingan-sunset-final-3-days-checklist.jpg
 featured: true

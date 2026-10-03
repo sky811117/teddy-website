@@ -110,7 +110,9 @@ const canonicalURL = new URL("/properties/", Astro.site).href;
 const taichungCount = sortedProperties.length - nonTaichungCount;
 // 描述只講事實：不承諾「每筆都有實坪／屋齡／樓層／車位」（實際有缺），外縣市也講明
 const seoDescription = `${sortedProperties.length} 筆在售物件，台中 ${taichungCount} 筆為主（北屯 / 西屯 / 南屯 / 北區 / 太平 / 大里…），另含本店同事聯賣的彰化、南投等外縣市案件。可依區域、總價、房型、屋齡篩選，每筆附總價、坪數、格局，多數有實照。`;
-const pageTitle = `在售物件 ${sortedProperties.length} 筆（台中為主・含外縣市聯賣） | ${config.site.title}`;
+// title 帶「台中房屋出售」查詢字、不隨每晚筆數變動（2026-10-03 F124，建議 10/6 之後才部署）；
+// 筆數與「含彰化、南投聯賣」的揭露留在 H1、description、ItemList
+const pageTitle = `台中房屋出售｜中古屋・大樓・透天在售列表 | ${config.site.title}`;
 
 // ItemList JSON-LD（給 Google 認識這是物件列表頁、可進 Google 物件搜尋）
 const itemListSchema = {

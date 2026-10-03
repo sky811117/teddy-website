@@ -3,12 +3,16 @@
  * 在售物件卡（總列表 /properties/ 與分區列表 /properties/{district}/ 共用）
  *
  * 2026-09-06 從 properties/index.astro 原樣抽出來，markup 一字不改：
+ * 2026-10-03：封面 alt 改空字串（標題就在旁邊，稽核 X034）、單價依 parkingCaliber 標「（含車位）」、
+ *   路段加地號／巷弄保險切。
  *   - <li> 上的 data-* 是總列表篩選／排序用的（district / community / type / rooms / price / age / pub / order / quick）
  *     分區頁沒有篩選 script，這些屬性留著無害，兩頁 HTML 才一致。
  *   - 頁面要先放一次 <PropertyCardIcons /> 才有 #icon-map-pin 可 <use>。
  *   - 前 3 張卡 eager 載圖、第 1 張 fetchpriority=high（LCP），由 idx 決定。
  */
 import { cleanStreetArea } from "@/utils/cleanStreetArea";
+import { areaIncludesParking, bodyPropertyType } from "@/utils/parkingCaliber";
+import { stripAddressDetail } from "@/utils/propertyPhotoAlt";
 import { formatPrice, type PropertyCardMeta } from "./propertyMeta";
 
 interface Props {
@@ -19,7 +23,15 @@ interface Props {
 
 const { meta, showNewBadge } = Astro.props;
 const { p: property, idx, title, community, district, type, rooms, newListing, dropPct } = meta;
-const streetArea = cleanStreetArea(property.data.streetArea, property.data.district);
+// 地號／巷弄號碼保險切（本戶只寫到路名）
+const streetArea = stripAddressDetail(
+  cleanStreetArea(property.data.streetArea, property.data.district)
+);
+// 單價含不含車位：跟物件詳情頁同一套判斷（src/utils/parkingCaliber.ts，稽核 X002）
+const includesParking = areaIncludesParking(
+  property.data.parking,
+  bodyPropertyType(property.body) ?? property.data.title
+);
 ---
 
 <li
@@ -52,7 +64,7 @@ const streetArea = cleanStreetArea(property.data.streetArea, property.data.distr
                 ? property.data.coverImage
                 : property.data.coverImage.src
             }
-            alt={title}
+            alt=""
             width="800"
             height="600"
             class="h-full w-full object-cover"
@@ -124,7 +136,7 @@ const streetArea = cleanStreetArea(property.data.streetArea, property.data.distr
         {
           property.data.pricePerPing && (
             <span class="text-muted-foreground ml-auto text-xs">
-              {property.data.pricePerPing.toFixed(1)} 萬/坪
+              {property.data.pricePerPing.toFixed(1)} 萬/坪{includesParking ? "（含車位）" : ""}
             </span>
           )
         }

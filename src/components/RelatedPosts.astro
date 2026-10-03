@@ -4,6 +4,7 @@ import { getPostUrl } from "@/utils/getPostPaths";
 import { postFilter } from "@/utils/postFilter";
 import { ogThumb } from "@/utils/ogThumb";
 import { areas } from "@/data/areas";
+import { TAICHUNG_DISTRICTS } from "@/utils/isTaichung";
 import config from "@/config";
 import IconCamera from "@/assets/icons/IconCamera.svg";
 import IconNotes from "@/assets/icons/IconNotes.svg";
@@ -105,8 +106,23 @@ const inferDistrict = (p: CollectionEntry<"posts">): string | null => {
   return null;
 };
 
+// ---------- tag 正規化 ----------
+// 同一個區有人掛「北屯」、有人掛「北屯區」，字串不同就算不到重合
+// （社區評價文因此同分輸給較新的 hot 文）。比對前把「X」補成「X區」，
+// 只補台中真的有的區名；「七期」這類俗稱不併進西屯區，以免 tag 語意被改掉。
+const TAICHUNG_DISTRICT_SET = new Set<string>(TAICHUNG_DISTRICTS);
+const normalizeTag = (raw: string): string => {
+  const tag = raw.trim();
+  if (TAICHUNG_DISTRICT_SET.has(tag)) return tag;
+  const withSuffix = `${tag}區`;
+  return TAICHUNG_DISTRICT_SET.has(withSuffix) ? withSuffix : tag;
+};
+const normalizedTagSet = (tags: string[] | undefined): Set<string> =>
+  new Set((tags ?? []).map(normalizeTag));
+
 const currentSeries = getSeriesPrefix(currentPost.id);
-const currentTags = currentPost.data.tags ?? [];
+const currentTagSet = normalizedTagSet(currentPost.data.tags);
+const currentCommunity = currentPost.data.community?.trim() || "";
 const currentDistrict = inferDistrict(currentPost);
 const currentIsCommunity = currentSeries === "community-";
 
@@ -120,12 +136,16 @@ type Scored = {
   pubTime: number;
 };
 
-// 計分：同區 +3、同系列 +1、每個重合 tag +1；
-// 社區文 → 同區的社區文再 +2（同區社區互推是最有用的「比一比」）。
+// 計分：同區 +3、同系列 +1、每個重合 tag +1（tag 先正規化）；
+// 社區文 → 同區的社區文再 +2（同區社區互推是最有用的「比一比」）；
+// 同一個社區（frontmatter community 一字不差）+5，讓評價文和實價月報互推。
 // 之前是 tier1 要 tagMatch ≥ 2 才算，但 65% 的 tag 只掛 1 篇、平均每篇 2.1 個 tag，
 // tier1 幾乎永遠空，結果變成同系列按時間亂排（北區麗園道推西區、北屯推梧棲）。
 const scored: Scored[] = allPosts.map(p => {
-  const tagMatch = (p.data.tags ?? []).filter(t => currentTags.includes(t)).length;
+  let tagMatch = 0;
+  for (const t of normalizedTagSet(p.data.tags)) {
+    if (currentTagSet.has(t)) tagMatch++;
+  }
   const series = getSeriesPrefix(p.id);
   const sameSeries = !!currentSeries && series === currentSeries;
   const district = inferDistrict(p);
@@ -135,6 +155,7 @@ const scored: Scored[] = allPosts.map(p => {
   if (sameDistrict) score += 3;
   if (sameSeries) score += 1;
   if (currentIsCommunity && sameSeries && sameDistrict) score += 2;
+  if (currentCommunity && p.data.community?.trim() === currentCommunity) score += 5;
 
   return {
     post: p,
@@ -177,7 +198,7 @@ const getCover = (data: CollectionEntry<"posts">["data"]): string | null => {
                 {cover ? (
                   <img
                     src={ogThumb(cover)}
-                    alt={post.data.title}
+                    alt=""
                     width="640"
                     height="360"
                     class="aspect-[16/9] w-full object-cover"

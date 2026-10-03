@@ -2,7 +2,7 @@
 title: "青安 3.0 拍板 8/1 上路：年收 200 萬排富、房價天花板、婚育最高貸 1500 萬"
 author: 陳景泰
 pubDatetime: 2026-07-24T08:00:00+08:00
-canonicalURL: "https://teddy-website-blog.pages.dev/posts/new-housing-loan-3-2026/"
+canonicalURL: "/posts/new-housing-loan-3-2026/"
 slug: new-housing-loan-3-0-ratified-2026
 ogImage: /og/new-housing-loan-3-0-ratified-2026.jpg
 featured: true

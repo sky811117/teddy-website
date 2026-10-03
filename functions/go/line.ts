@@ -61,6 +61,7 @@ const SRC_LABEL: Record<string, string> = {
   // 文章
   post: "文章內（舊代碼）",
   "post-end": "文章文末 CTA",
+  "post-author": "文章作者卡",
   "post-body": "文章內文",
   "post-community": "文章社區在售區塊",
   // 物件詳細頁

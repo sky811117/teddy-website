@@ -5,7 +5,7 @@
 # - HTML：no-cache (每次 revalidate、新 deploy 立刻生效)
 # - OG 圖：1 個月；物件照：1 天 + stale-while-revalidate 7 天（同路徑覆寫、不會 hash bust）
 # - ⚠️ 一條規則只能有一個 `*`（Cloudflare Pages 限制），雙 splat 會整條被忽略
-# - robots / sitemap：1 天
+# - sitemap（sitemap-*.xml、sitemap.xml）：1 小時（一天部署 3–5 次，1 天太長）；robots.txt：1 天
 #
 # 注意：本檔 build 後會由 scripts/postbuild-headers.mjs rename 為 dist/_headers
 # (Vite/Rollup 對 public/_headers 無副檔名會試 parse JS 報錯，故用 .txt 規避)
@@ -63,10 +63,15 @@
 /pagefind/*
   Cache-Control: public, max-age=86400, stale-while-revalidate=3600
 
-# sitemap / robots (1 天)
+# sitemap (1 小時，跟 rss.xml 一樣)
 /sitemap-*.xml
-  Cache-Control: public, max-age=86400
+  Cache-Control: public, max-age=3600
 
+# /sitemap.xml 是 postbuild 從 sitemap-0.xml 複製出來的；上面的 /sitemap-*.xml 中間有連字號，對不到它，要另寫一條
+/sitemap.xml
+  Cache-Control: public, max-age=3600
+
+# robots.txt（src/pages/robots.txt.ts 產生）1 天：Google 本來就會快取 robots.txt 最多 24 小時
 /robots.txt
   Cache-Control: public, max-age=86400
 

@@ -52,11 +52,35 @@ const noindex = isThin || page.currentPage > 1;
 // 分頁 title 要帶頁碼，否則同一個 tag 的 N 個分頁 title 完全重複（GSC「重複標題」）
 const pageSuffix = page.currentPage > 1 ? `（第 ${page.currentPage} 頁）` : "";
 const total = page.total; // 該 tag 的總篇數（page.data.length 只是本頁篇數）
+
+// description：可索引頁（非薄 tag 的第 1 頁）用本頁最新 3 篇標題組，避免 56 個 tag 頁共用
+// 29～39 字的同一句模板（Bing 報「描述太短」）。目標 80–120 字：太長就整篇標題丟掉
+// （3→2→1 篇），⛔ 不切標題；仍太短才補一句通用說明。noindex 頁沿用舊模板。
+const DESC_MAX = 120;
+const DESC_MIN = 80;
+const legacyDesc = `#${tagName} 相關文章，共 ${total} 篇${page.lastPage > 1 ? `（第 ${page.currentPage}/${page.lastPage} 頁）` : ""}。景泰台中房市筆記依主題整理。`;
+const description = (() => {
+  if (noindex) return legacyDesc;
+  const titles = page.data.slice(0, 3).map(p => p.data.title);
+  let desc = "";
+  for (let n = titles.length; n >= 1; n--) {
+    const latest = titles.slice(0, n).join("、");
+    const candidate = `#${tagName}：台中房市文章 ${total} 篇，近期包括「${latest}」`;
+    if (candidate.length <= DESC_MAX) {
+      desc = candidate;
+      break;
+    }
+  }
+  if (!desc) return legacyDesc; // 連 1 篇標題都放不下 → 舊模板
+  const pad = "。景泰依主題整理的台中房市筆記。";
+  if (desc.length < DESC_MIN && desc.length + pad.length <= DESC_MAX) desc += pad;
+  return desc;
+})();
 ---
 
 <Layout
   title={`${t.pages.tagTitle}: ${tagName} ${total} 篇${pageSuffix} | ${config.site.title}`}
-  description={`#${tagName} 相關文章，共 ${total} 篇${page.lastPage > 1 ? `（第 ${page.currentPage}/${page.lastPage} 頁）` : ""}。景泰台中房市筆記依主題整理。`}
+  description={description}
   prevURL={prevURL}
   nextURL={nextURL}
   noindex={noindex}

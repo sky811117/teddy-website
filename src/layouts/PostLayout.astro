@@ -41,12 +41,20 @@ const postSlug = Astro.url.pathname.replace(/\/$/, "").split("/").pop() ?? "";
 const postTitle = title ?? "";
 const postTags = tags.join(",");
 
+// 文章頁的 title 是「原標題 | 站名後綴」（posts/[...slug]/index.astro 組的），
+// headline 與麵包屑最後一層要的是原標題（＝H1），把後綴從設定推回去，不寫死站名。
+// ⚠️ 若以後改了 posts 頁組 title 的格式或 site.title，這段要跟著調整。
+const titleSuffix = ` | ${site.title}`;
+const articleHeadline = title?.endsWith(titleSuffix)
+  ? title.slice(0, -titleSuffix.length)
+  : (title ?? site.title);
+
 // 強化 BlogPosting schema — 加 publisher / mainEntityOfPage / keywords / articleSection
 const articleURL = new URL(Astro.url.pathname, site.url).href;
 const blogPosting = {
   "@type": "BlogPosting",
   "@id": `${articleURL}#article`,
-  headline: title ?? site.title,
+  headline: articleHeadline,
   description: description ?? site.description,
   image: ogImage,
   ...(pubDatetime && { datePublished: pubDatetime.toISOString() }),
@@ -58,7 +66,8 @@ const blogPosting = {
     ...(site.profile && { url: site.profile }),
   },
   publisher: {
-    "@type": "Organization",
+    // 跟 Layout.astro 同一個 #organization @id 的型別一致（RealEstateAgent）
+    "@type": "RealEstateAgent",
     "@id": `${site.url}#organization`,
     name: "一品不動產 有巢氏房屋 台中世界之心加盟店",
     logo: {
@@ -96,7 +105,7 @@ const breadcrumbList = {
     {
       "@type": "ListItem",
       position: 3,
-      name: title,
+      name: articleHeadline,
     },
   ],
 };
@@ -110,16 +119,13 @@ const structuredData = {
 // 走跟 faq.astro / areas/[district].astro 一樣的模式：獨立一段 ld+json。
 // 格式不合法就靜默跳過（全有全無）：格式錯誤的告警交給 scripts/lint-seo.mjs 在
 // deploy 閘門點名檔案，這裡不 console.warn（eslint no-console）也不 throw
-// （不值得為一個 Google 2026-05 已停用 rich result 的 schema 卡整條 deploy）。
+// （Google 2023-08-08 起 FAQ rich result 只給政府／醫療網站，不值得為它卡整條 deploy）。
 // schema 本身無害且 Bing / AI 答案引擎仍會讀，所以保留輸出。
 const faqSchema = normalizeFaqSchema(rawFaqSchema);
 ---
 
-<Layout {title} {description} {ogImage} {canonicalURL}>
+<Layout {title} {description} {ogImage} {canonicalURL} ogType="article">
   <Fragment slot="head">
-    <!-- Override og:type for article pages -->
-    <meta property="og:type" content="article" />
-
     {
       pubDatetime && (
         <meta

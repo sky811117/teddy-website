@@ -1,5 +1,7 @@
 ---
 import { getRelativeLocaleUrl } from "astro:i18n";
+import { Image } from "astro:assets";
+import ycLogo from "@/assets/logos/yochaoshi.png";
 import IconUnderline from "@/assets/icons/IconUnderline.svg";
 import IconMenuDeep from "@/assets/icons/IconMenuDeep.svg";
 import IconArchive from "@/assets/icons/IconArchive.svg";
@@ -53,13 +55,18 @@ const isActive = (path: string) => {
       href={getRelativeLocaleUrl(locale, "")}
       class="absolute flex items-center gap-2 py-1 whitespace-nowrap xl:static xl:my-auto xl:shrink-0"
     >
-      <img
-        src="/logos/yochaoshi.png"
+      {/* 原圖 600×186／36KB 只顯示 116×36 → 改由 astro:assets 產 1x/2x/3x webp。
+          不掛 fetchpriority（會跟 LCP 圖搶優先權）。public/logos/yochaoshi.png 原檔保留給 JSON-LD logo 用。 */}
+      <Image
+        src={ycLogo}
         alt="有巢氏房屋"
-        width="116"
-        height="36"
+        width={116}
+        widths={[116, 232, 348]}
+        sizes="(min-width: 640px) 123px, 96px"
+        format="webp"
+        loading="eager"
+        decoding="async"
         class="h-7 w-auto sm:h-9 dark:rounded dark:bg-white/90 dark:px-2 dark:py-1"
-        fetchpriority="high"
       />
       <span class="text-xl leading-8 font-semibold sm:text-2xl sm:leading-none">
         陳景泰

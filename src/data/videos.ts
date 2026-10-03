@@ -1,7 +1,11 @@
 // 景泰短影音作品集 — 給 /shorts 頁面用
 //
-// 景泰的房仲短影音跨 3 平台：YouTube (@泰迪001) / TikTok (@sky811117) / IG (@nov__817)
-// 每支影片獨立 entry、頁面會自動 group by 分類、加 schema.org VideoObject 給 Google rich result
+// 頻道網址常數在 astro-paper.config.ts（YT_CHANNEL_URL／YT_HANDLE），這裡引用、不另寫一份
+import { YT_CHANNEL_URL, YT_HANDLE } from "@/astro-paper.config";
+//
+// 景泰的房仲短影音跨 3 平台：YouTube (@陳景泰房仲大看板，頻道 ID UCRghtbrj0YEsXq34dGrRpjQ) / TikTok (@sky811117) / IG (@nov__817)
+// 每支影片獨立 entry、頁面會自動 group by 分類。
+// ⛔ /shorts 不再輸出 VideoObject（影片不在觀賞頁面上，GSC 不收），只輸出 CollectionPage＋ItemList。
 //
 // 隱私邊界：跟全站一致 — ✅ 既有社區名 / 路段 / 樓層 OK，❌ 屋主資訊 / 完整門牌 / 未完工預售案名 NO
 
@@ -87,16 +91,20 @@ export const authorInfo: Record<
  *   featured: true,
  * },
  */
-// 預設上架日 — 2026-06-09 批次填入。發佈日不精確不影響站內呈現，影響 schema.org uploadDate；
-// 未來 metadata 補齊時逐筆改正。featured 標旗手物件給 grid 優先位。
+// 預設上架日 — 2026-06-09 批次填入，只剩 YT oUb3zBoctXQ、FB 1343875191179246 兩支還在用
+// （這兩種 ID 不帶時間，要人工看平台頁才知道）。TikTok／IG 的日期已從 ID 反推成實際發布時間：
+// TikTok 影片 ID >> 32 = Unix 秒；IG shortcode 轉數字 >> 23 + 1314220021721 = 毫秒。
+// featured 標旗手物件給 grid 優先位。
 const SEED_DATE = new Date("2026-06-09");
 
 export const videos: Video[] = [
   // ===== 每平台一支代表作（最新）=====
-  // 7 支：景泰本人 3 支 (YT/TT/IG) + 公司品牌「房仲大看板」4 支 (FB/IG @bigkanban/IG @bigkanban.boss/TT @bigkanban2.0)
-  // pubDate 在無法精準抓到實際發布日時統一 SEED_DATE；featured 全 true 因為都是該平台代表作
+  // 6 支：景泰本人 2 支 (YT/IG) + 公司品牌「房仲大看板」4 支 (FB/IG @bigkanban/IG @bigkanban.boss/TT @bigkanban2.0)
+  // 2026-10-03 刪掉景泰 TikTok「鑫園21世紀｜1280萬」（物件 2026-08-19 已下架、TikTok 已設僅自己可見）。
+  // ⚠️ 6 月以前的舊影片不在 video_registry，下架流程不會自動處理，物件下架要手動回來刪。
+  // featured 全 true 因為都是該平台代表作
 
-  // 景泰 YT — @泰迪001
+  // 景泰 YT — @陳景泰房仲大看板
   {
     id: "yt-oUb3zBoctXQ",
     author: "teddy",
@@ -110,21 +118,6 @@ export const videos: Video[] = [
     featured: true,
   },
 
-  // 景泰 TikTok — @sky811117
-  {
-    id: "tt-teddy-7644014938331024648",
-    author: "teddy",
-    platform: "tiktok",
-    url: "https://www.tiktok.com/@sky811117/video/7644014938331024648",
-    coverImage: "/photos/teddy/tt-7644014938331024648.jpg",
-    title: "南屯五期機能宅｜鑫園21世紀｜2房2廳1.5衛｜1280萬",
-    category: "看屋開箱",
-    district: "南屯區",
-    community: "鑫園21世紀",
-    pubDate: SEED_DATE,
-    featured: true,
-  },
-
   // 景泰 Instagram — @nov__817
   {
     id: "ig-teddy-DZWI6GhEmSA",
@@ -134,7 +127,7 @@ export const videos: Video[] = [
     coverImage: "/photos/teddy/ig-DZWI6GhEmSA.jpg",
     title: "房屋稅 5 月開徵｜囤房稅 2.0 自住 / 非自住稅率差幾倍？",
     category: "政策快訊",
-    pubDate: new Date("2026-06-08"),
+    pubDate: new Date("2026-06-09T09:00:41+08:00"),
     featured: true,
   },
 
@@ -163,7 +156,7 @@ export const videos: Video[] = [
     title: "台中西區｜自治街三房｜3房2廳2衛｜988萬",
     category: "看屋開箱",
     district: "西區",
-    pubDate: new Date("2026-06-09"),
+    pubDate: new Date("2026-06-09T17:00:57+08:00"),
     featured: true,
   },
 
@@ -178,7 +171,7 @@ export const videos: Video[] = [
     category: "看屋開箱",
     district: "北屯區",
     community: "班芙春泉",
-    pubDate: SEED_DATE,
+    pubDate: new Date("2026-04-25T18:01:44+08:00"),
     featured: true,
   },
 
@@ -193,7 +186,7 @@ export const videos: Video[] = [
     category: "看屋開箱",
     district: "彰化縣溪湖鎮",
     community: "佑彰富域",
-    pubDate: SEED_DATE,
+    pubDate: new Date("2026-06-05T09:25:03+08:00"),
     featured: true,
   },
 ];
@@ -205,8 +198,8 @@ export const platformInfo: Record<
   youtube: {
     name: "YouTube",
     icon: "📺",
-    handle: "@泰迪001",
-    url: "https://www.youtube.com/@%E6%B3%B0%E8%BF%AA001",
+    handle: YT_HANDLE,
+    url: YT_CHANNEL_URL,
     color: "from-red-500/20 to-red-300/20",
   },
   tiktok: {

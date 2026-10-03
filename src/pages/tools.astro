@@ -158,7 +158,8 @@ const softwareSchemas = [
       "@type": "WebApplication",
       name: t.name,
       description: t.desc,
-      url: t.url,
+      // 站內工具是 /tools/xxx/ 相對路徑，JSON-LD 要絕對網址（外部工具 new URL 原樣回傳）
+      url: new URL(t.url, Astro.site).href,
       applicationCategory: "BusinessApplication",
       operatingSystem: "Any (Web)",
       offers: { "@type": "Offer", price: "0", priceCurrency: "TWD" },
@@ -182,7 +183,7 @@ const breadcrumbSchema = {
       "@type": "ListItem",
       position: 2,
       name: "給客戶的工具",
-      item: new URL("/tools", Astro.site).href,
+      item: new URL("/tools/", Astro.site).href,
     },
   ],
 };
@@ -244,7 +245,7 @@ const externalResources = [
 <Layout
   title={`給客戶的工具 | ${config.site.title}`}
   description="買房、賣房用得到的工具 + 政府/民間公開資源整合 — 台中學區查詢、垃圾車時間查詢、買方費用試算（青安 3.0 vs 一般房貸）、拆車位單價、看屋 checklist、嫌惡設施地圖。部分工具為外部連結。"
-  canonicalURL={new URL("/tools", Astro.site).href}
+  canonicalURL={new URL("/tools/", Astro.site).href}
   ogImage="/og/page-tools.jpg"
 >
   <Fragment slot="head">

@@ -1,10 +1,11 @@
 ---
+import { Picture } from "astro:assets";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Main from "@/components/Main.astro";
 import config from "@/config";
-import { areas } from "@/data/areas";
+import { areas, AREA_DATA_PERIOD } from "@/data/areas";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 
 // 區數跟 areas.ts 走（2026-09-06 從 7 區補到 11 區：西區／梧棲區／烏日區／南區）
@@ -46,7 +47,7 @@ const breadcrumbSchema = {
 
 <Layout
   title={`台中 ${areaCount} 區買房指南 | ${config.site.title}`}
-  description={`北屯／西屯七期／南屯／北區／西區／南區／中區／太平／大里／烏日／梧棲 ${areaCount} 區買房指南：行情（有合泰建經分區數字的區標資料期間 2026 Q1）、生活圈、熱門社區、適合誰買、要避開什麼。每區一頁，附該區站上在售物件與社區深度文。`}
+  description={`北屯／西屯七期／南屯／北區／西區／南區／中區／太平／大里／烏日／梧棲 ${areaCount} 區買房指南：行情（有合泰建經分區數字的區標資料期間 ${AREA_DATA_PERIOD}）、生活圈、熱門社區、適合誰買、要避開什麼。每區一頁，附該區站上在售物件與社區深度文。`}
   canonicalURL={new URL("/areas/", Astro.site).href}
 >
   <Fragment slot="head">
@@ -66,7 +67,7 @@ const breadcrumbSchema = {
 
   <Main
     pageTitle={`台中 ${areaCount} 區買房指南`}
-    pageDesc="不同區的生活圈與產品型態差很多。各區行情（有分區數字的標資料期間 2026 Q1）、熱門社區、適合誰買都整理在各自的深度頁，你看哪區順手點哪區。"
+    pageDesc={`不同區的生活圈與產品型態差很多。各區行情（有分區數字的標資料期間 ${AREA_DATA_PERIOD}）、熱門社區、適合誰買都整理在各自的深度頁，你看哪區順手點哪區。`}
   >
     {/* 各區卡片網格 */}
     <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -76,13 +77,15 @@ const breadcrumbSchema = {
             href={`/areas/${area.slug}/`}
             class="border-border bg-card hover:border-accent group flex flex-col overflow-hidden rounded-lg border no-underline transition-colors"
           >
-            {/* 2026-08-26 補：原本 7 張卡片零縮圖，整頁只有 emoji 撐版面 */}
+            {/* 2026-08-26 補：原本 7 張卡片零縮圖，整頁只有 emoji 撐版面
+                2026-10-03 F025：改 astro:assets 產 webp 400/800 兩種寬（AI 意象圖的說明放在格線下方一行） */}
             {area.heroImage && (
-              <img
+              <Picture
                 src={area.heroImage}
-                alt={`${area.shortName}城市景觀示意圖`}
-                width="1600"
-                height="900"
+                formats={["webp"]}
+                widths={[400, 800]}
+                sizes="(min-width: 1024px) 360px, (min-width: 640px) 50vw, calc(100vw - 32px)"
+                alt={`${area.shortName}城市景觀 AI 意象圖`}
                 loading="lazy"
                 decoding="async"
                 class="aspect-[16/9] w-full object-cover transition-opacity group-hover:opacity-90"
@@ -120,6 +123,9 @@ const breadcrumbSchema = {
         ))
       }
     </div>
+    <p class="text-muted-foreground mt-4 text-xs">
+      各區卡片圖片為 AI 生成的意象圖，非實景照片
+    </p>
 
     {/* 底部 CTA */}
     <section

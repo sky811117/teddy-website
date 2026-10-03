@@ -1,0 +1,58 @@
+---
+/**
+ * 文章頁「本文作者」卡 — 放在文章正文 </article> 之後、FAQ 之前。
+ *
+ * 為什麼要有（2026-10-03 SEO/GEO 稽核 F015／X040）：文章頁原本只有文末聯絡區
+ * 提到名字，讀者與 AI 摘要都認不出「這篇是誰整理的」。這裡補一張看得到的作者卡，
+ * 文字只沿用 about.astro 既有敘述（2025 年 3 月轉行、廚師 13 年），不加新數字。
+ *
+ * - 證號不在這裡重印：文章結尾區塊與 Footer 已有。
+ * - LINE 一律走 /go/line 中繼（src=post-author），不直接連 line.me。
+ *   ⚠ functions/go/line.ts 的 SRC_LABEL 要補 "post-author"，否則 TG 通知會顯示「未標示」。
+ * - 外層 data-pagefind-ignore：每篇都一樣的文字不進站內搜尋索引。
+ */
+type Props = {
+  /** 文章 slug（不含前後斜線），帶進 /go/line?p= 讓通知知道是哪篇 */
+  slug: string;
+};
+
+const { slug } = Astro.props;
+const lineHref = `/go/line?src=post-author&p=${encodeURIComponent(slug)}`;
+---
+
+<aside
+  class="card-surface mt-10 flex items-start gap-4 p-4 sm:p-5"
+  aria-label="本文作者"
+  data-pagefind-ignore
+>
+  <img
+    src="/photos/teddy-avatar.jpg"
+    width="56"
+    height="56"
+    loading="lazy"
+    decoding="async"
+    alt="陳景泰"
+    class="size-14 shrink-0 rounded-full object-cover"
+  />
+  <div class="min-w-0">
+    <p class="font-bold">
+      陳景泰（泰迪）<span class="text-muted-foreground font-normal">｜不動產營業員，一品不動產 有巢氏房屋 台中世界之心加盟店</span>
+    </p>
+    <p class="text-muted-foreground mt-1 text-sm leading-relaxed">
+      2025 年 3 月轉行房仲，之前做了 13 年廚師；整理台中社區、實價登錄與買賣流程。
+    </p>
+    <p class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+      <a href="/about/" rel="author" class="text-accent underline underline-offset-2">
+        關於景泰
+      </a>
+      <a
+        href={lineHref}
+        target="_blank"
+        rel="noopener"
+        class="text-accent underline underline-offset-2"
+      >
+        LINE
+      </a>
+    </p>
+  </div>
+</aside>

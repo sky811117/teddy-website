@@ -14,6 +14,11 @@ type Props = {
   pubDatetime: string | Date;
   timezone?: string;
   modDatetime?: string | Date | null;
+  /**
+   * 文章頁 header 用：永遠顯示「發佈於 日期」，有修改再接「・更新於 日期」。
+   * 列表卡片不傳（預設 false），維持只顯示一個日期（有修改顯示更新日）。
+   */
+  showPub?: boolean;
 };
 
 const {
@@ -22,37 +27,58 @@ const {
   size = "sm",
   class: className = "",
   timezone: postTimezone,
+  showPub = false,
 } = Astro.props;
 
 const t = useTranslations(Astro.currentLocale);
 
 const isModified = modDatetime && modDatetime > pubDatetime;
+const tz = postTimezone ?? config.site.timezone;
 
-const datetime = dayjs(isModified ? modDatetime : pubDatetime).tz(
-  postTimezone ?? config.site.timezone
-);
+const datetime = dayjs(isModified ? modDatetime : pubDatetime).tz(tz);
 
 // 日期統一 YYYY/MM/DD，跟全站中文化一致
 const date = datetime.format("YYYY/MM/DD");
+
+// showPub 用：發布日與修改日分開輸出
+const pub = dayjs(pubDatetime).tz(tz);
+const mod = isModified ? dayjs(modDatetime).tz(tz) : null;
+const textCls = ["text-sm", { "sm:text-base": size === "lg" }];
 ---
 
-<div
-  class:list={[
-    "text-muted-foreground flex items-center gap-x-1.5",
-    className,
-  ]}
->
-  {
-    isModified && (
-      <span class:list={["text-sm", { "sm:text-base": size === "lg" }]}>
-        {t.post.updatedAt}:
-      </span>
-    )
-  }
-  <time
-    class:list={["text-sm", { "sm:text-base": size === "lg" }]}
-    datetime={datetime.toISOString()}
-  >
-    {date}
-  </time>
-</div>
+{
+  showPub ? (
+    <div
+      class:list={[
+        "text-muted-foreground flex flex-wrap items-center gap-x-1.5",
+        className,
+      ]}
+    >
+      <span class:list={textCls}>{t.post.publishedAt}</span>
+      <time class:list={textCls} datetime={pub.toISOString()}>
+        {pub.format("YYYY/MM/DD")}
+      </time>
+      {mod && (
+        <>
+          <span class:list={textCls} aria-hidden="true">・</span>
+          <span class:list={textCls}>{t.post.updatedAt}</span>
+          <time class:list={textCls} datetime={mod.toISOString()}>
+            {mod.format("YYYY/MM/DD")}
+          </time>
+        </>
+      )}
+    </div>
+  ) : (
+    <div
+      class:list={[
+        "text-muted-foreground flex items-center gap-x-1.5",
+        className,
+      ]}
+    >
+      {isModified && <span class:list={textCls}>{t.post.updatedAt}:</span>}
+      <time class:list={textCls} datetime={datetime.toISOString()}>
+        {date}
+      </time>
+    </div>
+  )
+}

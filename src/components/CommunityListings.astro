@@ -17,6 +17,15 @@
  * - 首圖略過檔名看得出是平面圖的（首圖吸引買家、禁平面圖）
  * - 該社區沒在售時不再整段消失：可傳 district（或 tags，會自動找「X區」）
  *   fallback 成「同區這幾戶可以先看」，讀者不會讀完只剩 LINE 按鈕
+ *
+ * 2026-10-03（SEO/GEO 稽核 F018／F023）：
+ * - 有社區在售時也連回該區買房指南（area 以前算好了卻只在 fallback 用），
+ *   社區文章因此都能連到自己的區域 hub；文章 tags 沒寫區時，改用在售物件的行政區推
+ * - 沒設 community 的文章（區域月報、hot 社區文）fallback 標題不再寫
+ *   「這個社區目前沒有在售」，改成「X區目前的在售物件」
+ * - 社區和區都推不出來（或推得出區但沒在售）時，不再整段消失，
+ *   改放輕量導覽：11 個區域買房指南文字連結＋看全部在售物件
+ * - 整個區塊加 data-pagefind-ignore，避免站內搜尋被重複的物件卡文字污染
  */
 import { getCollection } from "astro:content";
 import { areas } from "@/data/areas";
@@ -70,11 +79,18 @@ const districtListings =
 
 const isFallback = communityListings.length === 0 && districtListings.length > 0;
 const listings = isFallback ? districtListings : communityListings.slice(0, 6);
+// 沒有任何物件可列 → 改放區域導覽（不再整段消失，讀者讀完還有下一步可點）
+const showNav = listings.length === 0;
 const districtTotal = district
   ? active.filter(p => p.data.district === district).length
   : 0;
 // 區域 hub（areas.ts 有的區才連；districtMatch 對 2026-09-06 補的西區／梧棲區／烏日區／南區同樣有效）
-const area = district ? areas.find(a => a.districtMatch.includes(district)) : undefined;
+// 文章 tags 沒寫區、但社區有在售時，用在售物件的行政區推（社區文章才都連得回區域頁）
+const hubDistrict =
+  district || communityListings[0]?.data.district?.trim() || "";
+const area = hubDistrict
+  ? areas.find(a => a.districtMatch.includes(hubDistrict))
+  : undefined;
 // 「全部 X區在售」連分區靜態頁 /properties/{slug}/（沒 slug 的退回 ?district= 篩選）
 const districtListUrl = district ? getDistrictListUrl(district) : "/properties/";
 
@@ -99,11 +115,17 @@ function fmtPrice(n?: number): string {
 
 {
   listings.length > 0 && (
-    <section class="mt-10" aria-labelledby="community-listings-heading">
+    <section
+      class="mt-10"
+      aria-labelledby="community-listings-heading"
+      data-pagefind-ignore
+    >
       <hr class="my-8 border-dashed" />
       <h2 id="community-listings-heading" class="text-xl font-semibold">
         {isFallback
-          ? `${communityName || "這個社區"}目前沒有在售，${district}這幾戶可以先看`
+          ? communityName
+            ? `${communityName}目前沒有在售，${district}這幾戶可以先看`
+            : `${district}目前的在售物件`
           : `${communityName}目前的在售物件（${listings.length} 筆）`}
       </h2>
       <p class="text-muted-foreground mt-1 text-sm">
@@ -194,10 +216,53 @@ function fmtPrice(n?: number): string {
             <a href="/properties/" class="text-accent underline">
               看全部在售物件
             </a>
+            {area && (
+              <>
+                ，或先讀
+                <a href={`/areas/${area.slug}/`} class="text-accent underline">
+                  {area.shortName}買房指南
+                </a>
+              </>
+            )}
             。
           </>
         )}
       </p>
     </section>
+  )
+}
+
+{
+  showNav && (
+    <nav
+      class="mt-10"
+      aria-labelledby="area-guide-nav-heading"
+      data-pagefind-ignore
+    >
+      <hr class="my-8 border-dashed" />
+      <h2 id="area-guide-nav-heading" class="text-xl font-semibold">
+        台中各區買房指南
+      </h2>
+      <p class="text-muted-foreground mt-1 text-sm">
+        想先看某一區的行情、生活機能與熱門社區，從這裡進去。
+      </p>
+      <ul class="mt-4 flex flex-wrap gap-2">
+        {areas.map(a => (
+          <li>
+            <a
+              href={`/areas/${a.slug}/`}
+              class="bg-muted text-foreground hover:text-accent inline-block rounded-full px-3 py-1.5 text-sm no-underline transition-colors"
+            >
+              {a.shortName}
+            </a>
+          </li>
+        ))}
+      </ul>
+      <p class="mt-4 text-sm">
+        <a href="/properties/" class="text-accent underline underline-offset-2">
+          看全部在售物件
+        </a>
+      </p>
+    </nav>
   )
 }

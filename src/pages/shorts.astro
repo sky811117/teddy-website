@@ -46,7 +46,7 @@ const shownCategories = categories.filter(
 );
 
 const siteOrigin = new URL("/", Astro.site).href;
-const canonicalURL = new URL("/shorts", Astro.site).href;
+const canonicalURL = new URL("/shorts/", Astro.site).href;
 const realEstateAgentId = `${siteOrigin}#realestateagent`;
 
 // CollectionPage schema
@@ -58,37 +58,22 @@ const collectionSchema = {
   name: "景泰的房仲短影音",
   description:
     "景泰跨 YouTube / TikTok / Instagram 三平台的房仲短影音作品集 — 看屋開箱、政策快訊、AI 工作流。",
-  mainEntity: { "@id": realEstateAgentId },
+  // 本頁主體是影片清單（ItemList），頁面主題人物放 about
+  mainEntity: {
+    "@type": "ItemList",
+    itemListElement: sortedVideos.map((v, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: v.url,
+      name: v.title,
+    })),
+  },
+  about: { "@id": realEstateAgentId },
   inLanguage: "zh-TW",
 };
 
-// 每個影片獨立 VideoObject schema（Google rich result）
-const videoSchemas = sortedVideos.map(v => ({
-  "@context": "https://schema.org",
-  "@type": "VideoObject",
-  "@id": `${canonicalURL}#video-${v.id}`,
-  name: v.title,
-  description: v.description ?? v.title,
-  thumbnailUrl: getVideoCover(v) ?? `${siteOrigin}default-og.jpg`,
-  uploadDate: v.pubDate.toISOString(),
-  ...(v.durationIso && { duration: v.durationIso }),
-  contentUrl: v.url,
-  embedUrl:
-    v.platform === "youtube" && v.videoId
-      ? `https://www.youtube.com/embed/${v.videoId}`
-      : v.url,
-  publisher: {
-    "@id": `${siteOrigin}#organization`,
-  },
-  creator:
-    v.author === "bigkanban"
-      ? {
-          "@type": "Person",
-          name: "房仲大看板",
-          url: "https://www.facebook.com/BigKanBan",
-        }
-      : { "@id": realEstateAgentId },
-}));
+// ⛔ 這頁不輸出 VideoObject：影片沒有嵌在頁面上（只有連外＋點擊才載入的 lightbox），
+// GSC 判「影片不在觀賞頁面上」不收。要做影片 rich result 得另做每支一頁、首屏真 iframe 的觀看頁。
 
 // BreadcrumbList
 const breadcrumbSchema = {
@@ -132,20 +117,13 @@ function formatDate(d: Date): string {
       is:inline
       set:html={safeJsonLd(breadcrumbSchema)}
     />
-    {videoSchemas.map(s => (
-      <script
-        type="application/ld+json"
-        is:inline
-        set:html={safeJsonLd(s)}
-      />
-    ))}
   </Fragment>
 
   <Header />
 
   <Main
     pageTitle="景泰的房仲短影音"
-    pageDesc="YouTube / TikTok / Instagram 三平台我自己拍的，加上我關注的房仲前輩「房仲大看板 @bigkanban」精選 — 看影片比讀文章快。"
+    pageDesc="YouTube / TikTok / Instagram 三平台的房仲短影音（物件片由合作攝影師拍攝），加上公司自媒體「房仲大看板 @bigkanban」精選 — 看影片比讀文章快。"
   >
     {/* ====== 3 個平台大卡片 — 直接連主頁看 latest ====== */}
     <section class="mt-8">
@@ -394,7 +372,7 @@ function formatDate(d: Date): string {
             >
               <div class="text-5xl">🎥</div>
               <h3 class="text-foreground mt-3 text-lg font-bold">YouTube</h3>
-              <p class="text-accent mt-1 text-sm font-medium">@泰迪001</p>
+              <p class="text-accent mt-1 text-sm font-medium">{platformInfo.youtube.handle}</p>
               <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
                 完整看屋影片、政策解析、社區介紹。5-10 分鐘帶你走進物件現場。
               </p>

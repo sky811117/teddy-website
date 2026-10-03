@@ -2,6 +2,7 @@
 title: "仲介費怎麼算？2026 法定上限 6%、買方最多 2%：1,500 萬的房子買方最多付 30 萬"
 author: 陳景泰
 pubDatetime: 2026-05-29 08:00:00+08:00
+modDatetime: 2026-08-27T19:00:00+08:00
 slug: tool-agent-fee
 featured: false
 draft: false

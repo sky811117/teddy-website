@@ -27,7 +27,7 @@ const metaDesc =
   "台中房仲陳景泰 — 找房、賣房、換屋、投資諮詢。LINE / 電話 / 表單三條路、看你方便。30 分鐘內回覆。";
 
 // canonicalURL 不帶 query string (?type=sell / ?type=buy 都指向同一頁，避免重複 indexing)
-const canonicalURL = new URL("/contact", Astro.site).href;
+const canonicalURL = new URL("/contact/", Astro.site).href;
 const siteOrigin = new URL("/", Astro.site).href;
 
 // ContactPage schema (Google 認得是聯絡頁、可能進 sitelinks)

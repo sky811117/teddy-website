@@ -20,6 +20,14 @@
  * 15. 經紀人／營業員證號揭露 (ERROR) — 已發布文章文末必須有
  * 16. 內文「本文更新於」但無 modDatetime (警告)；ogImage 不在 /og/ (警告)
  *     11-14 連 draft 也檢查（草稿之後會發布），draft 降級為 warning
+ * 17. unbuilt 未完工公共建設（藍線／巨蛋／輕軌／BC 標號／「規劃中…捷運」「未來…重劃」…）
+ *     — 字表搬自 450_上架巡檢/staging_quality.py，跟三平台上架閘門擋同一份字。
+ *     2026-10-03 先設 WARNING（posts 已發布、pages/components/areas.ts、properties），draft 關閉；
+ *     全站清到 0 WARNING 後再由主對話改 ERROR。
+ * 18. visitClaim 無法證實的「現場走訪／去看了幾趟／跟在地業務聊過」(WARNING)
+ * 19. prediction 無來源的房價預測（保值／抗跌／看好／會漲…；漲幅／上漲／增值要搭配未來式才算）(WARNING，只掃 posts)
+ * 20. timely-title 標題帶時效字（倒數／還剩／即將／到期…）且發布超過 60 天、沒有更新紀錄 (WARNING)
+ * 21. title-length 2026-10-04 起發布的文章 title 超過 34 字 (WARNING；跟 WebsiteRefill refill.py 硬上限一致，目標仍是 ≤32)
  *
  * 掃描範圍（2026-09-06 擴充）：
  *   A. src/content/posts/**\/*.md|mdx — 全部規則
@@ -32,7 +40,8 @@
  *        根治要在 sync 腳本加誇大詞 sanitizer。
  *
  * 逃生門（lintAllow）：
- *   - posts frontmatter：lintAllow: [fabrication|brand|negotiation|appraisal]
+ *   - posts frontmatter：lintAllow: [fabrication|brand|negotiation|appraisal|unbuilt|visitClaim|prediction]
+ *     （要用多行清單寫法 `lintAllow:\n  - unbuilt`，上面加一行 `# lintAllow 理由：…` 註解）
  *   - .astro / .ts：檔案內任一註解寫 `lintAllow: fabrication, appraisal`（逗號分隔）
  *   ⛔ 每加一次都要寫得出理由，這不是繞過紅線的方法。
  *
@@ -228,7 +237,8 @@ function extractSourceText(file, src) {
 
 // .astro / .ts 的逃生門：檔案內任一註解寫 `lintAllow: fabrication, appraisal`
 function sourceLintAllow(src) {
-  const m = src.match(/lintAllow:\s*\[?\s*([a-z][a-z,\s]*)\]?/);
+  // 2026-10-03：key 有駝峰（visitClaim），字元集要含大寫
+  const m = src.match(/lintAllow:\s*\[?\s*([a-zA-Z][a-zA-Z,\s]*)\]?/);
   if (!m) return [];
   return m[1].split(/[\s,]+/).filter(Boolean);
 }
@@ -270,7 +280,103 @@ const FABRICATION_PATTERNS = [
   { re: /我(?:自己)?(?:在|去)?[^。]{0,10}帶看(?:的)?經驗/, label: "帶看資歷" },
   { re: /「景泰[，,]/, label: "客戶直呼景泰" },
   { re: /(?:陳|林|王|李|張|黃|吳|劉|蔡|楊)(?:小姐|先生|太太|屋主)/, label: "虛構人名" },
+  // 2026-10-03 補：物件頁抓到「我自己跑太平找店面的客戶問過一輪」、W15 文章「我自己跑過 2 次梧棲案場」。
+  // 上線前 grep 過 posts / pages / components / areas.ts 為 0 命中，所以直接當 ERROR。
+  { re: /我自己跑|客戶問過/, label: "我自己跑/客戶問過" },
 ];
+
+// 18. 無法證實的「現場走訪」類第一人稱經歷（2026-10-03 新增，WARNING）
+// 只抓「宣稱自己去過」的寫法；給讀者的建議句（「親自走過樓梯間」「親自走一趟」「實地多看幾戶」）不會中。
+// 景泰真的去過的話，文內寫日期，frontmatter 加 lintAllow: [visitClaim]。
+const VISIT_CLAIM_RE = /我(?:特地|親自)?(?:去|跑)?(?:看了|走了)幾趟|(?:與|＋)現場走訪|現場走訪(?:後|來看|觀察|的角度)|實地走訪後|跟在地的業務聊過/;
+
+// 17. 未完工公共建設（2026-10-03 新增）
+// ⚠️ 字表來源：C:\Users\a0920\房仲工作站\450_上架巡檢\staging_quality.py 第 93–119 行
+//    UNBUILT_FIXED_WORDS／UNBUILT_LEAD_WORDS／UNBUILT_LEAD_NOUNS／UNBUILT_FUTURE_NOUNS／UNBUILT_SUBJ_NOUNS／UNBUILT_TRAIL_WORDS／UNBUILT_GATE_RE
+//    要加字先改那邊（三平台上架閘門與 prep 備料都吃那份），再逐字同步到這裡，讓三平台與官網擋同一份字。
+// 跟 Python 版的差異（刻意的）：
+//   - 拿掉最後裸的「興建中|規劃中」兩項：物件文案可以嚴，文章會誤殺「規劃中的大型修繕」這類用法
+//   - 站碼 [Bb]\s?\d{1,2}\s?站 改成 (?<![A-Za-z])BC\s?\d{1,2}(?!\d)，避開「ABC123」這種英數
+const UNBUILT_FIXED_WORDS = ["藍線", "茄苳腳站", "巨蛋", "輕軌"];
+const UNBUILT_LEAD_WORDS = ["規劃中", "興建中", "施工中", "動工中", "籌建中", "預計", "即將", "擬建", "計畫中", "計劃中"];
+const UNBUILT_LEAD_NOUNS = ["捷運", "輕軌", "車站", "重劃", "商場", "百貨", "購物中心", "快速道路", "道路", "交流道",
+  "學校", "國小", "國中", "高中", "公園", "通車", "開幕", "啟用", "落成"];
+const UNBUILT_FUTURE_NOUNS = ["捷運", "輕軌", "車站", "重劃", "商場", "百貨", "購物中心", "快速道路", "交流道", "聯外道路",
+  "新校區", "學校", "國小", "國中", "高中", "公園"];
+const UNBUILT_SUBJ_NOUNS = ["捷運", "輕軌", "車站", "重劃區", "商場", "百貨", "購物中心", "快速道路", "交流道", "聯外道路",
+  "新校區", "學校", "國小", "國中", "高中", "公園"];
+const UNBUILT_TRAIL_WORDS = ["規劃中", "興建中", "施工中", "動工中", "籌建中", "預計", "即將", "尚未通車", "未來將"];
+const UNBUILT_RE = new RegExp(
+  UNBUILT_FIXED_WORDS.join("|")
+  + String.raw`|(?<![A-Za-z])BC\s?\d{1,2}(?!\d)`
+  + String.raw`|未來\S{0,3}?(?:` + UNBUILT_FUTURE_NOUNS.join("|") + ")"
+  + "|(?:" + UNBUILT_LEAD_WORDS.join("|") + String.raw`)[^，。；！？、\n]{0,8}?`
+  + "(?:" + UNBUILT_LEAD_NOUNS.join("|") + ")"
+  + "|(?:" + UNBUILT_SUBJ_NOUNS.join("|") + ")"
+  + String.raw`[^，。；！？、\n]{0,6}?(?:` + UNBUILT_TRAIL_WORDS.join("|") + ")",
+  "g",
+);
+
+// 19. 無來源的房價預測（2026-10-03 新增，WARNING，只掃 posts）
+// 物件端 cleanPropertyTitle.ts 的 PREDICTION_WORDS 會擋，文章端原本沒擋。
+// 語境閘門（不加的話七成是雜訊）：
+//   (a) 該行含 📌／資料來源／來源：／調查／指數／報告／稅／級距／公告現值 → 整行跳過（在引用數據）
+//   (b) 命中詞前 12 字內有 不是／並非／不代表／別把／不預測 → 跳過（在否定）
+//   (c) 漲幅／上漲／增值 三個高雜訊詞，同一句要再有 未來／若／可能／預估／潛力／空間／突破／N 年 才算
+//       （N 年只認 1-2 位數的「5 年」「10 年」；「2025 年」是年份、不是未來式，不算）
+// 2026-10-03 首跑校正（避免雜訊蓋掉真的預測）：
+//   (d) 該行有 markdown 出處連結 ](http…) → 視同引用數據跳過（同 12 條同業品牌的 isSourceLink）
+//   (e) 問句不算：命中詞後面同一句有「嗎／？」，或前面是「會不會」
+//   (f) 「看好」當「已挑好」用不算：看好房／看好幾間／看好某間／看好物件／已看好／房子看好
+const PREDICTION_DIRECT_RE = /增值潛力|保值|抗跌|(?<!已|已經|子)看好(?!房|幾|某|物件|的房)|會漲|看漲|起漲|翻倍/g;
+const PREDICTION_SOFT_RE = /漲幅|上漲|增值/g;
+const PREDICTION_FUTURE_CTX_RE = /未來|若|可能|預估|潛力|空間|突破|(?<!\d)\d{1,2} ?年/;
+const PREDICTION_SKIP_LINE_RE = /📌|資料來源|來源：|來源:|調查|指數|報告|稅|級距|公告現值|\]\(https?:/;
+const PREDICTION_NEGATION_RE = /不是|並非|不代表|別把|不預測/;
+
+function predictionHits(whole) {
+  const hits = new Set();
+  for (const line of whole.split(/\r?\n/)) {
+    if (PREDICTION_SKIP_LINE_RE.test(line)) continue;
+    // 斷句保留句尾標點，問句判斷才看得到「？」
+    for (const sentence of line.split(/(?<=[。！？!?；])/)) {
+      const check = (re, needCtx) => {
+        re.lastIndex = 0;
+        let m;
+        while ((m = re.exec(sentence))) {
+          const before = sentence.slice(Math.max(0, m.index - 12), m.index);
+          const after = sentence.slice(m.index + m[0].length);
+          if (PREDICTION_NEGATION_RE.test(before)) continue;
+          if (/[嗎？?]/.test(after) || /會不會?$/.test(before)) continue;
+          if (needCtx) {
+            // 「增值潛力」已由 direct 報過，soft 的「增值」不重複報
+            if (m[0] === "增值" && sentence.startsWith("增值潛力", m.index)) continue;
+            if (!PREDICTION_FUTURE_CTX_RE.test(sentence)) continue;
+          }
+          hits.add(`「${sentence.slice(Math.max(0, m.index - 10), m.index + m[0].length + 10).trim()}」`);
+        }
+      };
+      check(PREDICTION_DIRECT_RE, false);
+      check(PREDICTION_SOFT_RE, true);
+    }
+  }
+  return [...hits];
+}
+
+// 20. 時效型標題（2026-10-03 新增，WARNING）：發布超過 60 天還掛著「倒數／即將／到期」又沒更新
+const TIMELY_TITLE_RE = /(倒數|還剩|只剩|剩 ?\d+ ?天|最後 ?\d+ ?天|即將|定案前|將在.{0,8}定案|到期|屆期)/;
+const TIMELY_TITLE_MAX_DAYS = 60;
+
+// 21. 新文章標題長度（2026-10-04 起發布的才檢查）
+const TITLE_LENGTH_SINCE = new Date("2026-10-04T00:00:00+08:00");
+const TITLE_LENGTH_MAX = 34;   // 跟 WebsiteRefill 產線硬上限（refill.py gate ≤34）同一個數字，兩邊要一起改
+
+function parseDate(v) {
+  if (!v) return null;
+  const s = String(v).trim().replace(/^(\d{4}-\d{2}-\d{2}) /, "$1T");
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
 
 // 同業仲介品牌（591 / 樂屋網 / 5168 / 樂居 是刊登與實價平台，不在此列）
 // 引用語境 — 出現這些字代表是把同業當市場數據來源，屬景泰裁決 B 的允許範圍
@@ -286,6 +392,9 @@ const COMPETITOR_BRANDS = [
 
 // 教議價／殺價的用詞（「議價空間」是市場描述、刻意不列入）
 // 只抓「真的在教讀者怎麼壓價」的用法。
+// 2026-10-03 補：「議價空間」後面接「窗口／時機」（例「最佳議價窗口 60-90 天」）就是在教買方挑時機出手，
+//   屬教議價；真的要寫，例外靠 lintAllow: [negotiation] 或附引用來源連結。「議價空間最大」刻意不抓
+//   （selling-pressure 有永慶來源的合法引用，會誤殺）。
 // 刻意不抓的（都是描述，不是教學）：
 //   「議價空間 / 殺價空間 5-8%」= 市場行情與定價策略描述
 //   「不是行銷話術」「建商廣告話術」= 在否定或指涉別人
@@ -298,6 +407,8 @@ const NEGOTIATION_COACHING = [
   // faq-23 的 faqSchema 寫「提供議價建議」、faq-25 寫「要不要再壓」，
   // 原本的清單一個都沒抓到。
   "議價建議", "議價策略", "建議價", "可以下多少",
+  // 2026-10-03 補（selling-pressure / construction-cost 兩篇抓到）
+  "最佳議價窗口", "議價窗口",
 ];
 
 // 2026-09-05 查核補：「開價打 88% 以下對方還是會談」「同社區同樓層可砍 5-8%」
@@ -309,6 +420,8 @@ const NEGOTIATION_COACHING_RE = [
   { re: /(?:價|出價|開價|總價|可以|直接|再|先|就|要)\s?砍\s?\d{1,2}\s?[-~至]?\s?\d{0,2}\s?%/, label: "砍 N%" },
   { re: /往下抓\s?\d{2}\s?%/, label: "往下抓 N%" },
   { re: /\d\.\d\s?折(?![舊扣抵])/, label: "X.X 折" },
+  // 2026-10-03 補：「屋主對報價會比較願意談 1-2%」= 直接告訴買方可以談多少
+  { re: /願意談\s?\d{1,2}\s?[-~至]?\s?\d{0,2}\s?%/, label: "願意談 N%" },
 ];
 
 const EXAGGERATED_TERMS = [
@@ -323,7 +436,8 @@ const EXAGGERATED_TERMS = [
 
 /**
  * 對一段對外文字跑紅線規則 11-14 + 誇大詞。
- * severity: { fabrication, brand, negotiation, appraisal, exaggerated } 各為 "error" | "warning" | "off"
+ * severity: { fabrication, brand, negotiation, appraisal, exaggerated, unbuilt, visitClaim, prediction }
+ *   各為 "error" | "warning" | "off"（沒給的 key 視同 "off"）
  * 回傳 { errors: [msg], warnings: [msg] }
  */
 function redlineChecks(whole, allow, severity) {
@@ -394,6 +508,42 @@ function redlineChecks(whole, allow, severity) {
     }
   }
 
+  // 17. 未完工公共建設（字表同 staging_quality.py）
+  if (!allow("unbuilt") && severity.unbuilt && severity.unbuilt !== "off") {
+    // title / description 在 whole 裡會出現兩次（meta + 原始 frontmatter），用前後文去重
+    const seen = new Set();
+    const found = [];
+    UNBUILT_RE.lastIndex = 0;
+    let m;
+    while ((m = UNBUILT_RE.exec(whole))) {
+      const ctx = whole.slice(Math.max(0, m.index - 12), m.index + m[0].length + 12).replace(/\s+/g, " ").trim();
+      if (!seen.has(ctx)) {
+        seen.add(ctx);
+        found.push(`「${m[0]}」…${ctx}…`);
+      }
+      if (m[0].length === 0) UNBUILT_RE.lastIndex++;
+    }
+    if (found.length > 0) {
+      push(severity.unbuilt, `未完工建設: ${found.length} 處，例 ${found.slice(0, 3).join("、")} — 未通車／未完工的建設一律不寫（CLAUDE.md 房產文案規則，廣告不實紅線）；進度報導要留須加 lintAllow: [unbuilt] 並寫理由`);
+    }
+  }
+
+  // 18. 無法證實的現場走訪
+  if (!allow("visitClaim") && severity.visitClaim && severity.visitClaim !== "off") {
+    const m = whole.match(VISIT_CLAIM_RE);
+    if (m) {
+      push(severity.visitClaim, `疑似假走訪: 「${m[0]}」— 沒有真的去過就改「從實價登錄的成交來看」「實價登錄與公開資料」；真的去過請寫日期並加 lintAllow: [visitClaim]`);
+    }
+  }
+
+  // 19. 無來源的房價預測
+  if (!allow("prediction") && severity.prediction && severity.prediction !== "off") {
+    const hits = predictionHits(whole);
+    if (hits.length > 0) {
+      push(severity.prediction, `房價預測: ${hits.length} 處，例 ${hits.slice(0, 3).join("、")} — 無來源的漲跌／保值預測不寫；要寫就附來源與日期（📌 資料來源：…）`);
+    }
+  }
+
   // 8. 廣告誇大形容詞（否定用法放行：「不是哪一個平台最強」是在破除迷思）
   if (severity.exaggerated !== "off") {
     for (const term of EXAGGERATED_TERMS) {
@@ -436,13 +586,16 @@ async function lintPosts(errors, warnings) {
     const rawFm = (text.match(/^---\r?\n([\s\S]*?)\r?\n---/) || [])[1] || "";
     scanned++;
 
-    // 例外機制：frontmatter 寫 lintAllow: [fabrication|brand|negotiation|appraisal]
+    // 例外機制：frontmatter 寫 lintAllow: [fabrication|brand|negotiation|appraisal|unbuilt|visitClaim|prediction]
     // 就跳過該條檢查。用途是「文章本身在討論這些東西、必須引用原句」，
     // 例如檢討 AI 編造客戶故事的那篇，內文一定會引用假故事當證據。
-    // ⛔ 這是逃生門，不是繞過紅線的方法 —— 每加一次都要寫得出理由。
+    // ⛔ 這是逃生門，不是繞過紅線的方法 —— 每加一次都要寫得出理由（上方加 `# lintAllow 理由：…` 註解）。
+    // parseFrontmatter 不懂行內陣列，`lintAllow: [unbuilt]` 會變成字串 "[unbuilt]"，這裡順手拆開。
     const lintAllow = Array.isArray(meta.lintAllow)
       ? meta.lintAllow
-      : (meta.lintAllow ? [meta.lintAllow] : []);
+      : (meta.lintAllow
+        ? String(meta.lintAllow).replace(/^\[|\]$/g, "").split(",").map(s => stripQuotes(s.trim())).filter(Boolean)
+        : []);
     const allow = k => lintAllow.includes(k);
     const isDraft = meta.draft === "true" || meta.draft === true;
 
@@ -456,12 +609,32 @@ async function lintPosts(errors, warnings) {
       negotiation: level,
       appraisal: "warning",
       exaggerated: isDraft ? "off" : "warning",
+      // 17-19（2026-10-03 新增）：這輪先 WARNING，全站清到 0 之後再改 ERROR
+      unbuilt: isDraft ? "off" : "warning",
+      visitClaim: "warning",
+      prediction: isDraft ? "off" : "warning",
     });
     for (const msg of r.errors) errors.push({ file: f, msg });
     for (const msg of r.warnings) warnings.push({ file: f, msg });
 
     // draft post 之後的 SEO meta 檢查跳過
     if (isDraft) continue;
+
+    // 20. 時效型標題：發布 60 天後還寫「倒數／即將／到期」，又沒有任何更新紀錄 → 讀者點進來是過期資訊
+    const pub = parseDate(meta.pubDatetime);
+    if (meta.title && pub && TIMELY_TITLE_RE.test(meta.title)) {
+      const ageDays = (Date.now() - pub.getTime()) / 86400000;
+      const hasUpdate = !!meta.modDatetime || !!meta.canonicalURL || /最新版請看|本文更新於/.test(body || "");
+      if (ageDays > TIMELY_TITLE_MAX_DAYS && !hasUpdate) {
+        const word = meta.title.match(TIMELY_TITLE_RE)[0];
+        warnings.push({ file: f, msg: `時效標題: title 含「${word}」且已發布 ${Math.floor(ageDays)} 天、沒有 modDatetime／canonicalURL／「最新版請看」— 請更新內文並補 modDatetime，或連到最新版` });
+      }
+    }
+
+    // 21. 新文章 title 長度（2026-10-04 起發布）
+    if (meta.title && pub && pub >= TITLE_LENGTH_SINCE && meta.title.length > TITLE_LENGTH_MAX) {
+      warnings.push({ file: f, msg: `title 超過 ${TITLE_LENGTH_MAX} 字 (${meta.title.length} 字)：2026-10-04 起的新文章，重點要放在前 ${TITLE_LENGTH_MAX} 字內` });
+    }
 
     // 1. title
     if (!meta.title) {
@@ -580,6 +753,8 @@ async function lintSources(errors, warnings) {
       negotiation: "error",
       appraisal: "error", // 對外頁面用「估價」是法規紅線，pages/components 直接擋
       exaggerated: "warning",
+      unbuilt: "warning",    // 2026-10-03 新增，這輪先 WARNING
+      visitClaim: "warning",
     });
     for (const msg of r.errors) errors.push({ file: label, msg });
     for (const msg of r.warnings) warnings.push({ file: label, msg });
@@ -609,6 +784,8 @@ async function lintProperties(errors, warnings) {
       negotiation: level,
       appraisal: level,
       exaggerated: level,
+      unbuilt: level,        // 根治在 properties-sync 的 text_sanitize.py
+      visitClaim: level,
     });
     for (const msg of r.errors) errors.push({ file: `properties/${f}`, msg });
     for (const msg of r.warnings) warnings.push({ file: `properties/${f}`, msg });
@@ -646,7 +823,7 @@ async function main() {
     const groupedWarn = {};
     for (const w of warnings) {
       // 萃取 msg 前綴當分類
-      const cat = w.msg.match(/^(title|description|tags|ogImage|pubDatetime|缺 [a-zA-Z]+|用詞|廣告誇大|教議價|同業品牌|疑似編造)/)?.[0] || w.msg;
+      const cat = w.msg.match(/^(title|description|tags|ogImage|pubDatetime|缺 [a-zA-Z]+|用詞|廣告誇大|教議價|同業品牌|疑似編造|未完工建設|疑似假走訪|房價預測|時效標題)/)?.[0] || w.msg;
       if (!groupedWarn[cat]) groupedWarn[cat] = [];
       groupedWarn[cat].push(w);
     }

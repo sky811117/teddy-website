@@ -30,12 +30,32 @@ const gtagId = PUBLIC_GA4_MEASUREMENT_ID;
     });
 
     // 動態載 gtag.js（帶 measurement ID）
-    (function () {
+    // ⚠️ 2026-10-03 改延後載入（F069）：gtag.js 約 174KB，原本一進頁就抓，Lighthouse 估每頁
+    //   LCP 多 450–600ms。dataLayer / consent / gtag('config') 照舊先排進佇列，gtag.js
+    //   晚點載入時會把佇列補送，page_view 不會掉。
+    //   - /thank-you 轉換頁立即載入（generate_lead 已標 sessionStorage，不能等）
+    //   - 其他頁：第一次互動（pointerdown / keydown / touchstart / scroll）或 load 後就載，
+    //     最晚 3.5 秒一定載（物件頁大圖會把 load 拖到 10 秒以上）
+    //   代價：3.5 秒內就離開、又沒互動的訪客，那一頁的匿名瀏覽數可能少記。
+    var _gaLoaded = false;
+    function _gaInject() {
+      if (_gaLoaded) return;
+      _gaLoaded = true;
       var s = document.createElement('script');
       s.async = true;
       s.src = 'https://www.googletagmanager.com/gtag/js?id=' + gtagId;
       document.head.appendChild(s);
-    })();
+    }
+    if (location.pathname.indexOf('/thank-you') === 0) {
+      _gaInject();
+    } else {
+      ['pointerdown', 'keydown', 'touchstart', 'scroll'].forEach(function (t) {
+        addEventListener(t, _gaInject, { once: true, passive: true, capture: true });
+      });
+      if (document.readyState === 'complete') setTimeout(_gaInject, 0);
+      else addEventListener('load', function () { setTimeout(_gaInject, 0); }, { once: true });
+      setTimeout(_gaInject, 3500);
+    }
 
     gtag('js', new Date());
     // page_view 立刻送。denied 狀態下是 cookieless ping（無識別碼），

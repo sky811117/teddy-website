@@ -124,6 +124,29 @@ function parseDate(raw) {
   return d;
 }
 
+/**
+ * 把 frontmatter 的 canonicalURL 正規化成跟 posts 清單裡 url 同一種寫法，才能直接比字串。
+ * 規則跟 src/layouts/Layout.astro 的 canonicalHref 一致：pathname 不是 / 結尾、也沒有副檔名 → 補 /。
+ * 另外 decodeURI，因為 posts 清單的 url 是未編碼的原始 slug。
+ * 相對路徑（/posts/x/）用 base 補成完整網址；沒有值或解析失敗回 null（＝視為指向自己）。
+ */
+function normalizeCanonical(raw, base) {
+  if (!raw) return null;
+  try {
+    const u = new URL(raw, `${base}/`);
+    if (!u.pathname.endsWith("/") && !/\.[a-zA-Z0-9]+$/.test(u.pathname)) {
+      u.pathname += "/";
+    }
+    try {
+      return decodeURI(u.href);
+    } catch {
+      return u.href;
+    }
+  } catch {
+    return null;
+  }
+}
+
 function listFirstLevelMd(dirUrl) {
   let entries;
   try {
@@ -154,8 +177,8 @@ function isPublished(meta, now, margin) {
  * 結果依 (now, margin) cache，astro.config.ts 內三個 build* 函式共用，不重複讀檔。
  *
  * @returns {{
- *   posts: {url: string, date: Date, tags: string[]}[],
- *   properties: {url: string, date: Date}[]
+ *   posts: {url: string, date: Date, tags: string[], canonical: string|null}[],
+ *   properties: {url: string, date: Date, district: string|null, status: string, statusChangedAt: Date|null}[]
  * }}
  */
 let cache = null;
@@ -189,7 +212,14 @@ function collectEntries(base, opts) {
       const lastmod = mod ?? pub;
       if (!lastmod) continue;
 
-      posts.push({ url: `${base}/posts/${slug}/`, date: lastmod, tags: parseTags(fm) });
+      // canonical：frontmatter 有寫 canonicalURL 的才有值（目前只有青安系列 7 篇指向主文）。
+      // ⛔ 不要因為 canonical 指向別頁就把文章從 posts 拿掉 —— tag 計數（thin tag 判斷）還要算它。
+      posts.push({
+        url: `${base}/posts/${slug}/`,
+        date: lastmod,
+        tags: parseTags(fm),
+        canonical: normalizeCanonical(meta.canonicalURL, base),
+      });
     } catch (err) {
       console.warn(`[sitemap-lastmod] 解析 post 失敗 ${name}: ${err.message}`);
     }
@@ -212,7 +242,17 @@ function collectEntries(base, opts) {
       if (!lastmod) continue;
       if (lastmod.getTime() > now) lastmod = new Date(now);
 
-      properties.push({ url: `${base}/properties/${id}/`, date: lastmod });
+      // statusChangedAt：預留欄位（F129，properties-sync 尚未寫入；有值時分區 lastmod 會參考它）
+      let statusChangedAt = parseDate(meta.statusChangedAt);
+      if (statusChangedAt && statusChangedAt.getTime() > now) statusChangedAt = new Date(now);
+
+      properties.push({
+        url: `${base}/properties/${id}/`,
+        date: lastmod,
+        district: meta.district ? String(meta.district).trim() : null,
+        status: meta.status ? String(meta.status).trim() : "active",
+        statusChangedAt,
+      });
     } catch (err) {
       console.warn(`[sitemap-lastmod] 解析 property 失敗 ${name}: ${err.message}`);
     }
@@ -317,4 +357,46 @@ export function buildThinTagSlugs(opts) {
     if (n < THIN_TAG_MIN_POSTS) thin.add(slug);
   }
   return thin;
+}
+
+/**
+ * canonicalURL 指向「別頁」的文章網址 —— 不送進 sitemap（F049）。
+ * 頁面本身、rel=canonical、RSS、列表頁都不動，只是 sitemap 不再同時列出「重複頁」跟「主文」。
+ * 跟 buildLastmodMap 等函式共用 collectEntries 的快取，不會重讀目錄。
+ *
+ * @param {string} siteUrl config.site.url（自帶尾斜線）
+ * @param {{scheduledPostMargin?: number, now?: number}} [opts]
+ * @returns {Set<string>} 完整網址（跟 sitemap filter 拿到的 page 同格式：未編碼、帶尾斜線）
+ */
+export function buildCanonicalizedUrls(siteUrl, opts) {
+  const base = String(siteUrl || "").replace(/\/$/, "");
+  const { posts } = collectEntries(base, opts);
+  return new Set(posts.filter(p => p.canonical && p.canonical !== p.url).map(p => p.url));
+}
+
+/**
+ * 每個行政區自己的最新日期，給 /properties/{區 slug}/ 分區列表頁當 lastmod（F136 / F129）。
+ * 以前 22 個分區頁一律套「全站物件最新日」，IndexNow 比對模式每次都把全部分區頁當成有變。
+ *
+ * 日期口徑：
+ * - 在售（status: active）物件的 modDatetime ?? lastSeen ?? pubDatetime（collectEntries 已 clamp 到現在）
+ * - 若物件 frontmatter 有 statusChangedAt（預留，properties-sync 尚未寫入），不分狀態一併取最大值
+ * ⚠️ 已知限制：沒有 statusChangedAt 之前，物件下架不會讓該區日期前進（頁面少了一筆，lastmod 卻沒變）。
+ *
+ * @param {{scheduledPostMargin?: number, now?: number}} [opts]
+ * @returns {Map<string, Date>} 中文區名（frontmatter district 原值，例「北屯區」）→ 該區最新日期
+ */
+export function buildDistrictLastmod(opts) {
+  const { properties } = collectEntries("", opts);
+  const map = new Map();
+  const bump = (district, date) => {
+    if (!district || !date) return;
+    const prev = map.get(district);
+    if (!prev || date > prev) map.set(district, date);
+  };
+  for (const p of properties) {
+    if (p.status === "active") bump(p.district, p.date);
+    if (p.statusChangedAt) bump(p.district, p.statusChangedAt);
+  }
+  return map;
 }

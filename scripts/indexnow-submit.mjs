@@ -10,6 +10,8 @@
  *   舊版 = 部署「前」線上的 sitemap（sitemap-index.xml → 各子 sitemap）
  *   新版 = 這次 build 出來的 dist/sitemap-*.xml（lastmod 由 scripts/sitemap-lastmod.mjs 填）
  *   要推 = 新版有、舊版沒有的網址 + 兩邊都有但 lastmod 不同的網址
+ *        + 舊版有、新版沒有、而且 dist 裡真的沒有這頁的網址（刪除通知，2026-10-03 加；
+ *          只在比對模式推，消失筆數異常多時整批不推）
  * 舊版抓不到（第一次、網路錯、子 sitemap 缺一份、被轉址到別的網域）→ 不整站推，
  * 只推 dist 裡 lastmod 在最近 N 天（預設 2 天）內的網址。
  * 比對結果超過一半網址（且 >200 筆）也視為比對基準壞掉，同樣改走最近 N 天。
@@ -44,10 +46,10 @@ const MAX_URLS = 10000; // IndexNow 單次上限
 // 比對模式要推的筆數同時超過 BULK_MIN 筆、且超過 dist 網址數的 BULK_RATIO → 視為比對基準壞掉
 const BULK_MIN = 200;
 const BULK_RATIO = 0.5;
-const FALLBACK_SITE = "https://teddy-website-blog.pages.dev";
+const FALLBACK_SITE = "https://teddy-house.tw";
 // Cloudflare 會擋沒有 User-Agent 的請求（indexnow_push.py 實測回 403）
 const UA =
-  "Mozilla/5.0 (compatible; teddy-website-indexnow/1.0; +https://teddy-website-blog.pages.dev/)";
+  "Mozilla/5.0 (compatible; teddy-website-indexnow/1.0; +https://teddy-house.tw/)";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const log = (...a) => console.log("[indexnow]", ...a);
@@ -247,13 +249,27 @@ function sameLastmod(a, b) {
   return a.trim() === b.trim();
 }
 
-/** 新網址排前面，同一類裡照 lastmod 新到舊（沒 lastmod 的排最後） */
+/** 新網址排前面，同一類裡照 lastmod 新到舊（沒 lastmod 的排最後）；刪除通知另外接在最後 */
 function byPriority(a, b) {
   if (a.reason !== b.reason) return a.reason === "new" ? -1 : 1;
   return (toMs(b.lastmod) ?? 0) - (toMs(a.lastmod) ?? 0);
 }
 
-function diffSitemaps(oldUrls, newUrls) {
+/**
+ * 這個網址在 dist 裡還有沒有頁面（有 = 只是被拿出 sitemap，例如 canonical 指向別頁的文章、
+ * 薄 tag 頁，頁面仍回 200 → 不該推刪除通知）。只認「目錄/index.html」與「帶副檔名的檔」兩種。
+ */
+function existsInDist(distDir, url) {
+  try {
+    const rel = decodeURIComponent(new URL(url).pathname).replace(/^\/+/, "");
+    if (rel === "" || rel.endsWith("/")) return existsSync(path.join(distDir, rel, "index.html"));
+    return existsSync(path.join(distDir, rel)) || existsSync(path.join(distDir, rel, "index.html"));
+  } catch {
+    return true; // 判斷不了就當作還在，不推刪除
+  }
+}
+
+function diffSitemaps(oldUrls, newUrls, distDir) {
   const picked = [];
   let newer = 0;
   let older = 0;
@@ -270,10 +286,17 @@ function diffSitemaps(oldUrls, newUrls) {
     if (tp !== null && tn !== null && tn < tp) older++;
     else newer++;
   }
-  let removed = 0;
-  for (const url of oldUrls.keys()) if (!newUrls.has(url)) removed++;
+  // 線上有、這次消失的網址：dist 裡真的沒有這頁的才算「刪除」（removedList）；
+  // 頁面還在、只是被拿出 sitemap 的算 keptOut，不推
+  const removedList = [];
+  let keptOut = 0;
+  for (const url of oldUrls.keys()) {
+    if (newUrls.has(url)) continue;
+    if (distDir && existsInDist(distDir, url)) keptOut++;
+    else removedList.push({ url, lastmod: null, reason: "removed" });
+  }
   picked.sort(byPriority);
-  return { picked, newer, older, removed };
+  return { picked, newer, older, removed: removedList.length + keptOut, keptOut, removedList };
 }
 
 function recentOnly(newUrls, days, now = Date.now()) {
@@ -352,7 +375,7 @@ async function submit(payload) {
   return { status: -1, ok: false, text: "unreachable" };
 }
 
-const REASON = { new: "新", changed: "改", recent: "近" };
+const REASON = { new: "新", changed: "改", recent: "近", removed: "刪" };
 
 const STATUS_HINT = {
   200: "成功",
@@ -408,15 +431,19 @@ async function main() {
   const old = opts.old ? loadSnapshotFile(opts.old) : await fetchLiveSitemap(site);
   let picked;
   let mode;
+  let removedPicked = 0;
   if (old.ok && new URL(old.site ?? site).host === host) {
-    const d = diffSitemaps(old.urls, newUrls);
+    const d = diffSitemaps(old.urls, newUrls, opts.dist);
     picked = d.picked;
     mode = "diff";
     const added = picked.filter(p => p.reason === "new").length;
+    let removedList = d.removedList;
     log(
       `比對模式：線上舊版 ${old.urls.size} 筆（抓取 ${old.fetchedAt}）→ 新網址 ${added}、lastmod 變了 ${d.newer + d.older}` +
         (d.older ? `（其中 ${d.older} 筆是 dist 比線上舊，本機 dist 過期才會這樣）` : "") +
-        `；線上有但這次消失 ${d.removed} 筆（不推）`
+        `；線上有但這次消失 ${d.removed} 筆（推刪除通知 ${removedList.length} 筆` +
+        (d.keptOut ? `，${d.keptOut} 筆頁面還在只是不進 sitemap、不推` : "") +
+        "）"
     );
     // 保險：比對出來超過一半網址都要推，多半是比對基準壞了（網址格式改版、lastmod 算法改了、
     // 舊版其實是別的站），不是真的整站都改了 → 改走 fallback，不整站推。
@@ -427,6 +454,18 @@ async function main() {
       );
       picked = recentOnly(newUrls, opts.fallbackDays);
       mode = "fallback";
+    }
+    // 刪除通知：只在比對模式、而且通過上面的 BULK 保險之後才合併（fallback 一律不推刪除）
+    if (mode === "diff" && removedList.length > 0) {
+      const removedCap = Math.max(50, old.urls.size * 0.2);
+      if (removedList.length > removedCap) {
+        warn(
+          `這次消失 ${removedList.length} 筆（上限 ${Math.floor(removedCap)}），消失筆數異常，疑似比對基準壞掉 → 這次不推刪除`
+        );
+        removedList = [];
+      }
+      picked = picked.concat(removedList);
+      removedPicked = removedList.length;
     }
   } else {
     picked = recentOnly(newUrls, opts.fallbackDays);
@@ -446,11 +485,21 @@ async function main() {
     warn(`要推 ${total} 筆超過上限，只推最前面 ${MAX_URLS} 筆`);
     picked = picked.slice(0, MAX_URLS);
   }
+  removedPicked = picked.filter(p => p.reason === "removed").length;
 
-  log(`要推 ${picked.length} 筆${opts.dryRun ? "（dry-run，不打 API）" : ""}`);
+  log(
+    `要推 ${picked.length} 筆` +
+      (removedPicked ? `（其中刪除通知 ${removedPicked} 筆）` : "") +
+      (opts.dryRun ? "（dry-run，不打 API）" : "")
+  );
   for (const p of picked.slice(0, opts.show)) {
     const tagText = REASON[p.reason];
-    const lm = p.reason === "changed" ? `${p.prev ?? "無"} → ${p.lastmod ?? "無"}` : p.lastmod ?? "無 lastmod";
+    const lm =
+      p.reason === "changed"
+        ? `${p.prev ?? "無"} → ${p.lastmod ?? "無"}`
+        : p.reason === "removed"
+          ? "已從 sitemap 與網站移除"
+          : p.lastmod ?? "無 lastmod";
     console.log(`  [${tagText}] ${pretty(p.url)}  (${lm})`);
   }
   if (picked.length > opts.show) console.log(`  …其餘 ${picked.length - opts.show} 筆略`);
@@ -495,6 +544,7 @@ async function main() {
     ...head,
     "",
     `${res.ok ? "✅" : "⚠️"} 推送 ${picked.length} 筆 → HTTP ${res.status}：${hint}`,
+    ...(removedPicked ? [`其中刪除通知 ${removedPicked} 筆`] : []),
     "",
     ...picked.slice(0, 50).map(p => `- ${REASON[p.reason]}｜${pretty(p.url)}`),
     ...(picked.length > 50 ? [`- …其餘 ${picked.length - 50} 筆略`] : []),

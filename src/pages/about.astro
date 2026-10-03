@@ -4,7 +4,7 @@ import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Breadcrumb from "@/components/Breadcrumb.astro";
 import Footer from "@/components/Footer.astro";
-import config from "@/config";
+import { YT_CHANNEL_URL, YT_HANDLE } from "@/astro-paper.config";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 import IconChefHat from "@/assets/icons/IconChefHat.svg";
 import IconCode from "@/assets/icons/IconCode.svg";
@@ -30,7 +30,13 @@ if (!about) {
 
 // ProfilePage schema (Google rich result for personal profile pages)
 const siteOrigin = new URL("/", Astro.site).href;
-const aboutURL = new URL("/about", Astro.site).href;
+const aboutURL = new URL("/about/", Astro.site).href;
+
+// SEO 標題／描述跟頁面 H1／眉標拆開：H1 用 about.md 的 title，<title> 用這組（不再接站名後綴，
+// 避免「陳景泰」「台中房仲」各重複兩次被 Google 改寫）。眉標仍用 about.md 的 description。
+const metaTitle = "關於陳景泰（泰迪）｜有巢氏房屋台中世界之心加盟店 不動產營業員";
+const metaDesc =
+  "陳景泰（泰迪），一品不動產有巢氏房屋台中世界之心加盟店不動產營業員（114登字488296），服務台中全區。2025 年 3 月從 13 年廚師轉行，帶看前把產權、社區成交、貸款試算整理成一頁紙。";
 
 const profileSchema = {
   "@context": "https://schema.org",
@@ -39,8 +45,15 @@ const profileSchema = {
   url: aboutURL,
   name: about.data.title,
   description: about.data.description,
+  // 日期寫死：建立＝關於頁上線日、修改＝內文最後實質改版日。⛔ 不要用 git log 推算
+  // （deploy 是淺層 clone，抓到的會是每次部署日，等於假裝有更新）。內文真的改了再手動更新。
+  dateCreated: "2026-05-21T00:00:00+08:00",
+  dateModified: "2026-09-06T00:00:00+08:00",
+  // 連到全站 Person（Layout 的 #realestateagent）；帶 @type＋name，解析器沒跨 script 合併時必填欄位也在
   mainEntity: {
-    "@id": `${siteOrigin}#realestateagent`, // 連到全站 RealEstateAgent (景泰 Person)
+    "@id": `${siteOrigin}#realestateagent`,
+    "@type": "Person",
+    name: "陳景泰",
   },
   breadcrumb: {
     "@id": `${aboutURL}#breadcrumb`,
@@ -69,8 +82,8 @@ const breadcrumbSchema = {
 ---
 
 <Layout
-  title={`${about.data.title} | ${config.site.title}`}
-  description={about.data.description}
+  title={metaTitle}
+  description={metaDesc}
   ogImage={about.data.ogImage}
   canonicalURL={about.data.canonicalURL ?? aboutURL}
 >
@@ -89,7 +102,8 @@ const breadcrumbSchema = {
 
   <Header />
 
-  <Breadcrumb />
+  {/* 本頁自帶 #breadcrumb（ProfilePage.breadcrumb 指向它），元件的 JSON-LD 關掉，只留可見 nav */}
+  <Breadcrumb currentLabel={about.data.title} schema={false} />
 
   <main id="main-content" class="pb-4">
     {/* ===== 頂部 hero：左文右圖、手機照片在上 ===== */}
@@ -122,8 +136,8 @@ const breadcrumbSchema = {
               >房仲大看板 BigKanBan</a
             > 團隊、個人
             <a
-              href="https://www.youtube.com/@%E6%B3%B0%E8%BF%AA001"
-              class="text-accent hover:underline">YouTube @泰迪001</a
+              href={YT_CHANNEL_URL}
+              class="text-accent hover:underline">YouTube {YT_HANDLE}</a
             > /
             <a
               href="https://www.tiktok.com/@sky811117"
@@ -243,6 +257,12 @@ const breadcrumbSchema = {
               <p>
                 選有巢氏不是因為牌子大，是世界之心店的氛圍
                 —「會用內容、會教新人、不只電話拼體力」。
+              </p>
+              <p>
+                店名「世界之心」取自店所在的西屯文心路三段社區「<a
+                  href="/posts/community-16-shijie-zhixin/"
+                  class="text-accent hover:underline">佳茂世界之心</a
+                >」；服務範圍是台中全區，不只這個社區。
               </p>
               <p>為什麼選這行？</p>
               <ul class="list-disc space-y-2 ps-5">
@@ -484,16 +504,16 @@ const breadcrumbSchema = {
               class="text-inverse-foreground hover:text-inverse-accent inline-flex items-center gap-2 no-underline transition-colors"
             >
               <FacebookIcon class="size-5" aria-hidden="true" />
-              FB 陳景泰
+              FB 泰迪 房仲大看板
             </a>
           </li>
           <li>
             <a
-              href="https://www.youtube.com/@%E6%B3%B0%E8%BF%AA001"
+              href={YT_CHANNEL_URL}
               class="text-inverse-foreground hover:text-inverse-accent inline-flex items-center gap-2 no-underline transition-colors"
             >
               <YoutubeIcon class="size-5" aria-hidden="true" />
-              YouTube @泰迪001
+              YouTube {YT_HANDLE}
             </a>
           </li>
           <li>

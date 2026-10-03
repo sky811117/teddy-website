@@ -1,5 +1,0 @@
-# 景泰（陳景泰）房仲個人官網 - 有巢氏房屋台中世界之心店
-User-agent: *
-Allow: /
-
-Sitemap: https://teddy-website-blog.pages.dev/sitemap-index.xml

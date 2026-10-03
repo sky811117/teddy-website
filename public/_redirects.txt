@@ -6,12 +6,24 @@
 #
 # 格式：<來源路徑> <目標路徑> <狀態碼>
 #
+# ⚠️ Cloudflare 逐字比對來源路徑，不會自動對應有沒有尾斜線：有斜線、沒斜線各寫一行。
+#    目標一律直接寫最終帶尾斜線的網址，避免多繞一次 308。
+# ⚠️ 不要用 splat（*）：splat 算動態規則，上限只有 100 條；靜態規則上限 2,000 條。
+# ⚠️ 下架物件的轉址（/properties/{id}/ → 同區列表頁）不寫在這裡，
+#    由 postbuild-headers.mjs 的 appendWithdrawnRedirects() 每次 build 自動接在檔尾。
+
 # 2026-08-28 履約保證三篇整併：policy-05 / faq-17 併入 faq-09
 # (GSC 近 3 個月：faq-09 曝光 463、policy-05 18、faq-17 7 — 三篇互搶同一群查詢字，
 #  合併成一篇完整文章，舊網址 301 把權重導到主頁)
 /posts/policy-05-escrow-system/ /posts/faq-09-escrow-guarantee/ 301
+/posts/policy-05-escrow-system /posts/faq-09-escrow-guarantee/ 301
 /posts/faq-17-escrow-necessary/ /posts/faq-09-escrow-guarantee/ 301
+/posts/faq-17-escrow-necessary /posts/faq-09-escrow-guarantee/ 301
 
 # 2026-09-06 第二戶成數文章事實錯誤（寫成「砍到 4 成」，實際是 5 成放寬到 6 成）：
 # 原文改 draft: true 下架，301 到同主題正確版
 /posts/2026-06-W02-rate-second-home-down-payment-40/ /posts/2026-08-W02-rate-second-home-60-percent-reality/ 301
+/posts/2026-06-W02-rate-second-home-down-payment-40 /posts/2026-08-W02-rate-second-home-60-percent-reality/ 301
+
+# 2026-10-03 GSC 回報 /rss.xml/ 404（舊版 Layout 曾宣告帶尾斜線的 RSS 網址）
+/rss.xml/ /rss.xml 301

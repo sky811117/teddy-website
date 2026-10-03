@@ -2,6 +2,7 @@
 title: 工具：開價分析 — 賣房子怎麼抓出合理的開價區間
 author: 陳景泰
 pubDatetime: 2026-05-27 08:00:00+08:00
+modDatetime: 2026-08-27T19:00:00+08:00
 slug: tool-pricing-analysis
 featured: false
 draft: false

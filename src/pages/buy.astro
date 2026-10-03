@@ -6,7 +6,7 @@ import ContactForm from "@/components/ContactForm.astro";
 import config from "@/config";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 
-const canonicalURL = new URL("/buy", Astro.site).href;
+const canonicalURL = new URL("/buy/", Astro.site).href;
 const siteOrigin = new URL("/", Astro.site).href;
 const realEstateAgentId = `${siteOrigin}#realestateagent`;
 
@@ -14,27 +14,54 @@ const metaTitle = `台中買房 — 找房流程 + 出價陪同 | ${config.site.
 const metaDesc =
   "台中買房太多眉角：行情、出價、貸款、屋況。景泰用工具幫你過濾物件、抓同社區實價登錄合理區間、跑銀行比較，從客需訪談到交屋全程陪同。LINE：sky811117。";
 
+// 步驟卡：time = 時程、prep = 要準備什麼；links = 站內延伸說明（數字只引用站上已有出處的內容）
+type Step = {
+  emoji: string;
+  title: string;
+  desc: string;
+  time: string;
+  prep: string;
+  links?: { href: string; label: string }[];
+};
+
 // 買房 4 步流程
-const steps = [
+// ⛔ 不寫「平均多久」；整體時程只用 services.astro 的「1-3 個月」並標「服務經驗範圍」。
+//    簽約到交屋的天數跟 faq.astro「過戶要準備什麼文件？」同一口徑（看貸款／塗銷進度，時間軸見 faq-16）。
+const steps: Step[] = [
   {
     emoji: "💬",
     title: "1. 客需訪談",
     desc: "先搞清楚你的預算、自備款、想住哪、家裡幾個人、上下班路線。條件愈清楚，後面省愈多時間。",
+    time: "第一次聊完就能把條件整理出來",
+    prep: "預算上限、自備款、想住的區域、家庭成員、上下班路線",
   },
   {
     emoji: "🔍",
     title: "2. 過濾推薦",
     desc: "從 30+ 間裡幫你刷掉不合的，留 5-8 間值得看的。把不用跑的物件先刪掉，週末才不會白跑。",
+    time: "條件愈清楚，篩得愈快",
+    prep: "可以看屋的時段，「一定要」跟「可以妥協」的條件各列幾項",
   },
   {
     emoji: "🤝",
     title: "3. 陪看 + 出價評估",
     desc: "現場一起看屋況、查嫌惡設施。出價前先抓同社區近 12 個月實價登錄的合理區間，用數據談、不是用喊的。",
+    time: "一個下午排 2-3 間，每間才看得仔細",
+    prep: "量尺、手電筒；出價前先看同社區近 12 個月實價登錄",
+    links: [
+      { href: "/posts/faq-23-viewing-process/", label: "帶看流程與要帶什麼" },
+    ],
   },
   {
     emoji: "📝",
     title: "4. 簽約交屋",
     desc: "簽約逐條對地號建號持分、付款條件、違約條款；貸款、過戶、點交全程陪同，履約保證跟漏水保固也幫你顧。",
+    time: "簽約到交屋的天數看買方貸款、賣方塗銷舊貸的進度，時間軸寫在過戶文件清單那篇",
+    prep: "身分證、印鑑章、印鑑證明、自備款。費用：買方仲介費業界慣例 2%，法定上限為買賣雙方合計不超過成交價 6%（內政部不動產經紀業報酬計收標準）",
+    links: [
+      { href: "/posts/faq-16-transfer-documents/", label: "過戶文件清單與時間軸" },
+      { href: "/posts/tool-agent-fee/", label: "仲介費怎麼算" },
+    ],
   },
 ];
 
@@ -194,6 +221,9 @@ const breadcrumbSchema = {
         <h2 class="text-foreground mt-2 text-2xl font-bold sm:text-3xl">
           從第一通訊息到拿鑰匙，4 步
         </h2>
+        <p class="text-muted-foreground mt-3 text-sm">
+          從訪談到交屋：1-3 個月（服務經驗範圍，依物件條件與貸款進度而定）
+        </p>
       </div>
       <ul class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
         {
@@ -204,6 +234,28 @@ const breadcrumbSchema = {
               <p class="text-muted-foreground mt-2 text-[15px] leading-relaxed">
                 {s.desc}
               </p>
+              <dl class="border-border text-muted-foreground mt-4 space-y-1 border-t pt-3 text-sm leading-relaxed">
+                <div>
+                  <dt class="text-foreground inline font-medium">⏱️ 時程：</dt>
+                  <dd class="inline">{s.time}</dd>
+                </div>
+                <div>
+                  <dt class="text-foreground inline font-medium">🧾 準備：</dt>
+                  <dd class="inline">{s.prep}</dd>
+                </div>
+              </dl>
+              {s.links && (
+                <p class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                  {s.links.map(l => (
+                    <a
+                      href={l.href}
+                      class="text-accent underline underline-offset-2"
+                    >
+                      {l.label} →
+                    </a>
+                  ))}
+                </p>
+              )}
             </li>
           ))
         }

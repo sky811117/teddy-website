@@ -1,6 +1,6 @@
 # teddy-website
 
-陳景泰（Teddy）台中房仲官網：<https://teddy-website-blog.pages.dev/>
+陳景泰（Teddy）台中房仲官網：<https://teddy-house.tw/>（舊網址 teddy-website-blog.pages.dev 301 轉來）
 
 - Astro 6 + AstroPaper v6 主題 + Tailwind 4，Cloudflare Pages 靜態部署（GitHub Actions `deploy.yml`）
 - 內容：`src/content/posts`（房市文章，兩條供文管線 monthly-market-report / news-alert）、`src/content/properties`（在售物件，每晚由 `450_上架巡檢/nightly_run.py` → `properties-sync/apply_utrust.py` 自動產生，**不要手改 md**）

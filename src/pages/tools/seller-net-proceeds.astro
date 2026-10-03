@@ -36,7 +36,7 @@ import Main from "@/components/Main.astro";
 import config from "@/config";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 
-const canonicalURL = new URL("/tools/seller-net-proceeds", Astro.site).href;
+const canonicalURL = new URL("/tools/seller-net-proceeds/", Astro.site).href;
 
 const appSchema = {
   "@context": "https://schema.org",
@@ -468,7 +468,7 @@ const hintCls = "hint text-muted-foreground mt-1 text-xs leading-relaxed";
       經紀人黃永隆 113 彰縣字第 324 號
     </p>
     <p class="print-only text-muted-foreground mt-2 text-xs">
-      本表為試算，實際稅額以國稅局、地方稅務局核定為準。teddy-website-blog.pages.dev/tools/seller-net-proceeds/
+      本表為試算，實際稅額以國稅局、地方稅務局核定為準。{new URL("tools/seller-net-proceeds/", config.site.url).href.replace(/^https?:\/\//, "")}
     </p>
 
     {/* 底部固定條會遮到頁尾，手機上留一點空間 */}

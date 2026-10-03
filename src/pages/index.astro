@@ -10,6 +10,9 @@ import { safeJsonLd } from "@/utils/safeJsonLd";
 import { isTaichung } from "@/utils/isTaichung";
 import { cleanPropertyTitle } from "@/utils/cleanPropertyTitle";
 import config from "@/config";
+import { YT_CHANNEL_URL, YT_HANDLE } from "@/astro-paper.config";
+import { Image } from "astro:assets";
+import ycLogo from "@/assets/logos/yochaoshi.png";
 
 // ===== icon（Tabler outline SVG，全站 emoji 已換成這套）=====
 import IconRobot from "@/assets/icons/IconRobot.svg";
@@ -101,16 +104,16 @@ const personalAccounts = [
   },
   {
     platform: "Facebook",
-    handle: "陳景泰",
+    handle: "泰迪 房仲大看板",
     desc: "日常 + 業務分享",
     url: "https://www.facebook.com/profile.php?id=61575492127872",
     icon: IconBrandFacebook,
   },
   {
     platform: "YouTube",
-    handle: "@泰迪001",
+    handle: YT_HANDLE,
     desc: "房屋開箱 + 看屋",
-    url: "https://www.youtube.com/@%E6%B3%B0%E8%BF%AA001",
+    url: YT_CHANNEL_URL,
     icon: IconBrandYoutube,
   },
   {
@@ -142,14 +145,14 @@ const homePageSchema = {
   about: { "@id": `${siteOrigin}#realestateagent` },
   inLanguage: "zh-TW",
   significantLink: [
-    `${siteOrigin}properties`,
-    `${siteOrigin}posts`,
-    `${siteOrigin}faq`,
-    `${siteOrigin}services`,
-    `${siteOrigin}tools`,
-    `${siteOrigin}areas`,
-    `${siteOrigin}contact`,
-    `${siteOrigin}about`,
+    `${siteOrigin}properties/`,
+    `${siteOrigin}posts/`,
+    `${siteOrigin}faq/`,
+    `${siteOrigin}services/`,
+    `${siteOrigin}tools/`,
+    `${siteOrigin}areas/`,
+    `${siteOrigin}contact/`,
+    `${siteOrigin}about/`,
   ],
 };
 
@@ -159,15 +162,15 @@ const navSchema = {
   "@type": "SiteNavigationElement",
   name: "主導航",
   hasPart: [
-    { "@type": "WebPage", name: "在售物件", url: `${siteOrigin}properties` },
-    { "@type": "WebPage", name: "房市筆記", url: `${siteOrigin}posts` },
-    { "@type": "WebPage", name: "客戶工具", url: `${siteOrigin}tools` },
-    { "@type": "WebPage", name: "常見問題", url: `${siteOrigin}faq` },
-    { "@type": "WebPage", name: "台中各區", url: `${siteOrigin}areas` },
-    { "@type": "WebPage", name: "服務項目", url: `${siteOrigin}services` },
-    { "@type": "WebPage", name: "找景泰", url: `${siteOrigin}media` },
-    { "@type": "WebPage", name: "關於景泰", url: `${siteOrigin}about` },
-    { "@type": "WebPage", name: "聯絡景泰", url: `${siteOrigin}contact` },
+    { "@type": "WebPage", name: "在售物件", url: `${siteOrigin}properties/` },
+    { "@type": "WebPage", name: "房市筆記", url: `${siteOrigin}posts/` },
+    { "@type": "WebPage", name: "客戶工具", url: `${siteOrigin}tools/` },
+    { "@type": "WebPage", name: "常見問題", url: `${siteOrigin}faq/` },
+    { "@type": "WebPage", name: "台中各區", url: `${siteOrigin}areas/` },
+    { "@type": "WebPage", name: "服務項目", url: `${siteOrigin}services/` },
+    { "@type": "WebPage", name: "找景泰", url: `${siteOrigin}media/` },
+    { "@type": "WebPage", name: "關於景泰", url: `${siteOrigin}about/` },
+    { "@type": "WebPage", name: "聯絡景泰", url: `${siteOrigin}contact/` },
   ],
 };
 
@@ -203,7 +206,7 @@ const bigKanBanAccounts = [
 ];
 ---
 
-<Layout>
+<Layout title="陳景泰（泰迪）｜台中房仲・有巢氏房屋台中世界之心加盟店">
   <Fragment slot="head">
     <script
       type="application/ld+json"
@@ -249,7 +252,7 @@ const bigKanBanAccounts = [
 
             <p class="text-muted-foreground mt-5 max-w-xl text-lg leading-relaxed">
               同社區近一年成交、在售戶數、貸款月付、稅費 — 帶看前先整理成一頁給你，看完數字再決定。
-              我是<strong class="text-foreground">陳景泰</strong>，一品不動產有巢氏世界之心店房仲，短影音上叫<strong class="text-foreground">泰迪</strong>。
+              我是<strong class="text-foreground">陳景泰</strong>，一品不動產 有巢氏房屋台中世界之心加盟店房仲，短影音上叫<strong class="text-foreground">泰迪</strong>。
             </p>
 
             {/* 買 / 賣 雙 CTA — 放在搜尋卡之前，手機第一屏就看得到 */}
@@ -498,13 +501,17 @@ const bigKanBanAccounts = [
           class="border-border mt-8 flex flex-col items-center justify-center gap-3 border-t pt-6 sm:flex-row sm:gap-5"
         >
           <p class="text-muted-foreground text-sm tracking-wide">所屬公司</p>
-          <img
-            src="/logos/yochaoshi.png"
+          {/* astro:assets 產 1x/2x/3x webp（原 PNG 600×186）；手機版在首屏外 → lazy */}
+          <Image
+            src={ycLogo}
             alt="有巢氏房屋 台中世界之心加盟店"
-            width="258"
-            height="80"
+            width={155}
+            widths={[155, 310, 465]}
+            sizes="(min-width: 640px) 155px, 129px"
+            format="webp"
+            loading="lazy"
+            decoding="async"
             class="h-10 w-auto sm:h-12 dark:rounded-md dark:bg-white/90 dark:px-3 dark:py-1.5"
-            loading="eager"
           />
           <p class="text-muted-foreground text-center text-sm leading-relaxed">
             一品不動產 ・ 經紀人 黃永隆 113彰縣字324 ・ 營業員 陳景泰
@@ -861,7 +868,7 @@ const bigKanBanAccounts = [
                               ? p.data.coverImage
                               : p.data.coverImage.src
                           }
-                          alt={cleanPropertyTitle(p.data.title)}
+                          alt=""
                           width="800"
                           height="600"
                           class="h-full w-full object-cover"
@@ -1032,7 +1039,7 @@ const bigKanBanAccounts = [
                       {coverSrc ? (
                         <img
                           src={coverSrc}
-                          alt={post.data.title}
+                          alt=""
                           width="800"
                           height="450"
                           class="aspect-[16/9] w-full object-cover"

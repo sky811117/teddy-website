@@ -90,6 +90,8 @@ faqSchema:
 
 **參考**: [Week 04:用 Google Map 揪出 10 大嫌惡設施](/posts/week-04-undesirable-facilities)
 
+想先快速篩一輪,也可以用[台中嫌惡設施查詢地圖](/tools/undesirable-facilities/)輸入地址,直接列出周邊 300／500／1000 公尺內的設施與距離(政府開放資料＋OSM 整理,沒查到不等於沒有)。
+
 掃完還沒被淘汰的 → 進階段 2。
 
 ---

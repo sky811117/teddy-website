@@ -14,7 +14,7 @@
 
 const UPSTREAM = "https://sky811117.github.io/teddy-shares/";
 const GA4_ID = "G-WMQCYK4L88";
-const SITE = "https://teddy-website-blog.pages.dev";
+const SITE = "https://teddy-house.tw";
 
 // 「回官網」區塊 — proxy 層注入，讓每個分享頁（新舊全部）底部都能逛回官網。
 // 自帶 inline style，不依賴頁面既有 CSS；guard 認標題字串避免重複注入。

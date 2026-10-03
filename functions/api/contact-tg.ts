@@ -32,9 +32,10 @@ type Payload = Record<string, string>;
 
 const MAX_BODY_BYTES = 10 * 1024;
 
-// 只收自家網域（正式站 + Cloudflare Pages 預覽網域）與本機 wrangler dev
+// 只收自家網域（正式站 teddy-house.tw、舊網址與 Cloudflare Pages 預覽網域）與本機 wrangler dev
+// 2026-10-03 搬網域：舊 pages.dev 留著，已開著舊頁面的人送出表單才不會被擋
 const ALLOWED_ORIGIN =
-  /^https:\/\/([a-z0-9-]+\.)?teddy-website-blog\.pages\.dev$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+  /^https:\/\/(www\.)?teddy-house\.tw$|^https:\/\/([a-z0-9-]+\.)?teddy-website-blog\.pages\.dev$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
 
 function originAllowed(request: Request): boolean {
   const origin = request.headers.get("origin");

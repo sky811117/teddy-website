@@ -2,6 +2,7 @@
 title: 工具：買房出價流程 — 從查實價登錄到簽約，完整時間軸拆給你看
 author: 陳景泰
 pubDatetime: 2026-05-30 08:00:00+08:00
+modDatetime: 2026-08-27T19:00:00+08:00
 slug: tool-negotiation
 featured: false
 draft: false

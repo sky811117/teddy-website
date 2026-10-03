@@ -1,5 +1,5 @@
 ---
-title: "關於景泰"
+title: "關於陳景泰（泰迪）"
 ogImage: "/og/page-about.jpg"
 description: "2025 年 3 月從 13 年廚師轉行台中房仲。不裝懂：帶看前把產權、社區成交、貸款試算寫成一頁紙給你"
 ---
@@ -8,7 +8,7 @@ description: "2025 年 3 月從 13 年廚師轉行台中房仲。不裝懂：帶
 
 我是**陳景泰**，台中房仲。
 
-短影音上叫**泰迪** — 在公司自媒體 [房仲大看板 BigKanBan](/media) 團隊、個人 [YouTube @泰迪001](https://www.youtube.com/@%E6%B3%B0%E8%BF%AA001) / [TikTok @sky811117](https://www.tiktok.com/@sky811117) 都用這個名字。本名陳景泰、IP 名泰迪 / Teddy，是同一個人。
+短影音上叫**泰迪** — 在公司自媒體 [房仲大看板 BigKanBan](/media) 團隊、個人 [YouTube @陳景泰房仲大看板](https://www.youtube.com/channel/UCRghtbrj0YEsXq34dGrRpjQ) / [TikTok @sky811117](https://www.tiktok.com/@sky811117) 都用這個名字。本名陳景泰、IP 名泰迪 / Teddy，是同一個人。
 
 一品不動產有巢氏房屋台中世界之心加盟店、營業員證號 114登字488296。
 
@@ -123,8 +123,8 @@ description: "2025 年 3 月從 13 年廚師轉行台中房仲。不裝懂：帶
 其他都可以：
 
 - 📷 [IG @nov__817](https://www.instagram.com/nov__817/)
-- 📘 [FB 陳景泰](https://www.facebook.com/profile.php?id=61575492127872)
-- 📺 [YouTube @泰迪001](https://www.youtube.com/@%E6%B3%B0%E8%BF%AA001)
+- 📘 [FB 泰迪 房仲大看板](https://www.facebook.com/profile.php?id=61575492127872)
+- 📺 [YouTube @陳景泰房仲大看板](https://www.youtube.com/channel/UCRghtbrj0YEsXq34dGrRpjQ)
 - 🎬 [TikTok @sky811117](https://www.tiktok.com/@sky811117)
 - 📧 Email [a0920118756@gmail.com](mailto:a0920118756@gmail.com)
 

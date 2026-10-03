@@ -5,6 +5,13 @@ import { useTranslations } from "@/i18n";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 import config from "@/config";
 
+// currentLabel：覆寫最後一層的顯示文字（可見 nav 與 JSON-LD 名稱同步）
+// schema：頁面自己寫了 BreadcrumbList（例如 about）就傳 false，避免同頁兩組
+const { currentLabel, schema = true } = Astro.props as {
+  currentLabel?: string;
+  schema?: boolean;
+};
+
 const locale = Astro.currentLocale ?? config.site.lang;
 const t = useTranslations(locale);
 
@@ -60,7 +67,8 @@ if (breadcrumbList[0] === "tags" && !isNaN(Number(breadcrumbList[2]))) {
 // 對應的 JSON-LD BreadcrumbList schema —
 // 讓使用 Breadcrumb 元件的頁面 (archives / tags / search 等) 自動有結構化資料
 // 注意：有些頁面 (areas/contact/faq/services/tools/media/properties) 自己寫 BreadcrumbList，
-// 那些頁面不用 Breadcrumb 元件，所以不會 schema 重複
+// 那些頁面不用 Breadcrumb 元件；自帶 schema 又要顯示麵包屑的頁面（例如 about）請傳 schema={false}，
+// 否則同一頁會有兩組 BreadcrumbList。
 const siteUrl = new URL("/", Astro.site).href;
 const ldItems: Array<{ "@type": string; position: number; name: string; item?: string }> = [
   {
@@ -72,10 +80,11 @@ const ldItems: Array<{ "@type": string; position: number; name: string; item?: s
 ];
 
 breadcrumbList.forEach((seg, idx) => {
-  const name = navLabels[seg] ?? decodeSegment(seg);
   const isLast = idx + 1 === breadcrumbList.length;
+  const name = (isLast ? currentLabel : undefined) ?? navLabels[seg] ?? decodeSegment(seg);
   const path = breadcrumbList.slice(0, idx + 1).join("/");
-  const item = new URL(`/${path}`, Astro.site).href;
+  // 尾斜線：Cloudflare Pages 無尾斜線一律 308，item 直接給最終網址
+  const item = new URL(`/${path}/`, Astro.site).href;
   ldItems.push({
     "@type": "ListItem",
     position: idx + 2,
@@ -91,11 +100,15 @@ const breadcrumbSchema = {
 };
 ---
 
-<script
-  type="application/ld+json"
-  is:inline
-  set:html={safeJsonLd(breadcrumbSchema)}
-/>
+{
+  schema && (
+    <script
+      type="application/ld+json"
+      is:inline
+      set:html={safeJsonLd(breadcrumbSchema)}
+    />
+  )
+}
 
 <nav class="app-layout mt-8 mb-1" aria-label="breadcrumb">
   <ul
@@ -116,7 +129,7 @@ const breadcrumbSchema = {
               aria-current="page"
             >
               {/* make the last part lowercase in Home > Tags > some-tag */}
-              {navLabels[breadcrumb] ?? decodeSegment(breadcrumb)}
+              {currentLabel ?? navLabels[breadcrumb] ?? decodeSegment(breadcrumb)}
             </span>
           </li>
         ) : (

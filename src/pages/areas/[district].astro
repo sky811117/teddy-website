@@ -1,11 +1,12 @@
 ---
 import { getCollection } from "astro:content";
+import { Picture } from "astro:assets";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Main from "@/components/Main.astro";
 import config from "@/config";
-import { areas, type Area } from "@/data/areas";
+import { areas, AREA_DATA_PERIOD, AREA_DATA_SOURCE, type Area } from "@/data/areas";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 import { postFilter } from "@/utils/postFilter";
 import { cleanPropertyTitle } from "@/utils/cleanPropertyTitle";
@@ -116,12 +117,12 @@ const hotPostIds = new Set(
   hotCommunitiesShown.map(c => c.post?.id).filter((id): id is string => !!id)
 );
 
-// 該區相關文章：tag 含該區名的最新 5 篇（社區文已在上面列過的排除）
+// 該區相關文章：tag 含該區名的最新 8 篇（社區文已在上面列過的排除；2026-10-03 F018 從 5 放寬到 8）
 const relatedPosts = allPosts
   .filter(p => !hotPostIds.has(p.id))
   .filter(p => (p.data.tags ?? []).some(tagMatchesArea))
   .sort((a, b) => b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime())
-  .slice(0, 5);
+  .slice(0, 8);
 
 const formatPrice = (price: number) => {
   if (price >= 10000) return `${(price / 10000).toFixed(2)} 億`;
@@ -143,16 +144,54 @@ const listingMonth = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Ta
 const districtListUrl = getDistrictListUrl(area.districtMatch[0]);
 const hasStats = !!area.stats && area.stats.length > 0;
 
-// 數據期間：areas.ts 的數字目前是合泰建經 2026 Q1，標題不綁季度（免得 SERP 標題看起來過期），
-// 內文標明資料期間
-const DATA_PERIOD = "2026 Q1";
+// 數據期間與來源：單一事實來源在 areas.ts（AREA_DATA_PERIOD / AREA_DATA_SOURCE），
+// 標題與 description 不綁季度（免得 SERP 看起來過期），內文數據表與 seoSections 標明資料期
 
 // SEO + JSON-LD
-const pageTitle = `${area.name}買房指南 — 行情、熱門社區、適合誰買`;
-const pageDescription = hasStats
-  ? `${area.name} ${area.headline}。${area.summary} 含關鍵數據（資料期間 ${DATA_PERIOD}）、熱門社區、常見問題與在售物件。`
-  : `${area.name} ${area.headline}。${area.summary} 含站上在售 ${allProperties.length} 筆${listingPriceBand ? `（總價 ${listingPriceBand}）` : ""}、熱門社區、常見問題。`;
+// ⚠️ 2026-10-03 F076：title 改成帶「房價」的查詢字（9/6 改過一次，建議 10/6 之後才部署）；
+//    後綴「 | 陳景泰｜台中房仲」由下方 Layout title 接，這裡不要再加人名
+const pageTitle = `${area.name}房價行情、熱門社區與在售物件`;
+
+// description（F020／F100）：不帶季別、不塞整段 summary，控制在 80–110 字。
+// 有手寫 metaDescription 就用；沒有就用模板，候選依序試（3→0 個社區、長→短結尾，組不到 80 字再補 summary 第一句），
+// 挑第一個落在 80–110 字的；
+// 在售不到 3 筆整段「站上在售…」省略（不要印「在售 0 筆」）。
+const DESC_MIN = 80;
+const DESC_MAX = 110;
+const listingCount = allProperties.length;
+const listingPart = listingCount >= 3 ? `站上在售 ${listingCount} 筆（含同事聯賣）。` : "";
+const descCommunities = hotCommunitiesShown.map(c => c.name);
+// summary 第一句（常青定位句）：資訊太少、組不到 80 字時才補進來
+const summaryFirst = area.summary.split("。")[0];
+const summaryLead = summaryFirst ? `${summaryFirst}。` : "";
+const buildDescription = (nComm: number, withLead: boolean, tail: string) => {
+  const comm = descCommunities.slice(0, nComm);
+  return [
+    `${area.name}買房指南：${area.headline}。`,
+    withLead ? summaryLead : "",
+    listingPart,
+    comm.length > 0 ? `熱門社區：${comm.join("、")}。` : "",
+    tail,
+  ].join("");
+};
+const DESC_TAILS = [
+  "整理適合誰買、要避開什麼，附區域行情與常見問題。",
+  "整理適合誰買、要避開什麼。",
+];
+const descCandidates: string[] = [];
+for (const withLead of [false, true]) {
+  for (const tail of DESC_TAILS) {
+    for (const nComm of [3, 2, 1, 0]) descCandidates.push(buildDescription(nComm, withLead, tail));
+  }
+}
+const pageDescription =
+  area.metaDescription ??
+  descCandidates.find(d => d.length >= DESC_MIN && d.length <= DESC_MAX) ??
+  // 都不在區間：取不超過上限裡最長的（太短總比被截斷好）
+  descCandidates.filter(d => d.length <= DESC_MAX).sort((a, b) => b.length - a.length)[0] ??
+  descCandidates[descCandidates.length - 1];
 const canonicalURL = new URL(`/areas/${area.slug}/`, Astro.site).href;
+const siteRoot = new URL("/", Astro.site).href;
 
 const breadcrumbSchema = {
   "@context": "https://schema.org",
@@ -179,16 +218,16 @@ const breadcrumbSchema = {
   ],
 };
 
-// 跟全站同一個 @id、同一個類型（Layout.astro 的景泰 Person 節點），Google 會合併成同一個人；
-// 以前沒有 @id，11 個區域頁等於 11 個互不相連的「陳景泰」。
-// 類型必須也是 Person（同 @id 一邊 Person 一邊 RealEstateAgent 會互相矛盾），
-// 區域用 workLocation 表達（Person 沒有 areaServed）；證照只放在 Layout 那個節點。
-const areaServedSchema = {
+// 2026-10-03 F105：原本這裡輸出第二個 Person #realestateagent 節點（每區塞不同 workLocation／knowsAbout），
+// 改成這一頁自己的 WebPage 節點：about 指向行政區，author / isPartOf 用 @id 連回 Layout 的全站節點。
+// 不要把 about 指向 #realestateagent，也不要把 11 區塞進 Layout 的全站 Person。
+const webPageSchema = {
   "@context": "https://schema.org",
-  "@type": "Person",
-  "@id": `${new URL("/", Astro.site).href}#realestateagent`,
-  name: "陳景泰",
-  workLocation: {
+  "@type": "WebPage",
+  "@id": `${canonicalURL}#webpage`,
+  url: canonicalURL,
+  name: pageTitle,
+  about: {
     "@type": "AdministrativeArea",
     name: area.shortName,
     containedInPlace: {
@@ -196,14 +235,8 @@ const areaServedSchema = {
       name: "台中市",
     },
   },
-  knowsAbout: [
-    `${area.shortName}買房`,
-    `${area.shortName}賣房`,
-    `${area.shortName}房價`,
-    `${area.shortName}行情`,
-    ...hotCommunitiesShown.map(c => c.name),
-    ...(area.seoSections?.map(s => s.heading) ?? []),
-  ],
+  author: { "@id": `${siteRoot}#realestateagent` },
+  isPartOf: { "@id": `${siteRoot}#website` },
 };
 
 const faqSchema = {
@@ -221,13 +254,20 @@ const faqSchema = {
 
 // 其他區（同頁底部互連，分散 SEO 權重）
 const otherAreas = areas.filter(a => a.slug !== area.slug);
+
+// 工具頁入口（2026-10-03 F122）：一般連結、不帶參數（工具不讀網址參數；地址絕不放進網址）
+const areaTools = [
+  { href: "/tools/school-district/", label: "台中學區查詢地圖", desc: "輸入地址，查國小、國中學區" },
+  { href: "/tools/garbage-truck/", label: "台中垃圾車時間查詢", desc: "附近清運點幾點來、今天有沒有收" },
+  { href: "/tools/undesirable-facilities/", label: "台中嫌惡設施查詢地圖", desc: "地址周邊 300 公尺內有什麼" },
+];
 ---
 
 <Layout
   title={`${pageTitle} | ${config.site.title}`}
   description={pageDescription}
   canonicalURL={canonicalURL}
-  ogImage={area.heroImage}
+  ogImage={area.heroImage?.src}
 >
   <Fragment slot="head">
     <script
@@ -238,7 +278,7 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
     <script
       type="application/ld+json"
       is:inline
-      set:html={safeJsonLd(areaServedSchema)}
+      set:html={safeJsonLd(webPageSchema)}
     />
     <script
       type="application/ld+json"
@@ -249,7 +289,7 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
 
   <Header />
 
-  <Main pageTitle={`${area.emoji} ${area.name}買房指南`} pageDesc={area.headline}>
+  <Main pageTitle={`${area.name}買房指南`} pageDesc={area.headline}>
     {/* Breadcrumb */}
     <nav class="text-muted-foreground mt-2 mb-6 text-sm" aria-label="breadcrumb">
       <ol class="flex flex-wrap gap-2">
@@ -266,19 +306,26 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
     </nav>
 
     {/* 區域代表圖 — 2026-08-26 補，原本整頁零視覺
-        ⚠️ 本地 FLUX 生的示意圖，不是該區實景照，alt 要講清楚 */}
+        ⚠️ 本地 FLUX 生的 AI 意象圖，不是該區實景照：alt 講清楚＋畫面上 figcaption 可見說明（X036）
+        2026-10-03 F025：改由 astro:assets 產 webp 多尺寸（原本 1600 寬 JPEG 原圖、手機也吃整張） */}
     {
       area.heroImage && (
-        <img
-          src={area.heroImage}
-          alt={`${area.shortName}城市景觀示意圖`}
-          width="1600"
-          height="900"
-          loading="eager"
-          fetchpriority="high"
-          decoding="async"
-          class="rounded-card shadow-card aspect-[16/9] w-full object-cover"
-        />
+        <figure>
+          <Picture
+            src={area.heroImage}
+            formats={["webp"]}
+            widths={[480, 800, 1200, 1600]}
+            sizes="(min-width: 768px) 736px, calc(100vw - 32px)"
+            alt={`${area.shortName}城市景觀 AI 意象圖`}
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+            class="rounded-card shadow-card aspect-[16/9] w-full object-cover"
+          />
+          <figcaption class="text-muted-foreground mt-2 text-xs">
+            AI 生成的區域意象圖，非{area.shortName}實景照片
+          </figcaption>
+        </figure>
       )
     }
 
@@ -307,7 +354,7 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
           {area.seoSections.map(sec => (
             <Fragment>
               <h2 class="text-foreground text-xl font-bold sm:text-2xl">
-                {sec.emoji ? sec.emoji + " " : ""}
+                {sec.emoji && <span aria-hidden="true">{sec.emoji} </span>}
                 {sec.heading}
               </h2>
               {sec.paragraphs.map(p => (
@@ -324,7 +371,7 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
       hasStats && (
     <section class="mt-10">
       <h2 class="text-foreground text-xl font-bold sm:text-2xl">
-        📊 關鍵數據（資料期間 {DATA_PERIOD}）
+        📊 關鍵數據（資料期間 {AREA_DATA_PERIOD}）
       </h2>
       <div class="border-border bg-card mt-4 overflow-hidden rounded-lg border">
         <table class="w-full text-sm sm:text-base">
@@ -356,7 +403,7 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
         </table>
       </div>
       <p class="text-muted-foreground mt-3 text-xs">
-        📌 資料來源：合泰建經 {DATA_PERIOD} 台中市不動產市場分析、內政部實價登錄。數字僅供參考、實際成交以個案為準。
+        📌 資料來源：{AREA_DATA_SOURCE}、內政部實價登錄。數字僅供參考、實際成交以個案為準。
       </p>
     </section>
       )
@@ -501,7 +548,7 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
                               ? property.data.coverImage
                               : property.data.coverImage.src
                           }
-                          alt={title}
+                          alt=""
                           width="800"
                           height="600"
                           class="h-full w-full object-cover"
@@ -547,7 +594,7 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
       )
     }
 
-    {/* 該區相關文章：月報／新聞／教學文，tag 含該區名的最新 5 篇 */}
+    {/* 該區相關文章：月報／新聞／教學文，tag 含該區名的最新 8 篇 */}
     {
       (relatedPosts.length > 0 || area.relatedTag) && (
         <section class="mt-10">
@@ -601,6 +648,31 @@ const otherAreas = areas.filter(a => a.slug !== area.slug);
                 class="border-border bg-card hover:border-accent inline-block rounded-full border px-4 py-2 text-sm no-underline transition-colors"
               >
                 {a.emoji} {a.name}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    {/* 查這區的學區、垃圾車、嫌惡設施（F122：9/30 上線的三個工具頁幾乎零內鏈） */}
+    <section class="mt-12">
+      <h2 class="text-foreground text-xl font-bold sm:text-2xl">
+        查這區的學區、垃圾車、嫌惡設施
+      </h2>
+      <p class="text-muted-foreground mt-2 text-sm">
+        看{area.shortName}的物件前，輸入地址就能查：
+      </p>
+      <ul class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {
+          areaTools.map(t => (
+            <li>
+              <a
+                href={t.href}
+                class="border-border bg-card hover:border-accent block rounded-lg border p-4 no-underline transition-colors"
+              >
+                <div class="text-foreground font-bold">{t.label}</div>
+                <div class="text-muted-foreground mt-1 text-sm">{t.desc}</div>
               </a>
             </li>
           ))

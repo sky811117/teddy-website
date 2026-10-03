@@ -81,8 +81,8 @@ const properties = defineCollection({
       pricePerPing: z.number().optional(), // 單坪
 
       // 規格
-      area: z.number(), // 權狀坪數
-      indoorArea: z.number().optional(), // 主建物 + 附屬
+      area: z.number(), // 權狀坪數（pin_regArea，大樓／華廈通常含公設與車位；土地物件為土地坪數）
+      indoorArea: z.number().optional(), // 主建物（pin_mainArea）；與權狀相同時不寫
       layout: z.string(), // 例「3房2廳2衛」
       age: z.number().optional(), // 屋齡
       floor: z.string().optional(), // 例「8/15F」

@@ -17,6 +17,9 @@ import BackToTopButton from "./_components/BackToTopButton.astro";
 import AdjacentPostNav from "./_components/AdjacentPostNav.astro";
 import RelatedPosts from "@/components/RelatedPosts.astro";
 import CommunityListings from "@/components/CommunityListings.astro";
+import AuthorBox from "@/components/AuthorBox.astro";
+import { normalizeFaqSchema } from "@/utils/faqSchema";
+import { ogThumb } from "@/utils/ogThumb";
 import Cusdis from "@/components/Cusdis.astro";
 import config from "@/config";
 
@@ -86,6 +89,10 @@ const SELLER_TAG = /賣方|稅務|policy|過戶|賣房/i;
 const isSellerTopic = tags.some(tag => SELLER_TAG.test(tag));
 const lineHref = `/go/line?src=post-end&p=${encodeURIComponent(postSlug)}`;
 
+// 結構化 FAQ 也要在頁面上看得到（Google 規範：schema 內容必須是使用者可見的內容）。
+// 跟 PostLayout 的 FAQPage JSON-LD 同一份 frontmatter、同一個 normalize，可見文字與 schema 自動一致。
+const faqs = normalizeFaqSchema(faqSchema)?.mainEntity ?? [];
+
 // 文內目錄 — 只取 h2，數量 ≥ 4 才顯示摺疊 TOC
 const tocHeadings = headings.filter(({ depth }) => depth === 2);
 
@@ -99,6 +106,11 @@ if (typeof initOgImage === "string") {
 
 // 封面圖只用 frontmatter 明確提供的 ogImage（dynamicOgImage 自動生成的不當封面）
 const coverImage = ogImageUrl;
+// /og/ 底下的封面都是 AI 生成圖（generate_og_local_flux.py），頁面上要標示成示意圖，
+// alt 也不能寫社區名（Google 圖片會把 AI 擬真建築當成社區實景秀出去）。
+// /og/ 開頭的封面另有 640w／960w webp 縮圖（scripts/generate-og-thumbs.mjs），用 <picture> 給。
+const coverIsAi = !!coverImage?.startsWith("/og/");
+const coverAlt = coverIsAi ? "台中住宅示意圖（AI 生成，非實景）" : title;
 
 if (!ogImageUrl && config.features.dynamicOgImage) {
   const postUrl = getPostUrl(post.id, post.filePath, locale).replace(
@@ -170,7 +182,16 @@ const timeRequired = `PT${timeRequiredMin}M`;
       </h1>
 
       <div class="my-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-        <Datetime {pubDatetime} {modDatetime} {timezone} size="lg" />
+        <span class="text-muted-foreground text-[14px] sm:text-[15px]">
+          作者：<a href="/about/" rel="author" class="hover:text-accent">{post.data.author}</a>（一品不動產 有巢氏房屋 台中世界之心加盟店・營業員）
+        </span>
+        <span
+          aria-hidden="true"
+          class="text-muted-foreground hidden sm:inline"
+        >
+          ·
+        </span>
+        <Datetime {pubDatetime} {modDatetime} {timezone} size="lg" showPub={true} />
         <span
           aria-hidden="true"
           class="text-muted-foreground hidden sm:inline"
@@ -198,16 +219,43 @@ const timeRequired = `PT${timeRequiredMin}M`;
 
       {
         coverImage && (
-          <img
-            src={coverImage}
-            alt={title}
-            width="800"
-            height="450"
-            class="rounded-card mt-4 aspect-[16/9] w-full object-cover"
-            loading="eager"
-            fetchpriority="high"
-            decoding="async"
-          />
+          <figure class="mt-4">
+            {coverIsAi ? (
+              <picture>
+                <source
+                  type="image/webp"
+                  srcset={`${ogThumb(coverImage, 640)} 640w, ${ogThumb(coverImage, 960)} 960w`}
+                  sizes="(min-width: 768px) 736px, calc(100vw - 32px)"
+                />
+                <img
+                  src={coverImage}
+                  alt={coverAlt}
+                  width="800"
+                  height="450"
+                  class="rounded-card aspect-[16/9] w-full object-cover"
+                  loading="eager"
+                  fetchpriority="high"
+                  decoding="async"
+                />
+              </picture>
+            ) : (
+              <img
+                src={coverImage}
+                alt={coverAlt}
+                width="800"
+                height="450"
+                class="rounded-card aspect-[16/9] w-full object-cover"
+                loading="eager"
+                fetchpriority="high"
+                decoding="async"
+              />
+            )}
+            {coverIsAi && (
+              <figcaption class="text-muted-foreground mt-1 text-xs">
+                示意圖（AI 生成，非本文社區實景）
+              </figcaption>
+            )}
+          </figure>
         )
       }
     </header>
@@ -243,8 +291,30 @@ const timeRequired = `PT${timeRequiredMin}M`;
       <Content />
     </article>
 
+    {/* 本文作者卡（可見署名，給讀者與 AI 摘要認得出整理者） */}
+    <AuthorBox slug={postSlug} />
+
+    {/* 常見問題：frontmatter faqSchema 的可見版（純文字插值，不用 set:html） */}
+    {
+      faqs.length > 0 && (
+        <section id="faq" class="mt-10" data-pagefind-ignore>
+          <h2 class="text-xl font-bold sm:text-2xl">常見問題</h2>
+          <div class="mt-4 space-y-3">
+            {faqs.map(item => (
+              <details class="card-surface p-4">
+                <summary class="cursor-pointer font-bold">
+                  {item.name.replace(/\?\s*/g, "？").trim()}
+                </summary>
+                <p class="mt-3 leading-relaxed">{item.acceptedAnswer.text}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+      )
+    }
+
     {/* 社區文章 → 該社區目前的在售物件，放在 CTA 之前：讀者看到「真的有一戶在賣」時旁邊就有動作鈕。
-        沒設 community 或該社區沒在售就整段不出現 */}
+        該社區沒在售 → 同區 3 戶；連區都推不出來或沒在售 → 改放 11 區買房指南導覽 */}
     <CommunityListings community={post.data.community} tags={post.data.tags} />
 
     <!-- 文末 LINE CTA — 內文結束、分享列之前。href 帶 p={slug}，/go/line 記得住是哪篇文章 -->

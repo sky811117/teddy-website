@@ -15,9 +15,12 @@
  *     - 漲跌預測（增值潛力 / 翻倍 / 看漲 / 保值 …）— 景泰鐵則：無來源不預測房價
  *     - 內部用語（專任 / 委編 / UG1234…）— 對外文案不該出現
  *     - 屋主稱謂 / 姓氏 / 身分證
+ *     - 未完工建設（藍線 / 橘線 / 巨蛋 / 規劃中 / 即將 / 預計… / 過期「預計 20XX 年交屋」）— CLAUDE.md 法規紅線
+ *     - 假第一人稱（我自己跑 / 客戶問過 / 我自己也住…）— 景泰鐵則：沒經歷過不准寫
+ *     - 借鄰戶門牌定位本戶（隔壁221號）— 歸「完整門牌」
  *   WARN（只列出，不擋）
  *     - 第三人聯絡引導（營業員：/ LINE ID：/ 洽詢 / 聯絡人）
- *     - 預售敏感詞（預售 / 即將完工 / 代銷 …）— 需人工確認是不是在替建案打廣告
+ *     - 預售敏感詞（預售 / 代銷 …）— 需人工確認是不是在替建案打廣告
  *     - 議價 / 殺價（需景泰裁決）
  *     - body 缺證號（頁面 footer 會自動補，只是提醒一致性）
  *
@@ -29,6 +32,7 @@
  * usage:
  *   node scripts/audit-properties.mjs            # 有 ERROR → exit 1
  *   node scripts/audit-properties.mjs --warn-only  # 只報告不擋（本機看報告用）
+ *   node scripts/audit-properties.mjs --self-test  # 只跑詞表自測（必中／必不中），失敗 exit 1
  */
 import { readdir, readFile, mkdir, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
@@ -36,6 +40,7 @@ import { existsSync } from "node:fs";
 const PROPERTIES_DIR = new URL("../src/content/properties/", import.meta.url);
 const AUDIT_DIR = new URL("../audit/", import.meta.url);
 const WARN_ONLY = process.argv.includes("--warn-only");
+const SELF_TEST = process.argv.includes("--self-test");
 
 // ============ 共用詞表（B4 渲染層 / B5 audit / B6 產生腳本 三處一致） ============
 
@@ -45,7 +50,7 @@ export const EXAGGERATED_RE =
 
 // 漲跌預測 PREDICTION
 export const PREDICTION_RE =
-  /增值潛力|價值翻倍|翻倍|看漲|保值|抗跌|起漲點|起漲|會漲|保證增值|投報率高達|增值(?!稅)|上漲|價格可期|潛力看好|漲幅|(?:發展|開發|交通)潛力|(?:發展|效益)可期|(?:外溢|政策|人口)紅利|估總銷|投報率優於/g;
+  /增值潛力|價值翻倍|翻倍|看漲|保值|抗跌|起漲點|起漲|會漲|保證增值|投報率高達|增值(?!稅)|上漲|價格可期|潛力看好|潛力無限|漲幅|(?:發展|開發|交通)潛力|(?:發展|效益)可期|(?:外溢|政策|人口)紅利|估總銷|投報率優於/g;
 
 // 第三人聯絡 CONTACT（手機另外用 PHONE_RE + 白名單）
 export const CONTACT_RE = /經紀人[:：]|營業員[:：]|LINE\s*(?:ID)?[:：]|洽詢|聯絡人/g;
@@ -57,6 +62,48 @@ const STORE_PHONE_RE = /04[-\s]?2312[-\s]?0888/g; // 店電，不算違規
 
 // 內部用語 INTERNAL
 export const INTERNAL_RE = /專任|本店專任|委編|UG\d+|UA\d+/g;
+
+// 未完工公共建設 UNBUILT（2026-10-03 A 批）
+// 出處：房仲工作站\450_上架巡檢\staging_quality.py 第 93-119 行 UNBUILT_GATE_RE（三平台閘門那一份），
+// 跟 src/utils/cleanPropertyTitle.ts 的 UNBUILT_SOURCE、~/.claude/skills/properties-sync/scripts/text_sanitize.py
+// 的 UNBUILT_SOURCE 逐字一致（改字三處一起改）。⛔ 不用 lookbehind；不放裸「規劃中」、裸 G\d站（綠線已通車）、
+// 裸「區段徵收」、裸「未來性」、裸「預計」。「巨蛋」只擋台中那座（0397205 高雄巨蛋已啟用）。
+const UNBUILT_FIXED_WORDS = [
+  "藍線", "茄苳腳", "輕軌", "橘線", "紫線", "太子(?:商場|置地)", "機捷(?!特區|專區|重劃區)",
+  "綠線延伸", "規劃站點", "規劃站體", "(?:台中|臺中|北屯|雙|小)巨蛋",
+  "洲際[^，。；！？\\n]{0,8}巨蛋", "成形在即", "成形可期", "(?:環評|審議)中",
+  // 2026-10-03 審查補：興建中商場（1187694「高鐵娛樂購物城已開挖」）、開發中園區宣傳句（0240903）
+  "已開挖", "高鐵娛樂(?:購物)?城", "娛樂購物城", "政府主導開發",
+  "開發進程[^，。；！？、\\n]{0,6}推進", "通過[^，。；！？、\\n]{0,4}環評",
+];
+const UNBUILT_LEAD_WORDS = ["規劃中", "興建中", "施工中", "動工中", "籌建中", "預計", "即將", "擬建", "計畫中", "計劃中"];
+const UNBUILT_LEAD_NOUNS = ["捷運", "輕軌", "車站", "重劃", "商場", "百貨", "購物中心", "快速道路", "道路", "交流道",
+  "學校", "國小", "國中", "高中", "公園", "通車", "開幕", "啟用", "落成"];
+const UNBUILT_FUTURE_NOUNS = ["捷運", "輕軌", "車站", "重劃", "商場", "百貨", "購物中心", "快速道路", "交流道", "聯外道路",
+  "新校區", "學校", "國小", "國中", "高中", "公園"];
+const UNBUILT_SUBJ_NOUNS = ["捷運", "輕軌", "車站", "重劃區", "商場", "百貨", "購物中心", "快速道路", "交流道", "聯外道路",
+  "新校區", "學校", "國小", "國中", "高中", "公園"];
+const UNBUILT_TRAIL_WORDS = ["規劃中", "興建中", "施工中", "動工中", "籌建中", "預計", "即將", "尚未通車", "未來將"];
+const UB_NC = "[^，。；！？、\\n]";
+export const UNBUILT_SOURCE =
+  UNBUILT_FIXED_WORDS.join("|") +
+  "|[Bb]\\s?\\d{1,2}\\s?站" +
+  "|未來\\S{0,3}?(?:" + UNBUILT_FUTURE_NOUNS.join("|") + ")" +
+  "|(?:" + UNBUILT_LEAD_WORDS.join("|") + ")" + UB_NC + "{0,8}?(?:" + UNBUILT_LEAD_NOUNS.join("|") + ")" +
+  "|(?:" + UNBUILT_SUBJ_NOUNS.join("|") + ")" + UB_NC + "{0,6}?(?:" + UNBUILT_TRAIL_WORDS.join("|") + ")" +
+  "|興建中|規劃中(?![島西式])" +
+  "|未來捷運\\s*[A-Z]?\\d{0,2}" +
+  "|捷運" + UB_NC + "{0,8}(?:規劃|延伸|預計|即將|未來|尚未通車)" +
+  "|預計\\s*(?:20\\d\\d\\s*年)?" + UB_NC + "{0,6}(?:落成|完工|開幕|營運|通車)" +
+  "|區段徵收.{0,12}(?:卡位|潛力|可期|成形|利多)" +
+  "|(?:置產|提早|輕鬆|優先)卡位";
+export const UNBUILT_RE = new RegExp(UNBUILT_SOURCE, "g");
+// 「預計 2025 年第一季交屋」：年份 < 今年才算（過期交屋時程＝不實）
+export const EXPIRED_HANDOVER_RE = new RegExp("預計\\s*(20\\d\\d)\\s*年" + UB_NC + "{0,10}?交屋", "g");
+const THIS_YEAR = Number(new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Taipei" }).slice(0, 4));
+
+// 假第一人稱 FAKE_FIRST_PERSON（2026-06-03 教訓；⛔ 不要用「我.{0,6}的觀察是」，會誤殺有來源的看法）
+export const FAKE_FIRST_PERSON_RE = /我自己跑|客戶問過|我自己也住|我(?:自己)?跑過\s*\d*\s*次/g;
 
 // 完整門牌 ADDRESS（同 scripts/fix_address_leak.py 的 PAT + 巷弄號寫法）
 export const ADDR_PATTERNS = [
@@ -70,6 +117,8 @@ export const ADDR_PATTERNS = [
   // 「74號快速道路 / 國道1號」因「號」前無「X路/街/大道」緊接前綴，不會誤判
   // 「環中路 74號快速道路」是道路名不是門牌 → 號後面接「快速 / 道」放行
   /(?:路|街|大道)(?:[一二三四五六七八九十東西南北]{1,3}段)?\s*\d+(?:[之\-–]\d+)?(?:巷\d+)?(?:弄\d+)?\s*號(?!\s*(?:快速|道))/,
+  // 「隔壁221號」借鄰戶門牌定位本戶（2026-10-03；號後接 快速/道/線/出口/公園… 是道路地標引用，放行）
+  /(?:隔壁|旁邊|對面|緊鄰|隔鄰|毗鄰)\s*\d+\s*(?:[之\-–]\d+)?\s*號(?!\s*(?:快速|道|線|出口|公園|公車|省道|縣道|國道))/,
 ];
 
 // 「經紀人：」後面必須是黃永隆（法規揭露：經紀人只有他一位；營業員是陳景泰）
@@ -84,12 +133,15 @@ const OWNER_PATTERNS = [
 ];
 
 // WARN 類
-const PRESALE_RE = /預售|即將完工|代銷|建設公司新案|新建案/g;
+const PRESALE_RE = /預售|代銷|建設公司新案|新建案/g; // 「即將完工」2026-10-03 移到 UNBUILT（ERROR）
 const NEGOTIATION_RE = /議價|殺價|砍價/g;
 
 // 證號揭露
 const BROKER_RE = /113\s*彰縣\s*字?\s*324/;
 const AGENT_RE = /114\s*登\s*字?\s*488296/;
+
+// 未完工建設／假第一人稱的嚴重度：回洗後 --warn-only 掃到 0 筆 → ERROR（擋 build）
+const UNBUILT_SEVERITY = "ERROR";
 
 // ============ 掃描 ============
 
@@ -179,17 +231,62 @@ function scanField(name, value, findings, file) {
   pushAll(findings, file, name, value, PREDICTION_RE, "ERROR", "漲跌預測");
   pushAll(findings, file, name, value, INTERNAL_RE, "ERROR", "內部用語");
 
+  // ERROR：未完工建設 / 過期交屋時程 / 假第一人稱（2026-10-03：md 已由 sanitize_existing.py 回洗到 0 筆才升 ERROR）
+  pushAll(findings, file, name, value, UNBUILT_RE, UNBUILT_SEVERITY, "未完工建設");
+  pushAll(findings, file, name, value, EXPIRED_HANDOVER_RE, UNBUILT_SEVERITY, "未完工建設", m =>
+    Number(m[1]) < THIS_YEAR
+  );
+  pushAll(findings, file, name, value, FAKE_FIRST_PERSON_RE, UNBUILT_SEVERITY, "假第一人稱");
+
   // WARN：第三人聯絡引導（「經紀人：黃永隆」正常頁尾也會命中，所以只 WARN；
   // 真正的問題 — 電話、非黃永隆的經紀人 — 上面已經 ERROR）
   pushAll(findings, file, name, value, CONTACT_RE, "WARN", "第三人聯絡引導", m =>
-    !/^經紀人/.test(m[0]) && !/^營業員/.test(m[0])
+    !/^經紀人/.test(m[0]) && !/^營業員/.test(m[0]) &&
+    // 「LINE：sky811117」是景泰本人（UG1139952 誤判，2026-10-03 排除）
+    !/^\s*sky811117/i.test(value.slice(m.index + m[0].length))
   );
   // WARN：預售敏感詞 / 議價
   pushAll(findings, file, name, value, PRESALE_RE, "WARN", "預售敏感詞");
   pushAll(findings, file, name, value, NEGOTIATION_RE, "WARN", "議價用語");
 }
 
+// ============ 自測（案例跟 text_sanitize.py / cleanPropertyTitle.ts 同一組） ============
+const UNBUILT_MUST_HIT = [
+  "鄰近未來捷運藍線「茄苳腳站」", "未來捷運 G20 站", "近未來橘線捷運元保宮站", "三井Outlet、捷運藍線規劃中",
+  "即將完工的漢神百貨與太子商場", "擁雙巨蛋百億商圈", "台中國際港灣成形在即", "捷運藍線未來發展提早卡位城市建設利多",
+  "台中捷運綠線延伸線 G3 站（規劃中）", "散步即達漢神、洲際球場與巨蛋", "交通：機捷 G3 站 + 74 號快速道路",
+  "預計2025年第一季交屋", "高鐵娛樂購物城已開挖", "近 13 期高鐵娛樂城", "2023年5月已通過二階環評",
+  "開發進程明確推進", "位於夏田產業園區區段徵收範圍內，政府主導開發",
+];
+const UNBUILT_MUST_NOT = [
+  "開放式廚房規劃中島", "捷運綠線文心中清站", "近74快速道路捷運G7站", "市政府捷運站旁", "近楠梓高雄巨蛋商圈",
+  "區段徵收與重劃開發程序進行中，進度以主管機關公告為準", "緊鄰74號快速道路", "很多人是被「機捷特區」這 4 個字勾過來的",
+  "預計2030年第一季交屋", "只看七期、北屯機捷重劃區的買家", "位於大里夏田產業園區範圍，屬區段徵收範圍內",
+];
+function unbuiltHit(s, year) {
+  if (new RegExp(UNBUILT_SOURCE).test(s)) return true;
+  return [...s.matchAll(new RegExp(EXPIRED_HANDOVER_RE.source, "g"))].some(m => Number(m[1]) < year);
+}
+function selfTest() {
+  const fails = [];
+  for (const s of UNBUILT_MUST_HIT) if (!unbuiltHit(s, 2026)) fails.push(`必中沒中：${s}`);
+  for (const s of UNBUILT_MUST_NOT) if (unbuiltHit(s, 2026)) fails.push(`必不中卻中：${s}`);
+  const fp = new RegExp(FAKE_FIRST_PERSON_RE.source);
+  if (!fp.test("我自己跑太平找店面的客戶問過一輪")) fails.push("假第一人稱沒中");
+  if (fp.test("我們的觀察是")) fails.push("假第一人稱誤中「我們的觀察是」");
+  const nb = ADDR_PATTERNS[ADDR_PATTERNS.length - 1];
+  if (!nb.test("1.與隔壁221號為雙店面")) fails.push("鄰戶門牌沒中");
+  if (nb.test("緊鄰74號快速道路")) fails.push("鄰戶門牌誤中「緊鄰74號快速道路」");
+  return fails;
+}
+
 async function main() {
+  if (SELF_TEST) {
+    const fails = selfTest();
+    console.log(`[audit-properties] self-test：${fails.length ? fails.length + " 個失敗" : "全過"}`);
+    for (const f of fails) console.error(`  ✗ ${f}`);
+    process.exit(fails.length ? 1 : 0);
+  }
   const files = (await readdir(PROPERTIES_DIR))
     .filter(f => f.endsWith(".md") && !f.startsWith("_"))
     .sort();
@@ -304,10 +401,10 @@ async function main() {
   L.push("");
   L.push("## ⚠️ WARN 類的 false positive 提示");
   L.push("");
-  L.push("1. **「即將完工」** 若指周邊建設（例：漢神百貨即將完工）不是預售自家物件可忽略");
+  L.push("1. **未完工建設（藍線／巨蛋／規劃中／即將／預計…）＝法規紅線，必修，沒有例外**（ERROR；要放行已通車的站名請改共用詞表，不要改 md）");
   L.push("2. **「議價空間」** 屬市場描述；教買方怎麼殺價才是紅線，需景泰裁決");
   L.push("3. **「洽詢」「聯絡人」** 若指管理室 / 物業，不是同事聯絡方式可忽略");
-  L.push("4. ERROR 類（門牌 / 非白名單手機 / 經紀人非黃永隆 / 誇大 / 預測 / 內部用語）一律要修，沒有例外");
+  L.push("4. ERROR 類（門牌 / 非白名單手機 / 經紀人非黃永隆 / 誇大 / 預測 / 內部用語 / 未完工建設 / 假第一人稱）一律要修，沒有例外");
 
   if (!existsSync(AUDIT_DIR)) await mkdir(AUDIT_DIR, { recursive: true });
   const reportPath = new URL(`audit-${today}.md`, AUDIT_DIR);

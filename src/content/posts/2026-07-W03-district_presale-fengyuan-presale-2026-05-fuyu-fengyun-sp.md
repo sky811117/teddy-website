@@ -76,6 +76,8 @@ timezone: "Asia/Taipei"
 | 悅光2 | 44.3萬/坪 | 6/22戶（去化27%） | 31週 |
 | 慶山明仁 | 44萬/坪 | 110/329戶（去化33%） | 121週 |
 
+富宇豐云 6 月之後的成交，依成交年月整理在[富宇豐云逐月實價登錄](/posts/2026-07-W03-hot_community-fengyuan-fuyu-fengyun-may-top-seller/)。
+
 ---
 
 ## 兩個值得注意的觀察
