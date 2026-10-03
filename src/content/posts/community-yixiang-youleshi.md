@@ -1,5 +1,5 @@
 ---
-title: 益翔有樂仕評價・實價登錄：梧棲大勇二路屋齡 2 年 288 戶，扣車位單價中位數 18.28 萬
+title: 益翔有樂仕評價・實價登錄：梧棲大勇二路屋齡 2 年 288 戶
 author: 陳景泰
 pubDatetime: 2026-10-16 07:00:00+08:00
 slug: community-yixiang-youleshi

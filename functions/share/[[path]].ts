@@ -12,9 +12,12 @@
  * 兩種頁面都落在 teddy-shares/{share_id}/index.html，一條規則全 cover。
  */
 
+import config from "../../astro-paper.config";
+
 const UPSTREAM = "https://sky811117.github.io/teddy-shares/";
 const GA4_ID = "G-WMQCYK4L88";
-const SITE = "https://teddy-house.tw";
+// 官網網址從設定組（astro-paper.config.ts 的 site.url），換網域不用改這裡；去掉尾斜線再接路徑
+const SITE = config.site.url.replace(/\/+$/, "");
 
 // 「回官網」區塊 — proxy 層注入，讓每個分享頁（新舊全部）底部都能逛回官網。
 // 自帶 inline style，不依賴頁面既有 CSS；guard 認標題字串避免重複注入。
@@ -23,8 +26,8 @@ const BACK_TO_SITE = `
   <div style="background:#fff;border:1px solid rgba(212,185,150,.5);border-radius:16px;padding:26px 20px;text-align:center;box-shadow:0 2px 12px rgba(60,45,20,.08);">
     <div style="font-size:18px;font-weight:700;color:#6b5b3a;margin-bottom:16px;line-height:1.6;">🏡 想看更多好屋？歡迎逛逛我的房仲官網</div>
     <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;">
-      <a href="${SITE}/properties" target="_blank" rel="noopener" style="display:inline-block;padding:13px 26px;border-radius:24px;font-size:16px;font-weight:700;background:#6B8E23;color:#fff;text-decoration:none;">在售物件</a>
-      <a href="${SITE}/about" target="_blank" rel="noopener" style="display:inline-block;padding:13px 26px;border-radius:24px;font-size:16px;font-weight:700;background:#fff;color:#6B8E23;border:1.5px solid #6B8E23;text-decoration:none;">認識景泰</a>
+      <a href="${SITE}/properties/" target="_blank" rel="noopener" style="display:inline-block;padding:13px 26px;border-radius:24px;font-size:16px;font-weight:700;background:#6B8E23;color:#fff;text-decoration:none;">在售物件</a>
+      <a href="${SITE}/about/" target="_blank" rel="noopener" style="display:inline-block;padding:13px 26px;border-radius:24px;font-size:16px;font-weight:700;background:#fff;color:#6B8E23;border:1.5px solid #6B8E23;text-decoration:none;">認識景泰</a>
       <a href="${SITE}/" target="_blank" rel="noopener" style="display:inline-block;padding:13px 26px;border-radius:24px;font-size:16px;font-weight:700;background:#fff;color:#6B8E23;border:1.5px solid #6B8E23;text-decoration:none;">房仲官網</a>
     </div>
     <div style="margin-top:14px;font-size:12px;line-height:1.6;color:#9a8f7a;">
@@ -52,7 +55,8 @@ export const onRequest = async ({
   // 沒帶 id → 導去在售物件頁（自然引流，不留死頁）
   if (parts.length === 0) {
     const origin = new URL(request.url).origin;
-    return Response.redirect(`${origin}/properties`, 302);
+    // 直接給帶尾斜線的網址，不然會變成 302 再 308 的兩段轉址
+    return Response.redirect(`${origin}/properties/`, 302);
   }
 
   let path = parts.join("/");

@@ -2,6 +2,7 @@
 title: Week 06：為什麼我的物件照看起來比同行專業 — 修圖背後我用的 AI
 author: 陳景泰
 pubDatetime: 2026-05-21 23:00:00+08:00
+modDatetime: 2026-09-06T04:08:21+08:00
 slug: week-06-listing-photos
 featured: false
 draft: false

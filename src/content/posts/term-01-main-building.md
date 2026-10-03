@@ -2,6 +2,7 @@
 title: "主建物占比（佔比）怎麼算？權狀 30 坪為什麼室內只有 18 坪，65% 這條線怎麼看"
 author: 陳景泰
 pubDatetime: 2026-02-19 09:00:00+08:00
+modDatetime: 2026-09-06T10:06:24+08:00
 slug: term-01-main-building
 featured: false
 draft: false

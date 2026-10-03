@@ -5,11 +5,18 @@ import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Main from "@/components/Main.astro";
 import config from "@/config";
-import { areas, AREA_DATA_PERIOD } from "@/data/areas";
+import { areas, AREA_DATA_PERIOD, getAreaStats } from "@/data/areas";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 
-// 區數跟 areas.ts 走（2026-09-06 從 7 區補到 11 區：西區／梧棲區／烏日區／南區）
+// 區數跟 areas.ts 走（2026-09-06 從 7 區補到 11 區：西區／梧棲區／烏日區／南區；2026-10-04 補豐原區／潭子區／沙鹿區到 14 區）
 const areaCount = areas.length;
+// 區名清單（description／頁首說明用，跟 areas.ts 自動同步，不手寫）
+const areaNames = areas.map(a => a.shortName).join("、");
+// 卡片上的單價：每區最多 3 個分群，樣本少的排後面（資料來自 area-stats.json）
+const cardStats = (area: (typeof areas)[number]) =>
+  [...getAreaStats(area)]
+    .sort((a, b) => Number(a.smallSample) - Number(b.smallSample) || b.n - a.n)
+    .slice(0, 3);
 
 // JSON-LD: 各區總覽頁的 ItemList
 const itemListSchema = {
@@ -47,7 +54,7 @@ const breadcrumbSchema = {
 
 <Layout
   title={`台中 ${areaCount} 區買房指南 | ${config.site.title}`}
-  description={`北屯／西屯七期／南屯／北區／西區／南區／中區／太平／大里／烏日／梧棲 ${areaCount} 區買房指南：行情（有合泰建經分區數字的區標資料期間 ${AREA_DATA_PERIOD}）、生活圈、熱門社區、適合誰買、要避開什麼。每區一頁，附該區站上在售物件與社區深度文。`}
+  description={`台中 ${areaCount} 區買房指南：${areaNames}。每區一頁，整理實價登錄成交單價（${AREA_DATA_PERIOD}）、生活圈、熱門社區、適合誰買、要避開什麼，附站上在售物件。`}
   canonicalURL={new URL("/areas/", Astro.site).href}
 >
   <Fragment slot="head">
@@ -67,7 +74,7 @@ const breadcrumbSchema = {
 
   <Main
     pageTitle={`台中 ${areaCount} 區買房指南`}
-    pageDesc={`不同區的生活圈與產品型態差很多。各區行情（有分區數字的標資料期間 ${AREA_DATA_PERIOD}）、熱門社區、適合誰買都整理在各自的深度頁，你看哪區順手點哪區。`}
+    pageDesc={`不同區的生活圈與產品型態差很多。各區實價登錄成交單價（${AREA_DATA_PERIOD}）、熱門社區、適合誰買都整理在各自的深度頁，你看哪區順手點哪區。`}
   >
     {/* 各區卡片網格 */}
     <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -106,11 +113,11 @@ const breadcrumbSchema = {
             </p>
 
             <ul class="text-muted-foreground mt-4 space-y-1 text-sm">
-              {(area.stats ?? []).slice(0, 3).map(s => (
-                <li class="flex items-baseline gap-2">
-                  <span class="text-foreground/70 shrink-0">・{s.label}</span>
-                  <span class="text-foreground font-medium">{s.value}</span>
-                  {s.trend && <span class="text-xs">{s.trend}</span>}
+              {cardStats(area).map(s => (
+                <li class="flex flex-wrap items-baseline gap-x-2">
+                  <span class="text-foreground/70">・{s.label}</span>
+                  <span class="text-foreground font-medium">{s.median.toFixed(1)} 萬/坪</span>
+                  {s.smallSample && <span class="text-xs">樣本少</span>}
                 </li>
               ))}
             </ul>
@@ -123,8 +130,9 @@ const breadcrumbSchema = {
         ))
       }
     </div>
-    <p class="text-muted-foreground mt-4 text-xs">
-      各區卡片圖片為 AI 生成的意象圖，非實景照片
+    <p class="text-muted-foreground mt-4 text-xs leading-relaxed">
+      卡片單價：內政部實價登錄（{AREA_DATA_PERIOD}）扣車位成交單價中位數，站方逐筆統計，口徑見各區頁。
+      各區卡片圖片為 AI 生成的意象圖，非實景照片（豐原、潭子、沙鹿暫無圖片）。
     </p>
 
     {/* 底部 CTA */}
@@ -133,7 +141,7 @@ const breadcrumbSchema = {
     >
       <p class="text-foreground font-medium">想看其他區？</p>
       <p class="text-muted-foreground mt-3 leading-relaxed">
-        東區 / 潭子 / 大雅 / 豐原 / 霧峰 / 海線（沙鹿 / 龍井 / 清水）
+        東區 / 大雅 / 霧峰 / 海線（龍井 / 清水）
         — 台中全區都有在跑。LINE 說你想看哪一區，回你最近 3 個月當區實價整理 + 站上在售物件。
       </p>
       <a

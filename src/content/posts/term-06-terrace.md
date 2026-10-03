@@ -2,6 +2,7 @@
 title: "露台（露臺）是什麼意思？有產權、約定專用、無產權差在哪，能不能加蓋"
 author: 陳景泰
 pubDatetime: 2026-03-10 09:00:00+08:00
+modDatetime: 2026-09-06T10:06:24+08:00
 slug: term-06-terrace
 featured: false
 draft: false

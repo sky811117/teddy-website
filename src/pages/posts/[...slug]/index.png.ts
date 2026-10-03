@@ -27,7 +27,7 @@ export const GET: APIRoute = async ({ props, url }) => {
     return new Response(null, { status: 404, statusText: "Not found" });
   }
 
-  // 用 Noto Sans TC 渲染中文標題（Google Sans Code 不支援中文 → 豆腐方塊）
+  // 用 Noto Sans TC 渲染中文標題（satori 需要含中文字形的 ttf，否則會出現豆腐方塊）
   // 讀 OG 專用 entry（astro.config.ts `--font-noto-sans-tc-og`，formats: ["ttf"]）：
   // satori 只吃 ttf/otf/woff，網頁用的 `--font-noto-sans-tc` 是 woff2 切片，拿不到整檔。
   const ntcFonts = fontData["--font-noto-sans-tc-og"];

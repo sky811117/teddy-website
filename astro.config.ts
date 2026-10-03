@@ -22,6 +22,7 @@ import {
   buildDistrictLastmod,
   buildLastmodMap,
   buildSectionLastmod,
+  buildStaticLastmod,
   buildThinTagSlugs,
 } from "./scripts/sitemap-lastmod.mjs";
 
@@ -31,6 +32,9 @@ const sitemapOpts = {
 };
 const lastmodMap = buildLastmodMap(config.site.url, sitemapOpts);
 const sectionLastmod = buildSectionLastmod(config.site.url, sitemapOpts);
+// 靜態頁（about／contact／tools…）＝原始檔最後一次 git commit 時間（F091）。
+// 淺層 clone 時回空表（不給 lastmod），所以 deploy.yml 的 checkout 必須 fetch-depth: 0。
+const staticLastmod = buildStaticLastmod(config.site.url);
 // 掛不到 3 篇文章的 tag 聚合頁（薄內容）— 不送進 sitemap，見該函式的說明
 const thinTagSlugs = buildThinTagSlugs(sitemapOpts);
 // canonicalURL 指向別頁的文章（青安系列 7 篇 → new-housing-loan-3-2026）不送進 sitemap（F049）。
@@ -133,7 +137,7 @@ export default defineConfig({
           item.priority = 0.6;
           item.changefreq = "weekly" as never;
         }
-        let lm = lastmodMap.get(item.url);
+        let lm = lastmodMap.get(item.url) ?? staticLastmod.get(item.url);
         if (!lm && isDistrictListPage(item.url)) {
           // 分區列表頁：用該區自己的最新日期；查不到才落到下面的 section fallback。
           // /areas/* 維持 section fallback（不從這裡 import src/data/areas.ts，那支會帶圖片 import）。
@@ -143,7 +147,7 @@ export default defineConfig({
         }
         if (!lm) {
           // 分頁(/posts/2/)、個別區域頁(/areas/north-tun/) 等沒進精確表的，
-          // 用該 section 最新日期 fallback；靜態頁(about/contact)無前綴匹配 → 維持無 lastmod
+          // 用該 section 最新日期 fallback；靜態頁查不到 git 日期（淺層 clone）→ 維持無 lastmod
           if (item.url.includes("/posts")) lm = sectionLastmod.posts ?? undefined;
           else if (item.url.includes("/properties") || item.url.includes("/areas"))
             lm = sectionLastmod.properties ?? undefined;
@@ -180,16 +184,8 @@ export default defineConfig({
     plugins: [tailwindcss()],
   },
   fonts: [
-    {
-      // 等寬字：只給程式碼區塊用。只留 400/700 normal（之前 5 weights × 2 styles
-      // × 2 formats = 20 個檔宣告、線上實際只抓 1 個），不指定 formats → 預設 woff2。
-      name: "Google Sans Code",
-      cssVariable: "--font-google-sans-code",
-      provider: fontProviders.google(),
-      fallbacks: ["monospace"],
-      weights: [400, 700],
-      styles: ["normal"],
-    },
+    // 2026-10-04 拿掉 Google Sans Code（等寬字）：全站 0 glyph 使用，Layout 的 <Font> 與
+    // theme.css 的 --font-app 先前已拿掉；程式碼區塊走 ui-monospace／Consolas 系統字。
     {
       // 網頁標題層中文字體（theme.css --font-heading），內文走系統字。
       // ⚠️ 不要加 formats：Astro 預設 woff2 → unifont 用 Chrome UA 向 Google 要 CSS，

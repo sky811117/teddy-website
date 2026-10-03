@@ -2,6 +2,7 @@
 title: "工具：AI 修圖 — 物件照要修的不是「美」，是「一致」"
 author: 陳景泰
 pubDatetime: 2026-05-31 08:00:00+08:00
+modDatetime: 2026-08-27T19:11:54+08:00
 slug: tool-ai-photo
 featured: false
 draft: false

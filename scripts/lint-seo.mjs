@@ -53,6 +53,8 @@
  *   1 = has errors
  */
 import { readdir, readFile, stat } from "node:fs/promises";
+// 未完工建設字表：物件 audit 那一份（2026-10-04；import 時 audit-properties.mjs 不會跑掃描）
+import { UNBUILT_SOURCE } from "./audit-properties.mjs";
 
 const POSTS_DIR = new URL("../src/content/posts/", import.meta.url);
 const PROPERTIES_DIR = new URL("../src/content/properties/", import.meta.url);
@@ -290,32 +292,30 @@ const FABRICATION_PATTERNS = [
 // 景泰真的去過的話，文內寫日期，frontmatter 加 lintAllow: [visitClaim]。
 const VISIT_CLAIM_RE = /我(?:特地|親自)?(?:去|跑)?(?:看了|走了)幾趟|(?:與|＋)現場走訪|現場走訪(?:後|來看|觀察|的角度)|實地走訪後|跟在地的業務聊過/;
 
-// 17. 未完工公共建設（2026-10-03 新增）
-// ⚠️ 字表來源：C:\Users\a0920\房仲工作站\450_上架巡檢\staging_quality.py 第 93–119 行
-//    UNBUILT_FIXED_WORDS／UNBUILT_LEAD_WORDS／UNBUILT_LEAD_NOUNS／UNBUILT_FUTURE_NOUNS／UNBUILT_SUBJ_NOUNS／UNBUILT_TRAIL_WORDS／UNBUILT_GATE_RE
-//    要加字先改那邊（三平台上架閘門與 prep 備料都吃那份），再逐字同步到這裡，讓三平台與官網擋同一份字。
-// 跟 Python 版的差異（刻意的）：
-//   - 拿掉最後裸的「興建中|規劃中」兩項：物件文案可以嚴，文章會誤殺「規劃中的大型修繕」這類用法
-//   - 站碼 [Bb]\s?\d{1,2}\s?站 改成 (?<![A-Za-z])BC\s?\d{1,2}(?!\d)，避開「ABC123」這種英數
-const UNBUILT_FIXED_WORDS = ["藍線", "茄苳腳站", "巨蛋", "輕軌"];
-const UNBUILT_LEAD_WORDS = ["規劃中", "興建中", "施工中", "動工中", "籌建中", "預計", "即將", "擬建", "計畫中", "計劃中"];
-const UNBUILT_LEAD_NOUNS = ["捷運", "輕軌", "車站", "重劃", "商場", "百貨", "購物中心", "快速道路", "道路", "交流道",
-  "學校", "國小", "國中", "高中", "公園", "通車", "開幕", "啟用", "落成"];
-const UNBUILT_FUTURE_NOUNS = ["捷運", "輕軌", "車站", "重劃", "商場", "百貨", "購物中心", "快速道路", "交流道", "聯外道路",
-  "新校區", "學校", "國小", "國中", "高中", "公園"];
-const UNBUILT_SUBJ_NOUNS = ["捷運", "輕軌", "車站", "重劃區", "商場", "百貨", "購物中心", "快速道路", "交流道", "聯外道路",
-  "新校區", "學校", "國小", "國中", "高中", "公園"];
-const UNBUILT_TRAIL_WORDS = ["規劃中", "興建中", "施工中", "動工中", "籌建中", "預計", "即將", "尚未通車", "未來將"];
-const UNBUILT_RE = new RegExp(
-  UNBUILT_FIXED_WORDS.join("|")
-  + String.raw`|(?<![A-Za-z])BC\s?\d{1,2}(?!\d)`
-  + String.raw`|未來\S{0,3}?(?:` + UNBUILT_FUTURE_NOUNS.join("|") + ")"
-  + "|(?:" + UNBUILT_LEAD_WORDS.join("|") + String.raw`)[^，。；！？、\n]{0,8}?`
-  + "(?:" + UNBUILT_LEAD_NOUNS.join("|") + ")"
-  + "|(?:" + UNBUILT_SUBJ_NOUNS.join("|") + ")"
-  + String.raw`[^，。；！？、\n]{0,6}?(?:` + UNBUILT_TRAIL_WORDS.join("|") + ")",
-  "g",
-);
+// 17. 未完工公共建設（2026-10-03 新增；2026-10-04 改成直接用 audit-properties.mjs 那一份）
+// ⚠️ 字表＝scripts/audit-properties.mjs export 的 UNBUILT_SOURCE（跟 src/utils/cleanPropertyTitle.ts、
+//    ~/.claude/skills/properties-sync/scripts/text_sanitize.py 逐字一致；450 staging_quality.py、
+//    monthly-market-report build_drafts.py、website_refill/unbuilt_words.py 是「同一份＋產線額外字」）。
+//    要加字改 audit-properties.mjs（再同步那幾份），這裡不再自己寫一份。
+// 以前這裡自己一份（裸「巨蛋」），會把高雄物件 0397205「往左營、高鐵、巨蛋」誤報；共用那份只擋
+// (?:台中|臺中|北屯|雙|小|大)巨蛋 與「洲際…巨蛋」。BC 站碼、橘線、紫線、綠線延伸、大平霧也都在共用那份裡。
+// 共用那份比舊版多抓裸「興建中」「規劃中(?![島西式])」「預計…完工」；文章真的在報導進度要留，加 lintAllow: [unbuilt] 寫理由。
+const UNBUILT_RE = new RegExp(UNBUILT_SOURCE, "g");
+
+// 22. 舊 YouTube 帳號代碼（2026-10-04；稽核 F045）：頻道 handle 已改「@陳景泰房仲大看板」，舊網址再出現就是
+//     死連結＋身分訊號錯亂 → ERROR。掃原始碼本身（不是抽出來的對外文字），連 href 裡的 URL 編碼也抓。
+//     字串用組的，免得這支檔案自己被 grep 到。
+const OLD_YT_HANDLE = "泰迪" + "001";
+const OLD_YT_HANDLE_RE = new RegExp(`${OLD_YT_HANDLE}|${encodeURIComponent("泰迪")}001`, "i");
+const OLD_YT_SCAN_DIRS = ["src/", "public/", "functions/"];
+const OLD_YT_SCAN_FILES = ["astro-paper.config.ts", "astro.config.ts", "astro.config.mjs"];
+const OLD_YT_SCAN_EXTS = [".astro", ".ts", ".tsx", ".js", ".mjs", ".md", ".mdx", ".json", ".txt", ".xml", ".html", ".yml", ".yaml", ".webmanifest"];
+
+// 23. 物件頁 Offer.seller 不准內嵌證照／電話（2026-10-04；稽核 F009）：seller 只放 @id（＋@type／name），
+//     證照由 Layout.astro @graph 的 Person／公司節點各自表達。以前把「經紀人 黃永隆」證號掛在景泰名下。
+//     掃 src/pages/properties/** 的原始碼（先拿掉註解），找 `seller: { … }` 區塊，裡面有 hasCredential／telephone 就 ERROR。
+const SELLER_SCAN_DIR = "src/pages/properties/";
+const SELLER_BAD_KEYS_RE = /\bhasCredential\b|\btelephone\b/;
 
 // 19. 無來源的房價預測（2026-10-03 新增，WARNING，只掃 posts）
 // 物件端 cleanPropertyTitle.ts 的 PREDICTION_WORDS 會擋，文章端原本沒擋。
@@ -793,6 +793,78 @@ async function lintProperties(errors, warnings) {
   return scanned;
 }
 
+// D. 原始碼結構規則（2026-10-04）：22 舊 YouTube handle、23 物件頁 seller 內嵌證照／電話
+const REPO_ROOT = new URL("../", import.meta.url);
+async function walkRaw(relDir, exts) {
+  const out = [];
+  const base = new URL(relDir, REPO_ROOT);
+  let items;
+  try {
+    items = await readdir(base, { withFileTypes: true });
+  } catch {
+    return out;
+  }
+  for (const it of items) {
+    if (it.name === "node_modules" || it.name === ".git" || it.name === "dist") continue;
+    const rel = relDir + it.name;
+    if (it.isDirectory()) out.push(...(await walkRaw(rel + "/", exts)));
+    else if (exts.some(e => it.name.endsWith(e))) out.push(rel);
+  }
+  return out;
+}
+
+/** 從（已拿掉註解的）原始碼抓出每個 `seller: { … }` 物件字面值（括號配對） */
+function sellerBlocks(src) {
+  const blocks = [];
+  const re = /["']?\bseller["']?\s*:\s*\{/g;
+  let m;
+  while ((m = re.exec(src))) {
+    let depth = 0;
+    let i = m.index + m[0].length - 1;
+    const start = i;
+    for (; i < src.length; i++) {
+      if (src[i] === "{") depth++;
+      else if (src[i] === "}" && --depth === 0) break;
+    }
+    blocks.push(src.slice(start, i + 1));
+  }
+  return blocks;
+}
+
+async function lintStructural(errors) {
+  let scanned = 0;
+  // 22. 舊 YouTube handle
+  const files = [];
+  for (const d of OLD_YT_SCAN_DIRS) files.push(...(await walkRaw(d, OLD_YT_SCAN_EXTS)));
+  for (const f of OLD_YT_SCAN_FILES) {
+    try {
+      await stat(new URL(f, REPO_ROOT));
+      files.push(f);
+    } catch {
+      // 沒這個檔就略過
+    }
+  }
+  for (const rel of files) {
+    const src = await readFile(new URL(rel, REPO_ROOT), "utf-8");
+    scanned++;
+    const m = src.match(OLD_YT_HANDLE_RE);
+    if (m) {
+      errors.push({ file: rel, msg: `舊 YouTube 帳號代碼「${m[0]}」— 頻道已改 @陳景泰房仲大看板，連結一律用 astro-paper.config.ts 的頻道 ID 網址（稽核 F045）` });
+    }
+  }
+  // 23. 物件頁 seller 區塊不准內嵌 hasCredential／telephone
+  for (const rel of await walkRaw(SELLER_SCAN_DIR, [".astro", ".ts"])) {
+    const src = stripTsComments((await readFile(new URL(rel, REPO_ROOT), "utf-8")).replace(/<!--[\s\S]*?-->/g, " "));
+    for (const blk of sellerBlocks(src)) {
+      const bad = blk.match(SELLER_BAD_KEYS_RE);
+      if (bad) {
+        errors.push({ file: rel, msg: `物件頁 Offer.seller 內嵌「${bad[0]}」— seller 只放 @id 指回 Layout 的 Person／公司節點，證照與電話不要掛在 seller 底下（稽核 F009：經紀人證號曾被掛到景泰名下）` });
+      }
+    }
+  }
+  return scanned;
+}
+
 async function main() {
   const errors = [];
   const warnings = [];
@@ -800,11 +872,12 @@ async function main() {
   const postsScanned = await lintPosts(errors, warnings);
   const sourcesScanned = await lintSources(errors, warnings);
   const propsScanned = await lintProperties(errors, warnings);
+  const structScanned = await lintStructural(errors);
 
   // 輸出
   console.log(`# SEO Lint Report`);
   console.log(``);
-  console.log(`掃描 **${postsScanned}** 篇 posts .md、**${sourcesScanned}** 個 pages/components/data 檔、**${propsScanned}** 筆 properties${PROPERTIES_STRICT ? "（strict）" : "（只警告）"}`);
+  console.log(`掃描 **${postsScanned}** 篇 posts .md、**${sourcesScanned}** 個 pages/components/data 檔、**${propsScanned}** 筆 properties${PROPERTIES_STRICT ? "（strict）" : "（只警告）"}、**${structScanned}** 個原始碼檔（舊 YouTube handle／seller 結構）`);
   console.log(`- 🔴 ERROR:   ${errors.length}`);
   console.log(`- 🟡 WARNING: ${warnings.length}`);
   console.log(``);

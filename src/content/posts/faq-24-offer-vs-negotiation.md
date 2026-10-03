@@ -2,6 +2,7 @@
 title: 要約書還是斡旋金?兩種出價方式的法律效力與該怎麼選
 author: 陳景泰
 pubDatetime: 2026-06-14 11:00:00+08:00
+modDatetime: 2026-08-28T11:50:34+08:00
 slug: faq-24-offer-vs-negotiation
 featured: false
 draft: false

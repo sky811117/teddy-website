@@ -56,3 +56,6 @@ audit/
 
 # Windows 誤把 `> NUL` 當檔名建出來的空檔
 NUL
+
+# generate-cover-thumbs.mjs 每次 build 產生的物件卡片縮圖（card400／card800），build 產物不進 repo
+public/properties/*/*-card*.webp

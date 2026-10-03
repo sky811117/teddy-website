@@ -473,13 +473,24 @@ async function main() {
     warn(`舊版不可用（${old.error ?? "網域不同"}）→ 只推 lastmod 在最近 ${opts.fallbackDays} 天內的網址`);
   }
 
+  // /posts/2/、/posts/3/… 文章列表分頁不推（F136）：每發一篇新文，所有分頁的內容都往後位移一格、
+  // lastmod 跟著變，每次部署都把 19 個分頁當成「有更新」一起推，真正的新內容被稀釋。
+  // 只在 IndexNow 端排除，sitemap 不動；分頁消失（reason=removed）的刪除通知照推。
+  const isPostsPagination = u => /^\/posts\/\d+\/$/.test(new URL(u).pathname);
+  let skippedPagination = 0;
   picked = picked.filter(p => {
     try {
-      return new URL(p.url).host === host;
+      if (new URL(p.url).host !== host) return false;
+      if (p.reason !== "removed" && isPostsPagination(p.url)) {
+        skippedPagination++;
+        return false;
+      }
+      return true;
     } catch {
       return false;
     }
   });
+  if (skippedPagination) log(`略過文章列表分頁 /posts/N/ ${skippedPagination} 筆（F136）`);
   const total = picked.length;
   if (total > MAX_URLS) {
     warn(`要推 ${total} 筆超過上限，只推最前面 ${MAX_URLS} 筆`);

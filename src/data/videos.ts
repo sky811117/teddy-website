@@ -2,6 +2,8 @@
 //
 // 頻道網址常數在 astro-paper.config.ts（YT_CHANNEL_URL／YT_HANDLE），這裡引用、不另寫一份
 import { YT_CHANNEL_URL, YT_HANDLE } from "@/astro-paper.config";
+// 最新物件短影音：scripts/sync-videos.mjs 從 房仲工作站/420_IG_API/video_registry.json 產出（本機跑、產物要 commit）
+import generatedVideos from "./videos.generated.json";
 //
 // 景泰的房仲短影音跨 3 平台：YouTube (@陳景泰房仲大看板，頻道 ID UCRghtbrj0YEsXq34dGrRpjQ) / TikTok (@sky811117) / IG (@nov__817)
 // 每支影片獨立 entry、頁面會自動 group by 分類。
@@ -91,8 +93,8 @@ export const authorInfo: Record<
  *   featured: true,
  * },
  */
-// 預設上架日 — 2026-06-09 批次填入，只剩 YT oUb3zBoctXQ、FB 1343875191179246 兩支還在用
-// （這兩種 ID 不帶時間，要人工看平台頁才知道）。TikTok／IG 的日期已從 ID 反推成實際發布時間：
+// 預設上架日 — 2026-06-09 批次填入，只剩 FB 1343875191179246 一支還在用
+// （FB ID 不帶時間，要人工看平台頁才知道）。YT oUb3zBoctXQ 已改用 video_registry.json 記的 2026-05-23。TikTok／IG 的日期已從 ID 反推成實際發布時間：
 // TikTok 影片 ID >> 32 = Unix 秒；IG shortcode 轉數字 >> 23 + 1314220021721 = 毫秒。
 // featured 標旗手物件給 grid 優先位。
 const SEED_DATE = new Date("2026-06-09");
@@ -114,7 +116,8 @@ export const videos: Video[] = [
     title: "南屯嶺東全新雙車透天｜3房2廳4衛｜1898萬",
     category: "看屋開箱",
     district: "南屯區",
-    pubDate: SEED_DATE,
+    // video_registry.json 的 date（2026-10-04 查）；registry 該筆 delisted=false、YT 公開
+    pubDate: new Date("2026-05-23T12:00:00+08:00"),
     featured: true,
   },
 
@@ -191,6 +194,38 @@ export const videos: Video[] = [
   },
 ];
 
+/**
+ * 最新物件短影音（自動同步）— 只收 YouTube 公開、registry 沒標下架、標題過官網詞表的台中物件片。
+ * 收錄條件寫在 scripts/sync-videos.mjs 檔頭；這裡只轉型別、跟上面手選的代表作去重。
+ */
+type GeneratedVideo = {
+  id: string;
+  videoId: string;
+  url: string;
+  title: string;
+  district?: string;
+  community?: string;
+  pubDate: string;
+};
+const curatedIds = new Set(videos.map(v => v.id));
+export const latestVideos: Video[] = (
+  (generatedVideos as { videos?: GeneratedVideo[] }).videos ?? []
+)
+  .filter(g => g.videoId && !curatedIds.has(g.id))
+  .map(g => ({
+    id: g.id,
+    author: "teddy" as const,
+    platform: "youtube" as const,
+    videoId: g.videoId,
+    url: g.url,
+    title: g.title,
+    category: "看屋開箱" as const,
+    district: g.district,
+    community: g.community,
+    pubDate: new Date(`${g.pubDate}T12:00:00+08:00`), // 中午：CI 在 UTC 跑 getDate() 也不會跳前一天
+  }))
+  .sort((a, b) => b.pubDate.getTime() - a.pubDate.getTime());
+
 export const platformInfo: Record<
   VideoPlatform,
   { name: string; icon: string; handle: string; url: string; color: string }
@@ -235,11 +270,12 @@ export const categoryInfo: Record<
   },
   政策快訊: {
     icon: "📰",
-    tagline: "新青安、央行管制、房地合一 — 政策一變就拍",
+    tagline: "房屋稅、新青安、央行管制這類政策變動的重點",
   },
   議價心法: {
     icon: "💰",
-    tagline: "我幫客戶議過的案例、能說的都講",
+    // 0 支時 shorts.astro 不顯示；⛔ 對外文字不教議價，有真實素材也只講流程與成交行情
+    tagline: "出價到簽約的流程與實際成交行情",
   },
   客戶見證: {
     icon: "🤝",
@@ -247,11 +283,11 @@ export const categoryInfo: Record<
   },
   "AI 工作流": {
     icon: "🤖",
-    tagline: "房仲怎麼用 AI 自動化 — 對同行也對客戶",
+    tagline: "房仲工作怎麼用 AI 整理資料、核對文案",
   },
   其他: {
     icon: "🎬",
-    tagline: "雜記、生活、廚師轉房仲的故事",
+    tagline: "工作雜記、從廚師轉行房仲的過程",
   },
 };
 

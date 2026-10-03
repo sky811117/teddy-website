@@ -63,7 +63,9 @@ const blogPosting = {
     "@type": "Person",
     "@id": `${site.url}#realestateagent`,
     name: site.author,
-    ...(site.profile && { url: site.profile }),
+    // 作者頁＝關於頁（ProfilePage，mainEntity 就是這個 Person）。跟 Layout.astro 同 @id 的
+    // Person.url 必須一致，兩邊要一起改（同一個 @id 掛兩個不同 url 會讓解析器拿不定）。
+    url: `${site.url}about/`,
   },
   publisher: {
     // 跟 Layout.astro 同一個 #organization @id 的型別一致（RealEstateAgent）

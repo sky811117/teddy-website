@@ -2,6 +2,7 @@
 title: 工具：看屋 checklist — 60 項打勾完，才不會買到後悔的房
 author: 陳景泰
 pubDatetime: 2026-05-26 08:00:00+08:00
+modDatetime: 2026-06-04T10:23:31+08:00
 slug: tool-viewing-checklist
 featured: false
 draft: false

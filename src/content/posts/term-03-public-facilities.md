@@ -1,7 +1,8 @@
 ---
-title: 公設是什麼?大公小公差在哪、哪些是你用不到卻要付錢的
+title: 公設是什麼？大公小公差在哪、哪些是你用不到卻要付錢的
 author: 陳景泰
 pubDatetime: 2026-02-26 20:00:00+08:00
+modDatetime: 2026-08-28T11:50:34+08:00
 slug: term-03-public-facilities
 featured: false
 draft: false

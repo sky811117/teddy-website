@@ -13,6 +13,9 @@
  * ⚠ 文章頁 hero 用 <picture>，webp 缺檔瀏覽器不會自動退回 jpg（會破圖），
  *   所以每張原圖兩種尺寸都必須產齊；本腳本最後會檢查並在缺檔時以非 0 結束。
  *
+ * 原圖的 XMP（含 AI 生成標記 Iptc4xmpExt:DigitalSourceType）會保留到 webp（keepXmp）。
+ * 已經產過、雜湊沒變的縮圖不會重產；原圖補寫 XMP 後雜湊會變，下次跑就會帶著標記重產。
+ *
  * 用法：node scripts/generate-og-thumbs.mjs
  * build script 與 deploy.yml 會在 astro check 前自動跑一次。
  */
@@ -80,6 +83,9 @@ for (const name of sources) {
   for (const [i, v] of VARIANTS.entries()) {
     await sharp(buf)
       .resize({ width: v.width, withoutEnlargement: true })
+      // 保留原圖 XMP：AI 封面的「AI 生成」標記（IPTC DigitalSourceType）要跟著縮圖走，
+      // sharp 預設會把 metadata 全丟掉（台帳 X028）。只留 XMP，不帶 EXIF/ICC，縮圖不會變胖
+      .keepXmp()
       .webp({ quality: v.quality })
       .toFile(outPaths[i]);
   }

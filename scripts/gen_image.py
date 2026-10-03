@@ -29,6 +29,10 @@ from PIL import Image
 sys.path.insert(0, r"C:\Users\a0920\房仲工作站\420_IG_API")
 from comfyui_gen import gen_flux_image  # noqa: E402
 
+# AI 圖機器可讀標記（IPTC DigitalSourceType=trainedAlgorithmicMedia，寫進 XMP；台帳 X036）
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from ai_image_marker import XMP_AI_BYTES, png_info_with_xmp  # noqa: E402
+
 if sys.platform == "win32":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
@@ -67,10 +71,11 @@ def fit(png: bytes, out: Path, w: int, h: int) -> None:
     left, top = (im.width - w) // 2, (im.height - h) // 2
     im = im.crop((left, top, left + w, top + h))
     out.parent.mkdir(parents=True, exist_ok=True)
+    # 兩種格式都寫入「AI 生成」XMP 標記，Google 圖片才認得出不是實景
     if out.suffix.lower() == ".png":
-        im.save(out, "PNG", optimize=True)
+        im.save(out, "PNG", optimize=True, pnginfo=png_info_with_xmp())
     else:
-        im.save(out, "JPEG", quality=86, optimize=True, progressive=True)
+        im.save(out, "JPEG", quality=86, optimize=True, progressive=True, xmp=XMP_AI_BYTES)
 
 
 def one(prompt: str, out_path: str, size: str, seed: int | None, raw: bool) -> bool:

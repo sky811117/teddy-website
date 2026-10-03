@@ -1,7 +1,8 @@
 ---
-title: 權狀是什麼?建物與土地所有權狀怎麼看、跟謄本差在哪裡
+title: 權狀是什麼？建物與土地所有權狀怎麼看、跟謄本差在哪裡
 author: 陳景泰
 pubDatetime: 2026-04-01 20:00:00+08:00
+modDatetime: 2026-08-28T11:50:34+08:00
 slug: term-14-deed
 featured: false
 draft: false

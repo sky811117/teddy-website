@@ -1,5 +1,5 @@
 ---
-title: 長虹天韻評價・實價登錄：清水港都五路 370 戶新成屋，扣車位單價中位數 23.92 萬
+title: 長虹天韻評價・實價登錄：清水港都五路 370 戶新成屋
 author: 陳景泰
 pubDatetime: 2026-10-06 07:00:00+08:00
 slug: community-changhong-tianyun

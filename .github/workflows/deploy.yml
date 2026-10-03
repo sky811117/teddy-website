@@ -34,6 +34,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # 2026-10-04（F091）：要完整 git 歷史。scripts/sitemap-lastmod.mjs 用「原始檔最後一次
+          # commit 時間」當靜態頁 lastmod；預設淺層 clone 每個檔都會變成這次的 commit（假裝全部更新），
+          # 那支偵測到淺層 clone 會直接不給 lastmod。repo 歷史不大，多抓幾秒。
+          fetch-depth: 0
 
       # pnpm 版本一律吃 package.json 的 packageManager（corepack），不要在這裡再寫死
       # version —— ci.yml 以前寫 10.11.1 跟 packageManager pnpm@11 打架。
@@ -50,7 +55,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # ===== 以下步驟順序 = package.json `build`（唯一真相），兩邊要一起改 =====
-      # lint-seo → audit-properties → og-thumbs → astro check → astro build → pagefind → postbuild
+      # lint-seo → audit-properties → og-thumbs → cover-thumbs → astro check → astro build
+      #   → pagefind → postbuild-minify → postbuild(headers)
 
       # 2026-08-27 補：內容紅線閘門。景泰 2026-06 清過 51 篇 AI 編造的客戶故事，
       # 兩個月後又長回 23 篇（供文管線沒有防呆），這一步就是防第三次。
@@ -70,6 +76,12 @@ jobs:
       # /og/thumbs/*.webp 在 CI 從沒產出、線上一路 404（列表卡片破圖）。
       - name: Generate OG thumbnails
         run: pnpm exec node scripts/generate-og-thumbs.mjs
+
+      # 2026-10-04（F027）：物件封面縮圖（800／400 webp），列表卡、首頁卡、相關卡用。
+      # 腳本失敗只印 WARN、永遠 exit 0；模板 build 時檢查縮圖在不在，不在就退回原圖，不會破圖。
+      # 必須在 astro build 之前（模板要在 build 時看得到 public/ 裡的縮圖）。
+      - name: Generate property cover thumbnails
+        run: pnpm exec node scripts/generate-cover-thumbs.mjs
 
       # 型別 / 模板錯誤以前不擋部署（只有本機 pnpm run build 會跑）
       - name: Astro check
@@ -93,11 +105,18 @@ jobs:
       - name: Build search index (Pagefind)
         run: pnpm exec pagefind --site dist
 
+      # 2026-10-04（F116）：壓縮 dist/js/*.js（工具頁三支腳本），public/ 原檔不動。
+      # 失敗只印 WARN、保留未壓縮原檔，永遠 exit 0，不擋部署。
+      - name: Minify tool scripts (dist/js)
+        run: pnpm exec node scripts/postbuild-minify.mjs
+
       # 2026-08-26 補：同一個根因漏掉的第二步。dist/_headers.txt 沒被改名成
       # dist/_headers，Cloudflare 完全不吃 public/_headers.txt 的快取規則
       # （實測線上圖片回 max-age=0, must-revalidate，等於每次都回源）。
       # 2026-10-03 起另外做：dist/sitemap.xml、下架物件 301（_redirects 超過 2,000 條會讓這步失敗）、
       # 刪 dist 裡沒產頁的物件照片、本站絕對網址少尾斜線的 WARN。
+      # 2026-10-04 起：下架轉址另讀 src/data/withdrawn-properties.json 帳本（不存在就只看 md）；
+      # Noto Sans TC 的 @font-face 從每頁內嵌抽成 dist/_astro/fonts/noto-tc-<hash>.css（失敗只 WARN）。
       - name: Postbuild (_headers rename + pagefind copy + 尾斜線)
         run: pnpm exec node scripts/postbuild-headers.mjs
 

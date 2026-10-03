@@ -9,6 +9,8 @@ import { getSortedPosts } from "@/utils/getSortedPosts";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 import { isTaichung } from "@/utils/isTaichung";
 import { cleanPropertyTitle } from "@/utils/cleanPropertyTitle";
+import { areaIncludesParking, bodyPropertyType } from "@/utils/parkingCaliber";
+import { COVER_CARD_SIZES, coverSrcOf, coverSrcset, coverThumb } from "@/utils/coverThumb";
 import config from "@/config";
 import { YT_CHANNEL_URL, YT_HANDLE } from "@/astro-paper.config";
 import { Image } from "astro:assets";
@@ -863,10 +865,12 @@ const bigKanBanAccounts = [
                     <div class="bg-muted flex aspect-[4/3] items-center justify-center">
                       {p.data.coverImage ? (
                         <img
-                          src={
-                            typeof p.data.coverImage === "string"
-                              ? p.data.coverImage
-                              : p.data.coverImage.src
+                          src={coverThumb(coverSrcOf(p.data.coverImage) ?? "", 800)}
+                          srcset={coverSrcset(coverSrcOf(p.data.coverImage) ?? "")}
+                          sizes={
+                            coverSrcset(coverSrcOf(p.data.coverImage) ?? "")
+                              ? COVER_CARD_SIZES
+                              : undefined
                           }
                           alt=""
                           width="800"
@@ -889,13 +893,21 @@ const bigKanBanAccounts = [
                         {p.data.district}
                       </p>
                       <p class="text-accent mt-2 text-2xl font-extrabold">
+                        {/* ⚠️ 模板字串插值裡不寫除號（Astro 編譯器會誤判成正規式），改乘 0.0001 */}
                         {p.data.totalPrice >= 10000
-                          ? `${(p.data.totalPrice / 10000).toFixed(2)} 億`
+                          ? `${(p.data.totalPrice * 0.0001).toFixed(2)} 億`
                           : `${p.data.totalPrice.toLocaleString()} 萬`}
                       </p>
                       {p.data.pricePerPing && (
                         <p class="text-muted-foreground mt-0.5 text-sm">
                           單價 {p.data.pricePerPing} 萬/坪
+                          {/* 含不含車位：跟物件頁、列表卡同一套判斷（src/utils/parkingCaliber.ts，稽核 X002） */}
+                          {areaIncludesParking(
+                            p.data.parking,
+                            bodyPropertyType(p.body) ?? p.data.title
+                          )
+                            ? "（含車位）"
+                            : ""}
                         </p>
                       )}
                     </div>

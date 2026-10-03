@@ -1,7 +1,8 @@
 ---
-title: 謄本怎麼看、怎麼申請?標示部、所有權部、他項權利部一次拆
+title: 謄本怎麼看、怎麼申請？標示部、所有權部、他項權利部一次拆
 author: 陳景泰
 pubDatetime: 2026-04-04 10:00:00+08:00
+modDatetime: 2026-08-28T11:50:34+08:00
 slug: term-15-transcript
 featured: false
 draft: false

@@ -49,8 +49,8 @@ const PREDICTION_RE = new RegExp(PREDICTION_WORDS.join("|"));
 // ⛔ 不用 lookbehind（JS／Python 方言才不會跑出不同結果）；不准放裸「規劃中」、裸 G\d站（綠線 G3-G17
 //    已通車）、裸「區段徵收」、裸「未來性」、裸「預計」。「巨蛋」只擋台中那座（高雄巨蛋已啟用）。
 export const UNBUILT_FIXED_WORDS = [
-  "藍線", "茄苳腳", "輕軌", "橘線", "紫線", "太子(?:商場|置地)", "機捷(?!特區|專區|重劃區)",
-  "綠線延伸", "規劃站點", "規劃站體", "(?:台中|臺中|北屯|雙|小)巨蛋",
+  "藍線", "茄苳腳", "輕軌", "橘線", "紫線", "太子(?:商場|置地)", "機捷(?!特區|專區|重劃區|\\s*[/／]\\s*單元|一帶)",
+  "綠線延伸", "規劃站點", "規劃站體", "(?:台中|臺中|北屯|雙|小|大)巨蛋", "大平霧",
   "洲際[^，。；！？\\n]{0,8}巨蛋", "成形在即", "成形可期", "(?:環評|審議)中",
   // 2026-10-03 審查補：興建中商場（1187694「高鐵娛樂購物城已開挖」）、開發中園區宣傳句（0240903）
   "已開挖", "高鐵娛樂(?:購物)?城", "娛樂購物城", "政府主導開發",
@@ -68,10 +68,11 @@ const UB_NC = "[^，。；！？、\\n]"; // 不跨子句
 export const UNBUILT_SOURCE =
   UNBUILT_FIXED_WORDS.join("|") +
   "|[Bb]\\s?\\d{1,2}\\s?站" +
+  "|(?:^|[^A-Za-z])BC\\s?\\d{1,2}(?![0-9])" + // 藍線站碼「BC11」（不帶「站」也算；ABC12 不算）
   "|未來\\S{0,3}?(?:" + UNBUILT_FUTURE_NOUNS.join("|") + ")" +
   "|(?:" + UNBUILT_LEAD_WORDS.join("|") + ")" + UB_NC + "{0,8}?(?:" + UNBUILT_LEAD_NOUNS.join("|") + ")" +
   "|(?:" + UNBUILT_SUBJ_NOUNS.join("|") + ")" + UB_NC + "{0,6}?(?:" + UNBUILT_TRAIL_WORDS.join("|") + ")" +
-  "|興建中|規劃中(?![島西式])" +
+  "|興建中|規劃中(?![島西式]|的?(?:大型)?(?:修繕|整修|維修|裝修))" +
   "|未來捷運\\s*[A-Z]?\\d{0,2}" +
   "|捷運" + UB_NC + "{0,8}(?:規劃|延伸|預計|即將|未來|尚未通車)" +
   "|預計\\s*(?:20\\d\\d\\s*年)?" + UB_NC + "{0,6}(?:落成|完工|開幕|營運|通車)" +
@@ -106,6 +107,31 @@ const UNBUILT_TITLE_RE = new RegExp(
  */
 export const UNBUILT_TITLE_PLACE_SOURCE = "(?:大里區?)?夏田(?:產業)?園區(?:範圍內?|內|旁)?";
 const UNBUILT_TITLE_PLACE_RE = new RegExp(UNBUILT_TITLE_PLACE_SOURCE, "g");
+
+/**
+ * 區段徵收／高鐵門戶特區當標題賣點（2026-10-04 景泰裁決「區段徵收只當法定揭露、不當賣點」）：
+ * 標題裡含這些字的「｜段」整段丟（0240914「南屯｜高鐵門戶特區｜區段徵收｜小塊好置產農地」→「南屯｜小塊好置產農地」）。
+ * 只砍標題；description／body 的「坐落…區段徵收計畫範圍，進度以主管機關公告為準」是揭露，要留。
+ * text_sanitize.py TITLE_ZONE_SOURCE、scripts/audit-properties.mjs TITLE_ZONE_SOURCE 三處同一份。
+ */
+export const TITLE_ZONE_SOURCE = "高鐵(?:台中|臺中)?(?:車站)?門戶特區|區段徵收";
+const TITLE_ZONE_RE = new RegExp(TITLE_ZONE_SOURCE);
+
+/**
+ * 地號（2026-10-04；0146678「埔里鎮 中峰段119地號」）：地號跟完整門牌一樣能定位到那塊地，本戶不公開。
+ * 「XX段N地號」「XX段N、M地號」→ 只留「XX段」；沒帶段名的「N地號」→ 拿掉（「共7筆地號」「三筆地號」不動）。
+ * text_sanitize.py LAND_NO_*、scripts/audit-properties.mjs LAND_NO_* 三處逐字一致；⛔ 不用 lookbehind。
+ */
+const LAND_NO_DIGITS = "[0-9０-９]+(?:\\s*[-－之、,，及與和~～]\\s*[0-9０-９]+)*";
+export const LAND_NO_SECTION_SOURCE =
+  "([一-鿿]{1,8}?段)\\s*(?:第\\s*)?" + LAND_NO_DIGITS + "\\s*(?:等\\s*[0-9０-９一二三四五六七八九十]*\\s*筆\\s*)?地號";
+export const LAND_NO_BARE_SOURCE = "(^|[^0-9０-９])" + LAND_NO_DIGITS + "\\s*地號";
+/** 地號砍掉：先砍「XX段N地號」只留段名，再砍沒段名的「N地號」 */
+export function stripLandNumber(s: string): string {
+  return (s || "")
+    .replace(new RegExp(LAND_NO_SECTION_SOURCE, "g"), "$1")
+    .replace(new RegExp(LAND_NO_BARE_SOURCE, "g"), "$1");
+}
 
 /**
  * 非綠線行政區的捷運宣稱（2026-10-04；0239000 大肚「大肚太平路捷運生活圈」）。
@@ -318,6 +344,7 @@ function tidySeparators(s: string): string {
 export function cleanPropertyTitle(raw: string, fallback?: string, district?: string): string {
   let s = stripEmoji(raw || "").replace(INTERNAL_PREFIX_RE, "");
   s = s.replace(INTERNAL_WORDS_RE, "");
+  s = stripLandNumber(s); // 2026-10-04：地號只留段名
   // 非綠線行政區的捷運宣稱（2026-10-04）：district 有給就用行政區判斷，沒給就看句段裡的行政區名
   s = stripOfflineMrtClaims(s, district);
   for (const re of TITLE_PHRASES) s = s.replace(re, "");
@@ -326,10 +353,14 @@ export function cleanPropertyTitle(raw: string, fallback?: string, district?: st
   s = s.replace(new RegExp(PREDICTION_RE.source, "g"), "");
   // 空掉的段落（例如「｜社區｜」清完剩「｜｜」）
   // 片語吃不到的未完工建設／假第一人稱：整個「｜段」丟（例「…｜輕鬆卡位蛋黃區」）
+  // 2026-10-04：含「區段徵收／高鐵門戶特區」的段也整段丟（只在標題；景泰裁決區段徵收不當賣點）
   s = s
     .split(/[｜|│／]/)
     .map(seg => seg.replace(/^[\s、,，\-—–*·•!！]+|[\s、,，\-—–*·•!！]+$/g, ""))
-    .filter(seg => seg.length > 0 && !isUnbuilt(seg) && !FAKE_FIRST_PERSON_RE.test(seg))
+    .filter(
+      seg =>
+        seg.length > 0 && !isUnbuilt(seg) && !FAKE_FIRST_PERSON_RE.test(seg) && !TITLE_ZONE_RE.test(seg)
+    )
     .join("｜");
   s = tidySeparators(s);
   if (s.replace(/\s/g, "").length < 4) {
@@ -389,6 +420,7 @@ export function sanitizeCopy(text: string, district?: string): string {
           .replace(LANE_NUMBER_RE, "").replace(LANE_PAREN_RE, "").replace(LANE_AFTER_ROAD_RE, "")
           .replace(NEIGHBOR_NUMBER_RE, "$1")
       )
+      .map(sen => stripLandNumber(sen)) // 2026-10-04：地號只留段名
       .join("");
     const line = kept.replace(/\s{2,}/g, " ").replace(/^[\s，、,]+/, "").trim();
     if (line) out.push(line);
@@ -414,11 +446,15 @@ export const UNBUILT_MUST_HIT = [
   "台中捷運綠線延伸線 G3 站（規劃中）", "散步即達漢神、洲際球場與巨蛋", "交通：機捷 G3 站 + 74 號快速道路",
   "預計2025年第一季交屋", "高鐵娛樂購物城已開挖", "近 13 期高鐵娛樂城", "2023年5月已通過二階環評",
   "開發進程明確推進", "位於夏田產業園區區段徵收範圍內，政府主導開發",
+  // 2026-10-04 A1 批：BC 站碼不帶「站」、台中大巨蛋、大平霧線、置產卡位
+  "鄰近捷運 BC11 站", "沙鹿BC11周邊", "| 臺中大巨蛋 | 預計", "大平霧捷運沿線", "南屯農地置產卡位",
 ];
 export const UNBUILT_MUST_NOT = [
   "開放式廚房規劃中島", "捷運綠線文心中清站", "近74快速道路捷運G7站", "市政府捷運站旁", "近楠梓高雄巨蛋商圈",
   "區段徵收與重劃開發程序進行中，進度以主管機關公告為準", "緊鄰74號快速道路", "很多人是被「機捷特區」這 4 個字勾過來的",
   "預計2030年第一季交屋", "只看七期、北屯機捷重劃區的買家", "位於大里夏田產業園區範圍，屬區段徵收範圍內",
+  // 2026-10-04 A1 批：高雄巨蛋（0397205）、英數編號裡的 BC
+  "國道1號，往左營、高鐵、巨蛋，往北往橋頭科學園區都便", "ABC12 號倉庫", "北屯機捷/單元十二本月預售揭露", "有沒有進行中或規劃中的大型修繕",
 ];
 export function unbuiltSelfTest(year = 2026): string[] {
   const fails: string[] = [];
@@ -439,6 +475,10 @@ export function unbuiltSelfTest(year = 2026): string[] {
     "夏田產業園區｜40米環河路首排｜近74出口": "40米環河路首排｜近74出口",
     "夏田產業園區內｜臨路大面寬｜都計節稅農地": "臨路大面寬｜都計節稅農地",
     "大里夏田產業園區旁農地": "FALLBACK",
+    // 2026-10-04 景泰裁決：區段徵收／高鐵門戶特區不當標題賣點（整段丟）；地號只留段名
+    "南屯｜高鐵門戶特區｜區段徵收｜小塊好置產農地": "南屯｜小塊好置產農地",
+    "大里三期區段徵收｜正10米方正農地｜節稅": "正10米方正農地｜節稅",
+    "埔里中峰段119地號｜臨路甲建": "埔里中峰段｜臨路甲建",
   };
   for (const [t, want] of Object.entries(titles)) {
     const got = cleanPropertyTitle(t, "FALLBACK");
@@ -455,6 +495,13 @@ export function unbuiltSelfTest(year = 2026): string[] {
     "邊間三面採光，我自己也住三樓。方正格局": "方正格局", // JS 端假第一人稱整句刪（片語改寫只在源頭 text_sanitize.py）
     "預計2025年第一季交屋公設比：33%": "公設比：33%",
     "開放式廚房規劃中島，捷運綠線文心中清站旁": "開放式廚房規劃中島，捷運綠線文心中清站旁",
+    // 2026-10-04 地號
+    "📍埔里鎮 中峰段119地號": "埔里鎮 中峰段",
+    "南興段717、718地號，臨路7米": "南興段，臨路7米",
+    "🏡 241地號已有合法農舍": "已有合法農舍",
+    "道路持分（共7筆地號）4.76坪": "道路持分（共7筆地號）4.76坪",
+    "先驅段三筆地號合併": "先驅段三筆地號合併",
+    "🌿坐落高鐵台中車站門戶特區區段徵收計畫範圍，進度以主管機關公告為準": "坐落高鐵台中車站門戶特區區段徵收計畫範圍，進度以主管機關公告為準",
   };
   for (const [t, want] of Object.entries(copies)) {
     const got = sanitizeCopy(t);

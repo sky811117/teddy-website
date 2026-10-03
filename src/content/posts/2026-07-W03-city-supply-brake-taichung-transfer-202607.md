@@ -2,6 +2,7 @@
 title: 供給踩剎車：建照年減3成，台中6月為何沒跟上六都反彈
 author: 陳景泰
 pubDatetime: 2026-07-22T09:00:00+08:00
+modDatetime: 2026-09-06T04:08:21+08:00
 slug: 2026-07-W03-city-supply-brake-taichung-transfer-202607
 ogImage: /og/2026-07-W03-city-supply-brake-taichung-transfer-202607.jpg
 featured: false

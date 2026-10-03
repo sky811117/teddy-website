@@ -2,6 +2,7 @@
 title: 台中高鐵特區去化率79.3%：千戶大案收尾、新案3週6筆，烏日還有771萬總價帶
 author: 陳景泰
 pubDatetime: 2026-07-27T09:00:00+08:00
+modDatetime: 2026-09-06T04:08:21+08:00
 slug: 2026-07-W03-district_presale-wuri-taichung-hsr-district-presale-2026-
 ogImage: /og/2026-07-W03-district_presale-wuri-taichung-hsr-district-presale-2026-.jpg
 featured: false

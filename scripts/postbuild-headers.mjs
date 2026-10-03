@@ -15,16 +15,25 @@
  * 6. （2026-10-03）下架／售出物件 301 到同區列表頁，接在 dist/_redirects 檔尾
  * 7. （2026-10-03）刪掉 dist/properties 裡沒產頁的物件資料夾照片（只動 dist，不動 public/）
  * 8. （2026-10-03）掃 dist HTML 裡「本站絕對網址少尾斜線」的地方，只印 WARN
+ * 9. （2026-10-04，F131）Noto Sans TC 的 @font-face（約 100 個 unicode-range 切片、每頁 ~100KB）
+ *    從每頁內嵌 <style> 抽成 dist/_astro/fonts/noto-tc-<hash>.css，改 <link> 非同步載入＋<noscript>
+ * 6 的補充（2026-10-04，X020）：下架轉址改讀 src/data/withdrawn-properties.json 持久帳本
+ *    ＋現有 md 的 status；帳本不存在或壞掉就退回只看 md。
+ *    帳本由 properties-sync 每晚維護並 commit（~/.claude/skills/properties-sync/scripts/mark_stale.py，
+ *    格式定義在同資料夾 site_data.py ②：{"<物件id>": {"district": "<行政區>", "withdrawnAt": "<ISO>"}}，
+ *    只增不刪）。這支只讀不寫；也接受舊的簡寫 {"<物件id>": "<行政區>"}。
  *
- * 除了 _redirects 超過 2,000 條規則會刻意讓 build 失敗之外，5–8 任何一步出錯
+ * 除了 _redirects 超過 2,000 條規則會刻意讓 build 失敗之外，5–9 任何一步出錯
  * 都只印 WARN，不擋部署。
  *
  * 測試：DIST_DIR=<假 dist 目錄> node scripts/postbuild-headers.mjs
  *   （設了 DIST_DIR 時不會把 pagefind 複製回 repo 的 public/）
+ *   WITHDRAWN_LEDGER=<假帳本路徑> 可以換帳本位置（測試用）
  *
  * Windows + Linux 都能跑。
  */
-import { rename, cp, copyFile, readdir, readFile, writeFile, rm, rmdir, stat } from "node:fs/promises";
+import { rename, cp, copyFile, mkdir, readdir, readFile, writeFile, rm, rmdir, stat } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -35,6 +44,9 @@ const DIST = process.env.DIST_DIR
 const PUBLIC = new URL("../public/", import.meta.url);
 const PROPERTIES_SRC = new URL("../src/content/properties/", import.meta.url);
 const IS_TAICHUNG_TS = new URL("../src/utils/isTaichung.ts", import.meta.url);
+const WITHDRAWN_LEDGER = process.env.WITHDRAWN_LEDGER
+  ? pathToFileURL(path.resolve(process.env.WITHDRAWN_LEDGER))
+  : new URL("../src/data/withdrawn-properties.json", import.meta.url);
 
 const warn = msg => console.warn(`[postbuild] WARN ${msg}`);
 
@@ -177,10 +189,64 @@ function readDistrictSlugs() {
 }
 
 /**
- * 掃 src/content/properties/*.md：status 是 withdrawn 或 sold 的物件，
- * /properties/{id}/ 與 /properties/{id} 都 301 到同區列表頁（該頁這次有產出才導，否則導 /properties/）。
+ * 掃 src/content/properties/*.md 的 status／district。
+ * @returns {Map<string, {status: string, district: string|undefined}> | null} 讀不到目錄回 null
+ */
+function scanPropertyMds() {
+  let names;
+  try {
+    names = readdirSync(PROPERTIES_SRC).filter(n => /\.mdx?$/.test(n) && !n.startsWith("_"));
+  } catch (err) {
+    warn(`讀不到 src/content/properties（${err.message}）`);
+    return null;
+  }
+  const out = new Map();
+  for (const name of names.sort()) {
+    const id = name.replace(/\.mdx?$/, "");
+    let fm = "";
+    try {
+      fm = readFileSync(new URL(name, PROPERTIES_SRC), "utf-8").match(/^---\r?\n([\s\S]*?)\r?\n---/)?.[1] ?? "";
+    } catch {
+      continue;
+    }
+    const status = fm.match(/^status:\s*["']?(\w+)["']?/m)?.[1] ?? "active";
+    const district = fm.match(/^district:\s*["']?([^"'\r\n]+)["']?/m)?.[1]?.trim() || undefined;
+    out.set(id, { status, district });
+  }
+  return out;
+}
+
+const isWithdrawnStatus = status => status === "withdrawn" || status === "sold";
+
+/**
+ * 讀下架帳本 src/data/withdrawn-properties.json，回傳 Map<物件id, 行政區|undefined>。
+ * 格式（properties-sync site_data.py ②）：{"<id>": {"district": "北屯區", "withdrawnAt": "…"}}；
+ * 也接受簡寫 {"<id>": "北屯區"}。
+ * 不存在、格式壞掉 → 回 null（呼叫端退回只看 md 的舊做法）。這支只讀，絕不回寫帳本。
+ */
+function readWithdrawnLedger() {
+  if (!existsSync(WITHDRAWN_LEDGER)) return null;
+  try {
+    const data = JSON.parse(readFileSync(WITHDRAWN_LEDGER, "utf-8"));
+    if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("不是 {id: …} 物件");
+    const map = new Map();
+    for (const [id, v] of Object.entries(data)) {
+      const d = typeof v === "string" ? v : v && typeof v === "object" ? v.district : undefined;
+      map.set(id, typeof d === "string" && d.trim() ? d.trim() : undefined);
+    }
+    return map;
+  } catch (err) {
+    warn(`下架帳本讀取失敗（${err.message}），這次退回只看 md`);
+    return null;
+  }
+}
+
+/**
+ * 下架／售出物件：/properties/{id}/ 與 /properties/{id} 都 301 到同區列表頁（該頁這次有產出才導，否則導 /properties/）。
+ * 名單 = 帳本 src/data/withdrawn-properties.json ∪ md 裡 status 是 withdrawn／sold 的物件；
+ * md 現在是 active（重新上架）的、或這次 build 有產出頁面的，一律不轉。帳本不存在 → 只看 md（舊做法）。
  * 這是使用者體驗與廣告即時性的修補，不是排名修補（Google 常把大量導到分類頁判成 soft 404）。
- * 已知限制：md 被整批刪掉的物件不會有轉址（沒有持久帳本，見 X020 的選配做法）。
+ * ⚠️ 帳本只增不刪，每筆佔 2 條規則：_redirects 超過 1,800 條會 WARN、超過 2,000 條擋部署（見下方）。
  */
 async function appendWithdrawnRedirects() {
   const redirectsUrl = new URL("_redirects", DIST);
@@ -193,35 +259,40 @@ async function appendWithdrawnRedirects() {
     base = base.replace(/\n+$/, "\n");
   }
 
-  let names = [];
-  try {
-    names = readdirSync(PROPERTIES_SRC).filter(n => /\.mdx?$/.test(n) && !n.startsWith("_"));
-  } catch (err) {
-    warn(`讀不到 src/content/properties（${err.message}），跳過下架物件轉址`);
+  const mds = scanPropertyMds();
+  const ledger = readWithdrawnLedger();
+  if (!mds && !ledger) {
+    warn("讀不到物件 md 也沒有下架帳本，跳過下架物件轉址");
     return;
   }
+  // id → 區名（md 還在就以 md 為準；帳本補上 md 已經被刪掉的物件）
+  const candidates = new Map();
+  let fromLedgerOnly = 0;
+  if (ledger) {
+    for (const [id, district] of ledger) {
+      const md = mds?.get(id);
+      if (md && !isWithdrawnStatus(md.status)) continue; // 重新上架（或其他非下架狀態）不轉
+      if (!md) fromLedgerOnly++;
+      candidates.set(id, md?.district ?? district);
+    }
+  }
+  for (const [id, { status, district }] of mds ?? []) {
+    if (isWithdrawnStatus(status)) candidates.set(id, district);
+  }
+
   const slugs = readDistrictSlugs();
   const lines = [];
   let toDistrict = 0;
   let toAll = 0;
   let skippedLive = 0;
-  for (const name of names.sort()) {
-    const id = name.replace(/\.mdx?$/, "");
+  for (const id of [...candidates.keys()].sort()) {
     if (!/^[A-Za-z0-9_-]+$/.test(id)) continue; // 有空白或怪字元的 id 寫進 _redirects 會壞格式
-    let fm = "";
-    try {
-      fm = readFileSync(new URL(name, PROPERTIES_SRC), "utf-8").match(/^---\r?\n([\s\S]*?)\r?\n---/)?.[1] ?? "";
-    } catch {
-      continue;
-    }
-    const status = fm.match(/^status:\s*["']?(\w+)["']?/m)?.[1] ?? "active";
-    if (status !== "withdrawn" && status !== "sold") continue;
     // 保險：這次 build 有產出這個物件頁就不轉（轉址會蓋過真的頁面）
     if (existsSync(new URL(`properties/${id}/index.html`, DIST))) {
       skippedLive++;
       continue;
     }
-    const district = fm.match(/^district:\s*["']?([^"'\r\n]+)["']?/m)?.[1]?.trim();
+    const district = candidates.get(id);
     const slug = district ? slugs.get(district) : undefined;
     let target = "/properties/";
     if (slug && existsSync(new URL(`properties/${slug}/index.html`, DIST))) {
@@ -251,6 +322,7 @@ async function appendWithdrawnRedirects() {
   console.log(
     `[postbuild] 下架物件轉址：${lines.length / 2} 筆（導同區 ${toDistrict}、導總列表 ${toAll}` +
       (skippedLive ? `、頁面仍存在略過 ${skippedLive}` : "") +
+      (ledger ? `；帳本 ${ledger.size} 筆，其中 md 已不在的 ${fromLedgerOnly} 筆` : "；沒有帳本，只看 md") +
       `），_redirects 共 ${ruleCount} 條規則`
   );
 }
@@ -380,6 +452,72 @@ async function checkAbsoluteSiteUrls() {
   if (bad.size > SHOW) console.warn(`  …其餘 ${bad.size - SHOW} 個略`);
 }
 
+// ─── 9. 字型宣告抽成外部 CSS（F131）──────────────────────────────────────
+/**
+ * Astro <Font cssVariable="--font-noto-sans-tc"> 會把 Noto Sans TC 700 的約 100 個
+ * unicode-range 切片 @font-face 內嵌進「每一頁」的 <style>（每頁約 100KB，1,000 多頁重複下載）。
+ * 這步把其中「src:url(...) 的 @font-face」抽成一支 dist/_astro/fonts/noto-tc-<內容雜湊>.css
+ * （/_astro/* 在 _headers 是一年 immutable 快取），頁面改成：
+ *   <link rel="stylesheet" href="…css" media="print" onload="this.media='all'"><noscript>同一支 link</noscript>
+ * 不擋渲染；切片本來就是 font-display:swap，載到之前先用 fallback 字。
+ *
+ * ⚠️ 只搬「有 src:url(」的 @font-face。同一段 <style> 裡的 `:root{--font-noto-sans-tc:…}`（字型變數）
+ *    與 `fallback: Arial` 的 local() 尺寸校正宣告必須留在頁內：變數沒定義的話，標題在外部 CSS
+ *    載到之前會整條 font-family 失效、掉回瀏覽器預設字。
+ * 判斷 <style> 用內容開頭 `@font-face{font-family:"Noto Sans TC-`（Astro 字型元件的輸出格式）；
+ * 升級 Astro 後格式變了就找不到 → 印一行「沒找到」，頁面維持內嵌，不會壞。
+ */
+const FONT_STYLE_RE = /<style>(@font-face\{font-family:"Noto Sans TC-[\s\S]*?)<\/style>/;
+const FONT_FACE_RE = /@font-face\{[^}]*\}/g;
+
+async function externalizeFontCss() {
+  const fontsDir = new URL("_astro/fonts/", DIST);
+  const written = new Map(); // css 內容 → 網址
+  let pages = 0;
+  let savedBytes = 0;
+  let files = 0;
+  for await (const f of walkHtml(DIST)) {
+    files++;
+    const html = await readFile(f, "utf-8");
+    const m = html.match(FONT_STYLE_RE);
+    if (!m) continue;
+    const body = m[1];
+    const faces = body.match(FONT_FACE_RE) ?? [];
+    const remote = faces.filter(r => r.includes("url("));
+    if (remote.length === 0) continue;
+    // 留在頁內的：local() fallback 宣告（去重）＋ :root 變數等其他規則，順序照舊
+    const keepFaces = [...new Set(faces.filter(r => !r.includes("url(")))];
+    const rest = body.replace(FONT_FACE_RE, "").trim();
+    const css = remote.join("");
+    let href = written.get(css);
+    if (!href) {
+      const hash = createHash("sha256").update(css).digest("hex").slice(0, 12);
+      const name = `noto-tc-${hash}.css`;
+      await mkdir(fontsDir, { recursive: true });
+      await writeFile(new URL(name, fontsDir), css, "utf-8");
+      href = `/_astro/fonts/${name}`;
+      written.set(css, href);
+    }
+    const inline = keepFaces.join("") + rest;
+    const replacement =
+      `<link rel="stylesheet" href="${href}" media="print" onload="this.media='all'">` +
+      `<noscript><link rel="stylesheet" href="${href}"></noscript>` +
+      (inline ? `<style>${inline}</style>` : "");
+    const out = html.replace(m[0], () => replacement);
+    savedBytes += Buffer.byteLength(html) - Buffer.byteLength(out);
+    await writeFile(f, out, "utf-8");
+    pages++;
+  }
+  if (pages === 0) {
+    console.log(`[postbuild] 字型 CSS：掃 ${files} 個 HTML，沒找到內嵌的 Noto Sans TC @font-face（維持原樣）`);
+    return;
+  }
+  console.log(
+    `[postbuild] 字型 CSS：${pages}/${files} 頁的 @font-face 改成外部檔 ${[...written.values()].join(", ")}` +
+      `，HTML 合計少 ${(savedBytes / 1024 / 1024).toFixed(1)} MB`
+  );
+}
+
 /** 新加的步驟一律包起來：出錯只警告，不讓部署停住 */
 async function safeStep(name, fn) {
   try {
@@ -396,6 +534,7 @@ async function main() {
   // 超過 2,000 條規則會在函式裡 process.exit(1)（刻意擋部署），其餘錯誤只警告
   await safeStep("下架物件轉址", appendWithdrawnRedirects);
   await safeStep("孤兒照片", pruneOrphanPropertyPhotos);
+  await safeStep("字型 CSS 外部化", externalizeFontCss);
   await normalizeInternalLinks();
   await safeStep("尾斜線檢查", checkAbsoluteSiteUrls);
   await copyPagefind();

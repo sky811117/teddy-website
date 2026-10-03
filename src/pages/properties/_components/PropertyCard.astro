@@ -9,9 +9,13 @@
  *     分區頁沒有篩選 script，這些屬性留著無害，兩頁 HTML 才一致。
  *   - 頁面要先放一次 <PropertyCardIcons /> 才有 #icon-map-pin 可 <use>。
  *   - 前 3 張卡 eager 載圖、第 1 張 fetchpriority=high（LCP），由 idx 決定。
+ * 2026-10-04（F027）：封面改用 build 期產的 800／400 webp 縮圖（scripts/generate-cover-thumbs.mjs），
+ *   縮圖不在就退回原圖（src/utils/coverThumb.ts）。sizes 用 COVER_CARD_SIZES，
+ *   列表頁 Layout 的 LCP preload 也用同一組 src／srcset／sizes。
  */
 import { cleanStreetArea } from "@/utils/cleanStreetArea";
 import { areaIncludesParking, bodyPropertyType } from "@/utils/parkingCaliber";
+import { COVER_CARD_SIZES, coverSrcOf, coverSrcset, coverThumb } from "@/utils/coverThumb";
 import { stripAddressDetail } from "@/utils/propertyPhotoAlt";
 import { formatPrice, type PropertyCardMeta } from "./propertyMeta";
 
@@ -32,6 +36,10 @@ const includesParking = areaIncludesParking(
   property.data.parking,
   bodyPropertyType(property.body) ?? property.data.title
 );
+// 封面：縮圖優先、缺檔退回原圖
+const coverOriginal = coverSrcOf(property.data.coverImage);
+const coverSrc = coverOriginal ? coverThumb(coverOriginal, 800) : undefined;
+const coverSet = coverOriginal ? coverSrcset(coverOriginal) : undefined;
 ---
 
 <li
@@ -56,14 +64,12 @@ const includesParking = areaIncludesParking(
     data-property-district={district}
   >
     {
-      property.data.coverImage ? (
+      coverSrc ? (
         <div class="bg-muted aspect-[4/3] w-full overflow-hidden">
           <img
-            src={
-              typeof property.data.coverImage === "string"
-                ? property.data.coverImage
-                : property.data.coverImage.src
-            }
+            src={coverSrc}
+            srcset={coverSet}
+            sizes={coverSet ? COVER_CARD_SIZES : undefined}
             alt=""
             width="800"
             height="600"

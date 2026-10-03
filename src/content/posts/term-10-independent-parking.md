@@ -2,6 +2,7 @@
 title: 獨立產權車位是什麼？跟共有持分差在哪、能不能單獨買賣貸款
 author: 陳景泰
 pubDatetime: 2026-03-19 20:00:00+08:00
+modDatetime: 2026-08-28T11:50:34+08:00
 slug: term-10-independent-parking
 featured: false
 draft: false

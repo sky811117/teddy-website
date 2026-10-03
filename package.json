@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "node scripts/lint-seo.mjs && node scripts/audit-properties.mjs && node scripts/generate-og-thumbs.mjs && astro check && astro build && pagefind --site dist && node scripts/postbuild-headers.mjs",
+    "build": "node scripts/lint-seo.mjs && node scripts/audit-properties.mjs && node scripts/generate-og-thumbs.mjs && node scripts/generate-cover-thumbs.mjs && astro check && astro build && pagefind --site dist && node scripts/postbuild-minify.mjs && node scripts/postbuild-headers.mjs",
     "preview": "astro preview",
     "sync": "astro sync",
     "astro": "astro",
@@ -41,6 +41,7 @@
     "@tailwindcss/typography": "^0.5.19",
     "@types/lodash.kebabcase": "^4.1.9",
     "@typescript-eslint/parser": "^8.59.3",
+    "esbuild": "0.27.7",
     "eslint": "^10.4.0",
     "eslint-plugin-astro": "^1.7.0",
     "pagefind": "^1.5.2",

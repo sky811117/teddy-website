@@ -2,6 +2,7 @@
 title: 不動產說明書 30 個欄位怎麼看 — 漏勾一欄，賣方可能被判減價賠償
 author: 陳景泰
 pubDatetime: 2026-05-26 21:00:00+08:00
+modDatetime: 2026-08-27T19:11:54+08:00
 slug: policy-04-disclosure-document
 featured: false
 draft: false
@@ -310,7 +311,7 @@ timezone: Asia/Taipei
 
 📞 **陳景泰｜有巢氏房屋台中世界之心店**
 - LINE: `sky811117`
-- 電話: 0920-118-756
+- 電話：0920-118-756
 - IG: [@nov__817](https://instagram.com/nov__817)
 
 > 一品不動產有限公司｜經紀人 黃永隆 113彰縣字324 號｜營業員 陳景泰 114登字第488296號

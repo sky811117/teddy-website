@@ -20,6 +20,7 @@ import { areas } from "@/data/areas";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 import { TAICHUNG_DISTRICT_SLUGS, getDistrictSlug } from "@/utils/isTaichung";
 import IconLine from "@/assets/icons/socials/line.svg";
+import { COVER_CARD_SIZES, coverSrcOf, coverSrcset, coverThumb } from "@/utils/coverThumb";
 import PropertyCard from "../_components/PropertyCard.astro";
 import PropertyCardIcons from "../_components/PropertyCardIcons.astro";
 import {
@@ -79,6 +80,11 @@ const now = Date.now();
 const metas = sorted.map((p, idx) => buildCardMeta(p, idx, now));
 const showNewBadge = shouldShowNewBadge(metas);
 const total = metas.length;
+
+// 第一張卡的封面 = 首屏最大圖（LCP）。preload 的 src／srcset／sizes 要跟 PropertyCard 的 <img> 一致
+const lcpCover = coverSrcOf(metas[0]?.p.data.coverImage);
+const lcpImage = lcpCover ? coverThumb(lcpCover, 800) : undefined;
+const lcpImageSrcset = lcpCover ? coverSrcset(lcpCover) : undefined;
 
 // 價格帶（站上在售，build 當下）
 const prices = sorted.map(p => p.data.totalPrice).filter(n => Number.isFinite(n) && n > 0);
@@ -165,7 +171,12 @@ const breadcrumbSchema = {
   description={seoDescription}
   canonicalURL={canonicalURL}
   ogImage={area?.heroImage?.src ?? "/og/page-properties.jpg"}
+  ogImageWidth={area?.heroImage?.width}
+  ogImageHeight={area?.heroImage?.height}
   noindex={noindex}
+  lcpImage={lcpImage}
+  lcpImageSrcset={lcpImageSrcset}
+  lcpImageSizes={COVER_CARD_SIZES}
 >
   <Fragment slot="head">
     <script type="application/ld+json" is:inline set:html={safeJsonLd(itemListSchema)} />

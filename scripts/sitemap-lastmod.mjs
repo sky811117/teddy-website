@@ -16,6 +16,8 @@
  *   buildSectionLastmod / buildThinTagSlugs 共用。
  */
 import { readdirSync, readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import kebabcase from "lodash.kebabcase";
 import slugify from "slugify";
 
@@ -397,6 +399,66 @@ export function buildDistrictLastmod(opts) {
   for (const p of properties) {
     if (p.status === "active") bump(p.district, p.date);
     if (p.statusChangedAt) bump(p.district, p.statusChangedAt);
+  }
+  return map;
+}
+
+/**
+ * 靜態頁（about／contact／faq／services／tools…）的 lastmod（F091）：
+ * 用 git 查「這頁的原始檔最後一次 commit 的時間」。以前靜態頁一律沒有 lastmod。
+ *
+ * ⚠️ 只在完整 git 歷史下才準：CI 的 actions/checkout 預設 fetch-depth: 1（淺層 clone），
+ *    每個檔的「最後 commit」都會變成這次部署的 commit → 等於每次部署都假裝全部靜態頁有更新，
+ *    IndexNow 比對模式也會每次都推。所以：
+ *    - deploy.yml 的 Checkout 必須 fetch-depth: 0（2026-10-04 一起改了）
+ *    - 這裡偵測到淺層 clone（git rev-parse --is-shallow-repository = true）就整個不給 lastmod，
+ *      維持舊行為，絕不輸出假日期
+ *    - 不是 git repo、git 不在、查失敗 → 一樣不給
+ * 只算「頁面原始檔＋它直接讀的內容／資料檔」（下表），不算 Layout／共用元件：
+ * 模板小改不是「這頁內容有實質更新」，不該讓所有靜態頁 lastmod 一起跳。
+ *
+ * @param {string} siteUrl config.site.url
+ * @returns {Map<string, Date>} 完整網址（帶尾斜線，跟 sitemap item.url 同格式）→ 最後 commit 時間
+ */
+const STATIC_PAGE_SOURCES = {
+  "/about/": ["src/pages/about.astro", "src/content/pages/about.md"],
+  "/buy/": ["src/pages/buy.astro"],
+  "/sell/": ["src/pages/sell.astro"],
+  "/contact/": ["src/pages/contact.astro"],
+  "/faq/": ["src/pages/faq.astro"],
+  "/services/": ["src/pages/services.astro"],
+  "/media/": ["src/pages/media.astro"],
+  "/shorts/": ["src/pages/shorts.astro", "src/data/videos.ts", "src/data/videos.generated.json"],
+  "/privacy/": ["src/pages/privacy.astro"],
+  "/tools/": ["src/pages/tools.astro"],
+  "/tools/garbage-truck/": ["src/pages/tools/garbage-truck.astro"],
+  "/tools/school-district/": ["src/pages/tools/school-district.astro"],
+  "/tools/seller-net-proceeds/": ["src/pages/tools/seller-net-proceeds.astro"],
+  "/tools/undesirable-facilities/": ["src/pages/tools/undesirable-facilities.astro"],
+};
+
+export function buildStaticLastmod(siteUrl) {
+  const base = String(siteUrl || "").replace(/\/$/, "");
+  const map = new Map();
+  const repoRoot = fileURLToPath(new URL("../", import.meta.url));
+  const git = args =>
+    execFileSync("git", args, { cwd: repoRoot, encoding: "utf-8", timeout: 20000, stdio: ["ignore", "pipe", "ignore"] }).trim();
+  try {
+    if (git(["rev-parse", "--is-shallow-repository"]) === "true") {
+      console.warn("[sitemap-lastmod] 淺層 git clone（fetch-depth 不是 0）→ 靜態頁不給 lastmod，避免每次部署都變成今天");
+      return map;
+    }
+  } catch {
+    return map; // 不是 git repo／沒有 git
+  }
+  for (const [p, files] of Object.entries(STATIC_PAGE_SOURCES)) {
+    try {
+      const iso = git(["log", "-1", "--format=%cI", "--", ...files]);
+      const d = parseDate(iso);
+      if (d) map.set(`${base}${p}`, d);
+    } catch {
+      /* 單頁查不到就不給 */
+    }
   }
   return map;
 }

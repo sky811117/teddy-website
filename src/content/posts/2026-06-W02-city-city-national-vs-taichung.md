@@ -2,6 +2,7 @@
 title: 全國 vs 台中買賣移轉對比 — 為什麼台中還撐得住？
 author: 陳景泰
 pubDatetime: 2026-06-11T09:00:00+08:00
+modDatetime: 2026-09-06T04:08:21+08:00
 slug: 2026-06-W02-city-city-national-vs-taichung
 ogImage: /og/2026-06-W02-city-city-national-vs-taichung.jpg
 featured: false

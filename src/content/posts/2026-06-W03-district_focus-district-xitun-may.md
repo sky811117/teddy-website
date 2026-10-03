@@ -8,7 +8,7 @@ featured: false
 draft: false
 tags:
   - monthly-market
-  - 西屯
+  - 西屯區
   - 七期
   - 台中房市
 description: "西屯 5 月實價趨勢：大樓 42.92 萬/坪、華廈 24.92 萬、透天厝 41.24 萬。七期依然強勁、但西屯內部分化加劇。3 個情境告訴你西屯怎麼選。"

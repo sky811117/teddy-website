@@ -7,6 +7,7 @@ import config from "@/config";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 import {
   videos,
+  latestVideos,
   platformInfo,
   categoryInfo,
   categories,
@@ -35,14 +36,26 @@ sortedVideos.forEach(v => {
   categoryCount[v.category] = (categoryCount[v.category] ?? 0) + 1;
 });
 
-const hasVideos = sortedVideos.length > 0;
+// 最新物件短影音（scripts/sync-videos.mjs 自動同步）：只放最近 LATEST_LIMIT 支，
+// 越舊的物件越可能已成交，更早的請觀眾到 YouTube 頻道看。
+const LATEST_LIMIT = 24;
+const latestShown = latestVideos.slice(0, LATEST_LIMIT);
 
-// 「議價心法」「客戶見證」兩個分類目前 0 支影片：
+// 「影片主題」區塊的支數＝代表作＋最新物件短影音
+const topicCount: Record<VideoCategory, number> = { ...categoryCount };
+latestShown.forEach(v => {
+  topicCount[v.category] = (topicCount[v.category] ?? 0) + 1;
+});
+
+const hasVideos = sortedVideos.length > 0 || latestShown.length > 0;
+
+// 「議價心法」「客戶見證」「其他」目前 0 支影片：
 // 沒有真實素材（真實客戶授權 / 真實出價案例）前不在頁面上宣稱，
 // 有影片進來才自動顯示。分類定義本身在 src/data/videos.ts，這裡只控制顯示。
-const HIDE_WHEN_EMPTY: readonly string[] = ["議價心法", "客戶見證"];
+// 「AI 工作流」先保留：meta description 有寫（10/3 改過，30 天內不動），凍結期過了再決定要不要一起拿掉。
+const HIDE_WHEN_EMPTY: readonly string[] = ["議價心法", "客戶見證", "其他"];
 const shownCategories = categories.filter(
-  c => !(HIDE_WHEN_EMPTY.includes(c) && categoryCount[c] === 0)
+  c => !(HIDE_WHEN_EMPTY.includes(c) && topicCount[c] === 0)
 );
 
 const siteOrigin = new URL("/", Astro.site).href;
@@ -61,7 +74,7 @@ const collectionSchema = {
   // 本頁主體是影片清單（ItemList），頁面主題人物放 about
   mainEntity: {
     "@type": "ItemList",
-    itemListElement: sortedVideos.map((v, i) => ({
+    itemListElement: [...sortedVideos, ...latestShown].map((v, i) => ({
       "@type": "ListItem",
       position: i + 1,
       url: v.url,
@@ -123,7 +136,7 @@ function formatDate(d: Date): string {
 
   <Main
     pageTitle="景泰的房仲短影音"
-    pageDesc="YouTube / TikTok / Instagram 三平台的房仲短影音（物件片由合作攝影師拍攝），加上公司自媒體「房仲大看板 @bigkanban」精選 — 看影片比讀文章快。"
+    pageDesc="景泰在 YouTube、TikTok、Instagram 發的房仲短影音，物件片由合作攝影師拍攝；另收幾支公司自媒體「房仲大看板」的影片。先看影片，再決定要不要約看。"
   >
     {/* ====== 3 個平台大卡片 — 直接連主頁看 latest ====== */}
     <section class="mt-8">
@@ -131,7 +144,7 @@ function formatDate(d: Date): string {
         📺 跟著景泰看影片
       </h2>
       <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
-        三個平台、三種節奏。挑你習慣的平台訂閱、最新影片自動推到你眼前。
+        物件影片大多會同時發到這三個平台，挑你平常在用的那個追蹤就好。
       </p>
       <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {(["youtube", "tiktok", "instagram"] as const).map(p => {
@@ -153,11 +166,11 @@ function formatDate(d: Date): string {
               <p class="text-accent mt-1 text-sm font-medium">{info.handle}</p>
               <p class="text-muted-foreground mt-3 text-xs leading-relaxed">
                 {p === "youtube" &&
-                  "比較完整的看屋影片、政策解析 — 5-10 分鐘那種。適合認真挑房子的人。"}
+                  "物件影片會同步上 YouTube Shorts，這頁的「最新物件短影音」點了就能直接播。"}
                 {p === "tiktok" &&
-                  "30 秒看完一間房。一鏡到底、快剪、現場氛圍。台中房市快訊也在這。"}
+                  "物件影片跟 YouTube 大致同一批，習慣滑 TikTok 的人追這個。"}
                 {p === "instagram" &&
-                  "日常 + Reels。最新物件、看屋現場、房仲生活。DM 也接。"}
+                  "物件 Reels，加上每天的房市新聞貼文。有問題可以直接私訊。"}
               </p>
               <p class="text-accent mt-4 text-sm font-medium group-hover:underline">
                 → 看最新影片
@@ -171,15 +184,15 @@ function formatDate(d: Date): string {
     {/* ====== 影片分類介紹 — 即使沒影片資料也有 substance ====== */}
     <section class="mt-12">
       <h2 class="text-foreground border-accent border-b-2 pb-2 text-xl font-bold sm:text-2xl">
-        🎯 我會拍哪些主題
+        🎯 影片主題
       </h2>
       <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
-        房仲業務的影音內容、我盡量做到「客人想知道的、我才拍」— 不是純粹炫物件。
+        目前以台中物件開箱為主，有片的分類會標出支數。
       </p>
       <ul class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {shownCategories.map(c => {
           const info = categoryInfo[c];
-          const count = categoryCount[c];
+          const count = topicCount[c];
           return (
             <li class="border-border bg-card rounded-lg border p-5">
               <div class="flex items-start gap-3">
@@ -206,7 +219,7 @@ function formatDate(d: Date): string {
 
     {/* ====== 影片 grid — 有資料才顯示 ====== */}
     {
-      hasVideos ? (
+      sortedVideos.length > 0 ? (
         <section class="mt-12">
           <h2 class="text-foreground border-accent border-b-2 pb-2 text-xl font-bold sm:text-2xl">
             🎬 精選影片 ({sortedVideos.length} 支)
@@ -374,7 +387,7 @@ function formatDate(d: Date): string {
               <h3 class="text-foreground mt-3 text-lg font-bold">YouTube</h3>
               <p class="text-accent mt-1 text-sm font-medium">{platformInfo.youtube.handle}</p>
               <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
-                完整看屋影片、政策解析、社區介紹。5-10 分鐘帶你走進物件現場。
+                物件影片會同步上 YouTube Shorts，訂閱後新片會通知你。
               </p>
               <p class="text-accent mt-4 text-sm font-medium group-hover:underline">
                 → 前往 YouTube 頻道
@@ -390,7 +403,7 @@ function formatDate(d: Date): string {
               <h3 class="text-foreground mt-3 text-lg font-bold">TikTok</h3>
               <p class="text-accent mt-1 text-sm font-medium">@sky811117</p>
               <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
-                30 秒看完一間房。一鏡到底、快剪節奏、台中房市快訊。
+                物件影片跟 YouTube 大致同一批，習慣滑 TikTok 的人追這個。
               </p>
               <p class="text-accent mt-4 text-sm font-medium group-hover:underline">
                 → 前往 TikTok 主頁
@@ -406,13 +419,78 @@ function formatDate(d: Date): string {
               <h3 class="text-foreground mt-3 text-lg font-bold">Instagram Reels</h3>
               <p class="text-accent mt-1 text-sm font-medium">@nov__817</p>
               <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
-                日常 Reels、最新物件、看屋現場。DM 也接、有問題直接私訊。
+                物件 Reels，加上每天的房市新聞貼文。有問題可以直接私訊。
               </p>
               <p class="text-accent mt-4 text-sm font-medium group-hover:underline">
                 → 前往 Instagram 主頁
               </p>
             </a>
           </div>
+        </section>
+      )
+    }
+
+    {/* ====== 最新物件短影音 — scripts/sync-videos.mjs 自動同步（只收 YT 公開、沒標下架的台中物件片）====== */}
+    {
+      latestShown.length > 0 && (
+        <section class="mt-12" id="latest">
+          <h2 class="text-foreground border-accent border-b-2 pb-2 text-xl font-bold sm:text-2xl">
+            🆕 最新物件短影音 ({latestShown.length} 支)
+          </h2>
+          <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
+            點卡片直接在這頁播放。清單照 YouTube 上的公開影片整理，已設為不公開的不會出現；物件有可能剛成交，想確認還在不在賣，LINE 問最快。
+          </p>
+          <ul class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {latestShown.map(v => (
+              <li class="border-border bg-card group overflow-hidden rounded-lg border transition-shadow hover:shadow-lg">
+                <a
+                  href={v.url}
+                  target="_blank"
+                  rel="noopener"
+                  class="block no-underline"
+                  data-track="video"
+                  data-video-id={v.id}
+                  data-video-platform={v.platform}
+                  data-video-category={v.category}
+                  data-youtube-id={v.videoId}
+                  data-video-title={v.title}
+                >
+                  <div class="bg-muted relative aspect-[9/16] w-full overflow-hidden">
+                    <img
+                      src={getVideoCover(v) ?? ""}
+                      alt={v.title}
+                      width="270"
+                      height="480"
+                      class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <span class="absolute top-2 left-2 rounded bg-red-600 px-2 py-1 text-xs font-medium text-white">
+                      {platformInfo.youtube.icon} Shorts
+                    </span>
+                  </div>
+                  <div class="p-3">
+                    <p class="text-muted-foreground text-xs">
+                      上片 {formatDate(v.pubDate)}
+                    </p>
+                    <h3 class="text-foreground mt-1 line-clamp-3 text-sm font-bold">
+                      {v.title}
+                    </h3>
+                  </div>
+                </a>
+              </li>
+            ))}
+          </ul>
+          <p class="mt-6 text-center">
+            <a
+              href={platformInfo.youtube.url}
+              target="_blank"
+              rel="noopener"
+              class="text-accent text-sm font-medium hover:underline"
+            >
+              更早的影片到 YouTube 頻道看 →
+            </a>
+          </p>
         </section>
       )
     }
@@ -425,8 +503,8 @@ function formatDate(d: Date): string {
         想看特定物件的影片？LINE 問景泰
       </p>
       <p class="text-muted-foreground mt-3 leading-relaxed">
-        想看某社區的開箱、某個政策的解析、出價前該看的數字 —<br />
-        LINE 我說一聲、我直接拍給你看。
+        影片裡的物件想看現場、或想找某個社區有沒有影片 —<br />
+        LINE 說一聲，有片就傳連結給你，也可以直接約看屋時間。
       </p>
       <div class="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
         <a

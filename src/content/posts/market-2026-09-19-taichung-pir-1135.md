@@ -2,6 +2,7 @@
 title: "台中房價所得比11.35倍，年減0.92倍卻是「高檔修正」不是變便宜"
 author: 陳景泰
 pubDatetime: 2026-09-19T08:00:00+08:00
+canonicalURL: "/posts/2026-08-W04-economy-taichung-price-income-ratio-11-35/"
 slug: market-2026-09-19-taichung-pir-1135
 ogImage: /og/market-2026-09-19-taichung-pir-1135.jpg
 featured: false

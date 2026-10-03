@@ -1,5 +1,5 @@
 ---
-title: 大毅履幸福評價・實價登錄：北屯崇德六路 17 年 197 戶，扣車位單價中位數 40.68 萬
+title: 大毅履幸福評價・實價登錄：北屯崇德六路 17 年 197 戶
 author: 陳景泰
 pubDatetime: 2026-10-21 07:00:00+08:00
 slug: community-dayi-lu-xingfu

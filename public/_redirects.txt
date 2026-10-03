@@ -33,3 +33,24 @@
 /posts/2026-09-W01-district-coastal-blue-line-bc11 /posts/2026-08-W02-city-taichung-q2-top10-hot-districts/ 301
 /posts/2026-09-W02-city-taichung-major-projects-timeline/ /posts/ 301
 /posts/2026-09-W02-city-taichung-major-projects-timeline /posts/ 301
+
+# 2026-10-04 區名標籤統一成「X區」：9 個短寫舊標籤頁 301 到新標籤頁
+# （/tags/2026/ 不轉：2026-05-W26-price-bands.mdx 還掛著 2026 標籤，頁面仍有內容）
+/tags/%E6%A2%A7%E6%A3%B2/ /tags/%E6%A2%A7%E6%A3%B2%E5%8D%80/ 301
+/tags/%E6%A2%A7%E6%A3%B2 /tags/%E6%A2%A7%E6%A3%B2%E5%8D%80/ 301
+/tags/%E5%8C%97%E5%B1%AF/ /tags/%E5%8C%97%E5%B1%AF%E5%8D%80/ 301
+/tags/%E5%8C%97%E5%B1%AF /tags/%E5%8C%97%E5%B1%AF%E5%8D%80/ 301
+/tags/%E8%A5%BF%E5%B1%AF/ /tags/%E8%A5%BF%E5%B1%AF%E5%8D%80/ 301
+/tags/%E8%A5%BF%E5%B1%AF /tags/%E8%A5%BF%E5%B1%AF%E5%8D%80/ 301
+/tags/%E5%8D%97%E5%B1%AF/ /tags/%E5%8D%97%E5%B1%AF%E5%8D%80/ 301
+/tags/%E5%8D%97%E5%B1%AF /tags/%E5%8D%97%E5%B1%AF%E5%8D%80/ 301
+/tags/%E5%A4%AA%E5%B9%B3/ /tags/%E5%A4%AA%E5%B9%B3%E5%8D%80/ 301
+/tags/%E5%A4%AA%E5%B9%B3 /tags/%E5%A4%AA%E5%B9%B3%E5%8D%80/ 301
+/tags/%E5%A4%A7%E9%87%8C/ /tags/%E5%A4%A7%E9%87%8C%E5%8D%80/ 301
+/tags/%E5%A4%A7%E9%87%8C /tags/%E5%A4%A7%E9%87%8C%E5%8D%80/ 301
+/tags/%E7%83%8F%E6%97%A5/ /tags/%E7%83%8F%E6%97%A5%E5%8D%80/ 301
+/tags/%E7%83%8F%E6%97%A5 /tags/%E7%83%8F%E6%97%A5%E5%8D%80/ 301
+/tags/%E8%B1%90%E5%8E%9F/ /tags/%E8%B1%90%E5%8E%9F%E5%8D%80/ 301
+/tags/%E8%B1%90%E5%8E%9F /tags/%E8%B1%90%E5%8E%9F%E5%8D%80/ 301
+/tags/%E6%BD%AD%E5%AD%90/ /tags/%E6%BD%AD%E5%AD%90%E5%8D%80/ 301
+/tags/%E6%BD%AD%E5%AD%90 /tags/%E6%BD%AD%E5%AD%90%E5%8D%80/ 301

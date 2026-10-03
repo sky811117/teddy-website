@@ -1,7 +1,8 @@
 ---
-title: 公告現值是什麼?跟實際成交價差 3-5 倍的原因與查詢方式
+title: 公告現值是什麼？跟實際成交價差 3-5 倍的原因與查詢方式
 author: 陳景泰
 pubDatetime: 2026-03-25 14:00:00+08:00
+modDatetime: 2026-08-28T11:50:34+08:00
 slug: term-12-announced-value-vs-actual
 featured: false
 draft: false

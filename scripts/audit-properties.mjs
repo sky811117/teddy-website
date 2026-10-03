@@ -21,7 +21,11 @@
  *     - 非綠線行政區的捷運宣稱（frontmatter district 非北屯/北區/西屯/南屯/南區/烏日，寫捷運生活圈/近捷運/捷運宅…；
  *       否定寫法不報、點名綠線真實車站只 WARN）— 2026-10-04 0239000 大肚
  *     - 借鄰戶門牌定位本戶（隔壁221號）— 歸「完整門牌」
+ *     - 地號「XX段N地號」（2026-10-04；0146678）— 跟完整門牌一樣能定位本戶（streetArea 只 WARN，渲染層會切）
+ *     - 標題拿「區段徵收／高鐵門戶特區」當片語（只掃 title）— 2026-10-04 景泰裁決：區段徵收只當揭露、不當賣點
  *   WARN（只列出，不擋）
+ *     - 沒段名的「N地號」、提到區段徵收卻沒寫「進度以主管機關公告為準」
+ *     - 物件 SEO 標題（[...slug].astro 的 lead＋案名公式）超過 32 字
  *     - 第三人聯絡引導（營業員：/ LINE ID：/ 洽詢 / 聯絡人）
  *     - 預售敏感詞（預售 / 代銷 …）— 需人工確認是不是在替建案打廣告
  *     - 議價 / 殺價（需景泰裁決）
@@ -39,6 +43,8 @@
  */
 import { readdir, readFile, mkdir, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const PROPERTIES_DIR = new URL("../src/content/properties/", import.meta.url);
 const AUDIT_DIR = new URL("../audit/", import.meta.url);
@@ -66,14 +72,17 @@ const STORE_PHONE_RE = /04[-\s]?2312[-\s]?0888/g; // 店電，不算違規
 // 內部用語 INTERNAL
 export const INTERNAL_RE = /專任|本店專任|委編|UG\d+|UA\d+/g;
 
-// 未完工公共建設 UNBUILT（2026-10-03 A 批）
+// 未完工公共建設 UNBUILT（2026-10-03 A 批；2026-10-04 A1 批補 BC 站碼、「大巨蛋」、大平霧）
 // 出處：房仲工作站\450_上架巡檢\staging_quality.py 第 93-119 行 UNBUILT_GATE_RE（三平台閘門那一份），
 // 跟 src/utils/cleanPropertyTitle.ts 的 UNBUILT_SOURCE、~/.claude/skills/properties-sync/scripts/text_sanitize.py
-// 的 UNBUILT_SOURCE 逐字一致（改字三處一起改）。⛔ 不用 lookbehind；不放裸「規劃中」、裸 G\d站（綠線已通車）、
+// 的 UNBUILT_SOURCE 逐字一致（改字三處一起改）。
+// 2026-10-04：scripts/lint-seo.mjs 直接 import 這裡的 UNBUILT_SOURCE（文章／頁面／物件同一份，不再各寫一份）；
+// Python 端另有三份「同一份＋產線額外字」：450 staging_quality.py（+裸「巨蛋」，只收台中物件）、
+// monthly-market-report build_drafts.py（+裸「巨蛋」）、website_refill/unbuilt_words.py（+refill 原本的 HARD 寬版）。⛔ 不用 lookbehind；不放裸「規劃中」、裸 G\d站（綠線已通車）、
 // 裸「區段徵收」、裸「未來性」、裸「預計」。「巨蛋」只擋台中那座（0397205 高雄巨蛋已啟用）。
 const UNBUILT_FIXED_WORDS = [
-  "藍線", "茄苳腳", "輕軌", "橘線", "紫線", "太子(?:商場|置地)", "機捷(?!特區|專區|重劃區)",
-  "綠線延伸", "規劃站點", "規劃站體", "(?:台中|臺中|北屯|雙|小)巨蛋",
+  "藍線", "茄苳腳", "輕軌", "橘線", "紫線", "太子(?:商場|置地)", "機捷(?!特區|專區|重劃區|\\s*[/／]\\s*單元|一帶)",
+  "綠線延伸", "規劃站點", "規劃站體", "(?:台中|臺中|北屯|雙|小|大)巨蛋", "大平霧",
   "洲際[^，。；！？\\n]{0,8}巨蛋", "成形在即", "成形可期", "(?:環評|審議)中",
   // 2026-10-03 審查補：興建中商場（1187694「高鐵娛樂購物城已開挖」）、開發中園區宣傳句（0240903）
   "已開挖", "高鐵娛樂(?:購物)?城", "娛樂購物城", "政府主導開發",
@@ -91,10 +100,11 @@ const UB_NC = "[^，。；！？、\\n]";
 export const UNBUILT_SOURCE =
   UNBUILT_FIXED_WORDS.join("|") +
   "|[Bb]\\s?\\d{1,2}\\s?站" +
+  "|(?:^|[^A-Za-z])BC\\s?\\d{1,2}(?![0-9])" + // 藍線站碼「BC11」（不帶「站」也算；前面是英文字母的 ABC12 不算）
   "|未來\\S{0,3}?(?:" + UNBUILT_FUTURE_NOUNS.join("|") + ")" +
   "|(?:" + UNBUILT_LEAD_WORDS.join("|") + ")" + UB_NC + "{0,8}?(?:" + UNBUILT_LEAD_NOUNS.join("|") + ")" +
   "|(?:" + UNBUILT_SUBJ_NOUNS.join("|") + ")" + UB_NC + "{0,6}?(?:" + UNBUILT_TRAIL_WORDS.join("|") + ")" +
-  "|興建中|規劃中(?![島西式])" +
+  "|興建中|規劃中(?![島西式]|的?(?:大型)?(?:修繕|整修|維修|裝修))" +
   "|未來捷運\\s*[A-Z]?\\d{0,2}" +
   "|捷運" + UB_NC + "{0,8}(?:規劃|延伸|預計|即將|未來|尚未通車)" +
   "|預計\\s*(?:20\\d\\d\\s*年)?" + UB_NC + "{0,6}(?:落成|完工|開幕|營運|通車)" +
@@ -107,6 +117,30 @@ export const UNBUILT_RE = new RegExp(UNBUILT_SOURCE, "g");
 // （那兩邊是「吃掉片語」用的完整寫法；這裡只要偵測，命中核心字「夏田(產業)園區」就 ERROR）。
 export const UNBUILT_TITLE_PLACE_SOURCE = "(?:大里區?)?夏田(?:產業)?園區(?:範圍內?|內|旁)?";
 export const UNBUILT_TITLE_PLACE_RE = new RegExp(UNBUILT_TITLE_PLACE_SOURCE, "g");
+
+// 區段徵收／門戶特區當標題賣點（2026-10-04 景泰裁決「區段徵收只當法定揭露、不當賣點」；0240914
+// 「南屯｜高鐵門戶特區｜區段徵收｜小塊好置產農地」）。**只掃 title**：清洗端把含這些字的「｜段」整段丟。
+// description／body 的「坐落…區段徵收計畫範圍，進度以主管機關公告為準」是揭露，要留。
+// 跟 cleanPropertyTitle.ts、text_sanitize.py 的 TITLE_ZONE_SOURCE 三處逐字一致。
+export const TITLE_ZONE_SOURCE = "高鐵(?:台中|臺中)?(?:車站)?門戶特區|區段徵收";
+export const TITLE_ZONE_RE = new RegExp(TITLE_ZONE_SOURCE, "g");
+
+// 地號（2026-10-04；0146678「埔里鎮 中峰段119地號」）：地號跟完整門牌一樣能定位到那塊地，本戶不公開。
+// 規則：「XX段N地號」「XX段N、M地號」→ 只留「XX段」；沒帶段名的「N地號」→ 整個拿掉（「共7筆地號」不算）。
+// 跟 cleanPropertyTitle.ts、text_sanitize.py 的 LAND_NO_* 三處逐字一致；⛔ 不用 lookbehind。
+// audit：帶段名的＝ERROR；沒段名的只 WARN（單一個號碼定位不到，但還是建議清）；streetArea 欄位渲染層
+// stripAddressDetail 會切，所以 streetArea 只 WARN（HG0238992「南興段717、718地號」等 NAS 產生腳本修）。
+const LAND_NO_DIGITS = "[0-9０-９]+(?:\\s*[-－之、,，及與和~～]\\s*[0-9０-９]+)*";
+export const LAND_NO_SECTION_SOURCE =
+  "([一-鿿]{1,8}?段)\\s*(?:第\\s*)?" + LAND_NO_DIGITS + "\\s*(?:等\\s*[0-9０-９一二三四五六七八九十]*\\s*筆\\s*)?地號";
+export const LAND_NO_BARE_SOURCE = "(^|[^0-9０-９])" + LAND_NO_DIGITS + "\\s*地號";
+export const LAND_NO_SECTION_RE = new RegExp(LAND_NO_SECTION_SOURCE, "g");
+export const LAND_NO_BARE_RE = new RegExp(LAND_NO_BARE_SOURCE, "g");
+
+// 區段徵收揭露（2026-10-04）：文案提到區段徵收、整份卻沒有「進度以主管機關公告為準」→ WARN
+// （清洗端 text_sanitize.add_zone_disclosure 會自動補在第一個提到的句子後面；否定寫法「不在區段徵收範圍」不補）
+export const ZONE_DISCLOSURE = "進度以主管機關公告為準";
+export const ZONE_NEGATION_SOURCE = "(?:不在|非屬?|未在|不屬於?|沒有在?)[^，。；！？\\n]{0,4}區段徵收";
 
 // 非綠線行政區的捷運宣稱（2026-10-04；0239000 大肚「大肚太平路捷運生活圈」）。
 // 台中捷運目前只有綠線通車，車站所在行政區：北屯、北區、西屯、南屯、南區、烏日。其他行政區寫
@@ -300,7 +334,14 @@ function scanField(name, value, findings, file, district = "") {
   // ERROR：開發中園區當標題片語（只掃 title；2026-10-03 景泰裁決）
   if (name === "title") {
     pushAll(findings, file, name, value, UNBUILT_TITLE_PLACE_RE, UNBUILT_SEVERITY, "未完工建設(標題園區)");
+    // ERROR：區段徵收／門戶特區當標題賣點（2026-10-04 景泰裁決，只掃 title）
+    pushAll(findings, file, name, value, TITLE_ZONE_RE, "ERROR", "區段徵收當標題賣點");
   }
+  // ERROR：地號（帶段名＝能定位本戶）；streetArea 渲染層會切 → 只 WARN。沒段名的「N地號」→ WARN
+  pushAll(findings, file, name, value, LAND_NO_SECTION_RE, name === "streetArea" ? "WARN" : "ERROR", "隱私: 地號");
+  pushAll(findings, file, name, value, LAND_NO_BARE_RE, "WARN", "隱私: 地號(無段名)", m =>
+    !/段\s*(?:第\s*)?$/.test(value.slice(0, m.index + m[1].length))
+  );
   // ERROR：非綠線行政區的捷運宣稱（2026-10-04）；點名綠線真實車站的只 WARN（人工確認距離）
   for (const f of findOfflineMrtClaims(value, district)) {
     findings.push({
@@ -332,11 +373,15 @@ const UNBUILT_MUST_HIT = [
   "台中捷運綠線延伸線 G3 站（規劃中）", "散步即達漢神、洲際球場與巨蛋", "交通：機捷 G3 站 + 74 號快速道路",
   "預計2025年第一季交屋", "高鐵娛樂購物城已開挖", "近 13 期高鐵娛樂城", "2023年5月已通過二階環評",
   "開發進程明確推進", "位於夏田產業園區區段徵收範圍內，政府主導開發",
+  // 2026-10-04 A1 批：BC 站碼不帶「站」、台中大巨蛋、大平霧線、置產卡位
+  "鄰近捷運 BC11 站", "沙鹿BC11周邊", "| 臺中大巨蛋 | 預計", "大平霧捷運沿線", "南屯農地置產卡位",
 ];
 const UNBUILT_MUST_NOT = [
   "開放式廚房規劃中島", "捷運綠線文心中清站", "近74快速道路捷運G7站", "市政府捷運站旁", "近楠梓高雄巨蛋商圈",
   "區段徵收與重劃開發程序進行中，進度以主管機關公告為準", "緊鄰74號快速道路", "很多人是被「機捷特區」這 4 個字勾過來的",
   "預計2030年第一季交屋", "只看七期、北屯機捷重劃區的買家", "位於大里夏田產業園區範圍，屬區段徵收範圍內",
+  // 2026-10-04 A1 批：高雄巨蛋（0397205）、英數編號裡的 BC
+  "國道1號，往左營、高鐵、巨蛋，往北往橋頭科學園區都便", "ABC12 號倉庫", "北屯機捷/單元十二本月預售揭露", "有沒有進行中或規劃中的大型修繕",
 ];
 function unbuiltHit(s, year) {
   if (new RegExp(UNBUILT_SOURCE).test(s)) return true;
@@ -389,7 +434,93 @@ function selfTest() {
     const got = fs.find(f => f.rule.startsWith("非綠線捷運"))?.severity ?? "";
     if (got !== want) fails.push(`捷運：${v}［${d || "無district"}］→ ${got || "不報"}（要 ${want || "不報"}）`);
   }
+  // 2026-10-04 地號／區段徵收標題：[欄位, 值, 期望規則, 期望嚴重度（""＝不報）]
+  const landCases = [
+    ["description", "📍埔里鎮 中峰段119地號 💰總價250萬", "隱私: 地號", "ERROR"],
+    ["body", "先驅段三筆地號合併", "隱私: 地號", ""],
+    ["body", "道路持分（共7筆地號）\t4.76坪", "隱私: 地號(無段名)", ""],
+    ["highlights", "🏡 241地號已有合法農舍", "隱私: 地號(無段名)", "WARN"],
+    ["highlights", "📍埔里鎮 中峰段119地號", "隱私: 地號(無段名)", ""], // 帶段名的只報一次（ERROR 那條）
+    ["streetArea", "南興段717、718地號", "隱私: 地號", "WARN"],
+    ["title", "南屯｜高鐵門戶特區｜區段徵收｜小塊好置產農地", "區段徵收當標題賣點", "ERROR"],
+    ["description", "🌿坐落高鐵台中車站門戶特區區段徵收計畫範圍，進度以主管機關公告為準", "區段徵收當標題賣點", ""],
+  ];
+  for (const [field, v, rule, want] of landCases) {
+    const fs = [];
+    scanField(field, v, fs, "self-test", "");
+    const got = fs.find(f => f.rule === rule)?.severity ?? "";
+    if (got !== want) fails.push(`${rule}：${field}「${v}」→ ${got || "不報"}（要 ${want || "不報"}）`);
+  }
   return fails;
+}
+
+// ── 物件 SEO 標題長度（2026-10-04；照 src/pages/properties/[...slug].astro 的 lead/tail 公式重算）──
+// ⚠️ 公式改了要同步：SEO_TITLE_MAX、seoLead（行政區 社區名或路段 N房或坪數 總價）、tail 去重與尾段整段丟。
+// 這裡只報 WARNING（lead 加第一段案名還是超過 32 字，Google 會截斷），不擋 build。
+// cleanPropertyTitle.ts 用 Node 內建的 TypeScript 型別剝除載入；載不到（舊版 Node）就跳過這條、印一行提醒。
+const SEO_TITLE_MAX = 32;
+const COMMUNITY_MAX_CHARS = 12; // 同 src/utils/propertyPhotoAlt.ts
+const COMMUNITY_COPY_RE = /裝潢|質感|優質|視野|收租|總價|大坪數|面寬|夾層|可停|自己蓋|價買|角間|\d+\s*(?:坪|樓)/;
+function stripAddressDetail(s) { // 同 src/utils/propertyPhotoAlt.ts
+  if (!s) return "";
+  return s
+    .replace(/[\d０-９][\d０-９、,，\-－~～之及與和]*\s*地號.*$/, "")
+    .replace(/\d+\s*(巷|弄|號).*/, "")
+    .replace(/[\s、,，・·\-－]+$/, "")
+    .trim();
+}
+function cleanStreetArea(streetArea, district) { // 同 src/utils/cleanStreetArea.ts
+  if (!streetArea) return "";
+  let cleaned = streetArea;
+  if (district && cleaned.startsWith(district)) cleaned = cleaned.slice(district.length);
+  return cleaned.replace(/^[\s・·、，,]+/, "");
+}
+export function seoTitleOf(meta, ct) {
+  const charLen = s => [...s].length;
+  const district = meta.district || "";
+  const community = (meta.community ?? "").trim();
+  const publicCommunity =
+    community && charLen(community) <= COMMUNITY_MAX_CHARS && !ct.hasExaggeration(community) &&
+    !COMMUNITY_COPY_RE.test(community) && !(district && district.includes(community))
+      ? community
+      : "";
+  const streetAreaClean = stripAddressDetail(cleanStreetArea(meta.streetArea, district));
+  const titleFallback = [community || district, meta.layout].filter(Boolean).join(" ");
+  const displayTitle = ct.cleanPropertyTitle(meta.title || "", titleFallback, district);
+  const areaNum = Number(meta.area);
+  const hasArea = Number.isFinite(areaNum) && areaNum > 0;
+  const layoutText = (meta.layout ?? "").trim();
+  const roomMatch = layoutText.match(/(\d+)\s*房/);
+  const roomText = roomMatch ? `${roomMatch[1]}房` : "";
+  const roomSlot = roomText || (hasArea ? `${Math.round(areaNum)}坪` : "");
+  const totalPrice = Number(meta.totalPrice);
+  const priceShort = !totalPrice
+    ? ""
+    : totalPrice >= 10000 ? String(Number((totalPrice * 0.0001).toFixed(2))) + "億" : String(totalPrice) + "萬";
+  const seoLead = [district, publicCommunity || streetAreaClean, roomSlot, priceShort].filter(Boolean).join(" ");
+  const leadFacts = [district, community, publicCommunity, layoutText, roomText].filter(s => s && s !== "—");
+  const isCoveredByLead = seg => {
+    let rest = seg;
+    for (const f of [...leadFacts].sort((a, b) => b.length - a.length)) rest = rest.split(f).join("");
+    return rest.replace(/[\s、，,・·\-—–]/g, "") === "";
+  };
+  let tailSegs = displayTitle.split("｜").map(s => s.trim()).filter(s => s && !isCoveredByLead(s));
+  const joinTitle = segs => [seoLead, ...segs].join("｜");
+  while (charLen(joinTitle(tailSegs)) > SEO_TITLE_MAX && tailSegs.length > 1) tailSegs = tailSegs.slice(0, -1);
+  if (charLen(joinTitle(tailSegs)) > SEO_TITLE_MAX && tailSegs.length === 1) {
+    let seg = tailSegs[0];
+    while (charLen(joinTitle([seg])) > SEO_TITLE_MAX && /[，,]/.test(seg)) seg = seg.replace(/[，,][^，,]*$/, "").trim();
+    tailSegs = seg ? [seg] : tailSegs;
+  }
+  return joinTitle(tailSegs);
+}
+async function loadCleanPropertyTitle() {
+  try {
+    return await import(new URL("../src/utils/cleanPropertyTitle.ts", import.meta.url).href);
+  } catch (e) {
+    console.warn(`[audit-properties] 載不到 cleanPropertyTitle.ts（${e.code || e.message}），跳過「物件 SEO 標題超過 32 字」檢查`);
+    return null;
+  }
 }
 
 async function main() {
@@ -406,12 +537,14 @@ async function main() {
   const findings = [];
   const missingCredentials = [];
   let scanned = 0;
+  const ct = await loadCleanPropertyTitle(); // 物件 SEO 標題長度用（載不到就跳過）
 
   for (const file of files) {
     const text = await readFile(new URL(file, PROPERTIES_DIR), "utf-8");
     const { meta, body, rawFm } = frontmatter(text);
     scanned++;
 
+    const fileStart = findings.length;
     scanField("title", meta.title, findings, file, meta.district);
     scanField("streetArea", meta.streetArea, findings, file, meta.district);
     scanField("community", meta.community, findings, file, meta.district);
@@ -422,6 +555,32 @@ async function main() {
     // 「委編 / UG… / UA…」照樣 ERROR。（待辦：產生腳本改成「物件編號」後可拿掉這行豁免）
     const bodyForScan = body.replace(/^>\s*委編[:：].*$/gm, "");
     scanField("body", bodyForScan, findings, file, meta.district);
+    // 「區段徵收當標題賣點」只擋在架物件：下架（withdrawn）的不產頁面；重新上架時夜間 sanitize_title／
+    // 渲染層 cleanPropertyTitle 都會把那段丟掉，這裡降成 WARN 提醒回洗（例 0240902）
+    if (meta.status !== "active") {
+      for (const f of findings.slice(fileStart)) {
+        if (f.rule === "區段徵收當標題賣點" && f.severity === "ERROR") {
+          f.severity = "WARN";
+          f.rule = "區段徵收當標題賣點(未在架)";
+        }
+      }
+    }
+
+    // WARN：提到區段徵收、整份卻沒有「進度以主管機關公告為準」（否定寫法「不在區段徵收範圍」不算）
+    if (text.includes("區段徵收") && !text.includes("主管機關公告") &&
+        text.replace(new RegExp(ZONE_NEGATION_SOURCE, "g"), "").includes("區段徵收")) {
+      findings.push({ file, severity: "WARN", rule: "區段徵收缺進度揭露", field: "body", matched: "區段徵收",
+        snippet: `提到區段徵收但沒寫「${ZONE_DISCLOSURE}」（sanitize_existing.py 回洗會自動補）` });
+    }
+
+    // WARN：物件 SEO 標題（lead＋案名）超過 32 字（只算在架物件；照 [...slug].astro 公式）
+    if (ct && meta.status === "active") {
+      const t = seoTitleOf(meta, ct);
+      if ([...t].length > SEO_TITLE_MAX) {
+        findings.push({ file, severity: "WARN", rule: `物件標題超過 ${SEO_TITLE_MAX} 字`, field: "title",
+          matched: "SEO 標題", snippet: `${[...t].length} 字：${t}` });
+      }
+    }
 
     // 證號揭露（WARN：頁面 footer 會用 frontmatter 自動補，不算違規）
     const hasBroker = BROKER_RE.test(body);
@@ -557,7 +716,18 @@ async function main() {
   }
 }
 
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+// 只有直接 `node scripts/audit-properties.mjs` 才跑掃描；被 lint-seo.mjs import（拿 UNBUILT_SOURCE）時不跑。
+const invokedDirectly = (() => {
+  try {
+    return !!process.argv[1] &&
+      path.resolve(process.argv[1]).toLowerCase() === path.resolve(fileURLToPath(import.meta.url)).toLowerCase();
+  } catch {
+    return false;
+  }
+})();
+if (invokedDirectly) {
+  main().catch(err => {
+    console.error(err);
+    process.exit(1);
+  });
+}

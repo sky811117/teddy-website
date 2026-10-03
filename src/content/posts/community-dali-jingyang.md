@@ -1,5 +1,5 @@
 ---
-title: 達麗晶漾評價・實價登錄：西屯青海路二段 9 年 144 戶，扣車位單價中位數 50.27 萬
+title: 達麗晶漾評價・實價登錄：西屯青海路二段 9 年 144 戶
 author: 陳景泰
 pubDatetime: 2026-10-23 07:00:00+08:00
 slug: community-dali-jingyang

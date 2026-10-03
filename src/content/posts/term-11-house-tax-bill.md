@@ -1,7 +1,8 @@
 ---
-title: 房屋稅單怎麼看?課稅現值在哪一欄、為什麼只有市價的一兩成
+title: 房屋稅單怎麼看？課稅現值在哪一欄、為什麼只有市價的一兩成
 author: 陳景泰
 pubDatetime: 2026-03-23 09:00:00+08:00
+modDatetime: 2026-08-28T11:50:34+08:00
 slug: term-11-house-tax-bill
 featured: false
 draft: false

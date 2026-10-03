@@ -1,5 +1,5 @@
 ---
-title: 佳泰大崇德評價・實價登錄：河北西街6年142戶，近一年單價中位數48.37萬
+title: 佳泰大崇德評價・實價登錄：河北西街6年142戶
 author: 陳景泰
 pubDatetime: 2026-10-26 07:00:00+08:00
 slug: community-jiatai-dachongde

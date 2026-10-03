@@ -1,5 +1,5 @@
 ---
-title: 順天豐華評價・實價登錄：潭子潭富路二段屋齡 2 年 202 戶，扣車位單價中位數 35.54 萬
+title: 順天豐華評價・實價登錄：潭子潭富路二段屋齡 2 年 202 戶
 author: 陳景泰
 pubDatetime: 2026-10-22 07:00:00+08:00
 slug: community-shuntian-fenghua

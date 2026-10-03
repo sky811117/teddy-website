@@ -2,13 +2,14 @@
 title: 台中北屯區 5 月實價趨勢 — 大樓單坪 35.34 萬：捷運綠線通車後的價量結構
 author: 陳景泰
 pubDatetime: 2026-06-17T09:00:00+08:00
+modDatetime: 2026-09-06T04:08:21+08:00
 slug: 2026-06-W03-district_focus-district-beitun-may
 ogImage: /og/2026-06-W03-district_focus-district-beitun-may.jpg
 featured: true
 draft: false
 tags:
   - monthly-market
-  - 北屯
+  - 北屯區
   - 捷運綠線
   - 重劃區
   - 台中房市

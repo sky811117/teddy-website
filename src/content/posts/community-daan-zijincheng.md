@@ -1,5 +1,5 @@
 ---
-title: 大安紫金城評價・實價登錄：南區建國南路一段 31 年 269 戶大樓，扣車位單價中位數 27.12 萬
+title: 大安紫金城評價・實價登錄：南區建國南路一段 31 年 269 戶
 author: 陳景泰
 pubDatetime: 2026-10-20 07:00:00+08:00
 slug: community-daan-zijincheng

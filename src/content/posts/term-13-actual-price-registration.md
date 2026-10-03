@@ -1,7 +1,8 @@
 ---
-title: 實價登錄怎麼查、單價怎麼算?車位跟公設不拆會看錯行情
+title: 實價登錄怎麼查、單價怎麼算？車位跟公設不拆會看錯行情
 author: 陳景泰
 pubDatetime: 2026-03-30 20:00:00+08:00
+modDatetime: 2026-08-28T11:50:34+08:00
 slug: term-13-actual-price-registration
 featured: false
 draft: false

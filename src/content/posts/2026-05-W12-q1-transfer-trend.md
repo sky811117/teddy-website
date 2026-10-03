@@ -2,6 +2,7 @@
 title: W12 數據｜台中 Q1 買賣移轉趨勢 — 量回來但沒回到去年
 author: 陳景泰
 pubDatetime: 2026-06-08 09:00:00+08:00
+modDatetime: 2026-09-06T04:08:21+08:00
 slug: 2026-05-W12-q1-transfer-trend
 featured: false
 draft: false
@@ -11,7 +12,6 @@ tags:
 - 買賣移轉
 - Q1
 - 台中房市
-- '2026'
 description: 台中市 3 月建物買賣移轉 3,195 棟，比 2 月 1,875 棟（過年）大幅回升。但比去年 12 月 3,509 棟還差 314 棟。Q1
   整體月均量大概多少？比去年同期差多少？這篇拆給你看『量回來』跟『回到去年』是兩件事。
 timezone: Asia/Taipei

@@ -2,6 +2,7 @@
 title: 工具：多平台曝光 — 591 + 樂屋 + 5168 同步，買家從哪來都接得到
 author: 陳景泰
 pubDatetime: 2026-05-28 08:00:00+08:00
+modDatetime: 2026-08-27T19:11:54+08:00
 slug: tool-multi-platform
 featured: false
 draft: false

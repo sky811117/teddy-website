@@ -2,6 +2,7 @@
 title: W09 政策｜央行第二戶 6 成上限 — 換屋族 30 年差超過 50 萬
 author: 陳景泰
 pubDatetime: 2026-06-03 09:00:00+08:00
+modDatetime: 2026-06-04T10:23:31+08:00
 slug: 2026-05-W09-cbc-second-home
 featured: false
 draft: false
@@ -11,7 +12,6 @@ tags:
 - 央行
 - 換屋
 - 房貸成數
-- '2026'
 description: 央行 2026/3/20 起把全國自然人第 2 戶購屋貸款成數上限調升至 6 成。這條規定看起來「鬆綁」，但實質影響是把「先買再賣」vs「先賣再買」的差距拉到 30 年 50 萬以上。換屋族要看完這篇再決定順序。
 timezone: Asia/Taipei
 ---

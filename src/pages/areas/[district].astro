@@ -6,7 +6,7 @@ import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Main from "@/components/Main.astro";
 import config from "@/config";
-import { areas, AREA_DATA_PERIOD, AREA_DATA_SOURCE, type Area } from "@/data/areas";
+import { areas, AREA_DATA_PERIOD, AREA_STATS_META, getAreaStats, type Area } from "@/data/areas";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 import { postFilter } from "@/utils/postFilter";
 import { cleanPropertyTitle } from "@/utils/cleanPropertyTitle";
@@ -129,7 +129,7 @@ const formatPrice = (price: number) => {
   return `${price.toLocaleString()} 萬`;
 };
 
-// 站上在售筆數與總價帶（build 期從 properties 算；2026-09-06 補的 4 區沒有合泰建經數字，這是唯一的數據列）
+// 站上在售筆數與總價帶（build 期從 properties 算）
 const listingPrices = allProperties
   .map(p => p.data.totalPrice)
   .filter(n => Number.isFinite(n) && n > 0);
@@ -142,10 +142,10 @@ const listingPriceBand =
 const listingMonth = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Taipei" }).slice(0, 7);
 // 分區靜態列表頁 /properties/{slug}/（slug 表在 isTaichung.ts，跟 areas.ts 一致）
 const districtListUrl = getDistrictListUrl(area.districtMatch[0]);
-const hasStats = !!area.stats && area.stats.length > 0;
-
-// 數據期間與來源：單一事實來源在 areas.ts（AREA_DATA_PERIOD / AREA_DATA_SOURCE），
-// 標題與 description 不綁季度（免得 SERP 看起來過期），內文數據表與 seoSections 標明資料期
+// 實價登錄成交單價：2026-10-04 F020 B 段改吃 src/data/area-stats.json（scripts/build-area-stats.py 逐筆算），
+// 合泰建經手抄數字退場；季別與口徑都從 JSON 來，標題與 description 不綁季度（免得 SERP 看起來過期）
+const areaStatRows = getAreaStats(area);
+const hasStats = areaStatRows.length > 0;
 
 // SEO + JSON-LD
 // ⚠️ 2026-10-03 F076：title 改成帶「房價」的查詢字（9/6 改過一次，建議 10/6 之後才部署）；
@@ -366,22 +366,32 @@ const areaTools = [
       )
     }
 
-    {/* 關鍵數據表：只有合泰建經有分區數字的區才渲染；2026-09-06 補的 4 區沒有 → 整段不出現，不編數字 */}
+    {/* 實價登錄成交單價表：資料來自 area-stats.json（近 4 季、扣車位、分產品）；該區沒有任何分群達 5 筆就整段不出現 */}
     {
       hasStats && (
     <section class="mt-10">
       <h2 class="text-foreground text-xl font-bold sm:text-2xl">
-        📊 關鍵數據（資料期間 {AREA_DATA_PERIOD}）
+        📊 實價登錄成交單價（{AREA_DATA_PERIOD}）
       </h2>
-      <div class="border-border bg-card mt-4 overflow-hidden rounded-lg border">
+      <p class="text-muted-foreground mt-2 text-sm">
+        扣除車位後的單價中位數，依產品分開算；「中間一半」是排在 25%～75% 的成交落點。
+      </p>
+      <div class="border-border bg-card mt-4 overflow-x-auto rounded-lg border">
         <table class="w-full text-sm sm:text-base">
+          <thead>
+            <tr class="border-border border-b">
+              <th scope="col" class="text-muted-foreground bg-muted/40 px-4 py-2 text-left text-xs font-medium">產品</th>
+              <th scope="col" class="text-muted-foreground bg-muted/40 px-4 py-2 text-left text-xs font-medium">單價中位數</th>
+              <th scope="col" class="text-muted-foreground bg-muted/40 px-4 py-2 text-left text-xs font-medium">筆數・中間一半</th>
+            </tr>
+          </thead>
           <tbody>
             {
-              (area.stats ?? []).map((s, i) => (
+              areaStatRows.map((s, i) => (
                 <tr
                   class:list={[
                     "border-border",
-                    i !== (area.stats ?? []).length - 1 ? "border-b" : "",
+                    i !== areaStatRows.length - 1 ? "border-b" : "",
                   ]}
                 >
                   <th
@@ -390,11 +400,12 @@ const areaTools = [
                   >
                     {s.label}
                   </th>
-                  <td class="text-foreground px-4 py-3 font-semibold">
-                    {s.value}
+                  <td class="text-foreground px-4 py-3 font-semibold whitespace-nowrap">
+                    {s.median.toFixed(1)} 萬/坪
                   </td>
                   <td class="text-muted-foreground px-4 py-3 text-sm">
-                    {s.trend ?? ""}
+                    {s.n} 筆・{s.p25.toFixed(1)}～{s.p75.toFixed(1)} 萬/坪
+                    {s.smallSample && <span class="ml-1">（樣本少）</span>}
                   </td>
                 </tr>
               ))
@@ -402,8 +413,8 @@ const areaTools = [
           </tbody>
         </table>
       </div>
-      <p class="text-muted-foreground mt-3 text-xs">
-        📌 資料來源：{AREA_DATA_SOURCE}、內政部實價登錄。數字僅供參考、實際成交以個案為準。
+      <p class="text-muted-foreground mt-3 text-xs leading-relaxed">
+        📌 資料來源：{AREA_STATS_META.source}，成交日 {AREA_STATS_META.start}～{AREA_STATS_META.end}（{AREA_STATS_META.rocLabel}），站方逐筆統計，資料庫最新成交日 {AREA_STATS_META.dbMaxDealDate}。{AREA_STATS_META.method}數字僅供參考，實際成交以個案為準。
       </p>
     </section>
       )

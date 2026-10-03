@@ -24,6 +24,17 @@ type Props = {
   showFloatingCTA?: boolean;
   // og:type 只輸出一個（ogp.me 以第一個為準）；文章頁由 PostLayout 傳 "article"
   ogType?: "website" | "article";
+  // og:image 實際寬高。image() 匯入的圖（/_astro/xxx.hash.jpg，例：區域頁 heroImage）
+  // 不在 public/、build 時讀不到檔頭，由呼叫端傳 ImageMetadata 的 width／height。
+  // 有傳就優先用；沒傳才走下面 ogSize 的自動判斷。
+  ogImageWidth?: number;
+  ogImageHeight?: number;
+  // 首屏最大圖（LCP）preload：輸出在 <Font> 字型宣告之前（字型 <style> 很大，
+  // 放在它後面瀏覽器要先解析完那段才看得到圖）。srcset／sizes 必須跟頁面上那張
+  // <img> 完全一致，否則瀏覽器會下載兩次。
+  lcpImage?: string;
+  lcpImageSrcset?: string;
+  lcpImageSizes?: string;
 };
 
 const { site } = config;
@@ -38,6 +49,11 @@ const {
   nextURL,
   showFloatingCTA = true,
   ogType = "website",
+  ogImageWidth,
+  ogImageHeight,
+  lcpImage,
+  lcpImageSrcset,
+  lcpImageSizes,
 } = Astro.props;
 
 // Cloudflare Pages 一律 308 轉址到帶尾斜線的網址（實測 /properties/0066565 →
@@ -62,11 +78,16 @@ const socialImageURL = new URL(ogImage, Astro.site ?? Astro.url);
 // og:image 寬高照實際檔案輸出（物件頁多是 1024×768、區域頁 1600×896，不能一律寫 1200×630）。
 // - 同網域且 public/ 底下有檔 → sharp 只讀檔頭拿尺寸（模組層快取，800 多頁 build 不重讀）
 // - 動態產生的 /og.png、/posts/*/index.png → 固定 1200×630（og.png.ts／index.png.ts 的輸出尺寸）
+// - 呼叫端有傳 ogImageWidth／ogImageHeight（image() 匯入的 /_astro/ 圖）→ 直接用
+// - /_astro/ 路徑沒傳寬高 → 不輸出（build 時 /_astro/ 的檔還不在 public/，讀不到）
 // - 外部網址、找不到檔、讀失敗 → 不輸出這兩行
 const ogSizeCache: Map<string, { w: number; h: number } | null> =
   ((globalThis as Record<string, unknown>).__teddyOgSizeCache as Map<string, { w: number; h: number } | null>) ??
   ((globalThis as Record<string, unknown>).__teddyOgSizeCache = new Map());
 const ogSize = await (async (): Promise<{ w: number; h: number } | null> => {
+  if (ogImageWidth && ogImageHeight && ogImageWidth > 0 && ogImageHeight > 0) {
+    return { w: Math.round(ogImageWidth), h: Math.round(ogImageHeight) };
+  }
   try {
     const siteOrigin = new URL(Astro.site ?? Astro.url).origin;
     if (socialImageURL.origin !== siteOrigin) return null;
@@ -75,6 +96,7 @@ const ogSize = await (async (): Promise<{ w: number; h: number } | null> => {
       return { w: 1200, h: 630 };
     }
     if (pathname.includes("..")) return null;
+    if (pathname.startsWith("/_astro/") || pathname.startsWith("/@fs/")) return null;
     const cached = ogSizeCache.get(pathname);
     if (cached !== undefined) return cached;
     const filePath = join(process.cwd(), "public", pathname);
@@ -125,7 +147,8 @@ const rssHref = getRelativeLocaleUrl(
     <meta name="apple-mobile-web-app-title" content="景泰房仲" />
 
     <!-- Preconnect / DNS-prefetch 第三方資源（GA / fonts） -->
-    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+    {/* 不加 crossorigin：gtag.js 是一般（非 CORS）請求，加了反而開一條用不到的匿名連線 */}
+    <link rel="preconnect" href="https://www.googletagmanager.com" />
     <link rel="dns-prefetch" href="https://www.google-analytics.com" />
     <link rel="dns-prefetch" href="https://line.me" />
 
@@ -138,6 +161,19 @@ const rssHref = getRelativeLocaleUrl(
         ⛔ 絕對不要在這裡 render `--font-noto-sans-tc-og`：那是 OG 圖用的整檔 ttf
         （每個 weight 7MB），只給 og.png.ts / index.png.ts 的 satori 讀。
         驗收：curl 首頁 | grep -c unicode-range 要 > 0，dist/_astro/fonts 不該再有 .woff/.ttf 的 Noto 整檔給網頁用。 */}
+    {/* LCP 圖 preload 必須在 <Font> 之前（理由見 Props 的 lcpImage 註解） */}
+    {
+      lcpImage && (
+        <link
+          rel="preload"
+          as="image"
+          href={lcpImage}
+          imagesrcset={lcpImageSrcset}
+          imagesizes={lcpImageSrcset ? lcpImageSizes : undefined}
+          fetchpriority="high"
+        />
+      )
+    }
     <Font cssVariable="--font-noto-sans-tc" />
 
     <!-- Primary meta -->
@@ -193,7 +229,9 @@ const rssHref = getRelativeLocaleUrl(
             "@id": `${site.url}#realestateagent`,
             name: "陳景泰",
             alternateName: ["Teddy Chen", "Teddy", "泰迪", "景泰", "房仲大看板 泰迪"],
-            url: site.url,
+            // 個人的代表頁＝關於頁（about.astro 的 ProfilePage.mainEntity 指回這個 @id）。
+            // PostLayout 的 BlogPosting.author.url 同值，兩邊一起改。WebSite.url 仍是首頁。
+            url: `${site.url}about/`,
             // 本人代表圖固定用人像，不能跟著每頁 og:image 跑（同一個 @id 跨頁要一致；
             // 頁尾每頁都有他的頭像，與可見內容相符）。og:image／twitter:image 仍用各頁自己的圖。
             image: {

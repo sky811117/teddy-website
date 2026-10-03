@@ -7,6 +7,7 @@ import Main from "@/components/Main.astro";
 import config from "@/config";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 import { isTaichung, getCounty, getDistrictSlug, COUNTY_ORDER } from "@/utils/isTaichung";
+import { COVER_CARD_SIZES, coverSrcOf, coverSrcset, coverThumb } from "@/utils/coverThumb";
 import PropertyCard from "./_components/PropertyCard.astro";
 import PropertyCardIcons from "./_components/PropertyCardIcons.astro";
 import {
@@ -65,6 +66,12 @@ const cardGroups = [
   ...restChunks.map(items => ({ deferred: true, items })),
 ];
 const deferredCount = propertyMeta.length - firstCards.length;
+
+// 第一張卡的封面 = 首屏最大圖（LCP，Lighthouse 量到的就是它）。
+// preload 的 src／srcset／sizes 要跟 PropertyCard 的 <img> 一致，否則瀏覽器會抓兩次。
+const lcpCover = coverSrcOf(firstCards[0]?.p.data.coverImage);
+const lcpImage = lcpCover ? coverThumb(lcpCover, 800) : undefined;
+const lcpImageSrcset = lcpCover ? coverSrcset(lcpCover) : undefined;
 
 // badge 防通膨：pubDatetime 是批次同步日（properties-sync 整批重寫），
 // 若全列表超過 30% 物件都判定為「新上架」，代表是同步日 artifact 不是真的新
@@ -155,6 +162,9 @@ const breadcrumbSchema = {
   description={seoDescription}
   canonicalURL={canonicalURL}
   ogImage="/og/page-properties.jpg"
+  lcpImage={lcpImage}
+  lcpImageSrcset={lcpImageSrcset}
+  lcpImageSizes={COVER_CARD_SIZES}
 >
   <Fragment slot="head">
     <script

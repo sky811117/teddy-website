@@ -17,6 +17,7 @@ import {
   sanitizeHighlights,
 } from "@/utils/cleanPropertyTitle";
 import { areaIncludesParking, bodyPropertyType } from "@/utils/parkingCaliber";
+import { coverSrcOf, coverSrcset, coverThumb } from "@/utils/coverThumb";
 import {
   photoAlt,
   publicCommunityName,
@@ -119,8 +120,22 @@ const titleFallback = [
 const displayTitle = cleanPropertyTitle(rawTitle, titleFallback, property.data.district);
 const highlights = sanitizeHighlights(property.data.highlights, property.data.district);
 
-// 類型（給規格卡用）：優先撈 markdown body 的「**類型**：XXX」，最準
-const propertyType = bodyPropertyType(property.body);
+// 類型（規格卡、月付、schema 型別都看它）：
+// 1. src/data/property-types.json（properties-sync 每晚從公司完整快照的 caseTypeName 輸出，
+//    格式 {"<物件id>": "<caseTypeName>"}，稽核 F130）—— 含 type_overrides.json 的人工修正
+//    （例 1211236 前台標電梯大樓、實際是商場），所以排第一
+// 2. markdown body 的「**類型**：XXX」行
+// 檔案不存在 → glob 回空物件 → 等於原本只看 body；兩邊都沒有的物件維持原狀，不用樓層數去猜類型。
+const propertyTypeFiles = import.meta.glob<Record<string, unknown>>("/src/data/property-types.json", {
+  eager: true,
+  import: "default",
+});
+const propertyTypeMap = Object.values(propertyTypeFiles)[0] ?? {};
+const jsonPropertyType = (() => {
+  const v = propertyTypeMap[property.id];
+  return typeof v === "string" && v.trim() ? v.trim() : undefined;
+})();
+const propertyType = jsonPropertyType ?? bodyPropertyType(property.body);
 
 // 權狀／單價是否含車位（大樓／華廈的產權固定車位；判斷規則見 src/utils/parkingCaliber.ts）
 // 沒有「類型」行的 HG/UA 物件拿原始案名代替做排除比對（只會更嚴，不會多標）
@@ -138,15 +153,6 @@ const publicCommunity = publicCommunityName(property.data);
 const twDate = (d: Date) =>
   new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Taipei" }).format(d);
 const dataDate = property.data.lastSeen ?? property.data.pubDatetime;
-
-// 住宅型才顯示月付試算：土地／店面／廠房／商辦／農舍的貸款成數與年限依銀行鑑價而定，
-// 用 8 成 30 年算出來的數字對買方是錯的（實例：69,990 萬農建地印出「月付約 215.6 萬」）
-const RESIDENTIAL_RE = /大樓|華廈|公寓|透天|別墅|套房/;
-const NON_RESIDENTIAL_RE = /土地|農地|建地|林地|店面|廠房|商辦|辦公|農舍|倉儲|商場/;
-const isResidential = propertyType
-  ? RESIDENTIAL_RE.test(propertyType)
-  : !NON_RESIDENTIAL_RE.test(`${rawTitle} ${property.data.layout || ""}`) &&
-    property.data.layout !== "—";
 
 // 月付試算（build-time 靜態值；參數在 src/config.ts 的 loan，每月底更新）
 const monthlyRate = loan.rate / 12;
@@ -429,6 +435,11 @@ const priceInNTD = property.data.totalPrice * 10000;
 // 土地判成 Apartment；33 筆沒有「類型」行的 HG/UA 物件（含 1500 坪農地）全部預設 Apartment。
 // 廠房／店面以前標 LocalBusiness，會被當成一家營業中的商家（可能餵進 Maps），維持 Place。
 const NON_RESIDENTIAL_TITLE_RE = /農地|建地|土地|林地|農舍|車位|停車|店面|廠房|商辦/;
+// 路段欄位是地段名（「先驅段」，不是「XX路二段」）＝用地段定位的農地／農舍（只在沒有類型時採用）
+const streetIsLandSection = (() => {
+  const street = streetAreaClean || "";
+  return Boolean(street) && !/[路街道巷]/.test(street) && /[^一二三四五六七八九十]段$/.test(street);
+})();
 function getSchemaType(): string {
   // 1. 有「類型」行就只看它
   if (propertyType) {
@@ -438,14 +449,14 @@ function getSchemaType(): string {
   }
   // 2. 沒有類型：格局寫「土地」或「—」（非住宅）
   if (layoutText === "土地" || layoutText === "—") return "Place";
-  // 3. 只看原始案名的非住宅字（不看描述、不用面積門檻）
-  if (NON_RESIDENTIAL_TITLE_RE.test(rawTitle)) return "Place";
+  // 3. 只看原始案名的非住宅字（不看描述、不用面積門檻）。
+  //    格局有「N房」時不看「車位／停車」：「北屯三房柱邊車位」「兩房有車位」是附車位的住宅，
+  //    不是車位物件（2026-10-04 修，UG1139951／UG1172042 以前被判成 Place）
+  const titleForNonRes = roomMatch ? rawTitle.replace(/車位|停車/g, "") : rawTitle;
+  if (NON_RESIDENTIAL_TITLE_RE.test(titleForNonRes)) return "Place";
   // 4. 路段欄位是地段名（「先驅段」「高西段」，不是「XX路二段」）：用地段定位的是農地／農舍，
   //    不是公寓大樓（HG0212841 先驅段 1500 坪農地＋農舍就是這種）
-  const street = streetAreaClean || "";
-  if (street && !/[路街道巷]/.test(street) && /[^一二三四五六七八九十]段$/.test(street)) {
-    return "Place";
-  }
+  if (streetIsLandSection) return "Place";
   if (/透天|別墅/.test(rawTitle)) return "SingleFamilyResidence";
   // 5. 最後才預設大樓／華廈
   return "Apartment";
@@ -457,6 +468,21 @@ const isLand =
   (propertyType
     ? /土地|農地|建地|林地/.test(propertyType)
     : layoutText === "土地" || /農地|建地|土地|林地/.test(rawTitle));
+
+// 住宅型才顯示月付試算：土地／店面／廠房／商辦／農舍的貸款成數與年限依銀行鑑價而定，
+// 用 8 成 30 年算出來的數字對買方是錯的（實例：69,990 萬農建地印出「月付約 215.6 萬」）
+// 2026-10-04（F130）：沒有類型的土地（例 HG0212841 先驅段農地＋農舍，格局寫「3房2廳3衛」、
+// 案名也沒有土地字樣）以前會漏網印出月付 → 再排除 isLand 與「路段是地段名」。
+// ⛔ 不要改成直接看 schemaType：附車位住宅、店面以外的判斷各有例外，月付只排除「確定是土地」的。
+const RESIDENTIAL_RE = /大樓|華廈|公寓|透天|別墅|套房/;
+const NON_RESIDENTIAL_RE = /土地|農地|建地|林地|店面|廠房|商辦|辦公|農舍|倉儲|商場/;
+const isResidential =
+  !isLand &&
+  !(!propertyType && streetIsLandSection) &&
+  (propertyType
+    ? RESIDENTIAL_RE.test(propertyType)
+    : !NON_RESIDENTIAL_RE.test(`${rawTitle} ${property.data.layout || ""}`) &&
+      property.data.layout !== "—");
 
 // 圖片 array: 至多 6 張避免 JSON-LD payload 過大
 const MAX_SCHEMA_IMAGES = 6;
@@ -637,6 +663,7 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
   ogImage={ogImagePath}
   canonicalURL={canonicalURL}
   showFloatingCTA={false}
+  lcpImage={photos[0]}
 >
   <Fragment slot="head">
     <script
@@ -1222,11 +1249,14 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
                     >
                       {p.data.coverImage ? (
                         <div class="bg-muted aspect-[4/3] w-full overflow-hidden">
+                          {/* 相關卡用 400×300 縮圖（F027）；縮圖不在就退回原圖（coverThumb 保底） */}
                           <img
-                            src={
-                              typeof p.data.coverImage === "string"
-                                ? p.data.coverImage
-                                : p.data.coverImage.src
+                            src={coverThumb(coverSrcOf(p.data.coverImage) ?? "", 400)}
+                            srcset={coverSrcset(coverSrcOf(p.data.coverImage) ?? "")}
+                            sizes={
+                              coverSrcset(coverSrcOf(p.data.coverImage) ?? "")
+                                ? "(min-width: 640px) 33vw, 50vw"
+                                : undefined
                             }
                             alt=""
                             width="400"

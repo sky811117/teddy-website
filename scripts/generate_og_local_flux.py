@@ -37,6 +37,10 @@ from PIL import Image
 sys.path.insert(0, r"C:\Users\a0920\房仲工作站\420_IG_API")
 from comfyui_gen import gen_flux_image  # noqa: E402
 
+# AI 圖機器可讀標記（IPTC DigitalSourceType=trainedAlgorithmicMedia，寫進 XMP；台帳 X028）
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from ai_image_marker import XMP_AI_BYTES  # noqa: E402
+
 if sys.platform == "win32":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
@@ -329,7 +333,8 @@ def to_og_jpg(png_bytes: bytes, out: Path) -> None:
     top = (im.height - OG_H) // 2
     im = im.crop((left, top, left + OG_W, top + OG_H))
     out.parent.mkdir(parents=True, exist_ok=True)
-    im.save(out, "JPEG", quality=86, optimize=True, progressive=True)
+    # xmp=：把「這是 AI 生成圖」寫進圖檔，Google 圖片才認得出不是實景（Pillow ≥11）
+    im.save(out, "JPEG", quality=86, optimize=True, progressive=True, xmp=XMP_AI_BYTES)
 
 
 def make_thumbs() -> None:

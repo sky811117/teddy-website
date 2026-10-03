@@ -1,5 +1,5 @@
 ---
-title: 國家一號院評價・實價登錄：西屯市政路 12 年 103 戶大坪數社區，扣車位單價中位數 40.68 萬
+title: 國家一號院評價・實價登錄：西屯市政路 12 年 103 戶大坪數
 author: 陳景泰
 pubDatetime: 2026-10-07 07:00:00+08:00
 slug: community-guojia-yihaoyuan
