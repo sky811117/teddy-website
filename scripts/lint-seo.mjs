@@ -689,6 +689,18 @@ async function lintPosts(errors, warnings) {
     } else if (Array.isArray(meta.tags) && meta.tags.includes("others")) {
       warnings.push({ file: f, msg: "tags 含 'others' 預設值 (建議用實際主題標籤)" });
     }
+    // 10. 標籤寫法（2026-10-04 台帳 C 批統一過，舊標籤頁都 301 了，產線再寫回會讓新文章掛到轉址頁）
+    if (Array.isArray(meta.tags)) {
+      const SHORT_DISTRICT_TAGS = ["北屯", "西屯", "南屯", "梧棲", "太平", "大里", "烏日", "豐原", "潭子"];
+      const MERGED_TAGS = { 利率: "房貸", 房貸利率: "房貸", 成屋: "中古屋" };
+      const tagStrs = meta.tags.map(t => String(t));
+      const shortD = tagStrs.filter(t => SHORT_DISTRICT_TAGS.includes(t));
+      if (shortD.length) warnings.push({ file: f, msg: `tags 用了短寫區名 ${shortD.join("、")}（請寫「${shortD[0]}區」）` });
+      const years = tagStrs.filter(t => /^20\d{2}$/.test(t));
+      if (years.length) warnings.push({ file: f, msg: `tags 含年份標籤 ${years.join("、")}（之後會顯得過時，/tags/2026/ 已轉址）` });
+      const merged = tagStrs.filter(t => t in MERGED_TAGS);
+      if (merged.length) warnings.push({ file: f, msg: `tags 用了已合併的標籤 ${merged.map(t => `${t}→${MERGED_TAGS[t]}`).join("、")}` });
+    }
 
     // 4. pubDatetime
     if (!meta.pubDatetime) {

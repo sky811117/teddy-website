@@ -17,6 +17,7 @@ import {
   sanitizeHighlights,
 } from "@/utils/cleanPropertyTitle";
 import { areaIncludesParking, bodyPropertyType } from "@/utils/parkingCaliber";
+import { listedAt, priceCheckedDate } from "@/utils/propertySiteData";
 import { coverSrcOf, coverSrcset, coverThumb } from "@/utils/coverThumb";
 import {
   photoAlt,
@@ -72,9 +73,7 @@ const formatPrice = (price: number) => {
 
 // 新上架 / 降價 判斷
 const NEW_DAYS = 7;
-const isNew =
-  property.data.pubDatetime &&
-  (Date.now() - property.data.pubDatetime.getTime()) / 86400000 <= NEW_DAYS;
+const isNew = (Date.now() - listedAt(property).getTime()) / 86400000 <= NEW_DAYS;
 const dropPct =
   property.data.lastPrice && property.data.lastPrice > property.data.totalPrice
     ? Math.round(((property.data.lastPrice - property.data.totalPrice) / property.data.lastPrice) * 100)
@@ -85,9 +84,7 @@ const dropPct =
 // 等 properties-sync 補 firstSeen 欄位後才能恢復精準判定。
 const NEW_BADGE_MAX_RATIO = 0.3;
 const siteNewCount = properties.filter(
-  p =>
-    p.data.pubDatetime &&
-    (Date.now() - p.data.pubDatetime.getTime()) / 86400000 <= NEW_DAYS
+  p => (Date.now() - listedAt(p).getTime()) / 86400000 <= NEW_DAYS
 ).length;
 const showNewBadge =
   properties.length > 0 &&
@@ -153,6 +150,8 @@ const publicCommunity = publicCommunityName(property.data);
 const twDate = (d: Date) =>
   new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Taipei" }).format(d);
 const dataDate = property.data.lastSeen ?? property.data.pubDatetime;
+// 2026-10-04 台帳 X006 第二階段：當晚店頭價格核對過的委編，頁面改標「價格核對日」
+const priceChecked = priceCheckedDate(property.id);
 
 // 月付試算（build-time 靜態值；參數在 src/config.ts 的 loan，每月底更新）
 const monthlyRate = loan.rate / 12;
@@ -540,7 +539,7 @@ const listingSchema = {
   image: schemaImages,
   inLanguage: "zh-TW",
   // 台灣日期（toISOString 是 UTC，8/23 06:36 會被印成 8/22）
-  datePosted: twDate(property.data.pubDatetime),
+  datePosted: twDate(listedAt(property)),
   dateModified: twDate(dataDate),
   about: aboutSchema,
   offers: {
@@ -814,7 +813,7 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
         }
       </div>
       {/* 資料日期（稽核 X006）：用「資料更新日」不寫「核對日」——目前沒有每晚比價 */}
-      <p class="text-muted-foreground mt-1 text-xs">資料更新日 {twDate(dataDate)}・價格、格局與屋況以委託契約及現場說明為準</p>
+      <p class="text-muted-foreground mt-1 text-xs">{priceChecked ? `價格核對日 ${priceChecked}` : `資料更新日 ${twDate(dataDate)}`}・價格、格局與屋況以委託契約及現場說明為準</p>
 
       {/* 月付試算（住宅型才顯示；參數在 src/config.ts 的 loan）*/}
       {

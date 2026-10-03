@@ -69,8 +69,10 @@ export function sortRecommended(list: PropertyEntry[]): PropertyEntry[] {
 // 標籤判斷
 export const NEW_LISTING_DAYS = 7;
 export function isNewListing(p: PropertyEntry, now: number = Date.now()): boolean {
-  if (!p.data.pubDatetime) return false;
-  return (now - p.data.pubDatetime.getTime()) / 86400000 <= NEW_LISTING_DAYS;
+  // 2026-10-04：有 firstSeen 就用（第一次出現在官網），沒有才退回 pubDatetime
+  const at = p.data.firstSeen ?? p.data.pubDatetime;
+  if (!at) return false;
+  return (now - at.getTime()) / 86400000 <= NEW_LISTING_DAYS;
 }
 export function priceDropPct(p: PropertyEntry): number | null {
   if (!p.data.lastPrice || p.data.lastPrice <= p.data.totalPrice) return null;

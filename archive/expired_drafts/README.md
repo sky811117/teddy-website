@@ -17,3 +17,7 @@
 - `faq-01-agent-fee-negotiable.md` — 仲介費法規與契約（常青）
 - `week-02-5168-force-click.md` — 技術週記
 - `week-03-bigkanban-monitor.md` — 技術週記
+
+## 2026-10-04 移入
+
+- `news-2026-09-07-taichung-aug-transfer-volume.md` — 9/11 那篇已寫過同一組累計數字，文內提到的 9/17 央行理監事會也已經過了，不再發。

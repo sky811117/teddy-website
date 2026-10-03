@@ -1,5 +1,6 @@
 ---
 import Layout from "@/layouts/Layout.astro";
+import { areas } from "@/data/areas";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import ContactForm from "@/components/ContactForm.astro";
@@ -100,7 +101,7 @@ const toolLinks = [
     href: "/areas/",
     emoji: "📍",
     title: "台中各區買房指南",
-    desc: "北屯 / 七期 / 南屯 / 西區 / 烏日 / 梧棲 11 區行情與生活機能",
+    desc: "北屯 / 七期 / 南屯 / 西區 / 烏日 / 梧棲等 " + areas.length + " 區行情與生活機能",
   },
   {
     href: "/properties/",

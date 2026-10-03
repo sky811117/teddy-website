@@ -35,7 +35,13 @@
 /posts/2026-09-W02-city-taichung-major-projects-timeline /posts/ 301
 
 # 2026-10-04 區名標籤統一成「X區」：9 個短寫舊標籤頁 301 到新標籤頁
-# （/tags/2026/ 不轉：2026-05-W26-price-bands.mdx 還掛著 2026 標籤，頁面仍有內容）
+# 2026-10-04：最後一篇年份標籤拿掉，/tags/2026/ 轉文章列表；「利率」併入「房貸」、「成屋」併入「中古屋」
+/tags/2026/ /posts/ 301
+/tags/2026 /posts/ 301
+/tags/%E5%88%A9%E7%8E%87/ /tags/%E6%88%BF%E8%B2%B8/ 301
+/tags/%E5%88%A9%E7%8E%87 /tags/%E6%88%BF%E8%B2%B8/ 301
+/tags/%E6%88%90%E5%B1%8B/ /tags/%E4%B8%AD%E5%8F%A4%E5%B1%8B/ 301
+/tags/%E6%88%90%E5%B1%8B /tags/%E4%B8%AD%E5%8F%A4%E5%B1%8B/ 301
 /tags/%E6%A2%A7%E6%A3%B2/ /tags/%E6%A2%A7%E6%A3%B2%E5%8D%80/ 301
 /tags/%E6%A2%A7%E6%A3%B2 /tags/%E6%A2%A7%E6%A3%B2%E5%8D%80/ 301
 /tags/%E5%8C%97%E5%B1%AF/ /tags/%E5%8C%97%E5%B1%AF%E5%8D%80/ 301

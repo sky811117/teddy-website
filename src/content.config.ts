@@ -113,6 +113,10 @@ const properties = defineCollection({
       pubDatetime: z.date(),
       modDatetime: z.date().optional().nullable(),
       lastSeen: z.date().optional(), // 同事物件每次 sync 寫今天；7 天無更新 → 自動標 withdrawn
+      // 2026-10-04 台帳 F080／F129：properties-sync 寫入。firstSeen＝第一次出現在官網（只增不覆蓋），
+      // statusChangedAt＝標成 withdrawn 的時間。舊 md 沒有這兩行，被重寫後才會有。
+      firstSeen: z.coerce.date().optional(),
+      statusChangedAt: z.coerce.date().optional(),
 
       // 法規揭露（廣告必載）
       brokerLicense: z.string().default("黃永隆 113彰縣字324"),

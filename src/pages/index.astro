@@ -12,6 +12,7 @@ import { cleanPropertyTitle } from "@/utils/cleanPropertyTitle";
 import { areaIncludesParking, bodyPropertyType } from "@/utils/parkingCaliber";
 import { COVER_CARD_SIZES, coverSrcOf, coverSrcset, coverThumb } from "@/utils/coverThumb";
 import config from "@/config";
+import { areas } from "@/data/areas";
 import { YT_CHANNEL_URL, YT_HANDLE } from "@/astro-paper.config";
 import { Image } from "astro:assets";
 import ycLogo from "@/assets/logos/yochaoshi.png";
@@ -654,7 +655,7 @@ const bigKanBanAccounts = [
                 台中各區
               </h3>
               <p class="text-muted-foreground mt-1 text-xs leading-relaxed sm:text-sm">
-                11 區買房指南 — 北屯 / 七期 / 南屯 / 西區 / 烏日 / 梧棲
+                {areas.length} 區買房指南 — 北屯 / 七期 / 南屯 / 西區 / 烏日 / 梧棲
               </p>
             </a>
           </li>

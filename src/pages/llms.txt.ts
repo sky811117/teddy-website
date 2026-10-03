@@ -13,6 +13,7 @@ import { getCollection } from "astro:content";
 import { postFilter } from "@/utils/postFilter";
 import { getPostUrl } from "@/utils/getPostPaths";
 import config from "@/config";
+import { areas } from "@/data/areas";
 import { YT_CHANNEL_URL, YT_HANDLE } from "@/astro-paper.config";
 
 const u = (path: string) => new URL(path, config.site.url).href;
@@ -158,17 +159,7 @@ export const GET: APIRoute = async () => {
 ## 台中各區與社區評價
 
 - [台中各區買房指南](${u("/areas/")})：一區一頁，寫行情、生活圈、熱門社區、適合誰買、要注意什麼，附該區在售物件與社區文章
-- [北屯區](${u("/areas/north-tun/")})
-- [西屯區（含七期）](${u("/areas/west-tun/")})
-- [南屯區](${u("/areas/south-tun/")})
-- [北區](${u("/areas/north-district/")})
-- [西區](${u("/areas/west-district/")})
-- [南區](${u("/areas/south-district/")})
-- [中區](${u("/areas/central-district/")})
-- [太平區](${u("/areas/taiping/")})
-- [大里區](${u("/areas/dali/")})
-- [烏日區](${u("/areas/wuri/")})
-- [梧棲區](${u("/areas/wuqi/")})
+${areas.map((a) => `- [${a.name}](${u(`/areas/${a.slug}/`)})`).join("\n")}
 - [社區評價](${u("/tags/community-review/")})：台中個別社區的評價文章
 
 ## 代表文章

@@ -10,6 +10,7 @@ import { areas, AREA_DATA_PERIOD, AREA_STATS_META, getAreaStats, type Area } fro
 import { safeJsonLd } from "@/utils/safeJsonLd";
 import { postFilter } from "@/utils/postFilter";
 import { cleanPropertyTitle } from "@/utils/cleanPropertyTitle";
+import { COVER_CARD_SIZES, coverSrcOf, coverSrcset, coverThumb } from "@/utils/coverThumb";
 import { getDistrictListUrl } from "@/utils/isTaichung";
 import IconAlertTriangle from "@/assets/icons/IconAlertTriangle.svg";
 import IconNotes from "@/assets/icons/IconNotes.svg";
@@ -268,6 +269,8 @@ const areaTools = [
   description={pageDescription}
   canonicalURL={canonicalURL}
   ogImage={area.heroImage?.src}
+  ogImageWidth={area.heroImage?.width}
+  ogImageHeight={area.heroImage?.height}
 >
   <Fragment slot="head">
     <script
@@ -555,11 +558,9 @@ const areaTools = [
                     {property.data.coverImage ? (
                       <div class="bg-muted aspect-[4/3] w-full overflow-hidden">
                         <img
-                          src={
-                            typeof property.data.coverImage === "string"
-                              ? property.data.coverImage
-                              : property.data.coverImage.src
-                          }
+                          src={coverThumb(coverSrcOf(property.data.coverImage) ?? "", 800)}
+                          srcset={coverSrcset(coverSrcOf(property.data.coverImage) ?? "")}
+                          sizes={coverSrcset(coverSrcOf(property.data.coverImage) ?? "") ? COVER_CARD_SIZES : undefined}
                           alt=""
                           width="800"
                           height="600"

@@ -373,6 +373,15 @@ def main() -> int:
     if args.dry_run:
         print("[dry-run] 不寫檔")
         return 0
+    # 2026-10-04：每晚 450 nightly 會跑這支；數字沒變就不重寫，免得只因 generatedAt 天天產生 commit
+    if OUT.exists():
+        try:
+            old = json.loads(OUT.read_text(encoding="utf-8"))
+            if {k: v for k, v in old.items() if k != "generatedAt"} == {k: v for k, v in out.items() if k != "generatedAt"}:
+                print("統計沒變，不重寫（避免只因 generatedAt 產生 diff）")
+                return 0
+        except (ValueError, OSError):
+            pass
     OUT.write_text(text, encoding="utf-8", newline="\n")
     print(f"寫入 {OUT}")
     return 0
