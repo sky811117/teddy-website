@@ -36,9 +36,12 @@ const buyerTools = [
     icon: "🧮",
     name: "買方費用試算（青安 3.0 vs 一般房貸）",
     desc: `一次性費用 + 月付金。${QINGAN_NOTE}`,
-    url: "https://teddy-share-app.vercel.app/buyer-fee2/index.html",
-    external: true,
+    // 2026-10-04 掛到站內 /tools/buyer-fee/：本體仍在 teddy-share-app（同事白牌共用），
+    // functions/tools/buyer-fee/[[path]].ts 轉接，工具才算在官網底下
+    url: "/tools/buyer-fee/",
+    external: false,
     status: "上線",
+    isNew: true,
   },
   {
     icon: "🅿️",
@@ -140,7 +143,7 @@ const softwareSchemas = [
     "@type": "WebApplication",
     name: "買方費用試算（青安 3.0 vs 一般房貸）",
     description: `計算買房一次性費用 + 月付金。${QINGAN_NOTE}`,
-    url: "https://teddy-share-app.vercel.app/buyer-fee2/index.html",
+    url: new URL("/tools/buyer-fee/", Astro.site).href,
     applicationCategory: "FinanceApplication",
     operatingSystem: "Any (Web)",
     offers: {

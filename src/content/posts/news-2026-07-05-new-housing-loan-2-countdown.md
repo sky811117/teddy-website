@@ -110,7 +110,7 @@ timezone: "Asia/Taipei"
 
 ## 給你的下一步
 
-1. **先用工具自己算**：[買方費用試算工具](https://teddy-share-app.vercel.app/buyer-fee2/index.html)（記得用銀行給你的真實利率）
+1. **先用工具自己算**：[買方費用試算工具](/tools/buyer-fee/)（記得用銀行給你的真實利率）
 2. **確認你的資格**：LINE 我 [sky811117](/go/line?src=post)，我問 3 題幫你判斷
 3. **看官方說法**：[財政部全球資訊網](https://www.mof.gov.tw/)
 

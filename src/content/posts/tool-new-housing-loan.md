@@ -28,7 +28,7 @@ timezone: Asia/Taipei
 
 ## 工具做什麼
 
-合併在 [買方費用試算工具](https://teddy-share-app.vercel.app/buyer-fee2/index.html) 裡面 — 輸入「貸款金額、年限、寬限期」，工具會給你：
+合併在 [買方費用試算工具](/tools/buyer-fee/) 裡面 — 輸入「貸款金額、年限、寬限期」，工具會給你：
 
 1. **新青安 vs 一般房貸月付對照**（寬限期內 vs 寬限期後）
 2. **30 年總利息差距**
@@ -67,7 +67,7 @@ timezone: Asia/Taipei
 
 **Step 2：開工具輸入金額**
 
-[teddy-share-app.vercel.app/buyer-fee2/](https://teddy-share-app.vercel.app/buyer-fee2/index.html) → 輸入「貸款金額、年限、是否寬限 5 年」。
+[teddy-share-app.vercel.app/buyer-fee2/](/tools/buyer-fee/) → 輸入「貸款金額、年限、是否寬限 5 年」。
 
 **Step 3：看 30 年總對照**
 

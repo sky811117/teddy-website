@@ -84,7 +84,7 @@ timezone: "Asia/Taipei"
 
 ## 工具 — 你自己也能先算
 
-我做了一個[**買方費用試算工具**](https://teddy-share-app.vercel.app/buyer-fee2/index.html)，公開可以用。
+我做了一個[**買方費用試算工具**](/tools/buyer-fee/)，公開可以用。
 
 - 輸入總價、自備款、貸款年限
 - 自動算月付差距
@@ -96,7 +96,7 @@ timezone: "Asia/Taipei"
 
 ## 給你的下一步
 
-1. **先用工具自己算**：[買方費用試算](https://teddy-share-app.vercel.app/buyer-fee2/index.html)
+1. **先用工具自己算**：[買方費用試算](/tools/buyer-fee/)
 2. **想算你這間房的實際可貸金額**：[LINE 私訊景泰](/go/line?src=post-body)，給我物件的社區、坪數、開價，我幫你把同社區近半年實價登錄成交單價整理一份，你自己對照鑑價會落在哪
 3. **想看完整政策原文**：[中央銀行全球資訊網](https://www.cbc.gov.tw/tw/cp-302-181191-94138-1.html)
 

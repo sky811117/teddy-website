@@ -116,7 +116,7 @@ timezone: "Asia/Taipei"
 
 ## 給你的下一步
 
-1. **先用工具自己算**：[buyer-fee2 試算](https://teddy-share-app.vercel.app/buyer-fee2/index.html) — 輸入總價、年限，看新青安 vs 一般房貸月付差距
+1. **先用工具自己算**：[buyer-fee2 試算](/tools/buyer-fee/) — 輸入總價、年限，看新青安 vs 一般房貸月付差距
 2. **確認你適用新制或舊制**：LINE 我 [sky811117](/go/line?src=post)，給我 3 個數字（年齡、本人年所得、看的房總價），我幫你判斷該搶 7/31 舊制還是等 8/1 新制
 3. **看完整公告**：[中央社 — 青安3.0 新制重點一次看](https://www.cna.com.tw/news/afe/202607160271.aspx)
 

@@ -65,7 +65,7 @@ timezone: "Asia/Taipei"
 ## 給你的下一步
 
 - 想知道自己的物件持有年限落在哪個房地合一稅級距、大概要繳多少 — [LINE 私訊景泰](/go/line?src=post-body)，我幫你抓一個範圍
-- 想先了解自己房子現在的行情評估 — 用[買方費用試算工具](https://teddy-share-app.vercel.app/buyer-fee2/index.html)抓個底
+- 想先了解自己房子現在的行情評估 — 用[買方費用試算工具](/tools/buyer-fee/)抓個底
 - 財政部房地合一稅制度說明：可自行查詢持有期間對應稅率
 
 ---

@@ -63,7 +63,7 @@ timezone: "Asia/Taipei"
 
 手上有第2戶貸款要申請、或想知道現在銀行實際核貸成數落在哪，可以整理你的條件跟我對一下 — [LINE 私訊景泰](/go/line?src=post-body)。
 
-想自己先抓一下不同成數、有無寬限期的月付差距，可以用[買方費用試算工具](https://teddy-share-app.vercel.app/buyer-fee2/index.html)，不用註冊。
+想自己先抓一下不同成數、有無寬限期的月付差距，可以用[買方費用試算工具](/tools/buyer-fee/)，不用註冊。
 
 想看問卷完整原文，可查[中央銀行第3季理監事會決議新聞稿](https://www.cbc.gov.tw/tw/cp-302-181191-94138-1.html)對照政策原文。
 

@@ -82,7 +82,7 @@ timezone: "Asia/Taipei"
 - {{升息：每月月付金變高，你的「能負擔總價」會降。原本看 1200 萬的，可能要重新算}}
 - {{降息：月付金壓力降，但市場買氣可能變熱、屋主議價空間縮}}
 
-**我的建議**：先用[買方費用試算工具](https://teddy-share-app.vercel.app/buyer-fee2/index.html)把你的「新總價上限」算出來，再回來看屋。
+**我的建議**：先用[買方費用試算工具](/tools/buyer-fee/)把你的「新總價上限」算出來，再回來看屋。
 
 ### 情境 2：你已經下訂、準備對保
 - {{升息：對保時銀行會用新利率報價，月付會跟你下訂時想像的不一樣}}
@@ -116,7 +116,7 @@ timezone: "Asia/Taipei"
 
 ## 給你的下一步
 
-1. **先用工具自己算**：[買方費用試算](https://teddy-share-app.vercel.app/buyer-fee2/index.html)
+1. **先用工具自己算**：[買方費用試算](/tools/buyer-fee/)
 2. **想算具體某間房 / 你的轉貸**：LINE 我 [sky811117](/go/line?src=post)，給我數字我幫你跑試算
 3. **想看央行原始公告**：[央行新聞稿](https://www.cbc.gov.tw/tw/lp-285-1.html)
 

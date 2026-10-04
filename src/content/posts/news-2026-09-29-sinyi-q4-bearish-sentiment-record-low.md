@@ -59,7 +59,7 @@ timezone: "Asia/Taipei"
 
 想知道你關注的社區這幾個月實際成交行情有沒有跟上這份調查的變化，可以整理物件給我對一下 — [LINE 私訊景泰](/go/line?src=post-body)。
 
-想自己抓一下不同房貸成數下的月付數字，可以用[買方費用試算工具](https://teddy-share-app.vercel.app/buyer-fee2/index.html)，不用註冊。
+想自己抓一下不同房貸成數下的月付數字，可以用[買方費用試算工具](/tools/buyer-fee/)，不用註冊。
 
 ---
 

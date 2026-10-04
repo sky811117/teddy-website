@@ -108,7 +108,7 @@ timezone: "Asia/Taipei"
 
 ## 給你的下一步
 
-1. **先用工具自己算**：[buyer-fee2 試算工具](https://teddy-share-app.vercel.app/buyer-fee2/index.html) — 輸入總價、自備款、年限，自動算新青安 vs 一般房貸月付差距與 30 年總利息，免註冊、免加 LINE。
+1. **先用工具自己算**：[buyer-fee2 試算工具](/tools/buyer-fee/) — 輸入總價、自備款、年限，自動算新青安 vs 一般房貸月付差距與 30 年總利息，免註冊、免加 LINE。
 2. **確認你的資格**：LINE 我 [sky811117](/go/line?src=post)，給我背景條件，我問 3 題幫你判斷「這個月該不該送件」。
 3. **看官方最新說明**：[財政部全球資訊網](https://www.mof.gov.tw/) — 2.0 以行政院正式公告為準。
 

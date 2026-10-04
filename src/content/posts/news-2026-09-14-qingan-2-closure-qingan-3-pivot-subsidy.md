@@ -76,7 +76,7 @@ timezone: "Asia/Taipei"
 
 1. **想知道自己算不算符合青安3.0的排富門檻**：[LINE 私訊景泰](/go/line?src=post-body)，把年所得跟年齡告訴我，我幫你對照
 2. **看財政部原始統計**：[青安2.0執行成果報導 / 壹蘋新聞網](https://news.nextapple.com/property/20260831/C8A10A7BCC21B194D6E4901A21EA0E4D)
-3. **想算自己實際貸款金額的月付金**：[房貸試算工具 buyer-fee2](https://teddy-share-app.vercel.app/buyer-fee2/index.html)
+3. **想算自己實際貸款金額的月付金**：[房貸試算工具 buyer-fee2](/tools/buyer-fee/)
 
 ---
 

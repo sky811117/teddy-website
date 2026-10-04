@@ -59,7 +59,7 @@ timezone: "Asia/Taipei"
 
 ## 給你的下一步
 
-- 想知道你打算貸的金額、利率、年期算出來的月付跟總利息各是多少——用[買方費用試算工具](https://teddy-share-app.vercel.app/buyer-fee2/index.html)自己代入數字試算
+- 想知道你打算貸的金額、利率、年期算出來的月付跟總利息各是多少——用[買方費用試算工具](/tools/buyer-fee/)自己代入數字試算
 - 內政部不動產資訊平台：可查詢官方貸款負擔率的計算方式與各縣市當期數值
 - 想聊聊自己的貸款條件怎麼抓比較合適——[LINE 私訊景泰](/go/line?src=post-body)
 

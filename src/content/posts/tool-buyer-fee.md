@@ -22,7 +22,7 @@ timezone: Asia/Taipei
 
 多數人把「總價的兩成」當成全部的門檻。但簽約當天真正要付出去的，還包含契稅、印花稅、履約保證費、代書費、銀行設定費，以及仲介費。等到房子已經看上、手邊的錢也都規劃出去了才發現要再多掏出一筆，時間上通常已經來不及調頭寸。
 
-所以有了這個[**買方費用試算工具**](https://teddy-share-app.vercel.app/buyer-fee2/index.html)，**讓你還沒看屋之前就先算清楚**。
+所以有了這個[**買方費用試算工具**](/tools/buyer-fee/)，**讓你還沒看屋之前就先算清楚**。
 
 ---
 
@@ -56,7 +56,7 @@ timezone: Asia/Taipei
 
 ## 怎麼用（3 步驟）
 
-**Step 1**：打開 [teddy-share-app.vercel.app/buyer-fee2/](https://teddy-share-app.vercel.app/buyer-fee2/index.html)
+**Step 1**：打開 [teddy-share-app.vercel.app/buyer-fee2/](/tools/buyer-fee/)
 
 **Step 2**：輸入 5 個欄位
 - 總價（看上的房子）

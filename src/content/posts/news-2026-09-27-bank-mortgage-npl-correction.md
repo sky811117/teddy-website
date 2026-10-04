@@ -65,7 +65,7 @@ timezone: "Asia/Taipei"
 
 想知道你目前往來的銀行水位鬆不鬆、核貸速度大概多久，可以把條件整理給我對一下 — [LINE 私訊景泰](/go/line?src=post-body)。
 
-想自己先抓一下不同成數、不同利率下的月付金差距，可以用[買方費用試算工具](https://teddy-share-app.vercel.app/buyer-fee2/index.html)，不用註冊。
+想自己先抓一下不同成數、不同利率下的月付金差距，可以用[買方費用試算工具](/tools/buyer-fee/)，不用註冊。
 
 ---
 

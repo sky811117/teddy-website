@@ -59,7 +59,7 @@ timezone: "Asia/Taipei"
 
 ## 給你的下一步
 
-- 想知道自己的所得換算成房價所得比或貸款負擔率是多少——用[買方費用試算工具](https://teddy-share-app.vercel.app/buyer-fee2/index.html)自己代入試算
+- 想知道自己的所得換算成房價所得比或貸款負擔率是多少——用[買方費用試算工具](/tools/buyer-fee/)自己代入試算
 - 內政部不動產資訊平台：可查詢官方房價所得比、貸款負擔率的完整計算方式
 - 想聊聊自己現在的狀況適合買還是先租——[LINE 私訊景泰](/go/line?src=post-body)
 

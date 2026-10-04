@@ -64,7 +64,7 @@ timezone: "Asia/Taipei"
 ## 給你的下一步
 
 - 想知道你家附近是「逆勢增溫區」還是「持續量縮區」——[LINE 私訊景泰](/go/line?src=post-body)，我幫你查該行政區近半年的移轉棟數趨勢
-- 想看自己房子在現在的市況下行情落在哪個區間——用[買方費用試算工具](https://teddy-share-app.vercel.app/buyer-fee2/index.html)先抓個底
+- 想看自己房子在現在的市況下行情落在哪個區間——用[買方費用試算工具](/tools/buyer-fee/)先抓個底
 - 內政部不動產資訊平台：可自行查詢各行政區每月買賣移轉登記棟數
 
 ---

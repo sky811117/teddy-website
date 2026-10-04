@@ -136,13 +136,13 @@ timezone: Asia/Taipei
 
 跑完可以看到一張表，5 種情境月付從低到高排列。然後再決定能接受哪一種。
 
-→ 公開試算工具：[buyer-fee2](https://teddy-share-app.vercel.app/buyer-fee2/index.html)
+→ 公開試算工具：[buyer-fee2](/tools/buyer-fee/)
 
 ---
 
 ## 下一步
 
-1. **想公開試算**：[buyer-fee2 工具](https://teddy-share-app.vercel.app/buyer-fee2/index.html)
+1. **想公開試算**：[buyer-fee2 工具](/tools/buyer-fee/)
 2. **想看完整時間線**：→ [W11 房貸利率 2.306%](/posts/2026-05-W11-loan-rate-2306/) 看具體月付差多少
 3. **想看完整市場觀察**：→ [W07 主柱：台中房市完整觀察](/posts/2026-05-taichung-market-pillar/)
 

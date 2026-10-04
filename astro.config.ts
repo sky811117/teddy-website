@@ -93,6 +93,8 @@ export default defineConfig({
   integrations: [
     mdx(),
     sitemap({
+      // 轉接頁（functions/ 底下，不是 Astro 產生的頁面）要手動列進 sitemap
+      customPages: [new URL("/tools/buyer-fee/", config.site.url).href],
       filter: page => {
         if (canonicalizedUrls.has(page) || canonicalizedUrls.has(safeDecodeURI(page))) return false;
         // 排除 thank-you / search / projects（內容空 / noindex 頁不該進 sitemap）

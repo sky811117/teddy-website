@@ -59,7 +59,7 @@ timezone: "Asia/Taipei"
 
 - 想在決議公布後第一時間知道對你的房貸影響 — [LINE 私訊景泰](/go/line?src=post-body)，給我貸款餘額跟剩餘年限，決議一出來我幫你算
 - 央行理監事會議決議新聞稿原文：[中央銀行全球資訊網](https://www.cbc.gov.tw/tw/cp-302-181191-94138-1.html)
-- 想先了解自己現在的購屋預算能到哪 — 用[買方費用試算工具](https://teddy-share-app.vercel.app/buyer-fee2/index.html)抓個底
+- 想先了解自己現在的購屋預算能到哪 — 用[買方費用試算工具](/tools/buyer-fee/)抓個底
 
 ---
 

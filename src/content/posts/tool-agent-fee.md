@@ -71,7 +71,7 @@ timezone: Asia/Taipei
 **3. 6% 是天花板，不是預設值。**
 契約上寫 3%，那就是 3%；寫 5%，那就是 5%。看契約，不要看傳言。
 
-想快速把數字帶進去算，我放了一個買方端的試算工具在這裡：[買方仲介費試算](https://teddy-share-app.vercel.app/buyer-fee2/index.html)。
+想快速把數字帶進去算，我放了一個買方端的試算工具在這裡：[買方仲介費試算](/tools/buyer-fee/)。
 
 ---
 

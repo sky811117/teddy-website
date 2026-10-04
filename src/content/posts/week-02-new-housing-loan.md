@@ -144,7 +144,7 @@ timezone: Asia/Taipei
 
 ## 工具 — 你自己也能先算
 
-我做了一個[**買方費用試算工具**](https://teddy-share-app.vercel.app/buyer-fee2/index.html)，公開可以用。
+我做了一個[**買方費用試算工具**](/tools/buyer-fee/)，公開可以用。
 
 - 輸入總價、自備款、貸款年限
 - 自動算新青安 vs 一般房貸月付差距
@@ -157,7 +157,7 @@ timezone: Asia/Taipei
 
 ## 給你的下一步
 
-1. **先用工具自己算**：[buyer-fee2 試算](https://teddy-share-app.vercel.app/buyer-fee2/index.html)
+1. **先用工具自己算**：[buyer-fee2 試算](/tools/buyer-fee/)
 2. **想算具體某間房**：LINE 我 [sky811117](/go/line?src=post)，給我總價跑幾個情境
 3. **想了解青安 3.0 完整條件**：[青安 3.0 完整指南](/posts/new-housing-loan-3-2026)、[財政部國庫署官方說明](https://www.nta.gov.tw/)
 
