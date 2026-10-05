@@ -56,7 +56,7 @@ timezone: Asia/Taipei
 
 ## 怎麼用（3 步驟）
 
-**Step 1**：打開 [teddy-share-app.vercel.app/buyer-fee2/](/tools/buyer-fee/)
+**Step 1**：打開 [teddy-house.tw/tools/buyer-fee/](/tools/buyer-fee/)
 
 **Step 2**：輸入 5 個欄位
 - 總價（看上的房子）

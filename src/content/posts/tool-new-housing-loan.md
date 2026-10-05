@@ -67,7 +67,7 @@ timezone: Asia/Taipei
 
 **Step 2：開工具輸入金額**
 
-[teddy-share-app.vercel.app/buyer-fee2/](/tools/buyer-fee/) → 輸入「貸款金額、年限、是否寬限 5 年」。
+[teddy-house.tw/tools/buyer-fee/](/tools/buyer-fee/) → 輸入「貸款金額、年限、是否寬限 5 年」。
 
 **Step 3：看 30 年總對照**
 
