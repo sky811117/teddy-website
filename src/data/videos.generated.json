@@ -1,11 +1,25 @@
 {
-  "generatedAt": "2026-10-04T05:11:31+08:00",
+  "generatedAt": "2026-10-05T20:14:13+08:00",
   "source": {
-    "registrySyncedAt": "2026-10-03 22:37",
+    "registrySyncedAt": "2026-10-04 22:37",
     "since": "2026-07-01"
   },
   "count": 34,
   "videos": [
+    {
+      "id": "yt-E_fMOYl7lqE",
+      "platform": "youtube",
+      "videoId": "E_fMOYl7lqE",
+      "url": "https://www.youtube.com/shorts/E_fMOYl7lqE",
+      "title": "台中北屯｜洲際w｜3房2廳2衛｜1998萬→1968萬",
+      "category": "看屋開箱",
+      "district": "北屯區",
+      "community": "洲際w",
+      "pubDate": "2026-10-04",
+      "listingCodes": [
+        "1228209"
+      ]
+    },
     {
       "id": "yt-vCaltY8TK-M",
       "platform": "youtube",
@@ -393,20 +407,6 @@
       "pubDate": "2026-07-29",
       "listingCodes": [
         "1211237"
-      ]
-    },
-    {
-      "id": "yt-yQAoZQyDfn4",
-      "platform": "youtube",
-      "videoId": "yQAoZQyDfn4",
-      "url": "https://www.youtube.com/shorts/yQAoZQyDfn4",
-      "title": "台中北區｜微笑世紀雲品特區｜2房2廳1衛｜1688萬",
-      "category": "看屋開箱",
-      "district": "北區",
-      "community": "微笑世紀雲品特區",
-      "pubDate": "2026-07-28",
-      "listingCodes": [
-        "1195690"
       ]
     },
     {
