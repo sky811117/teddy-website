@@ -916,7 +916,7 @@ function handleSubmitResult(r) {
   if (j.status === 'degraded') {
     track('submit_res', { st: 'degraded', sv: j.saved === false ? 0 : 1 });
     S.jobId = typeof j.jobId === 'string' ? j.jobId : null;
-    showDegraded(DEGRADE_MSG[j.kind] ? j.kind : 'general', j.saved === false);
+    showDegraded(DEGRADE_MSG[j.kind] ? j.kind : 'general', j.saved === false, j.diag);
     return;
   }
   if (j.status === 'queued' && typeof j.jobId === 'string') {
@@ -1117,13 +1117,17 @@ function applyHint(x) {
 }
 
 /* ---------- s9：降級 ---------- */
-function showDegraded(kind, lost) {
+function showDegraded(kind, lost, diag) {
   destroyGame();
   S.degradeKind = DEGRADE_MSG[kind] ? kind : 'general';
   var msg = byId('deg-msg'), ok = byId('deg-ok'), lostB = byId('deg-lost'), sb = byId('deg-summary-box'), copy = byId('deg-copy'), sum = byId('deg-summary');
   if (msg) msg.textContent = degradeText(kind);
   if (ok) ok.hidden = !!lost;
   if (lostB) lostB.hidden = !lost;
+  // 送不出去的原因代碼（只有失敗種類，例如 tg-h403）：小字顯示，截圖就能查是哪一關
+  var code = byId('deg-code');
+  var dc = lost && typeof diag === 'string' && /^[a-z0-9-]{1,24}$/.test(diag) ? diag : '';
+  if (code) { code.textContent = dc ? '代碼：' + dc : ''; code.hidden = !dc; }
   if (sb) sb.hidden = !lost;
   if (copy) copy.hidden = !lost;
   if (sum) sum.value = summaryText(S.fields, S.context);

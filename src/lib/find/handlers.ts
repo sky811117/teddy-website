@@ -46,6 +46,7 @@ export const realDeps = (): Deps => ({ fetch: (...a) => fetch(...a), now: () => 
 export const RESPONSE_KEYS = [
   "ok", "v", "status", "stage", "msg", "kind", "jobId", "queue", "shareUrl", "count", "hint", "pollMs", "saved", "missing",
   "ask", "code", "mode", "turnstileSiteKey", "needMax", "consentV", "tplV", "retry", "evt",
+  "diag",   // 2026-10-07：送不出去時的失敗種類短代碼（例如 tg-h403），只由本檔產生，不轉傳上游的任何東西
 ] as const;
 const KEYSET = new Set<string>(RESPONSE_KEYS);
 
@@ -161,26 +162,55 @@ export function tgTarget(env: Env): { token: string; chat: string } {
   return { token: envStr(env.CONTACT_TG_TOKEN), chat: envStr(env.CONTACT_TG_CHAT) };
 }
 
-async function sendTg(env: Env, deps: Deps, text: string): Promise<boolean> {
-  const { token, chat } = tgTarget(env);
-  if (!token || !chat) return false;
+/** 依序要試的 Telegram 組合：FIND_TG_*（兩個都有才算）→ CONTACT_TG_*（舊表單那隻；跟前一組不同才加） */
+export function tgTargets(env: Env): { token: string; chat: string }[] {
+  const out: { token: string; chat: string }[] = [];
+  const ft = envStr(env.FIND_TG_TOKEN), fc = envStr(env.FIND_TG_CHAT);
+  const ct = envStr(env.CONTACT_TG_TOKEN), cc = envStr(env.CONTACT_TG_CHAT);
+  if (ft && fc) out.push({ token: ft, chat: fc });
+  if (ct && cc && !(ct === ft && cc === fc)) out.push({ token: ct, chat: cc });
+  return out;
+}
+
+/** 失敗代碼（不含任何金鑰或內容）：none 沒設定、h401 金鑰錯、h403 機器人沒按開始或被封鎖、h400 聊天編號錯、net 連不上、to 逾時 */
+export type TgResult = { ok: boolean; diag: string };
+
+async function sendTgOne(deps: Deps, t: { token: string; chat: string }, text: string): Promise<string> {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 5000);
   try {
-    const res = await deps.fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    const res = await deps.fetch(`https://api.telegram.org/bot${t.token}/sendMessage`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ chat_id: chat, text, parse_mode: "HTML", disable_web_page_preview: true, disable_notification: false }),
+      body: JSON.stringify({ chat_id: t.chat, text, parse_mode: "HTML", disable_web_page_preview: true, disable_notification: false }),
       signal: ctl.signal,
     });
-    if (!res.ok) logFail("tg", `http_${res.status}`);
-    return res.ok;
-  } catch {
-    logFail("tg", "network");
-    return false;
+    if (res.ok) return "ok";
+    logFail("tg", `http_${res.status}`);
+    return `h${res.status}`;
+  } catch (e) {
+    const cls = (e as { name?: string })?.name === "AbortError" ? "to" : "net";
+    logFail("tg", cls === "to" ? "timeout" : "network");
+    return cls;
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** 找房專用那隻送不出去（例如新機器人還沒按「開始」）就改用舊表單那隻送，線索不掉；全失敗才回 ok=false＋代碼 */
+async function sendTg(env: Env, deps: Deps, text: string): Promise<TgResult> {
+  const targets = tgTargets(env);
+  if (!targets.length) {
+    logFail("tg", "unconfigured");
+    return { ok: false, diag: "tg-none" };
+  }
+  const fails: string[] = [];
+  for (const t of targets) {
+    const r = await sendTgOne(deps, t, text);
+    if (r === "ok") return { ok: true, diag: fails.length ? "tg-fallback" : "" };
+    fails.push(r);
+  }
+  return { ok: false, diag: "tg-" + fails.join("-") };
 }
 
 function fakeJobId(): string {
@@ -192,8 +222,8 @@ function fakeJobId(): string {
 }
 
 /* ---------- submit ---------- */
-function degradedBody(kind: DegradeKind, jobId: string | null, saved: boolean, withContact = false): Record<string, unknown> {
-  return {
+function degradedBody(kind: DegradeKind, jobId: string | null, saved: boolean, withContact = false, diag = ""): Record<string, unknown> {
+  const body: Record<string, unknown> = {
     ok: true,
     v: 1,
     status: "degraded",
@@ -202,6 +232,9 @@ function degradedBody(kind: DegradeKind, jobId: string | null, saved: boolean, w
     saved,
     msg: saved ? (withContact ? DEGRADE_MSG_CONTACT : DEGRADE_MSG)[kind] : DEGRADE_LOST_MSG,
   };
+  // 送不出去時附一個短代碼（只有失敗種類，沒有金鑰或內容），畫面上小字顯示，景泰截圖就知道是哪一關
+  if (!saved && diag) body.diag = diag;
+  return body;
 }
 
 const int = (v: unknown, lo: number, hi: number): number | null =>
@@ -266,17 +299,17 @@ export async function handleSubmit(ctx: FindCtx, deps: Deps = realDeps()): Promi
   if (vr === "fail") return errRes("E_HUMAN");
   if (vr === "unavailable") {
     logFail("submit", "human_unavailable");
-    return jsonRes(degradedBody("general", null, false));
+    return jsonRes(degradedBody("general", null, false, false, "human"));
   }
 
   const dev = uaKind(request.headers.get("user-agent"));
   const ref = c.idem.slice(0, 6);
   const lead = async (why: "intake" | "upstream_down") => {
-    const saved = await sendTg(
+    const tg = await sendTg(
       env, deps,
       formatLead({ why, fields: c.fields, context: c.context, free_text: c.free_text, contact: c.contact, consent: c.consent, from: c.from, dev, ref }),
     );
-    return jsonRes(degradedBody("general", null, saved, !!(c.contact && c.consent)));
+    return jsonRes(degradedBody("general", null, tg.ok, !!(c.contact && c.consent), tg.diag));
   };
 
   // 收件模式（總開關沒開、或查詢功能的設定沒設完整）：不轉送上游查詢，只收件
@@ -415,8 +448,8 @@ export async function handleContact(ctx: FindCtx, deps: Deps = realDeps()): Prom
     }
   }
   // 家用機真的連不上（或沒有工作編號、或收件模式）：直送 TG，仍然不丟
-  const saved = await sendTg(env, deps, formatContactLead(out.contact, out.consent));
-  return jsonRes({ ok: true, v: 1, saved });
+  const tg = await sendTg(env, deps, formatContactLead(out.contact, out.consent));
+  return jsonRes(tg.ok ? { ok: true, v: 1, saved: true } : { ok: true, v: 1, saved: false, diag: tg.diag });
 }
 
 /* ---------- 事件憑證（紅隊 RT-12） ----------
