@@ -89,8 +89,8 @@ test("收件：找房機器人成功就只送一次，不打擾舊機器人", as
 
 test("收件：兩隻都失敗 → saved:false，代碼列出兩關的失敗種類（不含金鑰）", async () => {
   for (const [map, diag] of [
-    [{ "find-token": 403, "contact-token": 401 }, "tg-h403-h401"],
-    [{ "find-token": 400, "contact-token": "throw" }, "tg-h400-net"],
+    [{ "find-token": 403, "contact-token": 401 }, "tg-fh403s-ch401s"],
+    [{ "find-token": 400, "contact-token": "throw" }, "tg-fh400s-cnets"],
   ]) {
     const n = net(tgStatus(map));
     const res = await H.handleSubmit(post("/api/find/submit", goodSubmit(), BOTH), n.deps);
@@ -110,7 +110,7 @@ test("收件：完全沒設 Telegram → 代碼 tg-none；只有一組且失敗 
   assert.equal(tgCalls(n).length, 0);
   n = net(tgStatus({ "c": 403 }));
   j = await jsonOf(await H.handleSubmit(post("/api/find/submit", goodSubmit(), { ...BASE, CONTACT_TG_TOKEN: "c", CONTACT_TG_CHAT: "2" }), n.deps));
-  assert.equal(j.diag, "tg-h403");
+  assert.equal(j.diag, "tg-ch403s");
 });
 
 test("補留聯絡方式：一樣會改用舊機器人；都失敗時 saved:false＋代碼", async () => {
@@ -120,5 +120,24 @@ test("補留聯絡方式：一樣會改用舊機器人；都失敗時 saved:fals
   assert.deepEqual(tgCalls(n).map(botOf), ["find-token", "contact-token"]);
   n = net(tgStatus({ "find-token": 403, "contact-token": 403 }));
   j = await jsonOf(await H.handleContact(post("/api/find/contact", goodContact(), BOTH), n.deps));
-  assert.deepEqual(j, { ok: true, v: 1, saved: false, diag: "tg-h403-h403" });
+  assert.deepEqual(j, { ok: true, v: 1, saved: false, diag: "tg-fh403s-ch403s" });
+});
+
+test("代碼帶「哪一隻＋金鑰長相」（不洩漏金鑰）：f／c、k 像金鑰、d 全數字、a @開頭、s 太短、o 其他；FIND 只填一格標 p", async () => {
+  const T = "1234567890:test_fake_token_not_real_0123456789ab";
+  assert.equal(H.tgShape(T), "k");
+  assert.equal(H.tgShape("905627471"), "d");
+  assert.equal(H.tgShape("@teddy_find_bot"), "a");
+  assert.equal(H.tgShape("abc"), "s");
+  assert.equal(H.tgShape("x".repeat(30)), "o");
+  // FIND 金鑰貼成聊天編號、聊天編號也是數字（不會被當成貼反）：兩隻都 404
+  let n = net(() => new Response("{}", { status: 404 }));
+  let j = await jsonOf(await H.handleSubmit(post("/api/find/submit", goodSubmit(), { ...BASE, FIND_TG_TOKEN: "905627471", FIND_TG_CHAT: "905627471", CONTACT_TG_TOKEN: T, CONTACT_TG_CHAT: "22" }), n.deps));
+  assert.equal(j.diag, "tg-fh404d-ch404k");
+  assert.ok(!JSON.stringify(j).includes("test_fake_token"));
+  // FIND 只填了金鑰、聊天編號空的 → 整組不算，直接用舊表單那隻；代碼前面有 p
+  n = net(() => new Response("{}", { status: 404 }));
+  j = await jsonOf(await H.handleSubmit(post("/api/find/submit", goodSubmit(), { ...BASE, FIND_TG_TOKEN: T, CONTACT_TG_TOKEN: "@old_bot", CONTACT_TG_CHAT: "22" }), n.deps));
+  assert.equal(j.diag, "tg-p-ch404a");
+  assert.match(j.diag, /^[a-z0-9-]{1,24}$/);   // 前端只顯示符合這個格式的代碼
 });

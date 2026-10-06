@@ -177,16 +177,39 @@ export function tgPair(rawToken: string, rawChat: string): { token: string; chat
   return { token: m ? m[1] : t.replace(/^bot(?=\d)/i, ""), chat: c };
 }
 
-/** 依序要試的 Telegram 組合：FIND_TG_*（兩個都有才算）→ CONTACT_TG_*（舊表單那隻；跟前一組不同才加） */
-export function tgTargets(env: Env): { token: string; chat: string }[] {
-  const out: { token: string; chat: string }[] = [];
+type TgTarget = { token: string; chat: string; who: "f" | "c" };
+
+function tgTargetsLabeled(env: Env): TgTarget[] {
+  const out: TgTarget[] = [];
   const ft = envStr(env.FIND_TG_TOKEN), fc = envStr(env.FIND_TG_CHAT);
   const ct = envStr(env.CONTACT_TG_TOKEN), cc = envStr(env.CONTACT_TG_CHAT);
   const a = ft && fc ? tgPair(ft, fc) : null;
   const b = ct && cc ? tgPair(ct, cc) : null;
-  if (a) out.push(a);
-  if (b && !(a && a.token === b.token && a.chat === b.chat)) out.push(b);
+  if (a) out.push({ ...a, who: "f" });
+  if (b && !(a && a.token === b.token && a.chat === b.chat)) out.push({ ...b, who: "c" });
   return out;
+}
+
+/** 依序要試的 Telegram 組合：FIND_TG_*（兩個都有才算）→ CONTACT_TG_*（舊表單那隻；跟前一組不同才加） */
+export function tgTargets(env: Env): { token: string; chat: string }[] {
+  return tgTargetsLabeled(env).map(({ token, chat }) => ({ token, chat }));
+}
+
+/**
+ * 金鑰「長相」一個字母（不洩漏金鑰本身）：k＝像機器人金鑰、d＝全是數字（多半貼成聊天編號）、a＝@開頭（貼成機器人帳號）、
+ * s＝很短（<20 字）、o＝其他。2026-10-07 景泰重貼後仍 tg-h404，後台看不到值，靠這個判斷貼了什麼。
+ */
+export function tgShape(token: string): string {
+  if (TG_TOKEN_RE.test(token)) return "k";
+  if (/^\d+$/.test(token)) return "d";
+  if (token.startsWith("@")) return "a";
+  if (token.length < 20) return "s";
+  return "o";
+}
+
+/** 只有 FIND 那組其中一格有值（另一格空的）＝整組不算，會直接改用舊表單那隻；代碼前面標 p 提醒 */
+function findPartial(env: Env): boolean {
+  return !!envStr(env.FIND_TG_TOKEN) !== !!envStr(env.FIND_TG_CHAT);
 }
 
 /** 失敗代碼（不含任何金鑰或內容）：none 沒設定、h401 金鑰錯、h403 機器人沒按開始或被封鎖、h400 聊天編號錯、net 連不上、to 逾時 */
@@ -216,18 +239,20 @@ async function sendTgOne(deps: Deps, t: { token: string; chat: string }, text: s
 
 /** 找房專用那隻送不出去（例如新機器人還沒按「開始」）就改用舊表單那隻送，線索不掉；全失敗才回 ok=false＋代碼 */
 async function sendTg(env: Env, deps: Deps, text: string): Promise<TgResult> {
-  const targets = tgTargets(env);
+  const targets = tgTargetsLabeled(env);
+  const pre = findPartial(env) ? "tg-p" : "tg";
   if (!targets.length) {
     logFail("tg", "unconfigured");
-    return { ok: false, diag: "tg-none" };
+    return { ok: false, diag: pre + "-none" };
   }
   const fails: string[] = [];
   for (const t of targets) {
     const r = await sendTgOne(deps, t, text);
     if (r === "ok") return { ok: true, diag: fails.length ? "tg-fallback" : "" };
-    fails.push(r);
+    // 例：fh404k＝找房那隻（f）回 404、金鑰長得像金鑰（k）；cnetd＝舊表單那隻（c）連不上、金鑰全是數字（d）
+    fails.push(t.who + r + tgShape(t.token));
   }
-  return { ok: false, diag: "tg-" + fails.join("-") };
+  return { ok: false, diag: pre + "-" + fails.join("-") };
 }
 
 function fakeJobId(): string {
