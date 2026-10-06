@@ -1,11 +1,25 @@
 {
-  "generatedAt": "2026-10-05T20:14:13+08:00",
+  "generatedAt": "2026-10-06T20:24:27+08:00",
   "source": {
-    "registrySyncedAt": "2026-10-04 22:37",
+    "registrySyncedAt": "2026-10-05 22:37",
     "since": "2026-07-01"
   },
   "count": 34,
   "videos": [
+    {
+      "id": "yt-FMOi-4havUc",
+      "platform": "youtube",
+      "videoId": "FMOi-4havUc",
+      "url": "https://www.youtube.com/shorts/FMOi-4havUc",
+      "title": "台中東區｜星境界｜2房2廳1衛｜1688萬",
+      "category": "看屋開箱",
+      "district": "東區",
+      "community": "星境界",
+      "pubDate": "2026-10-05",
+      "listingCodes": [
+        "1211333"
+      ]
+    },
     {
       "id": "yt-E_fMOYl7lqE",
       "platform": "youtube",
@@ -239,20 +253,6 @@
       "pubDate": "2026-09-01",
       "listingCodes": [
         "0387218"
-      ]
-    },
-    {
-      "id": "yt-p69CxpI-VoA",
-      "platform": "youtube",
-      "videoId": "p69CxpI-VoA",
-      "url": "https://www.youtube.com/shorts/p69CxpI-VoA",
-      "title": "台中太平｜慶吉公園大地｜3房2廳2衛｜1198萬",
-      "category": "看屋開箱",
-      "district": "太平區",
-      "community": "慶吉公園大地",
-      "pubDate": "2026-08-31",
-      "listingCodes": [
-        "0397182"
       ]
     },
     {
