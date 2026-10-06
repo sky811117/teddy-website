@@ -215,9 +215,12 @@ function findPartial(env: Env): boolean {
 /** 失敗代碼（不含任何金鑰或內容）：none 沒設定、h401 金鑰錯、h403 機器人沒按開始或被封鎖、h400 聊天編號錯、net 連不上、to 逾時 */
 export type TgResult = { ok: boolean; diag: string };
 
+/** 2026-10-07 實測代碼 tg-ftok：Telegram 其實收到了，但回應超過原本的 5 秒、被當成失敗。放寬到 12 秒（瀏覽器端不設逾時）。 */
+export const TG_TIMEOUT_MS = 12000;
+
 async function sendTgOne(deps: Deps, t: { token: string; chat: string }, text: string): Promise<string> {
   const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 5000);
+  const timer = setTimeout(() => ctl.abort(), TG_TIMEOUT_MS);
   try {
     const res = await deps.fetch(`https://api.telegram.org/bot${t.token}/sendMessage`, {
       method: "POST",
