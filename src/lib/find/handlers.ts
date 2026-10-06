@@ -162,13 +162,30 @@ export function tgTarget(env: Env): { token: string; chat: string } {
   return { token: envStr(env.CONTACT_TG_TOKEN), chat: envStr(env.CONTACT_TG_CHAT) };
 }
 
+/** BotFather 給的機器人金鑰長這樣：數字＋冒號＋一串英數（2026-10-07 實測 tg-h404＝金鑰格式不對）。 */
+const TG_TOKEN_RE = /(\d{5,12}:[A-Za-z0-9_-]{30,60})/;
+
+/**
+ * 後台貼錯的常見樣子自動修正：前面多了 bot、整串 https://api.telegram.org/bot…/ 網址、前後引號或空白、
+ * 金鑰與聊天編號兩格貼反。挑得出正確格式就用挑出來的；挑不出來就照原樣用（Telegram 會回 404，畫面顯示代碼）。
+ */
+export function tgPair(rawToken: string, rawChat: string): { token: string; chat: string } {
+  const unq = (s: string) => s.trim().replace(/^["'“”‘’]+|["'“”‘’]+$/g, "").trim();
+  let t = unq(rawToken), c = unq(rawChat);
+  if (!TG_TOKEN_RE.test(t) && TG_TOKEN_RE.test(c) && /^-?\d{3,20}$/.test(t)) [t, c] = [c, t];   // 兩格貼反
+  const m = TG_TOKEN_RE.exec(t);
+  return { token: m ? m[1] : t.replace(/^bot(?=\d)/i, ""), chat: c };
+}
+
 /** 依序要試的 Telegram 組合：FIND_TG_*（兩個都有才算）→ CONTACT_TG_*（舊表單那隻；跟前一組不同才加） */
 export function tgTargets(env: Env): { token: string; chat: string }[] {
   const out: { token: string; chat: string }[] = [];
   const ft = envStr(env.FIND_TG_TOKEN), fc = envStr(env.FIND_TG_CHAT);
   const ct = envStr(env.CONTACT_TG_TOKEN), cc = envStr(env.CONTACT_TG_CHAT);
-  if (ft && fc) out.push({ token: ft, chat: fc });
-  if (ct && cc && !(ct === ft && cc === fc)) out.push({ token: ct, chat: cc });
+  const a = ft && fc ? tgPair(ft, fc) : null;
+  const b = ct && cc ? tgPair(ct, cc) : null;
+  if (a) out.push(a);
+  if (b && !(a && a.token === b.token && a.chat === b.chat)) out.push(b);
   return out;
 }
 

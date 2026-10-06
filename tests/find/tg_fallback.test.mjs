@@ -46,6 +46,27 @@ test("tgTargets：兩組都有就依序 FIND → CONTACT；兩組一樣只算一
   assert.deepEqual(H.tgTargets({}), []);
 });
 
+test("tgPair：後台貼錯的常見樣子自動修正（多了 bot、整串網址、引號、兩格貼反）；挑不出來照原樣", () => {
+  const T = "1234567890:test_fake_token_not_real_0123456789ab";
+  assert.deepEqual(H.tgPair(T, "905627471"), { token: T, chat: "905627471" });
+  assert.deepEqual(H.tgPair("bot" + T, "905627471"), { token: T, chat: "905627471" });
+  assert.deepEqual(H.tgPair(`https://api.telegram.org/bot${T}/sendMessage`, "905627471"), { token: T, chat: "905627471" });
+  assert.deepEqual(H.tgPair(`"${T}"`, " '905627471' "), { token: T, chat: "905627471" });
+  assert.deepEqual(H.tgPair("905627471", T), { token: T, chat: "905627471" });          // 兩格貼反
+  assert.deepEqual(H.tgPair("find-token", "11"), { token: "find-token", chat: "11" });   // 不像金鑰：照原樣（測試假值也走這條）
+  assert.deepEqual(H.tgPair("bot12345", "11"), { token: "12345", chat: "11" });
+  // tgTargets 用修正後的值比對「兩組是不是同一隻」
+  assert.deepEqual(H.tgTargets({ FIND_TG_TOKEN: "bot" + T, FIND_TG_CHAT: "1", CONTACT_TG_TOKEN: T, CONTACT_TG_CHAT: "1" }), [{ token: T, chat: "1" }]);
+});
+
+test("收件：找房機器人金鑰前面多貼了 bot → 自動修正後送出成功（打的是正確的網址）", async () => {
+  const T = "1234567890:test_fake_token_not_real_0123456789ab";
+  const n = net(u => (u.includes("/botbot") ? new Response("{}", { status: 404 }) : Response.json({ ok: true })));
+  const j = await jsonOf(await H.handleSubmit(post("/api/find/submit", goodSubmit(), { ...BASE, FIND_TG_TOKEN: "bot" + T, FIND_TG_CHAT: "905627471" }), n.deps));
+  assert.equal(j.saved, true);
+  assert.deepEqual(tgCalls(n).map(c => c.url), [`https://api.telegram.org/bot${T}/sendMessage`]);
+});
+
 test("收件：找房機器人回 403（還沒按開始）→ 改用舊表單機器人送，客人看到「記下來了」，不顯示代碼", async () => {
   const n = net(tgStatus({ "find-token": 403 }));
   const j = await jsonOf(await H.handleSubmit(post("/api/find/submit", goodSubmit(), BOTH), n.deps));
