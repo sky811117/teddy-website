@@ -1,0 +1,46 @@
+---
+/**
+ * 選填的聯絡欄位（等待中、結果頁、降級頁共用）。LINE 或手機至少填一項才送得出去；
+ * 一定要勾「同意」（預設不勾）；隱藏的 hp 是 honeypot，真人看不到也不會填。
+ * 送出由 find-app.js 處理（data-lead-form）。
+ */
+type Props = {
+  p: string; // id 前綴，避免同頁多個表單 id 重複
+  where: "wait" | "result" | "degraded";
+  button: string;
+  withName?: boolean;
+  help?: string;
+};
+const { p, where, button, withName = false, help } = Astro.props;
+---
+
+<form class="u2-leadform" data-lead-form={where} novalidate>
+  <div class="u2-field">
+    <label for={`${p}-line`}>LINE ID（或顯示名稱）</label>
+    <input id={`${p}-line`} name="line" class="u2-input" type="text" autocomplete="off" maxlength="40" />
+  </div>
+  <div class="u2-field">
+    <label for={`${p}-phone`}>手機{where === "result" ? "（選填）" : ""}</label>
+    <input id={`${p}-phone`} name="phone" class="u2-input" type="tel" inputmode="tel" autocomplete="tel" maxlength="16" />
+  </div>
+  {
+    withName && (
+      <div class="u2-field">
+        <label for={`${p}-name`}>怎麼稱呼你（選填）</label>
+        <input id={`${p}-name`} name="name" class="u2-input" type="text" autocomplete="given-name" maxlength="20" />
+      </div>
+    )
+  }
+  <label class="u2-check">
+    <input type="checkbox" name="consent" />
+    <span class="u2-opt__box"></span>
+    <span>我同意景泰用這個方式聯絡我，資料保存 30 天後刪除。（<a class="u2-link" href="/privacy/" target="_blank" rel="noopener">隱私權政策</a>）</span>
+  </label>
+  <div class="u2-hp" aria-hidden="true">
+    <label for={`${p}-hp`}>不用填這一欄</label>
+    <input id={`${p}-hp`} name="hp" type="text" tabindex="-1" autocomplete="off" />
+  </div>
+  <p class="u2-error" role="alert" data-lead-err hidden></p>
+  <button class="u2-btn u2-btn--primary" type="submit">{button}</button>
+  <p class="u2-help" data-lead-note>{help ?? "勾選同意才會送出。隨時可以請景泰刪除。"}</p>
+</form>

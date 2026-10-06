@@ -59,3 +59,37 @@ NUL
 
 # generate-cover-thumbs.mjs 每次 build 產生的物件卡片縮圖（card400／card800），build 產物不進 repo
 public/properties/*/*-card*.webp
+
+# wrangler pages dev 讀的本機測試機密（不進 repo；測試金鑰也可改用 --binding 傳）
+.dev.vars
+.dev.vars.*
+
+# ===== 機密檔防呆（2026-10 資安加固 L-07；A4）=====
+# 這是「公開 repo」、推 main 即自動部署：任何機密誤 commit 就是永久外洩。
+.wrangler/
+# 任何 .env 變體（.env.local、.env.staging、.env.bak_…）；.env.example 是範本，要留在 repo
+.env.*
+!.env.example
+# 另一種寫法：prod.env、staging.env、direnv 的 .envrc、AWS／PostgreSQL 的憑證檔
+*.env
+.envrc
+.aws/
+.pgpass
+# 金鑰／憑證／私鑰檔
+*.key
+*.pem
+*.p8
+*.p12
+*.pfx
+*.jks
+id_rsa*
+id_ed25519*
+.netrc
+credentials.json
+secrets.json
+service-account*.json
+
+# 零痕跡洩漏稽核（2026-10-06 紅隊 RT-10）：禁字清單只放 GitHub Actions secret（LEAK_DENYLIST）與工作站，不進 repo。
+# 舊的「加鹽雜湊檔」鹽與雜湊同檔、字典可還原禁字，已拿掉；萬一有人又產生出來，也不准進公開 repo。
+scripts/leak-hashes.json
+leak_denylist*.txt

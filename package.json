@@ -8,6 +8,8 @@
   "scripts": {
     "dev": "astro dev",
     "build": "node scripts/lint-seo.mjs && node scripts/audit-properties.mjs && node scripts/generate-og-thumbs.mjs && node scripts/generate-cover-thumbs.mjs && astro check && astro build && pagefind --site dist && node scripts/postbuild-minify.mjs && node scripts/postbuild-headers.mjs",
+    "build:safe": "node scripts/build-safe.mjs",
+    "test:find": "node --test tests/find/*.test.mjs tests/find/game/*.test.mjs",
     "preview": "astro preview",
     "sync": "astro sync",
     "astro": "astro",
@@ -16,7 +18,9 @@
     "lint": "eslint .",
     "lint:content": "node scripts/lint-seo.mjs",
     "audit:properties": "node scripts/audit-properties.mjs",
-    "audit:properties:report": "node scripts/audit-properties.mjs --warn-only"
+    "audit:properties:report": "node scripts/audit-properties.mjs --warn-only",
+    "test:functions": "node --test \"tests/functions/*.test.mjs\"",
+    "build:roads": "node scripts/build-find-roads.mjs"
   },
   "dependencies": {
     "@astro-community/astro-embed-youtube": "^0.5.10",

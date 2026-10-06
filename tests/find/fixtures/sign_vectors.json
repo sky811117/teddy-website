@@ -1,0 +1,28 @@
+{
+ "version": 1,
+ "secret": "test-secret-do-not-use",
+ "kid": "2711b863",
+ "string_format": "AIF1\\n{METHOD}\\n{PATH_QS}\\n{TS}\\n{NONCE}\\n{SHA256_BODY_HEX}",
+ "vectors": [
+  {
+   "id": "sv1",
+   "method": "POST",
+   "path": "/aif/v1/submit",
+   "ts": "1790000000",
+   "nonce": "00112233445566778899aabbccddeeff",
+   "body": "{\"v\":1}",
+   "body_sha256": "afbf9d0f3560b0fd7795e81c42a0a79ee6b6fc67e064f77826aee642cad28d91",
+   "sig": "3b7486bb1f575cacf84e7ea6cf0754c2f31094432f906ea59eebc26c1343fa42"
+  },
+  {
+   "id": "sv2",
+   "method": "GET",
+   "path": "/aif/v1/status?id=aTESTtestTESTtestTESTte",
+   "ts": "1790000001",
+   "nonce": "ffeeddccbbaa99887766554433221100",
+   "body": "",
+   "body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "sig": "6e3e92f0ad706c392023027457ea36ccceeddbe0b6c91011ffd5dc2832d6b4f3"
+  }
+ ]
+}

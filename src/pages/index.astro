@@ -1,9 +1,15 @@
 ---
+/**
+ * 首頁：ui2 設計系統版。URL、title、H1 文字、JSON-LD（homePageSchema／navSchema）、canonical、內部連結、
+ * id="hero"、data-track／data-property-* 一律不變（改版前後用 scripts/seo-diff.mjs 逐項比對）。
+ * 新增：找房卡（白話找＋原本的條件篩選）、「你決定每一步要不要走」四步。區塊順序依 10 號設計文件。
+ */
 import { getCollection } from "astro:content";
 import { getRelativeLocaleUrl } from "astro:i18n";
 import Layout from "@/layouts/Layout.astro";
-import Header from "@/components/Header.astro";
-import Footer from "@/components/Footer.astro";
+import Header2 from "@/components/ui2/Header2.astro";
+import Footer2 from "@/components/ui2/Footer2.astro";
+import Sprite from "@/components/ui2/Sprite.astro";
 import Testimonials from "@/components/Testimonials.astro";
 import { getSortedPosts } from "@/utils/getSortedPosts";
 import { safeJsonLd } from "@/utils/safeJsonLd";
@@ -16,28 +22,8 @@ import { areas } from "@/data/areas";
 import { YT_CHANNEL_URL, YT_HANDLE } from "@/astro-paper.config";
 import { Image } from "astro:assets";
 import ycLogo from "@/assets/logos/yochaoshi.png";
-
-// ===== icon（Tabler outline SVG，全站 emoji 已換成這套）=====
-import IconRobot from "@/assets/icons/IconRobot.svg";
-import IconSpeakerphone from "@/assets/icons/IconSpeakerphone.svg";
-import IconMapPin from "@/assets/icons/IconMapPin.svg";
-import IconNotes from "@/assets/icons/IconNotes.svg";
-import IconHome from "@/assets/icons/IconHome.svg";
-import IconCalculator from "@/assets/icons/IconCalculator.svg";
-import IconHelpCircle from "@/assets/icons/IconHelpCircle.svg";
-import IconTool from "@/assets/icons/IconTool.svg";
-import IconDeviceTv from "@/assets/icons/IconDeviceTv.svg";
-import IconPhone from "@/assets/icons/IconPhone.svg";
-import IconSearch from "@/assets/icons/IconSearch.svg";
-import IconBuildingCommunity from "@/assets/icons/IconBuildingCommunity.svg";
-import IconCheck from "@/assets/icons/IconCheck.svg";
-import IconCoin from "@/assets/icons/IconCoin.svg";
-import IconArrowRight from "@/assets/icons/IconArrowRight.svg";
-import IconBrandLine from "@/assets/icons/socials/line.svg";
-import IconBrandInstagram from "@/assets/icons/socials/instagram.svg";
-import IconBrandFacebook from "@/assets/icons/socials/facebook.svg";
-import IconBrandYoutube from "@/assets/icons/socials/youtube.svg";
-import IconBrandTiktok from "@/assets/icons/socials/tiktok.svg";
+import "@/styles/ui2-core.css";
+import "@/styles/ui2-home.css";
 
 const locale = Astro.currentLocale ?? config.site.lang;
 
@@ -103,35 +89,35 @@ const personalAccounts = [
     handle: "@nov__817",
     desc: "主帳號 · 房仲日常",
     url: "https://www.instagram.com/nov__817/",
-    icon: IconBrandInstagram,
+    icon: "i-ig",
   },
   {
     platform: "Facebook",
     handle: "泰迪 房仲大看板",
     desc: "日常 + 業務分享",
     url: "https://www.facebook.com/profile.php?id=61575492127872",
-    icon: IconBrandFacebook,
+    icon: "i-user",
   },
   {
     platform: "YouTube",
     handle: YT_HANDLE,
     desc: "房屋開箱 + 看屋",
     url: YT_CHANNEL_URL,
-    icon: IconBrandYoutube,
+    icon: "i-play",
   },
   {
     platform: "TikTok",
     handle: "@sky811117",
     desc: "短影音 + 快剪",
     url: "https://www.tiktok.com/@sky811117",
-    icon: IconBrandTiktok,
+    icon: "i-play",
   },
   {
     platform: "LINE",
     handle: "sky811117",
     desc: "私訊（30 秒-30 分回）",
     url: "/go/line?src=home-social",
-    icon: IconBrandLine,
+    icon: "i-chat",
   },
 ];
 
@@ -183,28 +169,28 @@ const bigKanBanAccounts = [
     handle: "@bigkanban",
     desc: "主帳號 · 11K 粉絲",
     url: "https://instagram.com/bigkanban",
-    icon: IconBrandInstagram,
+    icon: "i-ig",
   },
   {
     platform: "Instagram",
     handle: "@bigkanban.boss",
     desc: "BOSS 本尊個人帳",
     url: "https://instagram.com/bigkanban.boss",
-    icon: IconBrandInstagram,
+    icon: "i-ig",
   },
   {
     platform: "TikTok",
     handle: "@bigkanban2.0",
     desc: "房屋開箱短影音",
     url: "https://www.tiktok.com/@bigkanban2.0",
-    icon: IconBrandTiktok,
+    icon: "i-play",
   },
   {
     platform: "Facebook",
     handle: "BigKanBan 粉專",
     desc: "深度長文+物件",
     url: "https://www.facebook.com/bigkanban",
-    icon: IconBrandFacebook,
+    icon: "i-user",
   },
 ];
 ---
@@ -223,101 +209,54 @@ const bigKanBanAccounts = [
     />
   </Fragment>
 
-  <Header />
+  <Sprite />
+  <Header2 />
 
-  <main id="main-content" class="w-full">
-    {/* ============ SECTION 1: HERO（≥1280px 兩欄：左文字+CTA+搜尋 / 右視覺面板；以下單欄） ============ */}
-    <section id="hero" class="w-full">
-      <div class="app-layout-wide py-10 sm:py-14 lg:py-16">
-        <div
-          class="grid grid-cols-1 items-center gap-10 xl:grid-cols-2 xl:gap-12"
-        >
-          {/* --- 左欄：標題 + 副文 + 快速搜尋 + CTA --- */}
-          <div class="text-left">
-            <div class="flex items-center gap-3">
-              <img
-                src="/photos/teddy-avatar.jpg"
-                alt="陳景泰 / 泰迪 — 台中房仲"
-                width="40"
-                height="40"
-                class="border-accent size-10 rounded-full border-2 object-cover"
-                loading="eager"
-              />
-              <p class="text-muted-foreground text-sm tracking-wide">
-                陳景泰 / 泰迪 Teddy
-              </p>
+  <main id="main-content" class="ui2">
+    {/* ============ 1 開場：一張「找房卡」＋人像（#hero 保留：FloatingCTA 依賴這個 id） ============ */}
+    <section id="hero" class="u2-hero">
+      <div class="u2-wrap u2-hero__grid">
+        <div class="u2-hero__text">
+          <p class="u2-hero__who">
+            <span class="u2-hero__mini"><img src="/photos/teddy-avatar.jpg" alt="" width="44" height="54" loading="eager" decoding="async" /></span>
+            <span>陳景泰 / 泰迪 Teddy</span>
+          </p>
+
+          <h1 class="u2-display"><span class="u2-h1__pre">在台中買房 / 賣房，</span>{" "}<span class="u2-h1__main">用 AI 找到對的答案</span></h1>
+
+          <p class="u2-lead">
+            同社區近一年成交、在售戶數、貸款月付、稅費 — 帶看前先整理成一頁給你，看完數字再決定。
+            我是<strong>陳景泰</strong>，一品不動產 有巢氏房屋台中世界之心加盟店房仲，短影音上叫<strong>泰迪</strong>。
+          </p>
+
+          {/* 找房卡：同一張卡兩種找法。預設「白話找」；原本的下拉篩選與 data-hero-* 腳本原樣保留 */}
+          <div class="u2-ask" id="ask">
+            <div class="u2-ask__tabs" role="tablist" aria-label="找房方式" data-js-only>
+              <button type="button" role="tab" id="tab-say" aria-selected="true" aria-controls="panel-say">白話找</button>
+              <button type="button" role="tab" id="tab-filter" aria-selected="false" aria-controls="panel-filter" tabindex="-1">用條件篩選</button>
             </div>
 
-            <h1 class="mt-5 text-4xl font-bold sm:text-5xl xl:text-6xl">
-              <span class="inline-block">在台中買房 /</span> <span class="inline-block">賣房，</span><br />
-              <span class="text-accent">用 AI 找到對的答案</span>
-            </h1>
-
-            <p class="text-muted-foreground mt-5 max-w-xl text-lg leading-relaxed">
-              同社區近一年成交、在售戶數、貸款月付、稅費 — 帶看前先整理成一頁給你，看完數字再決定。
-              我是<strong class="text-foreground">陳景泰</strong>，一品不動產 有巢氏房屋台中世界之心加盟店房仲，短影音上叫<strong class="text-foreground">泰迪</strong>。
-            </p>
-
-            {/* 買 / 賣 雙 CTA — 放在搜尋卡之前，手機第一屏就看得到 */}
-            <div class="mt-6 grid max-w-lg grid-cols-1 gap-3 sm:grid-cols-2">
-              <div class="flex flex-col gap-1.5">
-                <a
-                  href="/go/line?src=home-hero"
-                  class="btn-line w-full"
-                >
-                  <IconBrandLine class="size-5" aria-hidden="true" />
-                  我要找房（LINE 諮詢）
-                </a>
-                <a
-                  href="/contact/"
-                  class="text-muted-foreground hover:text-accent text-center text-sm underline-offset-2 hover:underline"
-                >
-                  或填表單留資料 →
-                </a>
-              </div>
-              <div class="flex flex-col gap-1.5">
-                <a href="/sell/#sell-form-section" class="btn-outline w-full">
-                  我要賣房（免費行情評估）
-                </a>
-                <a
-                  href="/go/line?src=home-hero"
-                  class="text-muted-foreground hover:text-accent text-center text-sm underline-offset-2 hover:underline"
-                >
-                  或 LINE 先聊聊 →
-                </a>
+            <div role="tabpanel" id="panel-say" aria-labelledby="tab-say">
+              <form id="say-form" action="/find/" method="get">
+                <label class="u2-label" for="hero-say">你想找什麼樣的房子？一句話就好。</label>
+                <textarea id="hero-say" class="u2-textarea" rows="2" maxlength="300" placeholder="例：北屯三房，兩千萬內，要有車位"></textarea>
+                <div class="u2-ask__go">
+                  <button class="u2-btn u2-btn--primary" type="submit">
+                    <svg class="u2-ico" aria-hidden="true"><use href="#i-send"></use></svg>告訴小幫手
+                  </button>
+                  <span class="u2-cap">找房小幫手是自動化工具，只幫你整理。要不要聊，由你決定。</span>
+                </div>
+              </form>
+              <div class="u2-hot" role="group" aria-label="試試看">
+                <button class="u2-tag u2-tag--btn" type="button" data-fill="北屯三房，兩千萬內，要平面車位">北屯三房，兩千萬內</button>
+                <button class="u2-tag u2-tag--btn" type="button" data-fill="西屯 電梯大樓 1500萬以下">西屯電梯大樓，1500 萬以下</button>
               </div>
             </div>
 
-            {/* 顯式電話 CTA — Layout 設了 format-detection telephone=no，手機要靠這條才撥得通 */}
-            <p class="text-muted-foreground mt-3 flex flex-wrap items-center gap-x-2 text-sm">
-              急約看屋、想直接講？
-              <a
-                href="tel:+886920118756"
-                class="text-foreground hover:text-accent inline-flex min-h-11 items-center gap-1.5 text-lg font-semibold no-underline"
-                data-track="cta"
-                data-cta="hero-tel"
-              >
-                <IconPhone class="size-5" aria-hidden="true" />
-                0920-118-756
-              </a>
-              直撥本人
-            </p>
-
-            {/* 快速搜尋 bar — 跳 /properties/ 帶 query string；手機預設只露出「區域 + 搜尋」，其餘折疊 */}
-            <div class="card-surface mt-6 p-4 text-left sm:p-5">
-              <div
-                class="text-muted-foreground mb-3 flex items-center gap-1.5 text-sm font-medium"
-              >
-                <IconSearch class="size-4" aria-hidden="true" />
-                快速找物件
-              </div>
-              <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <label class="sr-only" for="hero-district">區域</label>
-                <select
-                  id="hero-district"
-                  data-hero-district
-                  class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2"
-                >
+            <div role="tabpanel" id="panel-filter" aria-labelledby="tab-filter" data-filter-panel>
+              <div class="u2-ask__grid">
+                <label class="u2-sr" for="hero-district">區域</label>
+                <select id="hero-district" data-hero-district class="u2-select">
                   <option value="">區域（不限）</option>
                   <option value="北屯區">北屯區</option>
                   <option value="西屯區">西屯區</option>
@@ -331,192 +270,114 @@ const bigKanBanAccounts = [
                   <option value="大里區">大里區</option>
                   <option value="霧峰區">霧峰區</option>
                 </select>
-
-                {/* 手機折疊：總價 + 房型（sm 以上永遠展開；display:contents 讓子元素直接當 grid item） */}
-                <div data-hero-extra class="hidden flex flex-col gap-3 sm:contents">
-                  <label class="sr-only" for="hero-price-max">總價上限</label>
-                  <input
-                    id="hero-price-max"
-                    type="number"
-                    inputmode="numeric"
-                    min="0"
-                    step="100"
-                    placeholder="總價上限（萬）"
-                    data-hero-price-max
-                    class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2"
-                  />
-
-                  <label class="sr-only" for="hero-rooms">房型</label>
-                  <select
-                    id="hero-rooms"
-                    data-hero-rooms
-                    class="border-border bg-background text-foreground focus:border-accent focus:ring-accent/30 block w-full rounded-md border px-4 py-3 text-[17px] outline-none focus:ring-2"
-                  >
-                    <option value="">房型（不限）</option>
-                    <option value="1房">1 房</option>
-                    <option value="2房">2 房</option>
-                    <option value="3房">3 房</option>
-                    <option value="4房">4 房</option>
-                    <option value="5房+">5 房以上</option>
-                  </select>
-                </div>
+                <label class="u2-sr" for="hero-price-max">總價上限</label>
+                <input
+                  id="hero-price-max"
+                  type="number"
+                  inputmode="numeric"
+                  min="0"
+                  step="100"
+                  placeholder="總價上限（萬）"
+                  data-hero-price-max
+                  class="u2-input"
+                />
+                <label class="u2-sr" for="hero-rooms">房型</label>
+                <select id="hero-rooms" data-hero-rooms class="u2-select">
+                  <option value="">房型（不限）</option>
+                  <option value="1房">1 房</option>
+                  <option value="2房">2 房</option>
+                  <option value="3房">3 房</option>
+                  <option value="4房">4 房</option>
+                  <option value="5房+">5 房以上</option>
+                </select>
               </div>
-
-              <div class="mt-3 flex items-center gap-3">
-                <button type="button" data-hero-search class="btn-primary flex-1">
-                  <IconSearch class="size-5" aria-hidden="true" />
-                  搜尋
-                </button>
-                <button
-                  type="button"
-                  data-hero-more
-                  aria-expanded="false"
-                  class="text-accent min-h-11 shrink-0 text-sm font-medium underline-offset-2 hover:underline sm:hidden"
-                >
-                  更多條件
-                </button>
-              </div>
-
-              {/* 常用搜尋 chips — 一鍵跳到熱門條件結果（手機收起，縮短首屏） */}
-              <div class="mt-4 hidden flex-wrap gap-2 sm:flex">
-                <span class="text-muted-foreground self-center text-sm">熱門：</span>
-                <a
-                  href="/properties/?priceMax=1000"
-                  class="border-border bg-background text-foreground hover:border-accent hover:text-accent inline-block rounded-full border px-3 py-1.5 text-sm no-underline transition-colors"
-                >
-                  青安額度內（≤1000 萬）
-                </a>
-                <a
-                  href="/properties/north-tun/"
-                  class="border-border bg-background text-foreground hover:border-accent hover:text-accent inline-block rounded-full border px-3 py-1.5 text-sm no-underline transition-colors"
-                >
-                  北屯
-                </a>
-                <a
-                  href="/properties/west-tun/"
-                  class="border-border bg-background text-foreground hover:border-accent hover:text-accent inline-block rounded-full border px-3 py-1.5 text-sm no-underline transition-colors"
-                >
-                  西屯 / 七期
-                </a>
-                <a
-                  href="/properties/south-tun/"
-                  class="border-border bg-background text-foreground hover:border-accent hover:text-accent inline-block rounded-full border px-3 py-1.5 text-sm no-underline transition-colors"
-                >
-                  南屯
-                </a>
-                <a
-                  href="/properties/?quick=new"
-                  class="border-border bg-background text-foreground hover:border-accent hover:text-accent inline-block rounded-full border px-3 py-1.5 text-sm no-underline transition-colors"
-                >
-                  新上架
-                </a>
-                <a
-                  href="/properties/?quick=drop"
-                  class="border-border bg-background text-foreground hover:border-accent hover:text-accent inline-block rounded-full border px-3 py-1.5 text-sm no-underline transition-colors"
-                >
-                  降價中
-                </a>
-                <a
-                  href="/properties/?ageMax=5"
-                  class="border-border bg-background text-foreground hover:border-accent hover:text-accent inline-block rounded-full border px-3 py-1.5 text-sm no-underline transition-colors"
-                >
-                  新成屋（≤5 年）
-                </a>
+              <button type="button" data-hero-search class="u2-btn u2-btn--primary">
+                <svg class="u2-ico" aria-hidden="true"><use href="#i-search"></use></svg>搜尋
+              </button>
+              <div class="u2-hot">
+                <span class="u2-small u2-hot__lead">熱門：</span>
+                <a href="/properties/?priceMax=1000">青安額度內（≤1000 萬）</a>
+                <a href="/properties/north-tun/">北屯</a>
+                <a href="/properties/west-tun/">西屯 / 七期</a>
+                <a href="/properties/south-tun/">南屯</a>
+                <a href="/properties/?quick=new">新上架</a>
+                <a href="/properties/?quick=drop">降價中</a>
+                <a href="/properties/?ageMax=5">新成屋（≤5 年）</a>
               </div>
             </div>
           </div>
 
-          {/* --- 右欄：視覺面板（台中空拍主視覺；人像合成觀感不佳已撤，
-               等景泰有新形象照再評估要不要疊回來） --- */}
-          {/* 1280px 以下隱藏（手機 / 平板首屏要留給 CTA，平板半欄也放不下 h1）；圖片改 lazy，避免畫面外還用高優先權下載 232KB */}
-          <div class="hidden w-full xl:block">
-            <div
-              class="rounded-card shadow-card-hover relative aspect-[4/5] w-full overflow-hidden"
-            >
-              {/* 主視覺：秋紅谷 + 七期天際線空拍 */}
-              <picture>
-                <source
-                  media="(min-width: 1280px)"
-                  srcset="/photos/hero-aerial.webp"
-                  type="image/webp"
-                />
-                <img
-                  src="/photos/hero-aerial.jpg"
-                  alt="台中七期天際線與秋紅谷空拍"
-                  width="900"
-                  height="1125"
-                  class="absolute inset-0 h-full w-full object-cover"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </picture>
-              {/* 底部淡漸層 — 給地點標籤一點對比 */}
-              <div
-                class="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-black/35 to-transparent"
-                aria-hidden="true"
-              >
-              </div>
-              {/* 地點標籤 — 在地識別 */}
-              <p
-                class="absolute bottom-4 left-4 flex items-center gap-1.5 rounded-full bg-black/35 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm"
-              >
-                <IconMapPin class="size-4" aria-hidden="true" />
-                台中・秋紅谷｜七期天際線
-              </p>
+          <div class="u2-hero__aux">
+            <a class="u2-btn u2-btn--ghost" href="/sell/#sell-form-section">我要賣房（免費行情評估）</a>
+            <a class="u2-btn u2-btn--text" href="/go/line?src=home-hero-text">或 LINE 先聊聊 →</a>
+            <a class="u2-btn u2-btn--text" href="/contact/">或填表單留資料 →</a>
+          </div>
+          {/* 顯式電話 CTA — Layout 設了 format-detection telephone=no，手機要靠這條才撥得通 */}
+          <p class="u2-small u2-hero__tel-row">
+            急約看屋、想直接講？
+            <a class="u2-hero__tel" href="tel:+886920118756" data-track="cta" data-cta="hero-tel">
+              <svg class="u2-ico" aria-hidden="true"><use href="#i-phone"></use></svg>0920-118-756
+            </a>
+            直撥本人
+          </p>
+        </div>
+
+        {/* 桌機才有：門洞人像＋小幫手對話預覽。手機只放 44px 小門洞頭像，不下載大圖（img 用 1×1 透明圖，<source> 只在 ≥1024px 啟用） */}
+        <div class="u2-hero__visual">
+          <figure class="u2-arch">
+            <picture>
+              <source
+                media="(min-width:1024px)"
+                srcset="/photos/ui2/portrait-440.webp 440w, /photos/ui2/portrait-880.webp 880w"
+                sizes="26rem"
+                type="image/webp"
+              />
+              <img
+                src="data:image/gif;base64,R0lGODlhAQABAAAAACw="
+                alt="陳景泰 / 泰迪 — 台中房仲"
+                width="815"
+                height="1041"
+                fetchpriority="high"
+                decoding="async"
+              />
+            </picture>
+          </figure>
+          <div class="u2-hero__chat" aria-hidden="true">
+            <div class="u2-msg u2-msg--me"><div class="u2-bubble"><p>北屯三房，兩千萬內</p></div></div>
+            <div class="u2-msg u2-msg--bot">
+              <span class="u2-avatar"><svg class="u2-ico"><use href="#u2-house"></use></svg></span>
+              <div class="u2-bubble"><p>整理好了，這是依你的條件挑出的 7 間。</p></div>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    {/* ============ SECTION 1.2: 信任數據條（白底橫帶 + 有巢氏品牌證號） ============ */}
-    <section class="border-border bg-card w-full border-y">
-      <div class="app-layout-wide py-8 sm:py-10">
-        <div class="divide-border grid grid-cols-2 divide-x sm:grid-cols-4">
-          <div class="px-4 py-3 text-center">
-            <p class="text-accent text-2xl font-extrabold leading-tight whitespace-nowrap sm:text-3xl">
-              {taichungProperties.length}+
-            </p>
-            <p class="text-muted-foreground mt-1 text-sm">筆台中在售物件</p>
-          </div>
-          <div class="px-4 py-3 text-center">
-            <p class="text-accent text-2xl font-extrabold leading-tight whitespace-nowrap sm:text-3xl">
-              {taichungDistrictCount} 區
-            </p>
-            <p class="text-muted-foreground mt-1 text-sm">台中行政區有在售物件</p>
-          </div>
-          <div class="px-4 py-3 text-center">
-            <p class="text-accent text-2xl font-extrabold leading-tight whitespace-nowrap sm:text-3xl">
-              30秒-30分
-            </p>
-            <p class="text-muted-foreground mt-1 text-sm">LINE 回覆</p>
-          </div>
-          <div class="px-4 py-3 text-center">
-            <p class="text-accent text-2xl font-extrabold leading-tight whitespace-nowrap sm:text-3xl">
-              有巢氏
-            </p>
-            <p class="text-muted-foreground mt-1 text-sm">世界之心加盟店</p>
-          </div>
+    {/* ============ 2 帳本列＋證號（內容一字不動） ============ */}
+    <section aria-label="信任資訊">
+      <div class="u2-wrap">
+        <div class="u2-ledger">
+          <div><b>{taichungProperties.length}+</b><span>筆台中在售物件</span></div>
+          <div><b>{taichungDistrictCount} 區</b><span>台中行政區有在售物件</span></div>
+          <div><b>30秒-30分</b><span>LINE 回覆</span></div>
+          <div><b>有巢氏</b><span>世界之心加盟店</span></div>
         </div>
-
-        {/* 信任 badge — 有巢氏品牌 + 法定證號（內容一字不動） */}
-        <div
-          class="border-border mt-8 flex flex-col items-center justify-center gap-3 border-t pt-6 sm:flex-row sm:gap-5"
-        >
-          <p class="text-muted-foreground text-sm tracking-wide">所屬公司</p>
-          {/* astro:assets 產 1x/2x/3x webp（原 PNG 600×186）；手機版在首屏外 → lazy */}
-          <Image
-            src={ycLogo}
-            alt="有巢氏房屋 台中世界之心加盟店"
-            width={155}
-            widths={[155, 310, 465]}
-            sizes="(min-width: 640px) 155px, 129px"
-            format="webp"
-            loading="lazy"
-            decoding="async"
-            class="h-10 w-auto sm:h-12 dark:rounded-md dark:bg-white/90 dark:px-3 dark:py-1.5"
-          />
-          <p class="text-muted-foreground text-center text-sm leading-relaxed">
+        <div class="u2-certs">
+          <span class="u2-small">所屬公司</span>
+          <span class="u2-brandtag">
+            <Image
+              src={ycLogo}
+              alt="有巢氏房屋 台中世界之心加盟店"
+              width={155}
+              widths={[155, 310, 465]}
+              sizes="(min-width: 640px) 155px, 129px"
+              format="webp"
+              loading="lazy"
+              decoding="async"
+              style="display:block;height:2.4rem;width:auto"
+            />
+          </span>
+          <p class="u2-small u2-certs__text">
             一品不動產 ・ 經紀人 黃永隆 113彰縣字324 ・ 營業員 陳景泰
             114登字488296
           </p>
@@ -524,600 +385,269 @@ const bigKanBanAccounts = [
       </div>
     </section>
 
-    {/* ============ SECTION 2: USP 三大價值（白色帶） ============ */}
-    <section class="bg-card/50 border-border w-full border-b">
-      <div class="app-layout-wide py-14 sm:py-20">
-        <h2 class="mb-8 text-center text-2xl font-bold sm:text-3xl">
-          為什麼找景泰
-        </h2>
-        <ul class="grid grid-cols-1 gap-6 sm:grid-cols-3">
-          <li class="card-surface p-6">
-            <div class="bg-accent/10 w-fit rounded-xl p-3">
-              <IconRobot class="text-accent size-6" aria-hidden="true" />
-            </div>
-            <h3 class="text-foreground mt-3 text-xl font-bold">AI 工具加持</h3>
-            <p class="text-muted-foreground mt-2 leading-relaxed">
+    {/* ============ 3 怎麼找（新）：內容真的是一個順序，所以才編號 ============ */}
+    <section class="u2-band" aria-labelledby="h-steps">
+      <div class="u2-wrap">
+        <div class="u2-sec-head"><h2 class="u2-h2" id="h-steps">你決定每一步要不要走</h2></div>
+        <ol class="u2-dim">
+          <li><h3>說一句話</h3><p>打一句你想找的房子，或用選的。不用留電話。</p></li>
+          <li><h3>看整理好的一頁</h3><p>小幫手挑出幾間，做成一頁給你看。</p></li>
+          <li><h3>告訴景泰想看哪一間</h3><p>用 LINE 或電話問。景泰會先確認現況，再回你。</p></li>
+          <li><h3>約時間看屋</h3><p>要不要看、什麼時候看，由你決定。</p></li>
+        </ol>
+      </div>
+    </section>
+
+    {/* ============ 4 為什麼找景泰（文字一字不動；版面改成一個主張＋兩個輔助） ============ */}
+    <section class="u2-band u2-band--sunken" aria-labelledby="h-usp">
+      <div class="u2-wrap">
+        <div class="u2-sec-head"><h2 class="u2-h2" id="h-usp">為什麼找景泰</h2></div>
+        <div class="u2-usp">
+          <article class="u2-usp__lead">
+            <h3 class="u2-h3">AI 工具加持</h3>
+            <p class="u2-lead">
               我一邊跑業務，一邊用 Claude Code 把 591、樂屋、5168
               三大平台的上架、排版、回訊自動化。同樣 24
               小時，你的物件能被更多買家看到、你的問題能更快得到回覆。
             </p>
-          </li>
-          <li class="card-surface p-6">
-            <div class="bg-accent/10 w-fit rounded-xl p-3">
-              <IconSpeakerphone class="text-accent size-6" aria-hidden="true" />
-            </div>
-            <h3 class="text-foreground mt-3 text-xl font-bold">
-              公司自媒體後盾
-            </h3>
-            <p class="text-muted-foreground mt-2 leading-relaxed">
-              公司經營「<a
-                href="/media"
-                class="text-accent underline underline-offset-2 hover:no-underline">房仲大看板 BigKanBan</a
-              >」自媒體 IP，IG 主帳 11K 粉、跨 IG / TikTok / FB 4 個帳號 — 你的物件曝光不只一個房仲，是一整個團隊。
+          </article>
+          <article>
+            <h3 class="u2-h3">公司自媒體後盾</h3>
+            <p class="u2-body">
+              公司經營「<a href="/media" class="u2-link">房仲大看板 BigKanBan</a>」自媒體 IP，IG 主帳 11K 粉、跨 IG / TikTok / FB 4 個帳號 — 你的物件曝光不只一個房仲，是一整個團隊。
             </p>
-          </li>
-          <li class="card-surface p-6">
-            <div class="bg-accent/10 w-fit rounded-xl p-3">
-              <IconMapPin class="text-accent size-6" aria-hidden="true" />
-            </div>
-            <h3 class="text-foreground mt-3 text-xl font-bold">台中全區覆蓋</h3>
-            <p class="text-muted-foreground mt-2 leading-relaxed">
+          </article>
+          <article class="u2-usp__photo">
+            <h3 class="u2-h3">台中全區覆蓋</h3>
+            <p class="u2-body">
               北屯、西屯、南屯、七期、中區、太平、大里 — 整個台中我都跑。不是只熟一區的房仲，是真的能幫你跨區比較的選擇。
             </p>
-          </li>
-        </ul>
-      </div>
-    </section>
-
-    {/* ============ SECTION 1.5: 網站地圖入口（米色帶 — 給手機 / 第一眼客戶看內容廣度） ============ */}
-    <section class="w-full">
-      <div class="app-layout-wide py-14 sm:py-20">
-        <div class="text-center">
-          <p class="text-muted-foreground text-sm">看你想看的</p>
-          <h2 class="text-foreground mt-2 text-xl font-bold sm:text-2xl">
-            這個網站有什麼
-          </h2>
+            <img src="/photos/ui2/aerial-900.webp" alt="台中七期天際線與秋紅谷空拍" width="900" height="506" loading="lazy" decoding="async" />
+          </article>
         </div>
-        <ul class="mt-6 grid grid-cols-2 gap-3 sm:mt-8 sm:grid-cols-3 sm:gap-4">
-          <li>
-            <a
-              href="/posts/"
-              class="card-interactive block h-full p-4 no-underline sm:p-5"
-            >
-              <div class="bg-accent/10 w-fit rounded-xl p-2.5">
-                <IconNotes class="text-accent size-6" aria-hidden="true" />
-              </div>
-              <h3 class="text-foreground mt-3 text-base font-bold sm:text-lg">
-                房市筆記
-              </h3>
-              <p class="text-muted-foreground mt-1 text-xs leading-relaxed sm:text-sm">
-                社區評價、青安 3.0、嫌惡設施、不動產說明書
-              </p>
-            </a>
-          </li>
-          <li>
-            <a
-              href="/properties/"
-              class="card-interactive block h-full p-4 no-underline sm:p-5"
-            >
-              <div class="bg-accent/10 w-fit rounded-xl p-2.5">
-                <IconHome class="text-accent size-6" aria-hidden="true" />
-              </div>
-              <h3 class="text-foreground mt-3 text-base font-bold sm:text-lg">
-                在售物件
-              </h3>
-              <p class="text-muted-foreground mt-1 text-xs leading-relaxed sm:text-sm">
-                北屯 / 西屯 / 南屯 / 七期 都有
-              </p>
-            </a>
-          </li>
-          <li>
-            <a
-              href="/tools/"
-              class="card-interactive block h-full p-4 no-underline sm:p-5"
-            >
-              <div class="bg-accent/10 w-fit rounded-xl p-2.5">
-                <IconCalculator class="text-accent size-6" aria-hidden="true" />
-              </div>
-              <h3 class="text-foreground mt-3 text-base font-bold sm:text-lg">
-                客戶工具
-              </h3>
-              <p class="text-muted-foreground mt-1 text-xs leading-relaxed sm:text-sm">
-                買方費用試算、看屋 checklist、政府資源
-              </p>
-            </a>
-          </li>
-          <li>
-            <a
-              href="/faq/"
-              class="card-interactive block h-full p-4 no-underline sm:p-5"
-            >
-              <div class="bg-accent/10 w-fit rounded-xl p-2.5">
-                <IconHelpCircle class="text-accent size-6" aria-hidden="true" />
-              </div>
-              <h3 class="text-foreground mt-3 text-base font-bold sm:text-lg">
-                常見問題
-              </h3>
-              <p class="text-muted-foreground mt-1 text-xs leading-relaxed sm:text-sm">
-                短答一次看完 — 仲介費 / 青安 3.0 / 凶宅 / 過戶
-              </p>
-            </a>
-          </li>
-          <li>
-            <a
-              href="/areas/"
-              class="card-interactive block h-full p-4 no-underline sm:p-5"
-            >
-              <div class="bg-accent/10 w-fit rounded-xl p-2.5">
-                <IconMapPin class="text-accent size-6" aria-hidden="true" />
-              </div>
-              <h3 class="text-foreground mt-3 text-base font-bold sm:text-lg">
-                台中各區
-              </h3>
-              <p class="text-muted-foreground mt-1 text-xs leading-relaxed sm:text-sm">
-                {areas.length} 區買房指南 — 北屯 / 七期 / 南屯 / 西區 / 烏日 / 梧棲
-              </p>
-            </a>
-          </li>
-          <li>
-            <a
-              href="/services/"
-              class="card-interactive block h-full p-4 no-underline sm:p-5"
-            >
-              <div class="bg-accent/10 w-fit rounded-xl p-2.5">
-                <IconTool class="text-accent size-6" aria-hidden="true" />
-              </div>
-              <h3 class="text-foreground mt-3 text-base font-bold sm:text-lg">
-                服務項目
-              </h3>
-              <p class="text-muted-foreground mt-1 text-xs leading-relaxed sm:text-sm">
-                買 / 賣 / 投資 / 換屋 4 大方向
-              </p>
-            </a>
-          </li>
-          <li>
-            <a
-              href="/shorts/"
-              class="card-interactive block h-full p-4 no-underline sm:p-5"
-            >
-              <div class="bg-accent/10 w-fit rounded-xl p-2.5">
-                <IconDeviceTv class="text-accent size-6" aria-hidden="true" />
-              </div>
-              <h3 class="text-foreground mt-3 text-base font-bold sm:text-lg">
-                短影音作品集
-              </h3>
-              <p class="text-muted-foreground mt-1 text-xs leading-relaxed sm:text-sm">
-                YouTube / TikTok / IG — 看屋開箱、政策快訊
-              </p>
-            </a>
-          </li>
-          <li>
-            <a
-              href="/about/"
-              class="card-interactive block h-full p-4 no-underline sm:p-5"
-            >
-              <img
-                src="/photos/teddy-avatar.jpg"
-                alt="陳景泰 / 泰迪"
-                width="56"
-                height="56"
-                class="border-accent h-12 w-12 rounded-full border-2 object-cover sm:h-14 sm:w-14"
-                loading="lazy"
-              />
-              <h3 class="text-foreground mt-3 text-base font-bold sm:text-lg">
-                關於景泰
-              </h3>
-              <p class="text-muted-foreground mt-1 text-xs leading-relaxed sm:text-sm">
-                廚師 → 房仲 → AI 工程，跟別人不一樣
-              </p>
-            </a>
-          </li>
-          <li>
-            <a
-              href="/go/line?src=home"
-              class="bg-line rounded-card shadow-card hover:shadow-card-hover block h-full p-4 text-white no-underline transition-all duration-300 hover:-translate-y-0.5 sm:p-5"
-            >
-              <div class="w-fit rounded-xl bg-white/15 p-2.5">
-                <IconBrandLine class="size-6 text-white" aria-hidden="true" />
-              </div>
-              <h3 class="mt-3 text-base font-bold sm:text-lg">
-                直接 LINE 我
-              </h3>
-              <p class="mt-1 text-sm leading-relaxed">
-                sky811117 ・ 30 秒到 30 分鐘會回
-              </p>
-            </a>
-          </li>
-        </ul>
       </div>
     </section>
 
-    {/* ============ SECTION 3: 給買方 / 給賣方（深色節奏帶） ============ */}
-    <section class="bg-inverse w-full">
-      <div class="app-layout-wide py-14 sm:py-20">
-        <h2
-          class="text-inverse-foreground mb-8 text-center text-2xl font-bold sm:text-3xl"
-        >
-          你是要買，還是要賣？
-        </h2>
-        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <div
-            class="rounded-card shadow-card border border-white/10 bg-white/5 p-6"
-          >
-            <h3
-              class="text-inverse-accent flex items-center gap-2 text-2xl font-bold"
-            >
-              <IconHome class="size-6 shrink-0" aria-hidden="true" />
-              我要找房
-            </h3>
-            <p class="text-inverse-foreground mt-3">
-              台中買房太多眉角，我用工具幫你省力：
-            </p>
-            <ul class="text-inverse-muted mt-3 space-y-2 leading-relaxed">
-              <li class="flex items-start gap-2">
-                <IconCheck
-                  class="text-inverse-accent mt-1 size-4 shrink-0"
-                  aria-hidden="true"
-                />
-                <span>一次性費用 / 月付金試算（青安 3.0 vs 一般房貸）</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <IconCheck
-                  class="text-inverse-accent mt-1 size-4 shrink-0"
-                  aria-hidden="true"
-                />
-                <span>看屋 checklist（屋況、嫌惡設施、凶宅）</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <IconCheck
-                  class="text-inverse-accent mt-1 size-4 shrink-0"
-                  aria-hidden="true"
-                />
-                <span>買房前該查清楚的 7 件事（實價登錄、謄本、交屋條件）</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <IconCheck
-                  class="text-inverse-accent mt-1 size-4 shrink-0"
-                  aria-hidden="true"
-                />
-                <span>台中各區行情查詢</span>
-              </li>
+    {/* ============ 5 你是要買，還是要賣？（深色節奏帶；文字一字不動） ============ */}
+    <section class="u2-band u2-band--inverse" aria-labelledby="h-split">
+      <div class="u2-wrap">
+        <div class="u2-sec-head"><h2 class="u2-h2" id="h-split">你是要買，還是要賣？</h2></div>
+        <div class="u2-split">
+          <div>
+            <h3>我要找房</h3>
+            <p>台中買房太多眉角，我用工具幫你省力：</p>
+            <ul class="u2-checks">
+              <li><svg class="u2-ico" aria-hidden="true"><use href="#i-check"></use></svg><span>一次性費用 / 月付金試算（青安 3.0 vs 一般房貸）</span></li>
+              <li><svg class="u2-ico" aria-hidden="true"><use href="#i-check"></use></svg><span>看屋 checklist（屋況、嫌惡設施、凶宅）</span></li>
+              <li><svg class="u2-ico" aria-hidden="true"><use href="#i-check"></use></svg><span>買房前該查清楚的 7 件事（實價登錄、謄本、交屋條件）</span></li>
+              <li><svg class="u2-ico" aria-hidden="true"><use href="#i-check"></use></svg><span>台中各區行情查詢</span></li>
             </ul>
-            <a href="/buy/" class="btn-line mt-6 w-full sm:w-auto">
-              看買房流程
-              <IconArrowRight class="size-5" aria-hidden="true" />
-            </a>
+            <a href="/buy/" class="u2-btn u2-btn--primary">看買房流程</a>
           </div>
-          <div
-            class="rounded-card shadow-card border border-white/10 bg-white/5 p-6"
-          >
-            <h3
-              class="text-inverse-accent flex items-center gap-2 text-2xl font-bold"
-            >
-              <IconCoin class="size-6 shrink-0" aria-hidden="true" />
-              我要賣房
-            </h3>
-            <p class="text-inverse-foreground mt-3">
-              想賣個好價錢，先把數字跟曝光做對：
-            </p>
-            <ul class="text-inverse-muted mt-3 space-y-2 leading-relaxed">
-              <li class="flex items-start gap-2">
-                <IconCheck
-                  class="text-inverse-accent mt-1 size-4 shrink-0"
-                  aria-hidden="true"
-                />
-                <span>定價分析（同社區近一年實價登錄 + 在售戶數，給合理區間）</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <IconCheck
-                  class="text-inverse-accent mt-1 size-4 shrink-0"
-                  aria-hidden="true"
-                />
-                <span>物件照統一調亮調正（不美化屋況，縮圖更容易被點開）</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <IconCheck
-                  class="text-inverse-accent mt-1 size-4 shrink-0"
-                  aria-hidden="true"
-                />
-                <span>多平台同步上架（591 / 樂屋 / 5168 + 公司自媒體）</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <IconCheck
-                  class="text-inverse-accent mt-1 size-4 shrink-0"
-                  aria-hidden="true"
-                />
-                <span>仲介費怎麼算：法定上限買賣雙方合計 6%，簽委託前一條一條講清楚</span>
-              </li>
+          <div>
+            <h3>我要賣房</h3>
+            <p>想賣個好價錢，先把數字跟曝光做對：</p>
+            <ul class="u2-checks">
+              <li><svg class="u2-ico" aria-hidden="true"><use href="#i-check"></use></svg><span>定價分析（同社區近一年實價登錄 + 在售戶數，給合理區間）</span></li>
+              <li><svg class="u2-ico" aria-hidden="true"><use href="#i-check"></use></svg><span>物件照統一調亮調正（不美化屋況，縮圖更容易被點開）</span></li>
+              <li><svg class="u2-ico" aria-hidden="true"><use href="#i-check"></use></svg><span>多平台同步上架（591 / 樂屋 / 5168 + 公司自媒體）</span></li>
+              <li><svg class="u2-ico" aria-hidden="true"><use href="#i-check"></use></svg><span>仲介費怎麼算：法定上限買賣雙方合計 6%，簽委託前一條一條講清楚</span></li>
             </ul>
-            {/* 白描邊 CTA — 深色帶上 btn-outline 的駝木色看不清，改手刻白描邊 */}
-            <a
-              href="/sell/"
-              class="rounded-btn text-inverse-foreground mt-6 inline-flex min-h-11 w-full items-center justify-center gap-2 border-2 border-white/40 px-6 py-3 font-medium no-underline transition-colors hover:bg-white/10 sm:w-auto"
-            >
-              看賣房優勢
-              <IconArrowRight class="size-5" aria-hidden="true" />
-            </a>
+            <a href="/sell/" class="u2-btn u2-btn--ghost">看賣房優勢</a>
           </div>
         </div>
       </div>
     </section>
 
-    {/* ============ SECTION 4: 在售精選（米色帶，如果有） ============ */}
+    {/* ============ 6 在售精選（資料與連結沿用；第一戶放大） ============ */}
     {
       featuredProperties.length > 0 && (
-        <section class="w-full">
-          <div class="app-layout-wide py-14 sm:py-20">
-            <h2 class="mb-8 text-center text-2xl font-bold sm:text-3xl">
-              在售精選
-            </h2>
-            <ul class="grid grid-cols-1 gap-6 sm:grid-cols-3">
+        <section class="u2-band" aria-labelledby="h-props">
+          <div class="u2-wrap">
+            <div class="u2-sec-head"><h2 class="u2-h2" id="h-props">在售精選</h2></div>
+            <ul class="u2-props">
               {featuredProperties.map(p => (
-                <li class="card-interactive overflow-hidden">
+                <li class="u2-prop">
                   <a
                     href={`/properties/${p.id}/`}
-                    class="block no-underline"
                     data-track="property"
                     data-property-id={p.id}
                     data-property-title={p.data.title}
                     data-property-price={p.data.totalPrice}
                     data-property-district={p.data.district}
                   >
-                    <div class="bg-muted flex aspect-[4/3] items-center justify-center">
-                      {p.data.coverImage ? (
-                        <img
-                          src={coverThumb(coverSrcOf(p.data.coverImage) ?? "", 800)}
-                          srcset={coverSrcset(coverSrcOf(p.data.coverImage) ?? "")}
-                          sizes={
-                            coverSrcset(coverSrcOf(p.data.coverImage) ?? "")
-                              ? COVER_CARD_SIZES
-                              : undefined
-                          }
-                          alt=""
-                          width="800"
-                          height="600"
-                          class="h-full w-full object-cover"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      ) : (
-                        <IconBuildingCommunity
-                          class="text-muted-foreground/40 size-12"
-                          aria-hidden="true"
-                        />
-                      )}
-                    </div>
-                    <div class="p-4">
-                      <h3 class="text-foreground font-bold">{cleanPropertyTitle(p.data.title, undefined, p.data.district)}</h3>
-                      <p class="text-muted-foreground mt-1 flex items-center gap-1 text-sm">
-                        <IconMapPin class="size-4 shrink-0" aria-hidden="true" />
-                        {p.data.district}
+                    {p.data.coverImage ? (
+                      <img
+                        class="u2-prop__img"
+                        src={coverThumb(coverSrcOf(p.data.coverImage) ?? "", 800)}
+                        srcset={coverSrcset(coverSrcOf(p.data.coverImage) ?? "")}
+                        sizes={coverSrcset(coverSrcOf(p.data.coverImage) ?? "") ? COVER_CARD_SIZES : undefined}
+                        alt=""
+                        width="800"
+                        height="600"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <div class="u2-ph"><svg class="u2-ico" aria-hidden="true"><use href="#i-home"></use></svg></div>
+                    )}
+                    <h3>{cleanPropertyTitle(p.data.title, undefined, p.data.district)}</h3>
+                    <p class="u2-small">{p.data.district}</p>
+                    <p class="u2-price">
+                      {/* ⚠️ 模板字串插值裡不寫除號（Astro 編譯器會誤判成正規式），改乘 0.0001 */}
+                      {p.data.totalPrice >= 10000
+                        ? `${(p.data.totalPrice * 0.0001).toFixed(2)} 億`
+                        : `${p.data.totalPrice.toLocaleString()} 萬`}
+                    </p>
+                    {p.data.pricePerPing && (
+                      <p class="u2-small">
+                        單價 {p.data.pricePerPing} 萬/坪
+                        {/* 含不含車位：跟物件頁、列表卡同一套判斷（src/utils/parkingCaliber.ts，稽核 X002） */}
+                        {areaIncludesParking(p.data.parking, bodyPropertyType(p.body) ?? p.data.title) ? "（含車位）" : ""}
                       </p>
-                      <p class="text-accent mt-2 text-2xl font-extrabold">
-                        {/* ⚠️ 模板字串插值裡不寫除號（Astro 編譯器會誤判成正規式），改乘 0.0001 */}
-                        {p.data.totalPrice >= 10000
-                          ? `${(p.data.totalPrice * 0.0001).toFixed(2)} 億`
-                          : `${p.data.totalPrice.toLocaleString()} 萬`}
-                      </p>
-                      {p.data.pricePerPing && (
-                        <p class="text-muted-foreground mt-0.5 text-sm">
-                          單價 {p.data.pricePerPing} 萬/坪
-                          {/* 含不含車位：跟物件頁、列表卡同一套判斷（src/utils/parkingCaliber.ts，稽核 X002） */}
-                          {areaIncludesParking(
-                            p.data.parking,
-                            bodyPropertyType(p.body) ?? p.data.title
-                          )
-                            ? "（含車位）"
-                            : ""}
-                        </p>
-                      )}
-                    </div>
+                    )}
                   </a>
                 </li>
               ))}
             </ul>
-            <div class="mt-8 text-center">
-              <a href="/properties/" class="btn-outline">
-                看全部在售物件
-                <IconArrowRight class="size-5" aria-hidden="true" />
-              </a>
-            </div>
+            <p class="u2-more"><a href="/properties/" class="u2-btn u2-btn--ghost">看全部在售物件</a></p>
           </div>
         </section>
       )
     }
 
-    {/* ============ SECTION 4.5: 客戶見證（Phase 3 預留 — 空陣列時不渲染） ============ */}
+    {/* ============ 客戶見證（預留 — 空陣列時不渲染；不得虛構） ============ */}
     <Testimonials testimonials={testimonials} />
 
-    {/* ============ SECTION 5: 找景泰個人（白色帶） ============ */}
-    <section class="bg-card border-border w-full border-y">
-      <div class="app-layout-wide py-14 sm:py-20">
-        <div class="text-center">
-          <p class="text-muted-foreground text-sm">找景泰</p>
-          <h2 class="mt-2 text-2xl font-bold sm:text-3xl">
-            五個管道都找得到我
-          </h2>
-          <p class="text-muted-foreground mx-auto mt-3 max-w-2xl leading-relaxed">
-            看你習慣哪個平台 — IG 看日常 / FB 看長文 / YouTube 看影片 / TikTok 看短影音 / LINE 直接問。通常 30 秒到 30 分鐘會回。
-          </p>
-        </div>
-
-        <ul class="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-          {
-            personalAccounts.map(acc => {
-              const Icon = acc.icon;
-              return (
-                <li class={acc.platform === "LINE" ? "col-span-2 sm:col-span-1" : undefined}>
-                  <a
-                    href={acc.url}
-                    target="_blank"
-                    rel="noopener"
-                    class="card-interactive block p-4 text-center no-underline"
-                  >
-                    <div class="bg-accent/10 mx-auto w-fit rounded-xl p-2.5">
-                      <Icon class="text-accent size-6" aria-hidden="true" />
-                    </div>
-                    <p class="text-foreground mt-2 text-sm font-medium">
-                      {acc.platform}
-                    </p>
-                    <p class="text-accent mt-1 text-sm">{acc.handle}</p>
-                    <p class="text-muted-foreground mt-1 text-sm">{acc.desc}</p>
-                  </a>
-                </li>
-              );
-            })
-          }
-        </ul>
-      </div>
-    </section>
-
-    {/* ============ SECTION 6: 公司自媒體 BigKanBan（米色帶） ============ */}
-    <section class="w-full">
-      <div class="app-layout-wide py-14 sm:py-20">
-        <div class="text-center">
-          <p class="text-muted-foreground text-sm">公司自媒體後盾</p>
-          <h2 class="mt-2 text-2xl font-bold sm:text-3xl">
-            房仲大看板 <span class="text-accent">BigKanBan</span>
-          </h2>
-          <p class="text-muted-foreground mx-auto mt-3 max-w-2xl leading-relaxed">
-            我所在的公司經營的房仲業 KOL IP — IG 主帳 11K 粉、跨 IG / TikTok / FB 三大平台、共 4 個帳號。你的物件曝光，不只我一個人在做。
-          </p>
-        </div>
-
-        <ul class="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {
-            bigKanBanAccounts.map(acc => {
-              const Icon = acc.icon;
-              return (
-                <li>
-                  <a
-                    href={acc.url}
-                    target="_blank"
-                    rel="noopener"
-                    class="card-interactive block p-4 text-center no-underline"
-                  >
-                    <div class="bg-accent/10 mx-auto w-fit rounded-xl p-2.5">
-                      <Icon class="text-accent size-6" aria-hidden="true" />
-                    </div>
-                    <p class="text-foreground mt-2 text-sm font-medium">
-                      {acc.platform}
-                    </p>
-                    <p class="text-accent mt-1 text-sm">{acc.handle}</p>
-                    <p class="text-muted-foreground mt-1 text-sm">{acc.desc}</p>
-                  </a>
-                </li>
-              );
-            })
-          }
-        </ul>
-
-        <div class="mt-8 text-center">
-          <a href="/media/" class="btn-outline">
-            看大看板完整介紹
-            <IconArrowRight class="size-5" aria-hidden="true" />
-          </a>
-        </div>
-      </div>
-    </section>
-
-    {/* ============ SECTION 6.5: 房市筆記精選（白色帶） ============ */}
+    {/* ============ 7 房市筆記精選（前移：先給有用的內容，再給社群） ============ */}
     {
       recentPosts.length > 0 && (
-        <section class="bg-card border-border w-full border-y">
-          <div class="app-layout-wide py-14 sm:py-20">
-            <div class="text-center">
-              <p class="text-muted-foreground text-sm">房市筆記</p>
-              <h2 class="mt-2 text-2xl font-bold sm:text-3xl">
-                買賣房會踩的雷、該算的數字
-              </h2>
-              <p class="text-muted-foreground mx-auto mt-3 max-w-xl text-sm leading-relaxed">
-                社區評價、看屋、出價評估、青安 3.0、嫌惡設施、不動產說明書怎麼讀 — 你會用到的都在這。
-              </p>
+        <section class="u2-band u2-band--sunken" aria-labelledby="h-notes">
+          <div class="u2-wrap">
+            <div class="u2-sec-head">
+              <h2 class="u2-h2" id="h-notes">買賣房會踩的雷、該算的數字</h2>
+              <p>社區評價、看屋、出價評估、青安 3.0、嫌惡設施、不動產說明書怎麼讀 — 你會用到的都在這。</p>
             </div>
-            <ul class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
-              {recentPosts.map(post => {
+            <div class="u2-notes">
+              {recentPosts.map((post, idx) => {
                 const coverSrc =
                   typeof post.data.ogImage === "string"
                     ? post.data.ogImage
                     : post.data.ogImage && "src" in post.data.ogImage
                       ? post.data.ogImage.src
                       : null;
-                return (
-                  <li class="card-interactive overflow-hidden">
-                    <a
-                      href={`/posts/${post.id}/`}
-                      class="block no-underline hover:opacity-90"
-                    >
+                return idx === 0 ? (
+                  <article class="u2-note">
+                    <a href={`/posts/${post.id}/`}>
                       {coverSrc ? (
-                        <img
-                          src={coverSrc}
-                          alt=""
-                          width="800"
-                          height="450"
-                          class="aspect-[16/9] w-full object-cover"
-                          loading="lazy"
-                          decoding="async"
-                        />
+                        <img class="u2-note__img" src={coverSrc} alt="" width="800" height="450" loading="lazy" decoding="async" />
                       ) : (
-                        <div class="bg-muted flex aspect-[16/9] items-center justify-center">
-                          <IconNotes
-                            class="text-muted-foreground/40 size-12"
-                            aria-hidden="true"
-                          />
-                        </div>
+                        <div class="u2-ph u2-ph--wide"><svg class="u2-ico" aria-hidden="true"><use href="#i-home"></use></svg></div>
                       )}
-                      <div class="p-4">
-                        <h3 class="text-foreground line-clamp-2 text-lg font-bold sm:text-xl">
-                          {post.data.title}
-                        </h3>
-                        {post.data.description && (
-                          <p class="text-muted-foreground mt-2 line-clamp-3 text-sm leading-relaxed">
-                            {post.data.description}
-                          </p>
-                        )}
-                      </div>
+                      <h3>{post.data.title}</h3>
+                      {post.data.description && <p class="u2-small u2-clamp">{post.data.description}</p>}
                     </a>
-                  </li>
-                );
+                  </article>
+                ) : null;
               })}
-            </ul>
-            <div class="mt-8 text-center">
-              <a
-                href={getRelativeLocaleUrl(locale, "posts")}
-                class="btn-outline"
-              >
-                看所有文章
-                <IconArrowRight class="size-5" aria-hidden="true" />
-              </a>
+              <div class="u2-notes__rest">
+                {recentPosts.slice(1).map(post => (
+                  <article class="u2-note u2-note--rows">
+                    <a href={`/posts/${post.id}/`}>
+                      <h3>{post.data.title}</h3>
+                      {post.data.description && <p class="u2-small u2-clamp">{post.data.description}</p>}
+                    </a>
+                  </article>
+                ))}
+              </div>
             </div>
+            <p class="u2-more"><a href={getRelativeLocaleUrl(locale, "posts")} class="u2-btn u2-btn--ghost">看所有文章</a></p>
           </div>
         </section>
       )
     }
 
-    {/* ============ SECTION 7: 底部大 CTA（米色帶） ============ */}
-    <section class="w-full">
-      <div class="app-layout-wide py-14 text-center sm:py-20">
-        <h2 class="text-2xl font-bold sm:text-3xl">
-          有問題？<span class="text-accent">直接 LINE 我</span>
-        </h2>
-        <p class="text-muted-foreground mt-4 leading-relaxed">
+    {/* ============ 8 這個網站有什麼（8 張一樣的卡 → 目錄列；連結與說明文字一字不動） ============ */}
+    <section class="u2-band" aria-labelledby="h-toc">
+      <div class="u2-wrap">
+        <div class="u2-sec-head"><p class="u2-small">看你想看的</p><h2 class="u2-h2" id="h-toc">這個網站有什麼</h2></div>
+        <ul class="u2-toc">
+          <li><a href="/posts/"><h3>房市筆記</h3><span>社區評價、青安 3.0、嫌惡設施、不動產說明書</span></a></li>
+          <li><a href="/properties/"><h3>在售物件</h3><span>北屯 / 西屯 / 南屯 / 七期 都有</span></a></li>
+          <li><a href="/tools/"><h3>客戶工具</h3><span>買方費用試算、看屋 checklist、政府資源</span></a></li>
+          <li><a href="/faq/"><h3>常見問題</h3><span>短答一次看完 — 仲介費 / 青安 3.0 / 凶宅 / 過戶</span></a></li>
+          <li><a href="/areas/"><h3>台中各區</h3><span>{areas.length} 區買房指南 — 北屯 / 七期 / 南屯 / 西區 / 烏日 / 梧棲</span></a></li>
+          <li><a href="/services/"><h3>服務項目</h3><span>買 / 賣 / 投資 / 換屋 4 大方向</span></a></li>
+          <li><a href="/shorts/"><h3>短影音作品集</h3><span>YouTube / TikTok / IG — 看屋開箱、政策快訊</span></a></li>
+          <li><a href="/about/"><h3>關於景泰</h3><span>廚師 → 房仲 → AI 工程，跟別人不一樣</span></a></li>
+          <li><a href="/go/line?src=home"><h3>直接 LINE 我</h3><span>sky811117 ・ 30 秒到 30 分鐘會回</span></a></li>
+        </ul>
+      </div>
+    </section>
+
+    {/* ============ 9 找景泰：五個管道（卡 → 列） ============ */}
+    <section class="u2-band u2-band--sunken" aria-labelledby="h-chan">
+      <div class="u2-wrap">
+        <div class="u2-sec-head">
+          <p class="u2-small">找景泰</p>
+          <h2 class="u2-h2" id="h-chan">五個管道都找得到我</h2>
+          <p>看你習慣哪個平台 — IG 看日常 / FB 看長文 / YouTube 看影片 / TikTok 看短影音 / LINE 直接問。通常 30 秒到 30 分鐘會回。</p>
+        </div>
+        <ul class="u2-chan u2-chanwrap">
+          {
+            personalAccounts.map(acc => (
+              <li>
+                <a href={acc.url} target="_blank" rel="noopener">
+                  <svg class="u2-ico" aria-hidden="true"><use href={`#${acc.icon}`}></use></svg>
+                  <span><b>{acc.platform}</b> <small>{acc.handle}</small><br /><small>{acc.desc}</small></span>
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </section>
+
+    {/* ============ 10 公司自媒體 BigKanBan ============ */}
+    <section class="u2-band" aria-labelledby="h-bkb">
+      <div class="u2-wrap">
+        <div class="u2-sec-head">
+          <p class="u2-small">公司自媒體後盾</p>
+          <h2 class="u2-h2" id="h-bkb">房仲大看板 <span class="u2-accent">BigKanBan</span></h2>
+          <p>我所在的公司經營的房仲業 KOL IP — IG 主帳 11K 粉、跨 IG / TikTok / FB 三大平台、共 4 個帳號。你的物件曝光，不只我一個人在做。</p>
+        </div>
+        <ul class="u2-chan u2-chanwrap">
+          {
+            bigKanBanAccounts.map(acc => (
+              <li>
+                <a href={acc.url} target="_blank" rel="noopener">
+                  <svg class="u2-ico" aria-hidden="true"><use href={`#${acc.icon}`}></use></svg>
+                  <span><b>{acc.platform}</b> <small>{acc.handle}</small><br /><small>{acc.desc}</small></span>
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+        <p class="u2-more"><a href="/media/" class="u2-btn u2-btn--ghost">看大看板完整介紹</a></p>
+      </div>
+    </section>
+
+    {/* ============ 11 底部：全頁唯一的實心綠色 LINE 按鈕 ============ */}
+    <section class="u2-band u2-band--sunken" aria-labelledby="h-final">
+      <div class="u2-wrap u2-cta-final">
+        <h2 class="u2-h2" id="h-final">有問題？<span class="u2-accent">直接 LINE 我</span></h2>
+        <p class="u2-lead">
           台中買賣房任何問題，從看屋、出價、貸款、稅務、過戶都可以問。<br />
-          我大概 <strong class="text-foreground">30 秒到 30 分鐘</strong>會回（除非在帶看或開會）。
+          我大概 <strong>30 秒到 30 分鐘</strong>會回（除非在帶看或開會）。
         </p>
-        <a
-          href="/go/line?src=home-bottom"
-          class="btn-line mt-8 px-8 py-4 text-lg"
-        >
-          <IconBrandLine class="size-6" aria-hidden="true" />
-          加 LINE：sky811117
+        <a href="/go/line?src=home-bottom" class="u2-btn u2-btn--line u2-btn--lg">
+          <svg class="u2-ico" aria-hidden="true"><use href="#i-chat"></use></svg>加 LINE：sky811117
         </a>
       </div>
     </section>
   </main>
 
-  <Footer />
+  <Footer2 />
 </Layout>
 
 <script is:inline>
@@ -1138,16 +668,6 @@ const bigKanBanAccounts = [
       location.href = "/properties/" + (qs ? "?" + qs : "");
     }
     btn.addEventListener("click", go);
-    // 手機「更多條件」：展開總價 / 房型
-    const more = document.querySelector("[data-hero-more]");
-    const extra = document.querySelector("[data-hero-extra]");
-    if (more && extra) {
-      more.addEventListener("click", () => {
-        const open = extra.classList.toggle("hidden") === false;
-        more.setAttribute("aria-expanded", open ? "true" : "false");
-        more.textContent = open ? "收起條件" : "更多條件";
-      });
-    }
     // Enter 鍵在 input 內也觸發
     document
       .querySelector("[data-hero-price-max]")
@@ -1157,5 +677,51 @@ const bigKanBanAccounts = [
           go();
         }
       });
+  })();
+</script>
+
+<script is:inline>
+  /* 找房卡：分頁（左右鍵、Home、End；沒選中的分頁 tabindex=-1）＋「告訴小幫手」把那句話交給 /find/。
+     那句話放在同分頁的暫存（sessionStorage），不放在網址、不經過任何伺服器；暫存不能用時退成網址片段（#q=，同樣不會送到伺服器）。
+     沒有 JavaScript 時：兩個面板都顯示，表單直接導到 /find/。 */
+  (function () {
+    var tabs = [].slice.call(document.querySelectorAll(".u2-ask [role=tab]"));
+    if (!tabs.length) return;
+    var tl = document.querySelector(".u2-ask__tabs");
+    if (tl) tl.removeAttribute("data-js-only");   // 沒有 JavaScript 時分頁按鈕按了沒反應，所以預設藏起來（兩個面板都顯示）
+    var fp = document.getElementById("panel-filter");
+    if (fp) fp.hidden = true;
+    function pick(i, focus) {
+      tabs.forEach(function (t, j) {
+        var on = i === j;
+        t.setAttribute("aria-selected", on ? "true" : "false");
+        t.tabIndex = on ? 0 : -1;
+        var p = document.getElementById(t.getAttribute("aria-controls"));
+        if (p) p.hidden = !on;
+      });
+      if (focus) tabs[i].focus();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener("click", function () { pick(i, false); });
+      t.addEventListener("keydown", function (e) {
+        var n = { ArrowRight: (i + 1) % tabs.length, ArrowLeft: (i + tabs.length - 1) % tabs.length, Home: 0, End: tabs.length - 1 }[e.key];
+        if (n !== undefined) { e.preventDefault(); pick(n, true); }
+      });
+    });
+    var hot = document.querySelector("#panel-say .u2-hot");
+    if (hot) hot.addEventListener("click", function (e) {
+      var f = e.target.closest ? e.target.closest("[data-fill]") : null;
+      if (f) { var ta = document.getElementById("hero-say"); ta.value = f.getAttribute("data-fill"); ta.focus(); }
+    });
+    var form = document.getElementById("say-form");
+    if (form) form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var text = (document.getElementById("hero-say").value || "").trim().slice(0, 300);
+      var url = "/find/?from=home";
+      var kept = false;
+      if (text) { try { sessionStorage.setItem("find.say", text); kept = true; } catch (err) { kept = false; } }
+      if (text && !kept) url += "#q=" + encodeURIComponent(text);
+      location.href = url;
+    });
   })();
 </script>

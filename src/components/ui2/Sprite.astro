@@ -1,0 +1,40 @@
+---
+/**
+ * ui2 內嵌 SVG 圖示庫（每頁放一次）。線條圖示，stroke 跟字色走，24px 格、1.75 線寬，風格同 assets/icons 的 Tabler 圖示。
+ * 小屋（u2-house）是找房小幫手的身體：房子形狀的對話泡泡，屋頂與門用木色、輪廓用墨色，全部吃設計系統 token。
+ */
+---
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="u2-house" viewBox="0 0 48 48">
+      <path d="M24 5.5 4.5 21.5V38a3.5 3.5 0 0 0 3.5 3.5h3.2l-2.7 5.2 8.7-5.2H40a3.5 3.5 0 0 0 3.5-3.5V21.5z" style="fill:var(--u2-vellum);stroke:var(--u2-ink);stroke-width:2.4;stroke-linejoin:round"></path>
+      <path d="M4.5 21.5 24 5.5l19.5 16" style="fill:none;stroke:var(--u2-wood-600);stroke-width:4;stroke-linecap:round;stroke-linejoin:round"></path>
+      <path d="M19 41.5V31.5a5 5 0 0 1 10 0v10z" style="fill:var(--u2-wood-600);stroke:none"></path>
+      <circle cx="26.3" cy="36" r="1" style="fill:var(--u2-vellum);stroke:none"></circle>
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"></path></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"></path></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"></path></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"></path></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M10 14l11-11"></path><path d="M21 3l-6.5 18a.55.55 0 0 1-1 0L10 14l-7-3.5a.55.55 0 0 1 0-1L21 3"></path></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2.83 2.83 0 0 0-4-4L4 16v4"></path><path d="M13.5 6.5l4 4"></path></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M7 11v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3a4 4 0 0 0 4-4V5a2 2 0 0 1 4 0v5h3a2 2 0 0 1 2 2l-1 5a3 3 0 0 1-2 2h-7a3 3 0 0 1-3-3"></path></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><g transform="translate(0 24) scale(1 -1)"><path d="M7 11v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3a4 4 0 0 0 4-4V5a2 2 0 0 1 4 0v5h3a2 2 0 0 1 2 2l-1 5a3 3 0 0 1-2 2h-7a3 3 0 0 1-3-3"></path></g></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 8h.01M11 12h1v4h1"></path></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4M12 16h.01"></path><path d="M10.24 3.96L1.82 18.02A2 2 0 0 0 3.52 21h16.85a2 2 0 0 0 1.7-2.98L13.65 3.96a2 2 0 0 0-3.41 0z"></path></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5l1.5-2.5 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"></path></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M12 4C7.6 4 4 6.9 4 10.4c0 3.1 2.8 5.7 6.5 6.2.5.1.7.3.6.8l-.2 1.1c0 .4.2.6.6.4C14 17.7 20 14.6 20 10.4 20 6.9 16.4 4 12 4z"></path></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"></circle><path d="M3 12h1M12 3v1M20 12h1M12 20v1M5.6 5.6l.7.7M18.4 5.6l-.7.7M17.7 17.7l.7.7M6.3 17.7l-.7.7"></path></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"></path></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"></path></symbol>
+    <symbol id="i-ext" viewBox="0 0 24 24"><path d="M12 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6M11 13l9-9M15 4h5v5"></path></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10" cy="10" r="7"></circle><path d="M21 21l-6-6"></path></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M5 12l-2 0 9-9 9 9-2 0M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7M9 21v-6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v6"></path></symbol>
+    <symbol id="i-ig" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"></rect><circle cx="12" cy="12" r="3.5"></circle><path d="M16.5 7.5h.01"></path></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="4"></rect><path d="M10 9l5 3-5 3z"></path></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path d="M5 20a7 7 0 0 1 14 0"></path></symbol>
+  </defs>
+</svg>

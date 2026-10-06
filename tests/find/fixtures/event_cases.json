@@ -1,0 +1,1429 @@
+{
+ "version": 1,
+ "cases": [
+  {
+   "id": "e001",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "view",
+    "t": 0,
+    "src": "line",
+    "dev": "m",
+    "th": "l"
+   },
+   "expect": {
+    "e": "view",
+    "t": 0,
+    "src": "line",
+    "dev": "m",
+    "th": "l"
+   }
+  },
+  {
+   "id": "e002",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "view",
+    "t": 100,
+    "src": "line",
+    "phone": "0912345678",
+    "name": "王小明"
+   },
+   "expect": {
+    "e": "view",
+    "t": 100,
+    "src": "line"
+   },
+   "note": "未列的鍵一律丟棄（個資鍵不報錯、不回顯）"
+  },
+  {
+   "id": "e003",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "view",
+    "t": 1,
+    "src": "Line",
+    "dev": "m"
+   },
+   "expect": {
+    "e": "view",
+    "t": 1,
+    "dev": "m"
+   },
+   "note": "from 標記必須小寫"
+  },
+  {
+   "id": "e004",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "view",
+    "t": 1,
+    "src": "aaaaaaaaaaaaaaaaaaaaaaaaa"
+   },
+   "expect": {
+    "e": "view",
+    "t": 1
+   }
+  },
+  {
+   "id": "e003b",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "view",
+    "t": 1,
+    "src": "0912345678"
+   },
+   "expect": {
+    "e": "view",
+    "t": 1
+   },
+   "note": "來源標記不能是長數字（像電話）"
+  },
+  {
+   "id": "e005",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "start",
+    "t": 500,
+    "how": "free"
+   },
+   "expect": {
+    "e": "start",
+    "t": 500,
+    "how": "free"
+   }
+  },
+  {
+   "id": "e006",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "free_submit",
+    "t": 9000,
+    "lenb": 1,
+    "lvl": "thin",
+    "got": [
+     "district",
+     "rooms"
+    ],
+    "miss": [
+     "price"
+    ],
+    "drop": [
+     "unbuilt"
+    ],
+    "pii": [
+     "phone",
+     "name"
+    ]
+   },
+   "expect": {
+    "e": "free_submit",
+    "t": 9000,
+    "lenb": 1,
+    "lvl": "thin",
+    "got": [
+     "district",
+     "rooms"
+    ],
+    "miss": [
+     "price"
+    ],
+    "drop": [
+     "unbuilt"
+    ],
+    "pii": [
+     "phone",
+     "name"
+    ]
+   }
+  },
+  {
+   "id": "e007",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "free_submit",
+    "t": 9000,
+    "lvl": "ok",
+    "got": [
+     "district",
+     "北屯"
+    ]
+   },
+   "expect": {
+    "e": "free_submit",
+    "t": 9000,
+    "lvl": "ok"
+   },
+   "note": "清單裡有非列舉元素，整個鍵丟棄"
+  },
+  {
+   "id": "e008",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "free_submit",
+    "t": 1,
+    "pii": [
+     "phone",
+     "phone",
+     "email"
+    ]
+   },
+   "expect": {
+    "e": "free_submit",
+    "t": 1,
+    "pii": [
+     "phone",
+     "email"
+    ]
+   },
+   "note": "清單去重"
+  },
+  {
+   "id": "e009",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "free_submit",
+    "t": 1,
+    "lenb": 4
+   },
+   "expect": {
+    "e": "free_submit",
+    "t": 1
+   }
+  },
+  {
+   "id": "e010",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "q_show",
+    "t": 12000,
+    "q": "q_budget"
+   },
+   "expect": {
+    "e": "q_show",
+    "t": 12000,
+    "q": "q_budget"
+   }
+  },
+  {
+   "id": "e011",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "q_show",
+    "t": 12000,
+    "q": "q_evil"
+   },
+   "expect": {
+    "e": "q_show",
+    "t": 12000
+   }
+  },
+  {
+   "id": "e012",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "q_ans",
+    "t": 15000,
+    "q": "q_concerns",
+    "n": 2,
+    "ms": 3500
+   },
+   "expect": {
+    "e": "q_ans",
+    "t": 15000,
+    "q": "q_concerns",
+    "n": 2,
+    "ms": 3500
+   }
+  },
+  {
+   "id": "e013",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "q_ans",
+    "t": 15000,
+    "q": "q_rooms",
+    "n": 13,
+    "ms": -5
+   },
+   "expect": {
+    "e": "q_ans",
+    "t": 15000,
+    "q": "q_rooms"
+   }
+  },
+  {
+   "id": "e014",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "q_skip",
+    "t": 16000,
+    "q": "q_parking"
+   },
+   "expect": {
+    "e": "q_skip",
+    "t": 16000,
+    "q": "q_parking"
+   }
+  },
+  {
+   "id": "e015",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "go_now",
+    "t": 20000,
+    "lvl": "vague",
+    "left": 2
+   },
+   "expect": {
+    "e": "go_now",
+    "t": 20000,
+    "lvl": "vague",
+    "left": 2
+   }
+  },
+  {
+   "id": "e016",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "nudge",
+    "t": 21000,
+    "r": "accept"
+   },
+   "expect": {
+    "e": "nudge",
+    "t": 21000,
+    "r": "accept"
+   }
+  },
+  {
+   "id": "e017",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "confirm",
+    "t": 30000,
+    "lvl": "ok",
+    "fn": 6
+   },
+   "expect": {
+    "e": "confirm",
+    "t": 30000,
+    "lvl": "ok",
+    "fn": 6
+   }
+  },
+  {
+   "id": "e018",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "edit",
+    "t": 31000,
+    "k": "price"
+   },
+   "expect": {
+    "e": "edit",
+    "t": 31000,
+    "k": "price"
+   }
+  },
+  {
+   "id": "e019",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "submit",
+    "t": 40000,
+    "lvl": "thin",
+    "skip": 0,
+    "ct": 1,
+    "nc": 2,
+    "rf": 0
+   },
+   "expect": {
+    "e": "submit",
+    "t": 40000,
+    "lvl": "thin",
+    "skip": 0,
+    "ct": 1,
+    "nc": 2,
+    "rf": 0
+   }
+  },
+  {
+   "id": "e020",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "submit",
+    "t": 40000,
+    "skip": true,
+    "ct": "yes"
+   },
+   "expect": {
+    "e": "submit",
+    "t": 40000
+   },
+   "note": "布林字面值與字串都不是 0/1，丟棄"
+  },
+  {
+   "id": "e021",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "submit_res",
+    "t": 41000,
+    "st": "queued",
+    "sv": 1
+   },
+   "expect": {
+    "e": "submit_res",
+    "t": 41000,
+    "st": "queued",
+    "sv": 1
+   }
+  },
+  {
+   "id": "e022",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "submit_res",
+    "t": 41000,
+    "st": "error",
+    "err": "E_RATE"
+   },
+   "expect": {
+    "e": "submit_res",
+    "t": 41000,
+    "st": "error",
+    "err": "E_RATE"
+   }
+  },
+  {
+   "id": "e023",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "submit_res",
+    "t": 41000,
+    "st": "error",
+    "err": "upstream said: blocked"
+   },
+   "expect": {
+    "e": "submit_res",
+    "t": 41000,
+    "st": "error"
+   }
+  },
+  {
+   "id": "e024",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "wait_end",
+    "t": 140000,
+    "st": "done",
+    "ws": 95,
+    "qa": 2,
+    "polls": 20
+   },
+   "expect": {
+    "e": "wait_end",
+    "t": 140000,
+    "st": "done",
+    "ws": 95,
+    "qa": 2,
+    "polls": 20
+   }
+  },
+  {
+   "id": "e025",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "game",
+    "t": 100000,
+    "a": "over",
+    "sc": 3,
+    "pl": 2
+   },
+   "expect": {
+    "e": "game",
+    "t": 100000,
+    "a": "over",
+    "sc": 3,
+    "pl": 2
+   }
+  },
+  {
+   "id": "e026",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "result",
+    "t": 140000,
+    "n": 7,
+    "ws": 95
+   },
+   "expect": {
+    "e": "result",
+    "t": 140000,
+    "n": 7,
+    "ws": 95
+   }
+  },
+  {
+   "id": "e027",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "result_click",
+    "t": 150000,
+    "a": "open"
+   },
+   "expect": {
+    "e": "result_click",
+    "t": 150000,
+    "a": "open"
+   }
+  },
+  {
+   "id": "e028",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "contact",
+    "t": 150000,
+    "r": "submit",
+    "m": [
+     "line"
+    ]
+   },
+   "expect": {
+    "e": "contact",
+    "t": 150000,
+    "r": "submit",
+    "m": [
+     "line"
+    ]
+   }
+  },
+  {
+   "id": "e029",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "contact",
+    "t": 150000,
+    "r": "submit",
+    "m": [
+     "wang_1234"
+    ]
+   },
+   "expect": {
+    "e": "contact",
+    "t": 150000,
+    "r": "submit"
+   },
+   "note": "只記管道名，不記內容"
+  },
+  {
+   "id": "e030",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "fb",
+    "t": 160000,
+    "r": "down",
+    "tags": [
+     "too_few",
+     "price_wrong"
+    ],
+    "tx": 1
+   },
+   "expect": {
+    "e": "fb",
+    "t": 160000,
+    "r": "down",
+    "tags": [
+     "too_few",
+     "price_wrong"
+    ],
+    "tx": 1
+   }
+  },
+  {
+   "id": "e031",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "fb",
+    "t": 160000,
+    "r": "up",
+    "tags": [
+     "just_right",
+     "just_right"
+    ]
+   },
+   "expect": {
+    "e": "fb",
+    "t": 160000,
+    "r": "up",
+    "tags": [
+     "just_right"
+    ]
+   }
+  },
+  {
+   "id": "e032",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "fb",
+    "t": 160000,
+    "r": "up",
+    "text": "很準，謝謝（電話0912345678）"
+   },
+   "expect": {
+    "e": "fb",
+    "t": 160000,
+    "r": "up"
+   },
+   "note": "一句話不進事件"
+  },
+  {
+   "id": "e033",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "fatigue",
+    "t": 70000,
+    "v": "many"
+   },
+   "expect": {
+    "e": "fatigue",
+    "t": 70000,
+    "v": "many"
+   }
+  },
+  {
+   "id": "e034",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "err",
+    "t": 1,
+    "c": "net"
+   },
+   "expect": {
+    "e": "err",
+    "t": 1,
+    "c": "net"
+   }
+  },
+  {
+   "id": "e035",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "leave",
+    "t": 99000,
+    "s": "s6",
+    "ws": 30
+   },
+   "expect": {
+    "e": "leave",
+    "t": 99000,
+    "s": "s6",
+    "ws": 30
+   }
+  },
+  {
+   "id": "e036",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "q_show",
+    "t": 5,
+    "s": "s3",
+    "q": "q_age"
+   },
+   "expect": {
+    "e": "q_show",
+    "t": 5,
+    "s": "s3",
+    "q": "q_age"
+   }
+  },
+  {
+   "id": "e037",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "q_show",
+    "t": 5,
+    "s": "s99",
+    "q": "q_age"
+   },
+   "expect": {
+    "e": "q_show",
+    "t": 5,
+    "q": "q_age"
+   }
+  },
+  {
+   "id": "e038",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "start",
+    "how": "pick"
+   },
+   "expect": {
+    "e": "start",
+    "how": "pick"
+   },
+   "note": "t 可以沒有"
+  },
+  {
+   "id": "e039",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "game",
+    "t": 86400000,
+    "a": "skip"
+   },
+   "expect": {
+    "e": "game",
+    "t": 86400000,
+    "a": "skip"
+   },
+   "note": "t 邊界"
+  },
+  {
+   "id": "e101",
+   "kind": "event",
+   "server": false,
+   "input": "view",
+   "expect": null
+  },
+  {
+   "id": "e102",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "t": 1
+   },
+   "expect": null
+  },
+  {
+   "id": "e103",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "hack",
+    "t": 1
+   },
+   "expect": null
+  },
+  {
+   "id": "e104",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": 7,
+    "t": 1
+   },
+   "expect": null
+  },
+  {
+   "id": "e105",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "view",
+    "t": -1
+   },
+   "expect": null
+  },
+  {
+   "id": "e106",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "view",
+    "t": 86400001
+   },
+   "expect": null
+  },
+  {
+   "id": "e107",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "view",
+    "t": 1.5
+   },
+   "expect": null
+  },
+  {
+   "id": "e108",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "view",
+    "t": "5"
+   },
+   "expect": null
+  },
+  {
+   "id": "e109",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "s_gate",
+    "t": 1,
+    "dg": "night"
+   },
+   "expect": null,
+   "note": "客人端不准送伺服器端事件"
+  },
+  {
+   "id": "e110",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "view; DROP TABLE",
+    "t": 1
+   },
+   "expect": null
+  },
+  {
+   "id": "e111",
+   "kind": "event",
+   "server": false,
+   "input": [
+    {
+     "e": "view"
+    }
+   ],
+   "expect": null
+  },
+  {
+   "id": "e112",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": {
+     "x": 1
+    },
+    "t": 1
+   },
+   "expect": null
+  },
+  {
+   "id": "e113",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "view",
+    "t": true
+   },
+   "expect": null
+  },
+  {
+   "id": "e114",
+   "kind": "event",
+   "server": false,
+   "input": null,
+   "expect": null
+  },
+  {
+   "id": "s001",
+   "kind": "event",
+   "server": true,
+   "input": {
+    "e": "s_gate",
+    "dg": "night"
+   },
+   "expect": {
+    "e": "s_gate",
+    "dg": "night"
+   }
+  },
+  {
+   "id": "s002",
+   "kind": "event",
+   "server": true,
+   "input": {
+    "e": "s_run",
+    "finder": "ext_ai",
+    "ms": 90000,
+    "ids_n": 7,
+    "out": "ok",
+    "cache": "miss"
+   },
+   "expect": {
+    "e": "s_run",
+    "finder": "ext_ai",
+    "ms": 90000,
+    "ids_n": 7,
+    "out": "ok",
+    "cache": "miss"
+   }
+  },
+  {
+   "id": "s003",
+   "kind": "event",
+   "server": true,
+   "input": {
+    "e": "s_run",
+    "finder": "ext_ai",
+    "out": "upstream_bad",
+    "reason": "http_429"
+   },
+   "expect": {
+    "e": "s_run",
+    "finder": "ext_ai",
+    "out": "upstream_bad",
+    "reason": "http_429"
+   }
+  },
+  {
+   "id": "s004",
+   "kind": "event",
+   "server": true,
+   "input": {
+    "e": "s_run",
+    "finder": "ext_ai",
+    "out": "error",
+    "reason": "bogus"
+   },
+   "expect": {
+    "e": "s_run",
+    "finder": "ext_ai",
+    "out": "error"
+   }
+  },
+  {
+   "id": "s005",
+   "kind": "event",
+   "server": true,
+   "input": {
+    "e": "s_accept",
+    "lvl": "ok",
+    "skip": 0,
+    "ext": "local_llm",
+    "exms": 800,
+    "exfb": "timeout"
+   },
+   "expect": {
+    "e": "s_accept",
+    "lvl": "ok",
+    "skip": 0,
+    "ext": "local_llm",
+    "exms": 800,
+    "exfb": "timeout"
+   }
+  },
+  {
+   "id": "s006",
+   "kind": "event",
+   "server": true,
+   "input": {
+    "e": "s_lead",
+    "tg": "ok"
+   },
+   "expect": {
+    "e": "s_lead",
+    "tg": "ok"
+   }
+  },
+  {
+   "id": "s007",
+   "kind": "event",
+   "server": true,
+   "input": {
+    "e": "s_circuit",
+    "ev": "open",
+    "note": "被對方擋了"
+   },
+   "expect": {
+    "e": "s_circuit",
+    "ev": "open"
+   }
+  },
+  {
+   "id": "s008",
+   "kind": "event",
+   "server": true,
+   "input": {
+    "e": "s_fuse",
+    "x": 1
+   },
+   "expect": {
+    "e": "s_fuse"
+   }
+  },
+  {
+   "id": "s009",
+   "kind": "event",
+   "server": true,
+   "input": {
+    "e": "s_queue",
+    "wait_ms": 240000,
+    "ahead": 3
+   },
+   "expect": {
+    "e": "s_queue",
+    "wait_ms": 240000,
+    "ahead": 3
+   }
+  },
+  {
+   "id": "s010",
+   "kind": "event",
+   "server": true,
+   "input": {
+    "e": "s_pick",
+    "pk": "rules",
+    "ms": 3,
+    "fb": "bad_json"
+   },
+   "expect": {
+    "e": "s_pick",
+    "pk": "rules",
+    "ms": 3,
+    "fb": "bad_json"
+   }
+  },
+  {
+   "id": "s011",
+   "kind": "event",
+   "server": true,
+   "input": {
+    "e": "view",
+    "t": 1,
+    "src": "ig"
+   },
+   "expect": {
+    "e": "view",
+    "t": 1,
+    "src": "ig"
+   },
+   "note": "伺服器路徑也收客人端事件"
+  },
+  {
+   "id": "s012",
+   "kind": "event",
+   "server": true,
+   "input": {
+    "e": "s_nope"
+   },
+   "expect": null
+  },
+  {
+   "id": "b001",
+   "kind": "batch",
+   "input": {
+    "v": 1,
+    "sid": "Qw3kT9xLm2PzR8aVb5NcDe",
+    "jid": null,
+    "rid": null,
+    "events": [
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "n": 1,
+    "dropped": 0,
+    "jid": null,
+    "rid": null
+   }
+  },
+  {
+   "id": "b002",
+   "kind": "batch",
+   "input": {
+    "v": 1,
+    "sid": "Qw3kT9xLm2PzR8aVb5NcDe",
+    "jid": "aX3kT9xLm2PzR8aVb5NcDe1",
+    "rid": "Rr3kT9xLm2PzR8aVb5NcDe",
+    "events": [
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "hack"
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "n": 1,
+    "dropped": 1,
+    "jid": "aX3kT9xLm2PzR8aVb5NcDe1",
+    "rid": "Rr3kT9xLm2PzR8aVb5NcDe"
+   }
+  },
+  {
+   "id": "b003",
+   "kind": "batch",
+   "input": {
+    "v": 2,
+    "sid": "Qw3kT9xLm2PzR8aVb5NcDe",
+    "events": []
+   },
+   "expect": {
+    "ok": false
+   }
+  },
+  {
+   "id": "b004",
+   "kind": "batch",
+   "input": {
+    "v": 1,
+    "sid": "short",
+    "events": []
+   },
+   "expect": {
+    "ok": false
+   }
+  },
+  {
+   "id": "b005",
+   "kind": "batch",
+   "input": {
+    "v": 1,
+    "sid": "Qw3kT9xLm2PzR8aVb5NcDe",
+    "jid": "bad",
+    "events": []
+   },
+   "expect": {
+    "ok": false
+   }
+  },
+  {
+   "id": "b006",
+   "kind": "batch",
+   "input": {
+    "v": 1,
+    "sid": "Qw3kT9xLm2PzR8aVb5NcDe",
+    "rid": "bad",
+    "events": []
+   },
+   "expect": {
+    "ok": false
+   }
+  },
+  {
+   "id": "b007",
+   "kind": "batch",
+   "input": {
+    "v": 1,
+    "sid": "Qw3kT9xLm2PzR8aVb5NcDe",
+    "events": "x"
+   },
+   "expect": {
+    "ok": false
+   }
+  },
+  {
+   "id": "b008",
+   "kind": "batch",
+   "input": {
+    "v": 1,
+    "sid": "Qw3kT9xLm2PzR8aVb5NcDe",
+    "events": [
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     },
+     {
+      "e": "view",
+      "t": 0,
+      "src": "line",
+      "dev": "m"
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "n": 30,
+    "dropped": 5
+   },
+   "note": "超過 30 則的部分算丟棄"
+  },
+  {
+   "id": "b009",
+   "kind": "batch",
+   "input": [],
+   "expect": {
+    "ok": false
+   }
+  },
+  {
+   "id": "b010",
+   "kind": "batch",
+   "input": {
+    "v": 1,
+    "sid": "Qw3kT9xLm2PzR8aVb5NcDe",
+    "events": []
+   },
+   "expect": {
+    "ok": true,
+    "n": 0,
+    "dropped": 0
+   }
+  },
+  {
+   "id": "b011",
+   "kind": "batch",
+   "input": {
+    "v": 1,
+    "sid": "Qw3kT9xLm2PzR8aVb5NcDe",
+    "events": [
+     {
+      "e": "s_gate",
+      "dg": "night"
+     }
+    ]
+   },
+   "expect": {
+    "ok": true,
+    "n": 0,
+    "dropped": 1
+   },
+   "note": "客人端批次裡的伺服器端事件被丟棄"
+  }
+ ]
+}

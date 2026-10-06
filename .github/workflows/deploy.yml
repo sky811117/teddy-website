@@ -1,5 +1,9 @@
 name: Deploy to Cloudflare Pages
 
+# 最小權限（M-09）：整份 workflow 預設只能讀 repo；需要多的權限由 job 自己宣告。
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
@@ -17,6 +21,9 @@ on:
     - cron: "23 2 * * *" # 台灣 10:23 起排隊
     - cron: "41 4 * * *" # 台灣 12:41 起排隊（第一班被延遲時的補班）
 
+# ⚠️ 官網的建置與上線都在這支 workflow（GitHub Actions）：push 到 main 就建置→稽核→wrangler 上傳。
+#    Cloudflare Pages 後台的「建置設定」與環境變數裡的 PUBLIC_* 在這個專案不參與建置；Functions 用的環境變數（FIND_*、TURNSTILE_*…）
+#    是部署後在 Cloudflare 執行期讀的，改了之後要「重新部署」才生效：`gh workflow run deploy.yml`（約 5～15 分鐘）。
 # 夜間物件 sync push 與 IG 圖卡 push 撞在一起時，兩條 deploy 平行跑、Cloudflare 以
 # 最後完成者為 production，可能舊蓋新。同一時間只跑一條、後到的排隊（不取消，每次
 # push 都要部署到）。
@@ -39,6 +46,8 @@ jobs:
           # commit 時間」當靜態頁 lastmod；預設淺層 clone 每個檔都會變成這次的 commit（假裝全部更新），
           # 那支偵測到淺層 clone 會直接不給 lastmod。repo 歷史不大，多抓幾秒。
           fetch-depth: 0
+          # 資安加固（M-09）：不要把 GITHUB_TOKEN 留在 .git/config 給後面每個步驟讀（建置只用本機 git log／rev-parse，不需要憑證）
+          persist-credentials: false
 
       # pnpm 版本一律吃 package.json 的 packageManager（corepack），不要在這裡再寫死
       # version —— ci.yml 以前寫 10.11.1 跟 packageManager pnpm@11 打架。
@@ -53,6 +62,23 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # ===== 零痕跡洩漏稽核的禁字清單（2026-10-06 紅隊 RT-01／RT-10）=====
+      # 完整禁字清單放 GitHub repo → Settings → Secrets and variables → Actions → Secrets → LEAK_DENYLIST
+      # （內容就是工作站 leak_denylist.txt 的整份文字）。這一步把它寫到 $RUNNER_TEMP（不在 repo 目錄、不會進 dist、
+      # 不會被上傳），再把路徑交給稽核腳本。沒設 secret 就失敗——沒有清單的「通過」不算通過，部署寧可停下來。
+      # 以前這裡完全沒有洩漏稽核，文件卻說「Cloudflare 建置會自己再檢查」；Cloudflare Pages 在這個專案不參與建置（wrangler 直接上傳 dist）。
+      - name: Prepare leak denylist (from Actions secret)
+        env:
+          LEAK_DENYLIST_TEXT: ${{ secrets.LEAK_DENYLIST }}
+        run: |
+          if [ -z "$LEAK_DENYLIST_TEXT" ]; then
+            echo "::error::GitHub Actions secret LEAK_DENYLIST 沒有設定：沒有禁字清單，洩漏稽核無法進行，部署中止。設定方式見 官網側實作/01_景泰手動設定清單.md"
+            exit 1
+          fi
+          umask 077
+          printf '%s\n' "$LEAK_DENYLIST_TEXT" > "$RUNNER_TEMP/leak_denylist.txt"
+          echo "LEAK_DENYLIST=$RUNNER_TEMP/leak_denylist.txt" >> "$GITHUB_ENV"
 
       # ===== 以下步驟順序 = package.json `build`（唯一真相），兩邊要一起改 =====
       # lint-seo → audit-properties → og-thumbs → cover-thumbs → astro check → astro build
@@ -126,6 +152,13 @@ jobs:
           test -f dist/pagefind/pagefind.js || (echo "dist/pagefind/pagefind.js missing" && exit 1)
           test -f dist/index.html || (echo "dist/index.html missing" && exit 1)
           test -f dist/sitemap.xml || (echo "dist/sitemap.xml missing" && exit 1)
+
+      # 2026-10-06 補（紅隊 RT-01）：零痕跡洩漏稽核＋找房小幫手測試——擋部署的關卡，不是參考。
+      # build-safe 的 --skip-build --no-diff 會依序跑：dist 禁字（原文／正規化／壓平，至少掃到 8 個檔案）、對外主機白名單、
+      # 沒有 sourcemap、Functions 打包物禁字、tests/find 全部測試。任何一步失敗整條部署失敗（不會上傳到 Cloudflare）。
+      # 輸出只列「檔案:行:規則編號」，不印命中的字串。要暫時放行請「修內容」，不要拿掉這一步（拿掉就沒有人把關了）。
+      - name: Leak audit + find tests (gate)
+        run: node scripts/build-safe.mjs --skip-build --no-diff
 
       # 2026-09-29 補：IndexNow（Bing / Yandex / Naver；ChatGPT 搜尋、Copilot 吃的是 Bing 索引）。
       # 部署「前」先把線上現有的 sitemap 存成舊版（放 runner.temp，不進 dist、不會被上傳），

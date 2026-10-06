@@ -1,0 +1,332 @@
+/* ui2 核心：token（淺／深雙主題）＋基礎元件＋頁首頁尾。作用域 .ui2，只被首頁與 /find/ 引入，其餘頁不載入。
+ * 設計依據見工作站 10_官網UIUX設計.md；對比度由 scripts/contrast-check.mjs 從本檔直接算。 */
+/* 明確宣告圖層順序（與 Tailwind 4 一致）：不論本檔與全域樣式誰先載入，元件層都會蓋過 base 層的重設 */
+@layer theme, base, components, utilities;
+
+.ui2 {
+  color-scheme: light;
+
+  /* ---- 紙與面（paper / sunken / vellum）---- */
+  --u2-paper: #f5f1eb;          /* = theme.css --background */
+  --u2-sunken: #ece5d9;         /* 改：原 #efe9de 太接近 paper，凹陷區看不出來 */
+  --u2-vellum: #fffdf8;         /* 改：原卡片純白 #fff → 帶一點暖的描圖紙白 */
+  --u2-inverse: #241f1a;        /* = --surface-inverse（深色節奏帶） */
+  --u2-inverse-ink: #f5f1eb;
+  --u2-inverse-ink-2: #b9aea4;
+  --u2-inverse-gold: #d8bd93;
+
+  /* ---- 墨（文字）---- */
+  --u2-ink: #2c2522;            /* = --foreground */
+  --u2-ink-2: #5a4d44;          /* 改：原 #6b5e54（5.56）→ 7.2，長段落與小字都夠 */
+  --u2-ink-3: #6f6258;          /* placeholder / 最次要字，仍 ≥4.5 */
+
+  /* ---- 木（品牌色；文字、圖形、按鈕填色分開，因為需要的對比不同）---- */
+  --u2-wood: #7a5630;           /* 木色「文字」：改，原 accent #8a6539 在 paper-2 上只有 4.34 */
+  --u2-wood-500: #8a6539;       /* = --accent，只用在圖形/框線/焦點（需 3:1） */
+  --u2-wood-600: #6b4a26;       /* 主按鈕填色，白字 7.85 */
+  --u2-wood-700: #573a1b;       /* 主按鈕 hover */
+  --u2-on-wood: #fffdf8;
+  --u2-wood-100: #eadfcb;       /* 選取/標籤底 */
+  --u2-wood-200: #d6c3a2;       /* 選取/標籤框 */
+
+  /* ---- 線 ---- */
+  --u2-line: #ddd3c4;           /* 裝飾性細線（不承擔辨識功能） */
+  --u2-line-strong: #8d7f72;    /* 輸入框/選項框：改，原邊框 #e8e0d5 對底只有 1.16，欄位邊界不過 3:1 */
+
+  /* ---- 語意色（不只靠顏色：一律搭配圖示或文字）---- */
+  --u2-pine: #0c8540;           /* = --color-line，LINE 專用，白字 4.72 */
+  --u2-pine-hover: #0a7a38;
+  --u2-on-pine: #ffffff;
+  --u2-ok: #0a6a35;             /* 「成功/完成」文字色（比 LINE 綠深，paper 上 ≥4.5） */
+  --u2-ok-tint: #e1eee4;
+  --u2-err: #a02f1b;
+  --u2-err-tint: #f6e1db;
+  --u2-warn: #8a5a00;
+  --u2-warn-tint: #f7ecd2;
+  --u2-focus: #8a6539;
+
+  /* ---- 陰影（暖棕色調；深色改用框線撐層次）---- */
+  --u2-sh-1: 0 1px 2px rgb(44 37 34 / .06), 0 10px 22px -8px rgb(44 37 34 / .14);
+  --u2-sh-2: 0 4px 10px rgb(44 37 34 / .08), 0 22px 44px -14px rgb(44 37 34 / .22);
+
+  /* ---- 圓角：依「角色」不是一律圓角卡 ---- */
+  --u2-r-tag: 6px;              /* 小標籤、徽章 */
+  --u2-r-field: 10px;           /* 輸入框 */
+  --u2-r-btn: 12px;             /* 按鈕 */
+  --u2-r-opt: 14px;             /* 選項（要被手指按的東西，圓角最大） */
+  --u2-r-bubble: 18px;          /* 對話泡泡（靠頭像那角收成 6px） */
+  --u2-r-panel: 22px;           /* 面板、托盤 */
+  --u2-r-pill: 999px;
+  --u2-r-arch: 999px 999px 22px 22px;   /* 門洞：人像、小屋的門 */
+
+  /* ---- 字：系統字，不新增字型與字重（見 §2.3）---- */
+  --u2-font: "PingFang TC", "Heiti TC", "Microsoft JhengHei", "微軟正黑體", sans-serif;
+  --u2-font-head: var(--font-heading-face, var(--u2-font));   /* ≥768px 站上已掛 Noto Sans TC 700；手機走系統字 */
+  /* rem 以 html{font-size:17px} 為基準（景泰「客戶年紀都不小」鐵則，不動） */
+  --u2-fs-0: .875rem;           /* 14.9px 說明字下限 */
+  --u2-fs-1: .9375rem;          /* 15.9px */
+  --u2-fs-2: 1rem;              /* 17px 內文 */
+  --u2-fs-3: 1.125rem;          /* 19.1px 導言 */
+  --u2-fs-4: 1.3125rem;         /* 22.3px H3 */
+  --u2-fs-5: 1.625rem;          /* 27.6px */
+  --u2-fs-6: clamp(1.75rem, 1.25rem + 2.2vw, 2.5rem);   /* H2 */
+  --u2-fs-7: clamp(2.25rem, 1.3rem + 4.4vw, 4rem);      /* H1 / display */
+  --u2-lh-body: 1.75;
+  --u2-lh-tight: 1.22;
+  --u2-lh-display: 1.15;
+
+  /* ---- 間距（4px 基底；區塊上下距只有一個 token）---- */
+  --u2-s1: .25rem;  --u2-s2: .5rem;  --u2-s3: .75rem; --u2-s4: 1rem;
+  --u2-s5: 1.5rem;  --u2-s6: 2rem;   --u2-s7: 3rem;   --u2-s8: 4.5rem;
+  --u2-section-y: clamp(3rem, 2rem + 5vw, 6rem);
+  --u2-gutter: 1rem;
+  --u2-w-wide: 72rem;           /* ≈1224px，= max-w-6xl */
+  --u2-w-read: 42rem;           /* 長文閱讀欄 */
+  --u2-w-chat: 40rem;           /* 對話欄 */
+
+  /* ---- 動效：只有三個時長，exit 比 enter 快 ---- */
+  --u2-ease: cubic-bezier(.22, .8, .3, 1);
+  --u2-d1: 120ms;               /* 按下、hover */
+  --u2-d2: 200ms;               /* 出現、展開 */
+  --u2-d3: 480ms;               /* 一次性的重點時刻（小屋開門） */
+
+  /* ---- 層級（對照 E 筆記 §4.5：cookie 30 < 結果橫幅 36 < FloatingCTA 40）---- */
+  --u2-z-ready: 36;
+}
+
+/* 工具頁（/find/）標題走系統字：不下載 Noto 切片，≥768px 也不會有字型替換造成的位移。
+ * 放在這裡（未分層）是因為 .ui2 的 token 也在未分層，分層的規則蓋不過它。 */
+.ui2.ui2--system { --u2-font-head: var(--u2-font); }
+
+html[data-theme="dark"] .ui2 {
+  color-scheme: dark;
+
+  --u2-paper: #1f1b17;          /* = theme.css 深色 --background */
+  --u2-sunken: #171310;
+  --u2-vellum: #2d2722;         /* 改：原 --card #2c2522 與 --muted 同色，卡片融進背景；多抬一點並加框線 */
+  --u2-inverse: #17120d;
+  --u2-inverse-ink: #f5f1eb;
+  --u2-inverse-ink-2: #b9aea4;
+  --u2-inverse-gold: #d8bd93;
+
+  --u2-ink: #f5f1eb;
+  --u2-ink-2: #c4b8ad;          /* 改：原 #9a8e86（5.37）→ 8.8 */
+  --u2-ink-3: #a99d92;
+
+  --u2-wood: #d8bd93;           /* 暖金（文字用較亮的一階） */
+  --u2-wood-500: #c9a87c;       /* = --accent 深色 */
+  --u2-wood-600: #c9a87c;       /* 深色的主按鈕是金底深字 */
+  --u2-wood-700: #d8bd93;
+  --u2-on-wood: #1f1b17;
+  --u2-wood-100: #3a3126;
+  --u2-wood-200: #5a4a35;
+
+  --u2-line: #433b34;
+  --u2-line-strong: #8a7d70;
+
+  --u2-pine: #0c8540;
+  --u2-pine-hover: #0a7a38;     /* 白字要 ≥4.5：不能比底色亮（原 #11994a 只有 3.7） */
+  --u2-on-pine: #ffffff;
+  --u2-ok: #6fcf9a;
+  --u2-ok-tint: #1e3328;
+  --u2-err: #f0a090;
+  --u2-err-tint: #3a211b;
+  --u2-warn: #e8c36a;
+  --u2-warn-tint: #3a2f12;
+  --u2-focus: #c9a87c;
+
+  --u2-sh-1: 0 0 0 1px rgb(255 255 255 / .05);
+  --u2-sh-2: 0 0 0 1px rgb(255 255 255 / .08), 0 14px 34px rgb(0 0 0 / .45);
+}
+
+/* 深色節奏帶內：把 token 重新對映，帶內的按鈕、標籤、文字不用另寫一套。
+ * 第二個選擇器是給「同一個元素同時有 .ui2 與 .u2-band--inverse」（頁尾）用的：
+ * 深色主題的 html[data-theme="dark"] .ui2 特異性是 (0,2,1)，要用同級＋放在後面才蓋得過。 */
+.u2-band--inverse,
+html .ui2.u2-band--inverse {
+  color-scheme: dark;
+  --u2-ink: var(--u2-inverse-ink);
+  --u2-ink-2: var(--u2-inverse-ink-2);
+  --u2-ink-3: var(--u2-inverse-ink-2);
+  --u2-wood: var(--u2-inverse-gold);
+  --u2-wood-500: #c9a87c;
+  --u2-wood-600: #c9a87c;
+  --u2-wood-700: #d8bd93;
+  --u2-on-wood: #1f1b17;
+  --u2-wood-100: rgb(255 255 255 / .08);
+  --u2-wood-200: rgb(255 255 255 / .22);
+  --u2-vellum: rgb(255 255 255 / .06);
+  --u2-line: rgb(255 255 255 / .16);
+  --u2-line-strong: #8a7d70;
+  --u2-focus: #d8bd93;
+  color: var(--u2-ink);
+  background: var(--u2-inverse);
+}
+
+/* 減少動態：所有時長歸零（元件自己也不再另寫 motion 規則） */
+@media (prefers-reduced-motion: reduce) {
+  .ui2 { --u2-d1: .01ms; --u2-d2: .01ms; --u2-d3: .01ms; }
+}
+
+@layer components {
+
+/* ---------- 基底 ---------- */
+.ui2 { font-family: var(--u2-font); font-size: var(--u2-fs-2); line-height: var(--u2-lh-body); letter-spacing: .02em; color: var(--u2-ink); background: var(--u2-paper); }
+.ui2 [hidden] { display: none !important; }
+@media (min-width: 640px) { .ui2 { --u2-gutter: 1.5rem; } }
+.u2-wrap { width: 100%; max-width: var(--u2-w-wide); margin-inline: auto; padding-inline: var(--u2-gutter); }
+.u2-band { padding-block: var(--u2-section-y); }
+.u2-band--sunken { background: var(--u2-sunken); }
+.u2-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* 焦點：實線 3px，所有可互動元素同一個樣子（取代全站的虛線） */
+.ui2 :where(a, button, input, textarea, select, summary, [tabindex]):focus-visible { outline: 3px solid var(--u2-focus); outline-offset: 3px; }
+
+/* ---------- 字級 ---------- */
+.u2-display { font-family: var(--u2-font-head); font-size: var(--u2-fs-7); line-height: var(--u2-lh-display); font-weight: 900; letter-spacing: .01em; text-wrap: balance; }
+.u2-h2 { font-family: var(--u2-font-head); font-size: var(--u2-fs-6); line-height: var(--u2-lh-tight); font-weight: 900; letter-spacing: .015em; text-wrap: balance; }
+.u2-h3 { font-family: var(--u2-font-head); font-size: var(--u2-fs-4); line-height: 1.35; font-weight: 700; }
+.u2-lead { font-size: var(--u2-fs-3); line-height: 1.8; color: var(--u2-ink-2); max-width: 34em; }
+.u2-small { font-size: var(--u2-fs-1); color: var(--u2-ink-2); line-height: 1.6; }
+.u2-cap { font-size: var(--u2-fs-0); color: var(--u2-ink-2); line-height: 1.55; }
+.u2-num { font-variant-numeric: tabular-nums; }
+.u2-link { color: var(--u2-wood); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .25em; }
+.u2-link:hover { text-decoration-thickness: 2px; }
+
+/* ---------- 圖示（內嵌 SVG sprite，stroke 跟字色走） ---------- */
+.u2-ico { width: 1.25em; height: 1.25em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- 按鈕：同一屏只放一個實心主按鈕 ---------- */
+.u2-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 3rem; padding: .7rem 1.35rem; border: 2px solid transparent; border-radius: var(--u2-r-btn); font: inherit; font-weight: 700; line-height: 1.25; letter-spacing: .03em; text-align: center; text-decoration: none; cursor: pointer; transition: background-color var(--u2-d1) var(--u2-ease), border-color var(--u2-d1) var(--u2-ease), transform var(--u2-d1) var(--u2-ease); -webkit-tap-highlight-color: transparent; }
+.u2-btn:active { transform: translateY(1px); }
+.u2-btn--primary { background: var(--u2-wood-600); color: var(--u2-on-wood); }
+.u2-btn--primary:hover { background: var(--u2-wood-700); }
+.u2-btn--line { background: var(--u2-pine); color: var(--u2-on-pine); }
+.u2-btn--line:hover { background: var(--u2-pine-hover); }
+.u2-btn--ghost { background: transparent; color: var(--u2-wood); border-color: var(--u2-wood-500); }
+.u2-btn--ghost:hover { background: var(--u2-wood-100); }
+.u2-btn--text { min-height: 2.75rem; padding-inline: .5rem; background: transparent; color: var(--u2-wood); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .25em; font-weight: 600; }
+.u2-btn--text:hover { text-decoration-thickness: 2px; }
+.u2-btn--lg { min-height: 3.5rem; padding-inline: 1.75rem; font-size: var(--u2-fs-3); }
+.u2-btn--sm { min-height: 2.75rem; padding: .45rem 1rem; font-size: var(--u2-fs-1); }
+.u2-btn--block { width: 100%; }
+.u2-btn[disabled], .u2-btn[aria-disabled="true"] { opacity: .55; cursor: not-allowed; }
+.u2-btn.is-busy { color: transparent; pointer-events: none; }
+.u2-btn.is-busy::after { content: ""; position: absolute; width: 1.25rem; height: 1.25rem; border: 3px solid var(--u2-on-wood); border-right-color: transparent; border-radius: 50%; animation: u2-spin .8s linear infinite; }
+.u2-btn--ghost.is-busy::after { border-color: var(--u2-wood); border-right-color: transparent; }
+@keyframes u2-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .u2-btn.is-busy::after { animation: none; border-style: dotted; } }
+
+/* ---------- 標籤（唯讀）與可編輯標籤 ---------- */
+.u2-tag { display: inline-flex; align-items: center; gap: .35rem; min-height: 2rem; padding: .2rem .75rem; border: 1px solid var(--u2-wood-200); border-radius: var(--u2-r-pill); background: var(--u2-wood-100); color: var(--u2-ink); font-size: var(--u2-fs-1); line-height: 1.3; }
+.u2-tag--btn { min-height: 2.75rem; padding-inline: .9rem; font: inherit; font-size: var(--u2-fs-1); cursor: pointer; }
+.u2-tag--btn:hover { border-color: var(--u2-wood-500); }
+.u2-tag--quiet { background: transparent; border-style: dashed; border-color: var(--u2-line-strong); }
+.u2-tags { display: flex; flex-wrap: wrap; gap: .5rem; }
+
+/* ---------- 選項（要被手指按的東西：≥56px 高、框線 3:1、選取用「勾」+ 底色，不只靠顏色） ---------- */
+.u2-opts { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); }
+.u2-opts--list { grid-template-columns: 1fr; }
+.u2-opts--flow { display: flex; flex-wrap: wrap; gap: .6rem; }
+.u2-opt { position: relative; display: flex; align-items: center; gap: .7rem; min-height: 3.5rem; padding: .55rem 1rem; border: 2px solid var(--u2-line-strong); border-radius: var(--u2-r-opt); background: var(--u2-vellum); color: var(--u2-ink); cursor: pointer; transition: background-color var(--u2-d1) var(--u2-ease), border-color var(--u2-d1) var(--u2-ease); -webkit-tap-highlight-color: transparent; }
+.u2-opt--chip { min-height: 3rem; padding: .4rem .9rem .4rem .75rem; border-radius: var(--u2-r-pill); }
+.u2-opt input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.u2-opt__box { flex: none; display: grid; place-items: center; width: 1.5rem; height: 1.5rem; border: 2px solid var(--u2-line-strong); border-radius: 6px; background: var(--u2-vellum); transition: background-color var(--u2-d1), border-color var(--u2-d1); }
+.u2-opt--radio .u2-opt__box { border-radius: 50%; }
+.u2-opt__box::after { content: ""; width: .42rem; height: .78rem; margin-top: -2px; border: solid var(--u2-on-wood); border-width: 0 3px 3px 0; transform: rotate(45deg) scale(0); transition: transform var(--u2-d1) var(--u2-ease); }
+.u2-opt__txt { line-height: 1.4; }
+.u2-opt__txt small { display: block; font-size: var(--u2-fs-0); color: var(--u2-ink-2); line-height: 1.4; }
+.u2-opt input:checked ~ .u2-opt__box { background: var(--u2-wood-600); border-color: var(--u2-wood-600); }
+.u2-opt input:checked ~ .u2-opt__box::after { transform: rotate(45deg) scale(1); }
+.u2-opt:has(input:checked) { background: var(--u2-wood-100); border-color: var(--u2-wood-500); }
+.u2-opt:has(input:focus-visible) { outline: 3px solid var(--u2-focus); outline-offset: 3px; }
+@media (hover: hover) { .u2-opt:hover { border-color: var(--u2-wood-500); } }
+
+/* ---------- 欄位 ---------- */
+.u2-field > label, .u2-label { display: block; margin-bottom: .35rem; font-weight: 700; }
+.u2-help { font-size: var(--u2-fs-1); color: var(--u2-ink-2); line-height: 1.55; margin-top: .3rem; }
+.u2-input, .u2-textarea, .u2-select { display: block; width: 100%; min-height: 3rem; padding: .65rem .9rem; border: 2px solid var(--u2-line-strong); border-radius: var(--u2-r-field); background: var(--u2-vellum); color: var(--u2-ink); font: inherit; letter-spacing: .02em; }
+.u2-textarea { min-height: 4.25rem; resize: vertical; line-height: 1.6; }
+.u2-input::placeholder, .u2-textarea::placeholder { color: var(--u2-ink-3); opacity: 1; }
+.u2-input:focus-visible, .u2-textarea:focus-visible, .u2-select:focus-visible { border-color: var(--u2-wood-500); outline: 3px solid var(--u2-focus); outline-offset: 1px; }
+.u2-input[aria-invalid="true"], .u2-textarea[aria-invalid="true"] { border-color: var(--u2-err); }
+.u2-error { display: flex; gap: .4rem; align-items: flex-start; margin-top: .35rem; color: var(--u2-err); font-size: var(--u2-fs-1); line-height: 1.5; }
+.u2-check { position: relative; display: flex; gap: .7rem; align-items: flex-start; min-height: 2.75rem; padding-block: .3rem; cursor: pointer; }
+.u2-check input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.u2-check .u2-opt__box { margin-top: .15rem; }
+.u2-check input:checked ~ .u2-opt__box { background: var(--u2-wood-600); border-color: var(--u2-wood-600); }
+.u2-check input:checked ~ .u2-opt__box::after { transform: rotate(45deg) scale(1); }
+.u2-check input:focus-visible ~ .u2-opt__box { outline: 3px solid var(--u2-focus); outline-offset: 3px; }
+
+/* ---------- 頁首／頁尾（variant 2）---------- */
+.u2-header { border-bottom: 1px solid var(--u2-line); background: var(--u2-paper); }
+.u2-header__in { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 3.75rem; }
+.u2-brand { display: inline-flex; align-items: center; gap: .6rem; color: var(--u2-ink); text-decoration: none; white-space: nowrap; }
+.u2-brand strong { font-family: var(--u2-font-head); font-size: var(--u2-fs-4); font-weight: 900; letter-spacing: .03em; }
+.u2-brandtag { display: inline-flex; padding: .2rem .45rem; border: 1px solid var(--u2-line); border-radius: 8px; background: #fffdf8; }
+.u2-nav { display: none; align-items: center; gap: .15rem; }
+.u2-nav a, .u2-nav summary { display: inline-flex; align-items: center; min-height: 2.75rem; padding: .25rem .65rem; border-bottom: 2px solid transparent; color: var(--u2-ink); font-weight: 600; text-decoration: none; cursor: pointer; list-style: none; }
+.u2-nav a:hover, .u2-nav summary:hover { color: var(--u2-wood); }
+.u2-nav a[aria-current="page"] { border-bottom-color: var(--u2-wood-500); }
+.u2-nav summary::-webkit-details-marker { display: none; }
+.u2-nav__more { position: relative; }
+.u2-nav__pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; min-width: 11rem; padding: .4rem; border: 1px solid var(--u2-line); border-radius: var(--u2-r-opt); background: var(--u2-vellum); box-shadow: var(--u2-sh-2); }
+.u2-nav__pop a { display: flex; border-bottom: 0; border-radius: 8px; }
+.u2-nav__pop a:hover { background: var(--u2-wood-100); }
+.u2-header__cta { display: flex; align-items: center; gap: .5rem; }
+@media (min-width: 1024px) { .u2-nav { display: flex; } }
+.u2-footer { margin-top: auto; }   /* 頁尾本身掛 .u2-band--inverse（深咖啡底），沿用現行頁尾的深色節奏 */
+.u2-footer__grid { display: grid; gap: var(--u2-s6); padding-block: var(--u2-s7); }
+.u2-footer__h { font-size: var(--u2-fs-1); font-weight: 700; color: var(--u2-wood); margin-bottom: .5rem; font-family: var(--u2-font-head); }
+.u2-footer ul { display: grid; gap: .1rem; }
+.u2-footer a { display: inline-flex; align-items: center; min-height: 2.5rem; color: var(--u2-ink); text-decoration: none; }
+.u2-footer a:hover { color: var(--u2-wood); text-decoration: underline; text-underline-offset: .25em; }
+.u2-footer__legal { padding-block: var(--u2-s5); border-top: 1px solid var(--u2-line); font-size: var(--u2-fs-0); color: var(--u2-ink-2); line-height: 1.7; }
+@media (min-width: 768px) { .u2-footer__grid { grid-template-columns: 1.4fr 1fr 1fr; } }
+
+} /* end @layer components */
+
+/* ---------- 頁首頁尾補充（variant 2 的手機選單、日夜鈕圖示、頁尾排版） ---------- */
+@layer components {
+.u2-skip { position: absolute; left: 1rem; top: -4rem; z-index: 50; padding: .6rem 1rem; border-radius: var(--u2-r-btn, 12px); background: var(--u2-paper, #f5f1eb); color: var(--u2-wood, #6b4a26); border: 2px solid var(--u2-wood, #6b4a26); font-weight: 700; }
+.u2-skip:focus { top: 1rem; }   /* 跳至主要內容連結在 .ui2 之外，變數要有備用值，不然沒有底色、疊在品牌上看不清楚 */
+.u2-header__in { min-width: 0; }
+.u2-brand { min-width: 0; }
+.u2-brand strong { overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 479.98px) {
+  .u2-header__in { gap: .5rem; }
+  .u2-brand { gap: .4rem; }
+  .u2-brandtag { padding: .15rem .3rem; }
+  .u2-brandtag img { height: 1.25rem !important; }   /* 圖上有行內樣式 height:1.6rem，要蓋過 */
+  .u2-brand strong { font-size: var(--u2-fs-3); }
+  .u2-header__cta { gap: .35rem; }
+  .u2-header__cta .u2-btn { min-width: 2.75rem; padding-inline: .55rem; }
+}
+@media (max-width: 359.98px) {
+  .u2-header__cta a[href^="/go/line"] { display: none; }
+}
+.u2-header__cta .u2-btn { padding-inline: .8rem; }
+.u2-hide-xs { display: none; }
+@media (min-width: 420px) { .u2-hide-xs { display: inline; } }
+.u2-menu-btn { display: inline-flex; }
+@media (min-width: 1024px) { .u2-menu-btn { display: none; } }
+.u2-ico--sun { display: none; }
+html[data-theme="dark"] .u2-ico--moon { display: none; }
+html[data-theme="dark"] .u2-ico--sun { display: inline-block; }
+.u2-mnav { border-bottom: 1px solid var(--u2-line); background: var(--u2-paper); }
+.u2-mnav__grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 var(--u2-s4); padding-block: .5rem .75rem; }
+.u2-mnav a { display: flex; align-items: center; min-height: 3rem; padding: .35rem .25rem; border-bottom: 1px solid var(--u2-line); color: var(--u2-ink); font-weight: 600; text-decoration: none; }
+.u2-mnav a[aria-current="page"] { color: var(--u2-wood); }
+@media (min-width: 1024px) { .u2-mnav { display: none !important; } }
+.u2-footer__who { display: flex; align-items: center; gap: .75rem; }
+.u2-footer__who img { width: 2.5rem; height: 2.5rem; border-radius: 50%; object-fit: cover; border: 1px solid var(--u2-wood); }
+.u2-footer__who strong { font-family: var(--u2-font-head); font-size: var(--u2-fs-3); }
+.u2-footer__line { margin-top: .75rem; }
+.u2-footer__links { grid-template-columns: 1fr 1fr; }
+.u2-footer__cta { display: grid; gap: .6rem; max-width: 20rem; }
+.u2-footer__social { display: flex; flex-wrap: wrap; gap: .25rem; margin-top: 1rem; margin-inline-start: -.5rem; }
+.u2-footer__social a { min-width: 2.75rem; min-height: 2.75rem; justify-content: center; }
+.u2-footer__social .u2-ico { width: 1.5rem; height: 1.5rem; }
+.u2-footer__legal p { margin: 0; }
+.u2-footer__legal a { display: inline; min-height: 0; text-decoration: underline; text-underline-offset: .2em; }
+}
