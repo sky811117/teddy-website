@@ -54,7 +54,7 @@ async function main() {
         legalComments: "none",
         charset: "utf8", // 中文字串原樣保留，不轉成 \uXXXX（轉了檔案反而變大）
       }).code;
-      const missing = [...topLevelNames(code)].filter(n => !new RegExp(`(^|[^\\w$])${n.replace(/\$/g, "\\$")}([^\\w$]|$)`).test(out));
+      const missing = (/^(?:\s*\/\/[^\n]*|\s*\/\*[\s\S]*?\*\/)*\s*\(\s*function\b/.test(code) ? [] : [...topLevelNames(code)]).filter(n => !new RegExp(`(^|[^\\w$])${n.replace(/\$/g, "\\$")}([^\\w$]|$)`).test(out));
       if (missing.length) {
         warn(`${f}：壓縮後找不到頂層名稱 ${missing.slice(0, 5).join(", ")}，保留原檔`);
         continue;

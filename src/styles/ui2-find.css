@@ -1,0 +1,173 @@
+/* ui2 找房小幫手頁：對話、作答托盤、需求單、進度、等待區、回饋，以及 /find/ 的版面。 */
+@layer components {
+
+/* ---------- 對話 ---------- */
+.u2-chat { display: flex; flex-direction: column; gap: .75rem; }
+.u2-msg { display: flex; align-items: flex-end; gap: .6rem; }
+.u2-msg--me { flex-direction: row-reverse; }
+.u2-avatar { flex: none; display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 50%; background: var(--u2-vellum); border: 1.5px solid var(--u2-line-strong); }
+.u2-avatar .u2-ico { width: 1.75rem; height: 1.75rem; stroke: none; }
+.u2-msg--cont .u2-avatar { visibility: hidden; }
+.u2-bubble { max-width: min(34rem, calc(100% - 3.4rem)); padding: .65rem 1rem; border: 1px solid var(--u2-line); border-radius: var(--u2-r-bubble); background: var(--u2-vellum); }
+.u2-bubble > * + * { margin-top: .5rem; }
+.u2-msg--bot .u2-bubble { border-bottom-left-radius: 6px; }
+.u2-msg--me .u2-bubble { background: var(--u2-wood-100); border-color: var(--u2-wood-200); border-bottom-right-radius: 6px; }
+.u2-msg--enter { animation: u2-in var(--u2-d2) var(--u2-ease) both; }
+@keyframes u2-in { from { opacity: 0; transform: translateY(6px); } }
+
+/* 貼底的 cookie 橫幅（--consent-h）不能遮住「正在作答」的東西：捲動定位時多留一段 */
+.u2-tray, .u2-composer, .u2-sheet, .u2-banner { scroll-margin-bottom: calc(var(--consent-h, 0px) + 1rem); }
+
+/* 作答托盤：現在這一題的「訊息＋選項」同一個容器，手機單手在下半屏就能按 */
+.u2-tray { padding: 1rem; border: 1px solid var(--u2-line); border-radius: var(--u2-r-panel); background: var(--u2-vellum); box-shadow: var(--u2-sh-1); }
+.u2-tray__meta { display: flex; justify-content: space-between; gap: .75rem; margin-bottom: .6rem; font-size: var(--u2-fs-0); color: var(--u2-ink-2); }
+.u2-tray__q { font-size: var(--u2-fs-3); font-weight: 700; line-height: 1.5; }
+.u2-tray__hint { margin-top: .25rem; font-size: var(--u2-fs-1); color: var(--u2-ink-2); line-height: 1.6; }
+.u2-tray__body { margin-top: .9rem; }
+.u2-tray__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; margin-top: 1rem; }
+.u2-tray__foot .u2-btn--primary { margin-left: auto; }
+
+/* 輸入列（開場的一句話） */
+.u2-composer { display: grid; grid-template-columns: 1fr auto; gap: .5rem; align-items: end; padding: .75rem; border: 2px solid var(--u2-line-strong); border-radius: var(--u2-r-panel); background: var(--u2-vellum); }
+.u2-composer:focus-within { border-color: var(--u2-wood-500); }
+.u2-composer .u2-textarea { border: 0; background: transparent; min-height: 3.5rem; padding: .3rem .4rem; outline-offset: 2px; }
+.u2-composer__count { grid-column: 1 / -1; font-size: var(--u2-fs-0); color: var(--u2-ink-2); text-align: right; }
+
+/* ---------- 需求單（圖說欄）：上半＝拿去找房的條件；下半＝只讓景泰知道的事 ---------- */
+.u2-sheet { border: 2px solid var(--u2-ink); border-radius: 8px; background: var(--u2-vellum); overflow: hidden; }
+.u2-sheet__head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: .6rem 1rem; border-bottom: 2px solid var(--u2-ink); background: var(--u2-wood-100); font-weight: 700; }
+.u2-sheet__head small { font-weight: 400; font-size: var(--u2-fs-0); color: var(--u2-ink-2); }
+.u2-sheet__row { display: grid; grid-template-columns: 4.75rem 1fr auto; align-items: center; gap: .5rem .75rem; min-height: 3.25rem; padding: .35rem 1rem; border-bottom: 1px solid var(--u2-line); }
+.u2-sheet__row dt { color: var(--u2-wood); font-size: var(--u2-fs-1); font-weight: 600; }
+.u2-sheet__row dd { margin: 0; font-weight: 700; }
+.u2-sheet__zone { padding: .75rem 1rem 1rem; border-top: 2px dashed var(--u2-line-strong); background: var(--u2-sunken); }
+.u2-sheet__zone h3, .u2-sheet__zone .u2-sheet__zt { display: flex; align-items: center; gap: .4rem; margin-bottom: .5rem; font-size: var(--u2-fs-1); font-weight: 700; }
+.u2-sheet--compact .u2-sheet__row { min-height: 2.5rem; font-size: var(--u2-fs-1); }
+
+/* ---------- 進度（等待中）---------- */
+.u2-steps { display: grid; grid-template-columns: repeat(3, 1fr); }
+.u2-steps li { position: relative; text-align: center; font-size: var(--u2-fs-1); color: var(--u2-ink-2); }
+.u2-steps li::after { content: ""; position: absolute; top: .9rem; left: calc(50% + 1.2rem); right: calc(-50% + 1.2rem); height: 2px; background: var(--u2-line-strong); }
+.u2-steps li:last-child::after { display: none; }
+.u2-steps__dot { position: relative; z-index: 1; display: grid; place-items: center; width: 1.9rem; height: 1.9rem; margin: 0 auto .35rem; border: 2px solid var(--u2-line-strong); border-radius: 50%; background: var(--u2-vellum); color: var(--u2-on-wood); }
+.u2-steps .u2-ico { width: 1rem; height: 1rem; stroke-width: 3; }
+.u2-steps .is-done { color: var(--u2-ink); }
+.u2-steps .is-done .u2-steps__dot { background: var(--u2-wood-600); border-color: var(--u2-wood-600); }
+.u2-steps .is-done::after { background: var(--u2-wood-600); }
+.u2-steps .is-current { color: var(--u2-ink); font-weight: 700; }
+.u2-steps .is-current .u2-steps__dot { border-color: var(--u2-wood-500); box-shadow: 0 0 0 4px var(--u2-wood-100); }
+.u2-steps .is-current .u2-steps__dot::after { content: ""; width: .6rem; height: .6rem; border-radius: 50%; background: var(--u2-wood-500); animation: u2-pulse 1.6s ease-in-out infinite; }
+@keyframes u2-pulse { 50% { transform: scale(.55); opacity: .6; } }
+@media (prefers-reduced-motion: reduce) { .u2-steps .is-current .u2-steps__dot::after { animation: none; } }
+
+/* ---------- 橫幅（成功／提醒／錯誤／說明）---------- */
+.u2-banner { display: flex; align-items: flex-start; gap: .7rem; padding: .8rem 1rem; border: 1.5px solid var(--u2-line-strong); border-radius: var(--u2-r-opt); background: var(--u2-sunken); line-height: 1.6; }
+.u2-banner .u2-ico { margin-top: .2rem; }
+.u2-banner--ok { background: var(--u2-ok-tint); border-color: var(--u2-ok); }
+.u2-banner--ok .u2-ico { color: var(--u2-ok); }
+.u2-banner--warn { background: var(--u2-warn-tint); border-color: var(--u2-warn); }
+.u2-banner--warn .u2-ico { color: var(--u2-warn); }
+.u2-banner--err { background: var(--u2-err-tint); border-color: var(--u2-err); }
+.u2-banner--err .u2-ico { color: var(--u2-err); }
+
+/* 結果好了：貼在等待區上緣，不蓋住遊戲操作，不強制切頁 */
+.u2-ready { position: sticky; top: .5rem; z-index: var(--u2-z-ready); display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .6rem .7rem .6rem 1rem; border: 2px solid var(--u2-ok); border-radius: var(--u2-r-opt); background: var(--u2-ok-tint); box-shadow: var(--u2-sh-2); font-weight: 700; animation: u2-in var(--u2-d2) var(--u2-ease) both; }
+
+/* ---------- 展開區 ---------- */
+.u2-details { border: 1px solid var(--u2-line); border-radius: var(--u2-r-opt); background: var(--u2-vellum); }
+.u2-details > summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 3.25rem; padding: .5rem 1rem; font-weight: 700; cursor: pointer; list-style: none; }
+.u2-details > summary::-webkit-details-marker { display: none; }
+.u2-details > summary::after { content: ""; flex: none; width: .55rem; height: .55rem; margin-right: .2rem; border: solid var(--u2-ink-2); border-width: 0 2px 2px 0; transform: rotate(45deg); transition: transform var(--u2-d2) var(--u2-ease); }
+.u2-details[open] > summary::after { transform: rotate(-135deg); }
+.u2-details__body { padding: .25rem 1rem 1rem; }
+.u2-details__body > * + * { margin-top: .9rem; }
+
+/* ---------- 等待小遊戲外框（固定高度，避免 CLS；canvas 由 wait-game.js 掛上） ---------- */
+.u2-gamebox { position: relative; height: 280px; border: 2px solid var(--u2-ink); border-radius: var(--u2-r-panel); background: var(--u2-sunken); overflow: hidden; contain: layout paint; }
+.u2-gamebox canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; }
+.u2-gamebox.is-playing canvas { touch-action: none; }
+.u2-gamebar { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: .5rem; }
+
+/* ---------- 回饋（結果頁下方的小區塊，不是彈窗） ---------- */
+.u2-fb { padding: 1rem; border: 1px dashed var(--u2-line-strong); border-radius: var(--u2-r-panel); }
+.u2-fb__rate { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-top: .75rem; }
+.u2-fb .u2-opt { justify-content: center; text-align: center; }
+.u2-fb__more { margin-top: .9rem; }
+.u2-fb__more > * + * { margin-top: .75rem; }
+
+.u2-house .m-door { transform-box: fill-box; transform-origin: left center; transition: transform var(--u2-d3) var(--u2-ease); }
+.u2-house.is-open .m-door { transform: scaleX(.2); }
+.u2-house .m-light { opacity: 0; transition: opacity var(--u2-d3) var(--u2-ease); }
+.u2-house.is-open .m-light { opacity: 1; }
+
+} /* end @layer components */
+
+/* ---------- /find/ 頁面版面 ---------- */
+@layer components {
+.u2-find__head{display:flex;align-items:center;gap:var(--u2-s4);padding-block:var(--u2-s5) var(--u2-s4)}
+.u2-find__head .u2-ico{width:3.5rem;height:3.5rem;stroke:none}
+.u2-find__by{display:flex;align-items:center;gap:.6rem;margin-top:.5rem}
+.u2-find__by img{width:2rem;height:2rem;border-radius:50%;object-fit:cover;border:2px solid var(--u2-wood-500)}
+.u2-find__grid{display:grid;gap:var(--u2-s5);padding-bottom:var(--u2-s8)}
+.u2-find__main{min-width:0}
+.u2-find__main > .u2-state > * + *{margin-top:var(--u2-s4)}
+.u2-find__main .u2-state:focus{outline:none}
+.u2-find__aside{display:none}
+.u2-find__aside > * + *{margin-top:var(--u2-s4)}
+.u2-promise li{display:flex;gap:.6rem;align-items:flex-start;padding:.3rem 0}
+.u2-promise .u2-ico{color:var(--u2-ok);margin-top:.28rem}
+.u2-aside-card{padding:var(--u2-s4);border:1px solid var(--u2-line);border-radius:var(--u2-r-panel);background:var(--u2-vellum)}
+.u2-aside-card h2{font-size:var(--u2-fs-1);font-weight:700;color:var(--u2-wood);margin-bottom:.4rem}
+.u2-row{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem}
+.u2-opt--btn{width:100%;text-align:left;font:inherit;justify-content:space-between}
+.u2-heard{display:grid;gap:.6rem}
+.u2-wait > * + *{margin-top:var(--u2-s4)}
+.u2-wait__card{display:grid;gap:var(--u2-s4);padding:var(--u2-s4);border:1px solid var(--u2-line);border-radius:var(--u2-r-panel);background:var(--u2-vellum)}
+.u2-wait__head{display:flex;gap:.75rem;align-items:center}
+.u2-wait__head .u2-ico{width:2.75rem;height:2.75rem;stroke:none}
+.u2-wait__head h2{font-size:var(--u2-fs-4);font-family:var(--u2-font-head);font-weight:900}
+.u2-result__hero{display:grid;justify-items:start;gap:var(--u2-s3)}
+.u2-result__hero .u2-house{width:5rem;height:5rem}
+.u2-result__hero h2{font-family:var(--u2-font-head);font-size:var(--u2-fs-6);font-weight:900;line-height:1.2}
+.u2-legal{margin-top:var(--u2-s6);padding-top:var(--u2-s4);border-top:1px solid var(--u2-line)}
+@media(min-width:1024px){
+  .u2-find__grid{grid-template-columns:minmax(0,40rem) 21rem;justify-content:center;gap:var(--u2-s7);align-items:start}
+  .u2-find__aside{display:block;position:sticky;top:1rem}
+  .u2-m-only{display:none!important}
+}
+} /* end @layer components */
+
+/* ---------- /find/ 補充（範本與腳本新增的小類別） ---------- */
+@layer components {
+.u2-indent { margin-left: 3.1rem; }
+.u2-center { margin-top: .4rem; text-align: center; }
+.u2-tags--tight { gap: .4rem; }
+.u2-sheet__row--one { grid-template-columns: 1fr; }
+.u2-bold { color: var(--u2-ink); font-weight: 700; }
+.u2-ink2 { color: var(--u2-ink-2); }
+.u2-hints { display: grid; gap: .6rem; }
+.u2-hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.u2-leadform > * + * { margin-top: .9rem; }
+.u2-flush { padding-inline: 0; }
+.u2-fb__h { font-size: var(--u2-fs-3); }
+.u2-find__h1 { font-size: var(--u2-fs-6); }
+.u2-ts { margin-bottom: .6rem; }
+.u2-intake { display: grid; gap: .75rem; padding: 1rem; border: 1.5px solid var(--u2-line-strong); border-radius: var(--u2-r-panel); background: var(--u2-sunken); }
+.u2-intake[hidden] { display: none; }
+.u2-copyurl { margin-top: .5rem; }
+.u2-clear-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .75rem; }
+#ts-hint { margin-bottom: .5rem; color: var(--u2-err); }
+.u2-faq { margin-top: var(--u2-s6); }
+.u2-faq > * + * { margin-top: .6rem; }
+.u2-clear-wrap { margin-top: .5rem; }
+.u2-tray__more, .u2-tray__rest { margin-top: .6rem; }
+.u2-game-skipped { padding: .75rem 0; }
+.u2-state > .u2-chat > .u2-banner { margin-left: 3.1rem; }
+.u2-wait__card .u2-steps li { min-width: 0; }
+/* 客人更正過、不確定要哪個的欄位（需求單）：值後面一個「請確認」小標，下面一句問話。
+   窄螢幕（手機 320px）：值、小標、問話都在中間那一欄裡自己換行，不橫向撐開格子（min-width:0 + overflow-wrap）。
+   顏色只用已通過對比檢查的組合（warn 字壓在 warn-tint 上）。 */
+.u2-sheet__row dd { min-width: 0; overflow-wrap: anywhere; }
+.u2-tag--check { min-height: 1.5rem; margin-inline-start: .5rem; padding: .05rem .5rem; background: var(--u2-warn-tint); border-color: var(--u2-warn); color: var(--u2-warn); font-size: var(--u2-fs-0); font-weight: 700; vertical-align: middle; }
+.u2-sheet__note { display: block; margin-top: .25rem; font-size: var(--u2-fs-1); font-weight: 400; line-height: 1.6; color: var(--u2-ink-2); }
+}

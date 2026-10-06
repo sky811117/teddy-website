@@ -1,0 +1,492 @@
+---
+/**
+ * /find/ — 找房小幫手（白話找物件）
+ *
+ * 一頁完成：打一句話或用選的 → 小幫手整理條件、問幾題 → 確認 → 等待（可玩小遊戲）→ 結果／降級。
+ * 這個檔只放靜態骨架與固定文案；對話流程、送出、輪詢、回饋、事件都在 public/js/find-app.js，
+ * 條件抽取在 public/js/need-extract.js，小遊戲在 public/js/wait-game.js（等待時才載入）。
+ *
+ * 對外只呼叫同源的 /api/find/*。這個檔、這些腳本與樣式都在公開 repo：不得出現任何外部服務的名稱、網域或端點。
+ * 資料怎麼用的承諾見 /privacy/；改了資料流要同步改那一頁。
+ */
+import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
+import Layout from "@/layouts/Layout.astro";
+import Header2 from "@/components/ui2/Header2.astro";
+import Footer2 from "@/components/ui2/Footer2.astro";
+import Sprite from "@/components/ui2/Sprite.astro";
+import HouseMark from "@/components/ui2/HouseMark.astro";
+import LeadFields from "@/components/find/LeadFields.astro";
+import { safeJsonLd } from "@/utils/safeJsonLd";
+import config from "@/config";
+import "@/styles/ui2-core.css";
+import "@/styles/ui2-find.css";
+
+const pageURL = new URL("/find/", Astro.site).href;
+
+// /js/* 快取一天，所以網址要帶 ?v=（檔案內容 md5 前 10 碼）
+function fileVer(rel: string): string {
+  try {
+    const buf = fs.readFileSync(path.join(process.cwd(), rel));
+    return crypto.createHash("md5").update(buf).digest("hex").slice(0, 10);
+  } catch {
+    return "dev";
+  }
+}
+const vApp = fileVer("public/js/find-app.js");
+const vNeed = fileVer("public/js/need-extract.js");
+const vGame = fileVer("public/js/wait-game.js");
+
+const title = `找房小幫手｜打一句話，先看幾間 | ${config.site.title}`;
+const description =
+  "打一句話，或用選的：北屯三房、兩千萬內、要有車位。自動化的找房小幫手整理幾間符合條件的台中物件，做成一頁給你看。不用留電話，先看再決定。陳景泰（泰迪）提供。";
+
+const webPage = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "@id": `${pageURL}#webpage`,
+  url: pageURL,
+  name: "找房小幫手",
+  description,
+  inLanguage: "zh-TW",
+  isPartOf: { "@id": new URL("/", Astro.site).href + "#website" },
+  about: { "@id": new URL("/", Astro.site).href + "#realestateagent" },
+};
+const breadcrumb = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "首頁", item: new URL("/", Astro.site).href },
+    { "@type": "ListItem", position: 2, name: "找房小幫手", item: pageURL },
+  ],
+};
+
+const faqs = [
+  {
+    q: "要留電話嗎？",
+    a: "不用。聯絡方式完全選填，不留也能看到結果。想收到新上架的，或請景泰幫你約看屋，再留 LINE 就好。",
+  },
+  {
+    q: "找到的物件從哪來？",
+    a: "依你的條件從公開市場挑的，不一定都是景泰委託的物件。想看哪一間，告訴景泰，他會先確認現況再跟你說。",
+  },
+  {
+    q: "我打的字會被保存嗎？",
+    a: "你打的那句話和聯絡方式最多保存 30 天；條件只留匿名的粗略分級。你可以隨時請景泰刪除。完整說明在隱私權政策。",
+  },
+];
+
+const concernHelp = "這幾項只會讓景泰知道從哪聊起，不會拿去搜尋。";
+---
+
+<Layout title={title} description={description} canonicalURL={pageURL} showFloatingCTA={false}>
+  <Fragment slot="head">
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(webPage)} />
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(breadcrumb)} />
+    <script is:inline>
+      /* 網址 # 後面的內容（#k= 條件片段、#q= 一句話）只該留在這個瀏覽器：先收進同分頁暫存、立刻從網址列拿掉，
+         這樣後面載入的任何腳本（含網站的流量統計）都讀不到。暫存不能用就不動它。 */
+      (function () {
+        try {
+          var h = location.hash;
+          if (/^#(?:k|q)=/.test(h)) {
+            sessionStorage.setItem("find.hash", h);
+            history.replaceState(null, "", location.pathname + location.search);
+          }
+        } catch (e) { /* 暫存不能用：保持原樣 */ }
+      })();
+    </script>
+    <noscript><style>#s0-live{display:none}</style></noscript>
+  </Fragment>
+
+  <Sprite />
+  <Header2 current="/find" />
+
+  <main id="main-content" class="ui2 ui2--system" data-v-game={vGame} data-v-need={vNeed}>
+    <div class="u2-wrap">
+      <div class="u2-find__head">
+        <HouseMark />
+        <div>
+          <h1 class="u2-display u2-find__h1">打一句話，先看幾間</h1>
+          <p class="u2-small">景泰的找房小幫手（自動化工具）</p>
+          <p class="u2-find__by u2-cap">
+            <img src="/photos/teddy-avatar.jpg" alt="" width="32" height="32" decoding="async" /><span>由陳景泰（泰迪）提供</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="u2-find__grid">
+        <section class="u2-find__main" aria-label="找房小幫手對話" id="stage">
+          <!-- ===== s0 開場＋自由描述 ===== -->
+          <div class="u2-state" data-s="s0" tabindex="-1">
+            <div class="u2-chat" role="log" aria-live="polite" aria-relevant="additions">
+              <div class="u2-msg u2-msg--bot">
+                <span class="u2-avatar" aria-hidden="true"><HouseMark /></span>
+                <div class="u2-bubble"><p>哈囉，我是景泰的找房小幫手。自動的，不是真人。</p></div>
+              </div>
+              <div class="u2-msg u2-msg--bot u2-msg--cont">
+                <span class="u2-avatar" aria-hidden="true"><HouseMark /></span>
+                <div class="u2-bubble"><p>你想找什麼樣的房子，一句話告訴我就好，也可以點選項慢慢回答。</p><p id="s0-mode-text">不用留電話，找到的物件會直接給你看。</p></div>
+              </div>
+            </div>
+
+            <div id="s0-live">
+              <form class="u2-composer" id="free-form" action="#" novalidate>
+                <label class="u2-sr" for="free-text">你想找什麼樣的房子？一句話就好</label>
+                <textarea id="free-text" class="u2-textarea" rows="2" maxlength="300" placeholder="例：北屯三房，兩千萬內，要有車位" aria-describedby="free-help"></textarea>
+                <button class="u2-btn u2-btn--primary" type="submit"><svg class="u2-ico" aria-hidden="true"><use href="#i-send"></use></svg>送出</button>
+                <p class="u2-composer__count" id="free-help">最多 300 字，不需要寫電話或姓名</p>
+              </form>
+              <div class="u2-s0-tags">
+                <p class="u2-cap">不知道怎麼寫？點一個試試，可以再改：</p>
+                <div class="u2-tags">
+                  <button class="u2-tag u2-tag--btn" type="button" data-fill="北屯三房，兩千萬內，要平面車位">北屯三房，兩千萬內</button>
+                  <button class="u2-tag u2-tag--btn" type="button" data-fill="西屯 電梯大樓 1500萬以下 屋齡20年內">西屯電梯大樓，1500 萬以下</button>
+                  <button class="u2-tag u2-tag--btn" type="button" data-fill="南屯兩房，1800萬以內">南屯兩房，1800 萬以內</button>
+                </div>
+              </div>
+              <div class="u2-row"><button class="u2-btn u2-btn--ghost" type="button" id="pick-btn">用選的就好</button></div>
+            </div>
+
+            <noscript>
+              <div class="u2-banner" role="note">
+                <svg class="u2-ico" aria-hidden="true"><use href="#i-info"></use></svg>
+                <p>
+                  這個小幫手需要 JavaScript。你可以直接
+                  <a class="u2-link" href="/go/line?src=find-noscript">LINE 景泰</a>、撥電話
+                  <a class="u2-link" href="tel:+886920118756">0920-118-756</a>，或使用
+                  <a class="u2-link" href="/contact/">聯絡表單</a>。
+                </p>
+              </div>
+            </noscript>
+
+            <details class="u2-details u2-m-only">
+              <summary>資料怎麼用？</summary>
+              <div class="u2-details__body">
+                <ul class="u2-promise">
+                  <li><svg class="u2-ico" aria-hidden="true"><use href="#i-check"></use></svg><span>交給搜尋的，只有區域、預算、房數這類物件條件。</span></li>
+                  <li><svg class="u2-ico" aria-hidden="true"><use href="#i-lock"></use></svg><span>你的姓名、聯絡方式、在意的事、你打的那句話，不會交出去。</span></li>
+                  <li><svg class="u2-ico" aria-hidden="true"><use href="#i-info"></use></svg><span>你打的字和聯絡方式最多保存 30 天，條件只留匿名的粗略分級。完整說明在<a class="u2-link" href="/privacy/">隱私權政策</a>。</span></li>
+                </ul>
+              </div>
+            </details>
+          </div>
+
+          <!-- ===== s2 我聽到的條件 ===== -->
+          <div class="u2-state" data-s="s2" tabindex="-1" hidden>
+            <div class="u2-chat" id="s2-chat" role="log" aria-live="polite" aria-relevant="additions" tabindex="-1"></div>
+            <div class="u2-row u2-indent" id="s2-actions"></div>
+          </div>
+
+          <!-- ===== s3 追問（一次一題） ===== -->
+          <div class="u2-state" data-s="s3" tabindex="-1" hidden>
+            <div class="u2-chat" id="s3-chat" role="log" aria-live="polite" aria-relevant="additions"></div>
+            <div id="s3-tray"></div>
+            <p class="u2-small" id="s3-direct">不想再回答了？<button class="u2-btn u2-btn--text" type="button" data-act="go-now">直接開始找</button></p>
+          </div>
+
+          <!-- ===== s4 確認（需求單） ===== -->
+          <div class="u2-state" data-s="s4" tabindex="-1" hidden>
+            <div class="u2-chat" role="log" aria-live="polite" aria-relevant="additions">
+              <div class="u2-msg u2-msg--bot">
+                <span class="u2-avatar" aria-hidden="true"><HouseMark /></span>
+                <div class="u2-bubble"><p id="s4-title" tabindex="-1">確認一下，我就開始找：</p></div>
+              </div>
+            </div>
+            <div class="u2-sheet" role="group" aria-label="需求單">
+              <div class="u2-sheet__head"><span>需求單</span><small>這些會拿去找房</small></div>
+              <dl id="sheet-rows"></dl>
+              <div class="u2-sheet__zone" id="sheet-quiet-zone">
+                <p class="u2-sheet__zt"><svg class="u2-ico" aria-hidden="true"><use href="#i-lock"></use></svg>只讓景泰知道，不會拿去搜尋</p>
+                <div class="u2-tags" id="sheet-quiet"></div>
+              </div>
+            </div>
+            <details class="u2-details" id="more-details">
+              <summary>再補充（可略過）</summary>
+              <div class="u2-details__body">
+                <fieldset>
+                  <legend class="u2-label">型態</legend>
+                  <div class="u2-opts u2-opts--flow" id="x-type"></div>
+                </fieldset>
+                <fieldset>
+                  <legend class="u2-label">車位</legend>
+                  <div class="u2-opts u2-opts--flow" id="x-pk"></div>
+                </fieldset>
+                <fieldset>
+                  <legend class="u2-label">樓層</legend>
+                  <div class="u2-opts u2-opts--flow" id="x-floor"></div>
+                </fieldset>
+                <fieldset>
+                  <legend class="u2-label">坪數</legend>
+                  <div class="u2-opts u2-opts--flow" id="x-area"></div>
+                </fieldset>
+                <fieldset>
+                  <legend class="u2-label">還想要的</legend>
+                  <div class="u2-opts u2-opts--flow" id="x-special"></div>
+                </fieldset>
+              </div>
+            </details>
+            <p class="u2-small" id="s4-nocontact">不需要留聯絡方式，結果會直接顯示在這裡。</p>
+            <section class="u2-intake" id="intake-lead" aria-labelledby="intake-h" hidden>
+              <h2 class="u2-h3" id="intake-h">留個聯絡方式，景泰才回得到你</h2>
+              <p class="u2-small" id="intake-help">目前由景泰看過再回覆，LINE 或手機留一項就好。</p>
+              <div class="u2-field">
+                <label for="ci-line">LINE ID（或顯示名稱）</label>
+                <input id="ci-line" class="u2-input" type="text" autocomplete="off" maxlength="40" />
+              </div>
+              <div class="u2-field">
+                <label for="ci-phone">手機（選填）</label>
+                <input id="ci-phone" class="u2-input" type="tel" inputmode="tel" autocomplete="tel" maxlength="16" />
+              </div>
+              <label class="u2-check">
+                <input type="checkbox" id="ci-consent" />
+                <span class="u2-opt__box"></span>
+                <span>我同意景泰用這個方式聯絡我，資料保存 30 天後刪除。（<a class="u2-link" href="/privacy/" target="_blank" rel="noopener">隱私權政策</a>）</span>
+              </label>
+              <p class="u2-error" role="alert" id="ci-err" hidden></p>
+            </section>
+            <div>
+              <p class="u2-small u2-bold" id="ts-hint" role="alert" hidden>還沒完成人機驗證。請先完成上面的驗證，再按一次。</p>
+              <div id="ts-box" class="u2-ts" aria-live="polite"></div>
+              <button class="u2-btn u2-btn--primary u2-btn--lg u2-btn--block" type="button" id="go-btn">開始找</button>
+              <p class="u2-cap u2-center" id="go-note">通常 1～2 分鐘。</p>
+            </div>
+          </div>
+
+          <!-- ===== s5 送出中 ===== -->
+          <div class="u2-state" data-s="s5" tabindex="-1" hidden>
+            <div class="u2-chat" role="log" aria-live="polite" aria-relevant="additions">
+              <div class="u2-msg u2-msg--bot">
+                <span class="u2-avatar" aria-hidden="true"><HouseMark /></span>
+                <div class="u2-bubble"><p>收到了，馬上開始。</p></div>
+              </div>
+            </div>
+            <div class="u2-sheet u2-sheet--compact" aria-label="需求單（已送出）">
+              <div class="u2-sheet__head"><span>需求單</span><small>已送出</small></div>
+              <div class="u2-sheet__row u2-sheet__row--one"><p class="u2-tags u2-tags--tight" id="s5-tags"></p></div>
+            </div>
+            <button class="u2-btn u2-btn--primary u2-btn--lg u2-btn--block is-busy" type="button" aria-busy="true" aria-disabled="true">送出中…</button>
+          </div>
+
+          <!-- ===== s6 等待中 ===== -->
+          <div class="u2-state" data-s="s6" tabindex="-1" hidden>
+            <div class="u2-wait">
+              <div class="u2-ready" id="ready-banner" role="status" hidden>
+                <span>結果好了</span>
+                <button class="u2-btn u2-btn--primary u2-btn--sm" type="button" id="ready-btn">查看</button>
+              </div>
+              <div class="u2-wait__card">
+                <div class="u2-wait__head">
+                  <HouseMark />
+                  <div>
+                    <h2 id="wait-h" tabindex="-1">為你整理中</h2>
+                    <p class="u2-small" id="wait-sub">通常 1～2 分鐘。等的時候可以玩個小遊戲，不想玩就不用管它。</p>
+                  </div>
+                </div>
+                <ol class="u2-steps" aria-label="進度" id="wait-steps">
+                  <li data-st="q"><span class="u2-steps__dot"></span><span>收到了</span></li>
+                  <li data-st="s"><span class="u2-steps__dot"></span><span>為你整理中</span></li>
+                  <li data-st="b"><span class="u2-steps__dot"></span><span>做成一頁</span></li>
+                </ol>
+                <p class="u2-small" id="wait-queue" role="status" hidden></p>
+              </div>
+
+              <div class="u2-banner" id="wait-long" hidden>
+                <svg class="u2-ico" aria-hidden="true"><use href="#i-info"></use></svg>
+                <p id="wait-long-text">想先去忙的話，留 LINE 或電話，好了景泰會把連結傳給你。不留也可以，這一頁會一直等著。</p>
+              </div>
+
+              <div id="game-wrap" hidden>
+                <div class="u2-gamebar">
+                  <p class="u2-small">守護小屋</p>
+                  <button class="u2-btn u2-btn--ghost u2-btn--sm" type="button" id="game-skip">跳過遊戲</button>
+                </div>
+                <div class="u2-gamebox" id="wait-game-mount"></div>
+                <p class="u2-small u2-game-skipped" id="game-skipped" hidden>好，不玩了。結果好了會在這裡出現。</p>
+              </div>
+
+              <details class="u2-details" id="wait-lead">
+                <summary>結果好了再傳給我（選填）</summary>
+                <div class="u2-details__body">
+                  <p class="u2-small">留 LINE 或電話就好。不留也可以，結果會直接顯示在這一頁。</p>
+                  <LeadFields p="cw" where="wait" button="好了傳給我" help="勾選同意才會送出。不留聯絡方式，也不影響你看結果。" />
+                </div>
+              </details>
+
+              <div class="u2-chat" id="fatigue-box" hidden>
+                <div class="u2-msg u2-msg--bot">
+                  <span class="u2-avatar" aria-hidden="true"><HouseMark /></span>
+                  <div class="u2-bubble">
+                    <p id="fatigue-q">順便問一下：剛剛那幾題，感覺是？</p>
+                    <div class="u2-tags" id="fatigue-tags">
+                      <button class="u2-tag u2-tag--btn" type="button" data-fatigue="good">很好</button>
+                      <button class="u2-tag u2-tag--btn" type="button" data-fatigue="ok">剛好</button>
+                      <button class="u2-tag u2-tag--btn" type="button" data-fatigue="many">太多</button>
+                    </div>
+                    <p class="u2-cap">不回答也沒關係。</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== s7 結果 ===== -->
+          <div class="u2-state" data-s="s7" tabindex="-1" hidden>
+            <section class="u2-result__hero" aria-labelledby="res-h">
+              <HouseMark open id="door-house" />
+              <h2 id="res-h" tabindex="-1">整理好了</h2>
+              <p id="res-count">這是依你的條件挑出的幾間。</p>
+              <div class="u2-row">
+                <a class="u2-btn u2-btn--primary u2-btn--lg" id="open-link" href="/find/" target="_blank" rel="noopener">開啟推薦頁<span class="u2-sr">（另開分頁）</span><svg class="u2-ico" aria-hidden="true"><use href="#i-ext"></use></svg></a>
+                <button class="u2-btn u2-btn--ghost" type="button" id="copy-btn"><svg class="u2-ico" aria-hidden="true"><use href="#i-copy"></use></svg><span>複製連結</span></button>
+              </div>
+              <p class="u2-cap" id="copy-note" role="status">複製給別人的連結不含你在意的事。這一頁會保留 30 天。</p>
+              <input class="u2-input u2-copyurl" id="copy-url" type="text" readonly aria-label="推薦頁連結（長按複製）" hidden />
+              <p class="u2-small">這只是第一批，不是全部。覺得哪裡不準，告訴我，可以再調。</p>
+            </section>
+
+            <div class="u2-sheet u2-sheet--compact" aria-label="這次用的條件">
+              <div class="u2-sheet__head"><span>這次用的條件</span><button class="u2-btn u2-btn--text" type="button" data-act="refine">補充條件再找一次</button></div>
+              <div class="u2-sheet__row u2-sheet__row--one"><p class="u2-tags u2-tags--tight" id="res-tags"></p></div>
+            </div>
+
+            <section class="u2-fb" aria-labelledby="fb-h" id="fb-box">
+              <p class="u2-h3 u2-fb__h" id="fb-h">這幾間準不準？</p>
+              <p class="u2-small">只用來改善這個小幫手。</p>
+              <div class="u2-fb__rate" role="radiogroup" aria-labelledby="fb-h">
+                <label class="u2-opt u2-opt--radio"><input type="radio" name="rate" value="up" /><span class="u2-opt__box"></span><svg class="u2-ico" aria-hidden="true"><use href="#i-up"></use></svg><span class="u2-opt__txt">準</span></label>
+                <label class="u2-opt u2-opt--radio"><input type="radio" name="rate" value="down" /><span class="u2-opt__box"></span><svg class="u2-ico" aria-hidden="true"><use href="#i-down"></use></svg><span class="u2-opt__txt">不太準</span></label>
+              </div>
+              <div class="u2-fb__more" id="fb-more" hidden>
+                <div id="fb-tags-up" class="u2-opts u2-opts--flow" hidden role="group" aria-label="哪裡準"></div>
+                <div id="fb-tags-down" class="u2-opts u2-opts--flow" hidden role="group" aria-label="哪裡不準"></div>
+                <div class="u2-field">
+                  <label for="fb-text">一句話也可以（選填）</label>
+                  <input id="fb-text" class="u2-input" type="text" maxlength="120" autocomplete="off" aria-describedby="fb-help" />
+                  <p class="u2-help" id="fb-help">請不要寫電話或姓名，寫了也會被自動移除。</p>
+                </div>
+                <button class="u2-btn u2-btn--primary u2-btn--sm" type="button" id="fb-send">送出</button>
+              </div>
+              <p class="u2-small" id="fb-thanks" role="status" hidden>收到了，謝謝。只用來改善這個小幫手。</p>
+            </section>
+
+            <details class="u2-details" id="res-lead">
+              <summary>想收到新上架的，或請景泰幫你約看屋？</summary>
+              <div class="u2-details__body">
+                <p class="u2-small">留 LINE 就好。不留，也不影響你看這一頁。</p>
+                <LeadFields p="cr" where="result" button="傳給景泰" withName />
+              </div>
+            </details>
+
+            <div class="u2-row">
+              <span class="u2-small">想直接問哪一間？</span>
+              <a class="u2-btn u2-btn--ghost u2-btn--sm" href="/go/line?src=find-result" data-lineq><svg class="u2-ico" aria-hidden="true"><use href="#i-chat"></use></svg>LINE 問景泰</a>
+            </div>
+          </div>
+
+          <!-- ===== s8 沒有完全符合 ===== -->
+          <div class="u2-state" data-s="s8" tabindex="-1" hidden>
+            <div class="u2-chat" role="log" aria-live="polite" aria-relevant="additions">
+              <div class="u2-msg u2-msg--bot">
+                <span class="u2-avatar" aria-hidden="true"><HouseMark /></span>
+                <div class="u2-bubble"><p id="s8-title" tabindex="-1">這次沒有找到完全符合的。放寬一點再試試？</p><p class="u2-small">點一下就會改條件，再找一次。</p></div>
+              </div>
+            </div>
+            <ul class="u2-hints" id="hint-list"></ul>
+            <div class="u2-row">
+              <span class="u2-small">想直接問景泰？</span>
+              <a class="u2-btn u2-btn--line u2-btn--sm" href="/go/line?src=find-empty" data-lineq><svg class="u2-ico" aria-hidden="true"><use href="#i-chat"></use></svg>LINE 問景泰</a>
+            </div>
+          </div>
+
+          <!-- ===== s9 降級 ===== -->
+          <div class="u2-state" data-s="s9" tabindex="-1" hidden>
+            <div class="u2-banner u2-banner--ok" id="deg-ok" role="status">
+              <svg class="u2-ico" aria-hidden="true"><use href="#i-check"></use></svg>
+              <div><p class="u2-bold" id="deg-msg" tabindex="-1">需求記下來了。想收到回覆，請留 LINE 或電話；不留的話，晚點回來這頁看看。</p><p class="u2-small u2-ink2" id="deg-sub">你的條件已經記下來了，不用再填一次。</p></div>
+            </div>
+            <div class="u2-banner u2-banner--warn" id="deg-lost" role="alert" hidden>
+              <svg class="u2-ico" aria-hidden="true"><use href="#i-alert"></use></svg>
+              <div><p class="u2-bold">目前沒能把你的需求送出去，你可以複製下面的內容，直接傳給景泰。</p></div>
+            </div>
+            <div class="u2-field" id="deg-summary-box" hidden>
+              <label for="deg-summary">需求摘要</label>
+              <textarea id="deg-summary" class="u2-textarea" rows="4" readonly></textarea>
+            </div>
+            <section aria-labelledby="deg-h" id="deg-lead">
+              <h2 class="u2-h3 u2-fb__h" id="deg-h">想收到回覆，可以留 LINE 或電話</h2>
+              <p class="u2-small" id="deg-help">不留也可以，晚點再回來看看。</p>
+              <div class="u2-details__body u2-flush">
+                <LeadFields p="cd" where="degraded" button="傳給景泰" withName />
+              </div>
+            </section>
+            <div class="u2-row">
+              <button class="u2-btn u2-btn--ghost u2-btn--sm" type="button" id="deg-copy" hidden><svg class="u2-ico" aria-hidden="true"><use href="#i-copy"></use></svg>複製需求摘要</button>
+              <a class="u2-btn u2-btn--ghost u2-btn--sm" href="/go/line?src=find-degraded" data-lineq><svg class="u2-ico" aria-hidden="true"><use href="#i-chat"></use></svg>LINE 問景泰</a>
+              <a class="u2-btn u2-btn--ghost u2-btn--sm" href="tel:+886920118756"><svg class="u2-ico" aria-hidden="true"><use href="#i-phone"></use></svg>0920-118-756</a>
+            </div>
+          </div>
+
+          <!-- ===== s10 錯誤 ===== -->
+          <div class="u2-state" data-s="s10" tabindex="-1" hidden>
+            <div class="u2-banner u2-banner--err" role="alert">
+              <svg class="u2-ico" aria-hidden="true"><use href="#i-alert"></use></svg>
+              <div><p class="u2-bold" id="err-msg" tabindex="-1">暫時送不出去，請稍後再試一次。</p><p class="u2-small u2-ink2">你選的條件都還在，不用重填。</p></div>
+            </div>
+            <div class="u2-row">
+              <button class="u2-btn u2-btn--primary" type="button" id="err-retry">再試一次</button>
+              <a class="u2-btn u2-btn--line u2-btn--sm" href="/go/line?src=find-error" data-lineq><svg class="u2-ico" aria-hidden="true"><use href="#i-chat"></use></svg>LINE 問景泰</a>
+            </div>
+          </div>
+
+          <!-- ===== 頁底：常見問答（靜態，沒有 JS 也看得到）與揭露 ===== -->
+          <section class="u2-faq" aria-labelledby="faq-h">
+            <h2 class="u2-h3" id="faq-h">常見問題</h2>
+            {
+              faqs.map(f => (
+                <details class="u2-details">
+                  <summary>{f.q}</summary>
+                  <div class="u2-details__body"><p>{f.a}</p></div>
+                </details>
+              ))
+            }
+          </section>
+          <p class="u2-cap u2-legal">
+            一品不動產（有巢氏房屋台中世界之心加盟店）經紀人 黃永隆 113彰縣字324，營業員 陳景泰 114登字488296。找房小幫手是自動化工具，整理的物件不一定是景泰委託的物件，想看哪一間，由景泰先確認現況。
+          </p>
+          <p class="u2-cap u2-clear-wrap"><button class="u2-btn u2-btn--text" type="button" id="clear-btn">重新開始（只清掉這個頁面上的內容）</button><span>要刪除已經送出的資料，請聯絡景泰。</span></p>
+        </section>
+
+        <!-- 桌機右欄：怎麼用、資料怎麼用、目前聽到的條件 -->
+        <aside class="u2-find__aside" aria-label="怎麼用與資料怎麼用">
+          <div class="u2-aside-card">
+            <h2>怎麼用</h2>
+            <ul class="u2-promise">
+              <li><svg class="u2-ico" aria-hidden="true"><use href="#i-check"></use></svg><span>一句話就好，也可以用選的。</span></li>
+              <li><svg class="u2-ico" aria-hidden="true"><use href="#i-check"></use></svg><span>結果直接顯示，不用先留電話。</span></li>
+              <li><svg class="u2-ico" aria-hidden="true"><use href="#i-check"></use></svg><span>自動化的小幫手，不會一直追問你。</span></li>
+            </ul>
+          </div>
+          <div class="u2-aside-card">
+            <h2>資料怎麼用</h2>
+            <ul class="u2-promise">
+              <li><svg class="u2-ico" aria-hidden="true"><use href="#i-check"></use></svg><span>交給搜尋的，只有區域、預算、房數這類物件條件。</span></li>
+              <li><svg class="u2-ico" aria-hidden="true"><use href="#i-lock"></use></svg><span>你的姓名、聯絡方式、在意的事、你打的那句話，不會交出去。</span></li>
+              <li><svg class="u2-ico" aria-hidden="true"><use href="#i-info"></use></svg><span>你打的字和聯絡方式最多保存 30 天，條件只留匿名的粗略分級。完整說明在<a class="u2-link" href="/privacy/">隱私權政策</a>。</span></li>
+            </ul>
+          </div>
+          <div class="u2-sheet u2-sheet--compact" id="aside-sheet" hidden aria-label="目前聽到的條件">
+            <div class="u2-sheet__head"><span>目前聽到的</span></div>
+            <div class="u2-sheet__row u2-sheet__row--one"><p class="u2-tags u2-tags--tight" id="aside-tags"></p></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <Footer2 />
+
+  <script is:inline defer src={`/js/need-extract.js?v=${vNeed}`}></script>
+  <script is:inline defer src={`/js/find-app.js?v=${vApp}`}></script>
+</Layout>

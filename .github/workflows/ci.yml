@@ -30,6 +30,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # --diff 要比對 origin/main：需要完整歷史
+          fetch-depth: 0
+          # 資安加固（M-09）：不要把 GITHUB_TOKEN 留在 .git/config
+          persist-credentials: false
 
       # 版本吃 package.json packageManager（corepack），跟 deploy.yml 一致
       - name: Setup pnpm
@@ -44,6 +49,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # 2026-10-06 紅隊 RT-01：CI 也要有洩漏稽核與找房測試（以前只有三道內容閘門）。
+      # 清單來自 Actions secret LEAK_DENYLIST（見 deploy.yml 的同名步驟）；沒設就失敗，不是略過。
+      - name: Prepare leak denylist (from Actions secret)
+        env:
+          LEAK_DENYLIST_TEXT: ${{ secrets.LEAK_DENYLIST }}
+        run: |
+          if [ -z "$LEAK_DENYLIST_TEXT" ]; then
+            echo "::error::GitHub Actions secret LEAK_DENYLIST 沒有設定：洩漏稽核無法進行，CI 失敗。設定方式見 官網側實作/01_景泰手動設定清單.md"
+            exit 1
+          fi
+          umask 077
+          printf '%s\n' "$LEAK_DENYLIST_TEXT" > "$RUNNER_TEMP/leak_denylist.txt"
+          echo "LEAK_DENYLIST=$RUNNER_TEMP/leak_denylist.txt" >> "$GITHUB_ENV"
+
       - name: Content lint (文章紅線閘門)
         run: pnpm exec node scripts/lint-seo.mjs
 
@@ -52,6 +71,16 @@ jobs:
 
       - name: Astro check
         run: pnpm exec astro check
+
+      # 本分支新增的內容（相對 origin/main）有沒有帶進上游字樣、內部主機；需要 dist 的測試（頁面流程、預覽）沒有建置產物時會自動跳過，
+      # 完整版（含 dist 與 Functions 打包物）在 deploy.yml 的 build-safe。
+      - name: Leak audit (diff vs main)
+        env:
+          LEAK_BASE: origin/main
+        run: node scripts/leak-audit.mjs --diff
+
+      - name: Find tests + function tests
+        run: node --test tests/find/*.test.mjs tests/find/game/*.test.mjs "tests/functions/*.test.mjs"
 
       - name: Upload audit report
         if: always()

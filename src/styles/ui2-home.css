@@ -1,0 +1,151 @@
+/* ui2 首頁：門洞人像、帳本列、目錄列、尺寸線步驟，以及首頁各區塊的版面。 */
+@layer components {
+
+/* ---------- 門洞（人像）與小屋 ---------- */
+.u2-arch { position: relative; overflow: hidden; border-radius: var(--u2-r-arch); background: var(--u2-wood-100); aspect-ratio: 4 / 5; }
+.u2-arch img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 8%; mix-blend-mode: multiply; }
+html[data-theme="dark"] .u2-arch { background: #efe6d6; }
+html[data-theme="dark"] .u2-arch img { mix-blend-mode: normal; }
+
+/* ---------- 帳本列（首頁信任條）---------- */
+.u2-ledger { display: grid; grid-template-columns: repeat(2, 1fr); border-block: 2px solid var(--u2-ink); }
+.u2-ledger > div { padding: 1rem .75rem; border-bottom: 1px solid var(--u2-line); }
+.u2-ledger > div:nth-child(odd) { border-right: 1px solid var(--u2-line); }
+.u2-ledger b { display: block; font-family: var(--u2-font-head); font-size: var(--u2-fs-5); line-height: 1.2; font-weight: 900; font-variant-numeric: tabular-nums; }
+.u2-ledger span { font-size: var(--u2-fs-1); color: var(--u2-ink-2); }
+@media (min-width: 768px) { .u2-ledger { grid-template-columns: repeat(4, 1fr); } .u2-ledger > div { border-bottom: 0; border-right: 1px solid var(--u2-line); padding-inline: 1.25rem; } .u2-ledger > div:last-child { border-right: 0; } }
+
+/* ---------- 目錄列（取代 8 張一樣的卡）---------- */
+.u2-toc a { display: grid; grid-template-columns: auto 1fr; align-items: baseline; column-gap: .75rem; min-height: 3.5rem; padding: .7rem 0; border-bottom: 1px solid var(--u2-line); color: var(--u2-ink); text-decoration: none; }
+.u2-toc h3 { font-family: var(--u2-font-head); font-size: var(--u2-fs-3); font-weight: 700; line-height: 1.4; }
+.u2-toc span { color: var(--u2-ink-2); font-size: var(--u2-fs-1); line-height: 1.5; }
+.u2-toc a:hover b { color: var(--u2-wood); text-decoration: underline; text-underline-offset: .25em; }
+
+/* ---------- 尺寸線步驟（首頁「怎麼找」：內容真的是一個順序，所以才編號）---------- */
+.u2-dim { position: relative; display: grid; gap: var(--u2-s5); counter-reset: d; padding-left: 2.25rem; }
+.u2-dim::before { content: ""; position: absolute; left: .55rem; top: .4rem; bottom: .4rem; border-left: 2px solid var(--u2-ink); }
+.u2-dim li { position: relative; counter-increment: d; }
+.u2-dim li::before { content: ""; position: absolute; left: -2.25rem; top: .55rem; width: 1.1rem; border-top: 2px solid var(--u2-ink); }
+.u2-dim li::after { content: counter(d); position: absolute; left: -2.6rem; top: -.1rem; min-width: 1.5rem; padding: .1rem 0; text-align: center; background: var(--u2-paper); color: var(--u2-wood); font-weight: 900; font-variant-numeric: tabular-nums; }
+.u2-dim h3 { font-size: var(--u2-fs-3); font-weight: 700; line-height: 1.4; }
+.u2-dim p { margin-top: .25rem; color: var(--u2-ink-2); font-size: var(--u2-fs-1); line-height: 1.65; }
+@media (min-width: 768px) {
+  .u2-dim { grid-template-columns: repeat(4, 1fr); gap: var(--u2-s5); padding: 2.4rem 0 0; }
+  .u2-dim::before { left: 0; right: 0; top: .85rem; bottom: auto; border-left: 0; border-top: 2px solid var(--u2-ink); }
+  .u2-dim li::before { left: 0; top: -1.55rem; width: 0; height: 1.4rem; border-top: 0; border-left: 2px solid var(--u2-ink); }
+  .u2-dim li::after { left: .7rem; top: -1.95rem; }
+}
+
+} /* end @layer components */
+
+/* ---------- 首頁版面 ---------- */
+@layer components {
+.u2-hero{padding-block:var(--u2-s5) var(--u2-s7)}
+.u2-hero__grid{display:grid;gap:var(--u2-s6)}
+.u2-hero__text > * + *{margin-top:var(--u2-s4)}
+.u2-hero__who{display:flex;align-items:center;gap:.75rem;color:var(--u2-ink-2);font-size:var(--u2-fs-1)}
+.u2-hero__mini{flex:none;width:2.75rem;height:3.4rem;overflow:hidden;border:2px solid var(--u2-wood-500);border-radius:var(--u2-r-arch);background:var(--u2-wood-100)}
+.u2-hero__mini img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 20%}
+.u2-h1__pre{display:block;margin-bottom:.2em;font-size:.55em;line-height:1.35;font-weight:700;letter-spacing:.05em;color:var(--u2-ink-2)}
+.u2-h1__main{display:block}
+
+/* 找房卡：同一張卡兩種找法（預設白話） */
+.u2-ask{border:2px solid var(--u2-ink);border-radius:var(--u2-r-panel);background:var(--u2-vellum);box-shadow:var(--u2-sh-1);overflow:hidden}
+.u2-ask__tabs[data-js-only]{display:none}
+.u2-ask__tabs{display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid var(--u2-ink)}
+.u2-ask__tabs button{min-height:3.25rem;padding:.4rem .75rem;border:0;background:var(--u2-sunken);color:var(--u2-ink-2);font-weight:700;cursor:pointer}
+.u2-ask__tabs button + button{border-left:2px solid var(--u2-ink)}
+.u2-ask__tabs button[aria-selected="true"]{background:var(--u2-vellum);color:var(--u2-ink);box-shadow:inset 0 -4px 0 var(--u2-wood-500)}
+.u2-ask [role="tabpanel"]{padding:var(--u2-s4)}
+.u2-ask [role="tabpanel"] > * + *{margin-top:.8rem}
+.u2-ask__go{display:flex;flex-wrap:wrap;align-items:center;gap:.75rem}
+.u2-ask__grid{display:grid;gap:.6rem}
+.u2-hot{display:flex;flex-wrap:wrap;gap:.5rem}
+.u2-hot a{display:inline-flex;align-items:center;min-height:2.75rem;padding:.2rem .85rem;border:1px solid var(--u2-line-strong);border-radius:var(--u2-r-pill);background:var(--u2-paper);color:var(--u2-ink);font-size:var(--u2-fs-1);text-decoration:none}
+.u2-hot a:hover{border-color:var(--u2-wood-500);color:var(--u2-wood)}
+.u2-hero__aux{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem 1rem}
+.u2-hero__tel{display:inline-flex;align-items:center;gap:.4rem;min-height:2.75rem;font-size:var(--u2-fs-3);font-weight:700;color:var(--u2-ink);text-decoration:none}
+
+/* 桌機右欄：門洞人像＋製圖紙格＋小幫手對話預覽 */
+.u2-hero__visual{display:none}
+@media(min-width:1024px){
+  .u2-hero__grid{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:var(--u2-s7);align-items:center}
+  .u2-hero__visual{display:block;position:relative;max-width:26rem;margin-inline:auto;padding:1.5rem 0 1.5rem 1.5rem}
+  .u2-hero__visual::before{content:"";position:absolute;inset:0 -1rem 0 2.5rem;background-image:linear-gradient(var(--u2-line) 1px,transparent 1px),linear-gradient(90deg,var(--u2-line) 1px,transparent 1px);background-size:1.5rem 1.5rem;border:1px solid var(--u2-line);border-radius:var(--u2-r-panel)}
+  .u2-hero__visual .u2-arch{position:relative;box-shadow:var(--u2-sh-2)}
+  .u2-hero__mini{display:none}
+  .u2-hero__who span{display:inline}
+}
+.u2-hero__chat{position:absolute;left:-.5rem;bottom:2.5rem;display:grid;gap:.5rem;width:min(17rem,80%);padding:.75rem;border:2px solid var(--u2-ink);border-radius:var(--u2-r-opt);background:var(--u2-vellum);box-shadow:var(--u2-sh-2);font-size:var(--u2-fs-1);line-height:1.5}
+.u2-hero__chat .u2-msg{gap:.4rem}
+.u2-hero__chat .u2-avatar{width:1.9rem;height:1.9rem}
+.u2-hero__chat .u2-avatar .u2-ico{width:1.35rem;height:1.35rem}
+.u2-hero__chat .u2-bubble{padding:.35rem .7rem;max-width:calc(100% - 2.4rem)}
+
+/* 信任帳本＋證號 */
+.u2-certs{display:flex;flex-wrap:wrap;align-items:center;gap:.75rem 1.25rem;padding-block:var(--u2-s4) 0}
+.u2-certs .u2-brandtag{padding:.3rem .6rem}
+
+/* 區塊標題 */
+.u2-sec-head{display:grid;gap:.6rem;max-width:40rem;margin-bottom:var(--u2-s6)}
+.u2-sec-head p{color:var(--u2-ink-2)}
+
+/* 為什麼找景泰：一個主張＋兩個輔助，不是三張一樣的卡 */
+.u2-usp{display:grid;gap:var(--u2-s6)}
+.u2-usp article > * + *{margin-top:.5rem}
+.u2-usp__lead .u2-lead{max-width:30em;color:var(--u2-ink)}
+.u2-usp__photo img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;object-position:75% 60%;border-radius:var(--u2-r-panel);margin-top:var(--u2-s3)}
+@media(min-width:900px){.u2-usp{grid-template-columns:1.25fr 1fr;gap:var(--u2-s7)}.u2-usp__lead{grid-row:span 2}}
+
+/* 買／賣：兩欄用細線隔開，不是兩張卡 */
+.u2-split{display:grid;gap:var(--u2-s7)}
+.u2-split > div > * + *{margin-top:.9rem}
+.u2-split h3{font-family:var(--u2-font-head);font-size:var(--u2-fs-5);font-weight:900;line-height:1.25}
+.u2-checks li{display:flex;gap:.6rem;align-items:flex-start;padding-block:.2rem;color:var(--u2-ink-2)}
+.u2-checks .u2-ico{margin-top:.3rem;color:var(--u2-wood)}
+@media(min-width:768px){.u2-split{grid-template-columns:1fr 1fr;gap:0}.u2-split > div{padding-inline:var(--u2-s6)}.u2-split > div:first-child{padding-left:0;border-right:1px solid var(--u2-line)}.u2-split > div:last-child{padding-right:0}}
+
+/* 在售精選：第一戶放大 */
+.u2-props{display:grid;gap:var(--u2-s5)}
+.u2-prop a{display:block;color:inherit;text-decoration:none}
+.u2-ph{display:grid;place-items:center;aspect-ratio:4/3;border-radius:var(--u2-r-opt);background:linear-gradient(135deg,var(--u2-wood-100),var(--u2-sunken));color:var(--u2-wood-500)}
+.u2-ph .u2-ico{width:3rem;height:3rem}
+.u2-prop h3{margin-top:.6rem;font-size:var(--u2-fs-3);font-weight:700;line-height:1.4}
+.u2-prop .u2-price{margin-top:.2rem;font-family:var(--u2-font-head);font-size:var(--u2-fs-5);font-weight:900;color:var(--u2-wood);font-variant-numeric:tabular-nums}
+@media(min-width:768px){.u2-props{grid-template-columns:1.5fr 1fr 1fr;align-items:start}}
+
+/* 房市筆記：一篇大、兩篇文字列 */
+.u2-notes{display:grid;gap:var(--u2-s5)}
+.u2-note a{display:block;color:inherit;text-decoration:none}
+.u2-note h3{margin-top:.5rem;font-family:var(--u2-font-head);font-size:var(--u2-fs-4);line-height:1.4}
+.u2-note a:hover h3{color:var(--u2-wood);text-decoration:underline;text-underline-offset:.2em}
+.u2-note--rows{border-top:1px solid var(--u2-line);padding-top:var(--u2-s4)}
+@media(min-width:768px){.u2-notes{grid-template-columns:1.3fr 1fr;gap:var(--u2-s7)}.u2-notes__rest{display:grid;gap:var(--u2-s4);align-content:start}}
+
+/* 管道列 */
+.u2-chan a{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:.75rem;min-height:3.5rem;padding:.6rem 0;border-bottom:1px solid var(--u2-line);color:inherit;text-decoration:none}
+.u2-chan b{font-weight:700}
+.u2-chan small{color:var(--u2-ink-2);font-size:var(--u2-fs-1)}
+.u2-chan .u2-ico{color:var(--u2-wood)}
+.u2-chan a:hover b{color:var(--u2-wood)}
+@media(min-width:768px){.u2-chanwrap{display:grid;grid-template-columns:1fr 1fr;gap:0 var(--u2-s7)}}
+
+.u2-cta-final{text-align:left}
+} /* end @layer components */
+
+/* ---------- 首頁補充（範本新增的小類別） ---------- */
+@layer components {
+.u2-hot__lead { align-self: center; }
+.u2-certs__text { flex: 1 1 16rem; }
+.u2-body { font-size: var(--u2-fs-2); color: var(--u2-ink-2); line-height: var(--u2-lh-body); }
+.u2-prop__img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--u2-r-opt); background: var(--u2-sunken); }
+.u2-note__img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: var(--u2-r-opt); }
+.u2-ph--wide { aspect-ratio: 16 / 9; }
+.u2-clamp { margin-top: .4rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.u2-more { margin-top: var(--u2-s6); }
+.u2-accent { color: var(--u2-wood); }
+.u2-hero__tel-row { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .6rem; }
+.u2-ask__go { margin-top: .8rem; }
+.u2-toc { max-width: 48rem; }
+.u2-band--inverse .u2-btn--primary { background: var(--u2-wood-600); color: var(--u2-on-wood); }
+}

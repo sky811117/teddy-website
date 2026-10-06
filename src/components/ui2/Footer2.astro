@@ -1,0 +1,80 @@
+---
+/**
+ * 頁尾（ui2 版）：只有首頁與 /find/ 使用。深咖啡底的節奏與現行頁尾一致；
+ * 品牌／公司／證號／電話文字與現行 Footer.astro 逐字相同（法規揭露，不得改）。
+ */
+import config from "@/config";
+
+const currentYear = new Date().getFullYear();
+
+// 站內主要頁面連結：沿用現行八項，補上「找房小幫手」
+const siteLinks = [
+  { label: "在售物件", href: "/properties/" },
+  { label: "我要買房", href: "/buy/" },
+  { label: "我要賣房", href: "/sell/" },
+  { label: "找房小幫手", href: "/find/" },
+  { label: "台中各區", href: "/areas/" },
+  { label: "房市筆記", href: "/posts/" },
+  { label: "客戶工具", href: "/tools/" },
+  { label: "常見問題", href: "/faq/" },
+  { label: "關於景泰", href: "/about/" },
+];
+
+const icons = import.meta.glob<{ default: (_props: Record<string, unknown>) => unknown }>("/src/assets/icons/socials/*.svg");
+const socialItems = await Promise.all(
+  config.socials.map(async ({ name, url, linkTitle }) => {
+    const mod = await icons[`/src/assets/icons/socials/${name}.svg`]?.();
+    return { name, url, linkTitle, Icon: mod?.default };
+  })
+);
+---
+
+<footer class="ui2 u2-footer u2-band--inverse">
+  <div class="u2-wrap">
+    <div class="u2-footer__grid">
+      <div>
+        <p class="u2-footer__who">
+          <img src="/photos/teddy-avatar.jpg" alt="陳景泰 / 泰迪" width="40" height="40" loading="lazy" decoding="async" />
+          <strong>陳景泰｜台中房仲</strong>
+        </p>
+        <p class="u2-small u2-footer__line">一品不動產 有巢氏房屋 台中世界之心加盟店</p>
+        <p class="u2-small">經紀人 黃永隆 113彰縣字324 ・ 營業員 陳景泰 114登字488296 ・ 0920-118-756</p>
+      </div>
+
+      <nav aria-label="站內連結">
+        <p class="u2-footer__h">站內連結</p>
+        <ul class="u2-footer__links">
+          {siteLinks.map(({ label, href }) => <li><a href={href}>{label}</a></li>)}
+        </ul>
+      </nav>
+
+      <div>
+        <p class="u2-footer__h">聯絡景泰</p>
+        <div class="u2-footer__cta">
+          <a class="u2-btn u2-btn--ghost" href="tel:+886920118756">
+            <svg class="u2-ico" aria-hidden="true"><use href="#i-phone"></use></svg>0920-118-756
+          </a>
+          <a class="u2-btn u2-btn--line" href="/go/line?src=footer" title="LINE 私訊景泰 sky811117">
+            <svg class="u2-ico" aria-hidden="true"><use href="#i-chat"></use></svg>LINE 私訊景泰
+          </a>
+        </div>
+        <div class="u2-footer__social">
+          {
+            socialItems.map(({ url, linkTitle, Icon }) =>
+              Icon ? (
+                <a href={url} title={linkTitle}>
+                  <Icon class="u2-ico" aria-hidden="true" />
+                  <span class="u2-sr">{linkTitle}</span>
+                </a>
+              ) : null
+            )
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="u2-footer__legal">
+      <p>&#169; {currentYear} 陳景泰 / 泰迪 ・ <a href="/privacy/">隱私權政策</a></p>
+    </div>
+  </div>
+</footer>

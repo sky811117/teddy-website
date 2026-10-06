@@ -1,0 +1,159 @@
+---
+/**
+ * 頁首（ui2 版）：只有首頁與 /find/ 使用；其餘頁仍用原本的 Header.astro，輸出一個位元組都不變。
+ * 主選單 5 項＋「更多」收其餘連結；所有原本頁首的連結（含搜尋、封存）仍然都在，內部連結一個不少。
+ * 手機（<1024px）改成按鈕展開的面板，桌機是橫排。日夜鈕沿用既有 #theme-btn（scripts/theme.ts 負責切換），
+ * 這裡只把它的 aria-label 改成「動作描述」。
+ */
+import { getRelativeLocaleUrl } from "astro:i18n";
+import { Image } from "astro:assets";
+import ycLogo from "@/assets/logos/yochaoshi.png";
+import { stripBase, stripLocale } from "@/utils/withBase";
+import { useTranslations } from "@/i18n";
+import config from "@/config";
+
+type Props = { current?: string };
+const { current } = Astro.props;
+const { features } = config;
+
+const locale = Astro.currentLocale ?? config.site.lang;
+const t = useTranslations(locale);
+const rel = stripBase(Astro.url.pathname);
+const noSlash = rel.endsWith("/") && rel !== "/" ? rel.slice(0, -1) : rel;
+const here = current ?? stripLocale(noSlash, locale);
+const isActive = (p: string) => {
+  const a = here.split("/").filter((x: string) => x.trim());
+  const b = p.split("/").filter((x: string) => x.trim());
+  return here === p || (b.length > 0 && a[0] === b[0]);
+};
+const u = (seg: string) => getRelativeLocaleUrl(locale, seg);
+
+const main = [
+  { href: u("buy"), label: "買房", key: "/buy" },
+  { href: u("sell"), label: "賣房", key: "/sell" },
+  { href: u("properties"), label: "在售物件", key: "/properties" },
+  { href: u("posts"), label: "房市筆記", key: "/posts" },
+  { href: u("areas"), label: "台中各區", key: "/areas" },
+];
+const more = [
+  { href: "/find/", label: "找房小幫手", key: "/find" },
+  { href: u("tools"), label: "工具", key: "/tools" },
+  { href: u("faq"), label: "常見問題", key: "/faq" },
+  { href: u("services"), label: "服務", key: "/services" },
+  { href: u("media"), label: "影音", key: "/media" },
+  { href: u("contact"), label: "聯絡", key: "/contact" },
+  { href: u("about"), label: t.nav.about, key: "/about" },
+  ...(features.search !== false ? [{ href: u("search"), label: t.nav.search, key: "/search" }] : []),
+  ...(features.showArchives ? [{ href: u("archives"), label: t.nav.archives, key: "/archives" }] : []),
+];
+---
+
+<a class="u2-skip" href="#main-content">{t.a11y.skipToContent}</a>
+
+<header class="ui2 u2-header">
+  <div class="u2-wrap u2-header__in">
+    <a class="u2-brand" href={u("")}>
+      <span class="u2-brandtag">
+        <Image
+          src={ycLogo}
+          alt="有巢氏房屋"
+          width={86}
+          widths={[86, 172, 258]}
+          sizes="86px"
+          format="webp"
+          loading="eager"
+          decoding="async"
+          style="display:block;height:1.6rem;width:auto"
+        />
+      </span>
+      <strong>陳景泰<span class="u2-hide-xs"> / 泰迪</span></strong>
+    </a>
+
+    <nav class="u2-nav" aria-label="主選單">
+      {main.map(l => <a href={l.href} aria-current={isActive(l.key) ? "page" : undefined}>{l.label}</a>)}
+      <details class="u2-nav__more">
+        <summary>更多</summary>
+        <div class="u2-nav__pop">
+          {more.map(l => <a href={l.href} aria-current={isActive(l.key) ? "page" : undefined}>{l.label}</a>)}
+        </div>
+      </details>
+    </nav>
+
+    <div class="u2-header__cta">
+      <a class="u2-btn u2-btn--ghost u2-btn--sm" href="/go/line?src=header" aria-label="LINE 問景泰" title="LINE 私訊景泰 sky811117">
+        <svg class="u2-ico" aria-hidden="true"><use href="#i-chat"></use></svg><span class="u2-hide-xs">LINE</span>
+      </a>
+      <button class="u2-btn u2-btn--ghost u2-btn--sm" type="button" id="theme-btn" aria-label="切換成深色模式">
+        <svg class="u2-ico u2-ico--moon" aria-hidden="true"><use href="#i-moon"></use></svg>
+        <svg class="u2-ico u2-ico--sun" aria-hidden="true"><use href="#i-sun"></use></svg>
+      </button>
+      <button
+        class="u2-btn u2-btn--ghost u2-btn--sm u2-menu-btn"
+        type="button"
+        id="menu-btn"
+        aria-expanded="false"
+        aria-controls="menu-items"
+        aria-label="開啟選單"
+      >
+        <svg class="u2-ico" aria-hidden="true"><use href="#i-menu"></use></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="u2-mnav" id="menu-items" hidden>
+    <div class="u2-wrap">
+      <nav class="u2-mnav__grid" aria-label="主選單（手機）">
+        {[...main, ...more].map(l => <a href={l.href} aria-current={isActive(l.key) ? "page" : undefined}>{l.label}</a>)}
+      </nav>
+    </div>
+  </div>
+</header>
+
+<script>
+  function setup() {
+    const btn = document.getElementById("menu-btn");
+    const panel = document.getElementById("menu-items");
+    if (btn && panel) {
+      const close = () => {
+        panel.hidden = true;
+        btn.setAttribute("aria-expanded", "false");
+        btn.setAttribute("aria-label", "開啟選單");
+      };
+      btn.addEventListener("click", () => {
+        const open = btn.getAttribute("aria-expanded") === "true";
+        if (open) close();
+        else {
+          panel.hidden = false;
+          btn.setAttribute("aria-expanded", "true");
+          btn.setAttribute("aria-label", "關閉選單");
+        }
+      });
+      document.addEventListener("keydown", e => {
+        if (e.key === "Escape" && !panel.hidden) {
+          close();
+          btn.focus();
+        }
+      });
+    }
+    // 桌機「更多」：點外面或按 Esc 收起
+    const more = document.querySelector<HTMLDetailsElement>(".u2-nav__more");
+    if (more) {
+      document.addEventListener("click", e => {
+        if (more.open && !more.contains(e.target as Node)) more.open = false;
+      });
+      more.addEventListener("keydown", e => {
+        if (e.key === "Escape") {
+          more.open = false;
+          more.querySelector("summary")?.focus();
+        }
+      });
+    }
+    // 日夜鈕：scripts/theme.ts 會把 aria-label 設成 light／dark，這裡再換成「動作描述」
+    const tb = document.getElementById("theme-btn");
+    const root = document.documentElement;
+    const label = () => tb?.setAttribute("aria-label", root.getAttribute("data-theme") === "dark" ? "切換成淺色模式" : "切換成深色模式");
+    label();
+    new MutationObserver(label).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+  }
+  setup();
+</script>

@@ -1,0 +1,25 @@
+---
+/**
+ * 小屋：找房小幫手的身體（房子形狀的對話泡泡）。open＝門是開的、門後透出暖黃光（結果好了的那一下，
+ * 動畫由 ui2-find.css 的 .u2-house.is-open 控制；減少動態時直接是開門後的靜態圖）。
+ * 關著門的版本用內嵌圖庫的 #u2-house，所以頁面要先放 <Sprite />。
+ */
+type Props = { open?: boolean; class?: string; id?: string };
+const { open = false, class: className = "", id } = Astro.props;
+---
+
+{
+  open ? (
+    <svg class:list={["u2-house", className]} id={id} viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+      <rect class="m-light" x="19" y="31.5" width="10" height="10" style="fill:#f3d9a4" />
+      <path d="M24 5.5 4.5 21.5V38a3.5 3.5 0 0 0 3.5 3.5h3.2l-2.7 5.2 8.7-5.2H40a3.5 3.5 0 0 0 3.5-3.5V21.5z" style="fill:var(--u2-vellum);stroke:var(--u2-ink);stroke-width:2.4;stroke-linejoin:round" />
+      <path d="M19 41.5V31.5a5 5 0 0 1 10 0v10z" style="fill:#f3d9a4;stroke:none" />
+      <path class="m-door" d="M19 41.5V31.5a5 5 0 0 1 10 0v10z" style="fill:var(--u2-wood-600);stroke:none" />
+      <path d="M4.5 21.5 24 5.5l19.5 16" style="fill:none;stroke:var(--u2-wood-600);stroke-width:4;stroke-linecap:round;stroke-linejoin:round" />
+    </svg>
+  ) : (
+    <svg class:list={["u2-ico", className]} id={id} aria-hidden="true" focusable="false">
+      <use href="#u2-house" />
+    </svg>
+  )
+}
