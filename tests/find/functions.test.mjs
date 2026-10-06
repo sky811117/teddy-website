@@ -262,6 +262,24 @@ test("feedback：驗證、轉送；一句話先去個資；家用機不通→E_F
   assert.equal((await H.handleFeedback(post("/api/find/feedback", { v: 1, jid: "bad" }).ctx, n.deps)).status, 400);
 });
 
+test("config：公開接口只吐「長得像 Site Key」的值；貼錯成 Secret Key（35 字元）／網址／空白一律回 null，不外流", async () => {
+  const REAL_LIKE = "0x4AAAAAAAxxxxxxxxxxxxxx";                       // 24 字元，Site Key 的樣子（假值）
+  const SECRET_LIKE = "0x4AAAAAAAyyyyyyyyyyyyyy-zzzzzzzzzzzzzz";    // 35+ 字元、含 -，Secret Key 的樣子（假值）
+  assert.equal(H.publicSiteKey(REAL_LIKE), REAL_LIKE);
+  assert.equal(H.publicSiteKey("  " + REAL_LIKE + " "), REAL_LIKE, "前後空白會修掉");
+  assert.equal(H.publicSiteKey("1x00000000000000000000AA"), "1x00000000000000000000AA", "Cloudflare 官方測試用 key 格式");
+  for (const bad of [SECRET_LIKE, "https://dash.cloudflare.com/xxxxxxxx", "", "   ", null, undefined, 123, "0x", "0xshort"]) {
+    assert.equal(H.publicSiteKey(bad), null, String(bad));
+  }
+  H.resetConfigCache();
+  const n = net();
+  const ctx = get("/api/find/config").ctx;
+  const raw = await H.handleConfig({ ...ctx, env: { ...ctx.env, TURNSTILE_SITE_KEY: SECRET_LIKE } }, n.deps);
+  const txt = await raw.text();
+  assert.ok(!txt.includes(SECRET_LIKE), "回應本文不得含貼錯的機密值");
+  assert.equal(JSON.parse(txt).turnstileSiteKey, null);
+});
+
 test("config：回 site key；家用機健康→live；15 秒內快取；沒開總開關→intake", async () => {
   H.resetConfigCache();
   const n = net();

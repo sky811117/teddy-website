@@ -53,7 +53,7 @@ const ENV = {
   FIND_HMAC_SECRET: "preview-secret-not-real",
   FIND_IP_SALT: "preview-salt",
   TURNSTILE_SECRET_KEY: "preview-ts-secret",
-  TURNSTILE_SITE_KEY: "preview-site-key-0001",
+  TURNSTILE_SITE_KEY: "1x00000000000000000000AA",   // Cloudflare 官方「永遠通過」測試用 Site Key（格式要合 publicSiteKey 的檢查；預覽不載入外部腳本，只是個字串）
   CONTACT_TG_TOKEN: "preview-tg-token",
   CONTACT_TG_CHAT: "1",
 };

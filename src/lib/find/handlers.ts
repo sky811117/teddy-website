@@ -525,6 +525,14 @@ export async function handleConfig(ctx: FindCtx, deps: Deps = realDeps()): Promi
     }
   }
   const evt = liveReady(env) ? await makeEvtToken(env, deps.now()) : null;
-  return jsonRes({ ok: true, v: 1, mode, turnstileSiteKey: env.TURNSTILE_SITE_KEY || null, needMax: 300, consentV: CONSENT_V, tplV: 1, evt });
+  return jsonRes({ ok: true, v: 1, mode, turnstileSiteKey: publicSiteKey(env.TURNSTILE_SITE_KEY), needMax: 300, consentV: CONSENT_V, tplV: 1, evt });
+}
+
+/** 公開接口只准吐「長得像 Turnstile Site Key」的值（約 24 字元，例：0x4…／1x0…／2x0…／3x0…）。
+ *  2026-10-06 事故：後台把 Secret Key（35 字元）貼進 TURNSTILE_SITE_KEY，公開設定接口就把它給了每位訪客。
+ *  格式不符一律當成「沒設定」（回 null），寧可驗證框不出現，也不能把可能是機密的值送出去。 */
+export function publicSiteKey(v: unknown): string | null {
+  const s = typeof v === "string" ? v.trim() : "";
+  return /^[0-9]x[A-Za-z0-9_-]{8,27}$/.test(s) ? s : null;
 }
 

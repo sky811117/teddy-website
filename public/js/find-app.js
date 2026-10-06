@@ -44,7 +44,7 @@ var DEGRADE_MSG_NOCHASE = {
   busy: '現在比較多人，需求先記下來了。你選了不想被追問，所以我不會要你留資料；想問的時候，直接 LINE 景泰就好。',
   night: '現在是深夜，需求先記下來了。你選了不想被追問，所以我不會要你留資料；想問的時候，直接 LINE 景泰就好。'
 };
-var INTAKE_TEXT = '目前我還不能自動找：你的需求會交給景泰看過再回覆你，所以要留 LINE 或電話，他才收得到。';
+var INTAKE_TEXT = '目前我還不能自動找：你的需求會交給景泰看過。想讓他回你的話，可以留 LINE 或電話（選填）。';
 var TS_RETRY_HINT = '還沒完成人機驗證。請先完成上面的驗證，再按一次。';
 var CFG_RETRY_HINT = '頁面沒有載入完整，沒辦法確認是真人。請重新整理這一頁再試一次。';
 var QCOPY = {
@@ -699,7 +699,7 @@ function toConfirm() {
   var il = byId('intake-lead'), nl = byId('s4-nocontact'), ih = byId('intake-help');
   if (il) il.hidden = !mode || hasNoChase();
   if (nl) nl.hidden = mode && !hasNoChase();
-  if (ih) ih.textContent = '目前由景泰看過再回覆，LINE 或手機留一項就好。';
+  if (ih) ih.textContent = '想讓景泰回你，LINE 或手機留一項就好。不留也可以送出，只是景泰就沒辦法回你。';
   if (mode && hasNoChase() && nl) nl.textContent = '你選了不想被追問，所以留不留聯絡方式都可以。不留的話，這筆需求只會被記下來，想問的時候直接 LINE 景泰。';
   track('confirm', { lvl: a.level, fn: Math.min(14, Object.keys(S.fields).length) });
   ensureTurnstile();
@@ -828,7 +828,7 @@ function readIntakeContact() {
   function bad(t) { if (err) { err.hidden = false; err.textContent = t; } }
   if (err) { err.hidden = true; err.textContent = ''; }
   var line = ((byId('ci-line') || {}).value || '').trim(), phone = ((byId('ci-phone') || {}).value || '').trim();
-  if (!line && !phone) { bad('目前由景泰看過再回覆，請至少留 LINE 或手機其中一項。'); return null; }
+  if (!line && !phone) return { contact: null, consent: null };      // 選填、不強迫：不留也送得出去（景泰就沒辦法回覆，頁面說明裡寫明）
   var cb = byId('ci-consent');
   if (!cb || !cb.checked) { bad(ERR_MSG.E_CONSENT); return null; }
   var contact = { pref: line ? 'line' : 'phone' };

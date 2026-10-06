@@ -471,7 +471,7 @@ test("收件模式（還不能自動找）：開場就講清楚；確認畫面�
   let mounted = false;
   const app = await boot({ net, pre: w => { w.mountWaitGame = () => { mounted = true; return {}; }; } });
   // 開場：不是等客人答完才轉彎
-  assert.match(app.text("#s0-mode-text"), /目前我還不能自動找：你的需求會交給景泰看過再回覆你，所以要留 LINE 或電話/);
+  assert.match(app.text("#s0-mode-text"), /目前我還不能自動找：你的需求會交給景泰看過。想讓他回你的話，可以留 LINE 或電話（選填）/);
   assert.ok(!/找到的物件會直接給你看/.test(app.text("#stage")));
   await sayAndContinue(app, "南屯兩房，1800萬以內");
   clickAct(app, "go-now");
@@ -480,12 +480,8 @@ test("收件模式（還不能自動找）：開場就講清楚；確認畫面�
   assert.equal(app.$("#intake-lead").hidden, false, "收件模式在確認畫面就要聯絡欄位（匿名收件景泰回不了）");
   assert.equal(app.$("#s4-nocontact").hidden, true);
   await app.clock.advance(6000);
-  // 沒留聯絡方式：留在確認畫面、不送出
-  click(app.$("#go-btn"));
-  await flush();
-  assert.equal(app.state(), "s4");
-  assert.match(app.text("#ci-err"), /請至少留 LINE 或手機其中一項/);
-  assert.equal(app.net.by("submit").length, 0);
+  // 景泰 2026-10-06：聯絡方式選填、不強迫——不留也送得出去（景泰回不了，頁面說明已寫明）；這裡走「有留聯絡方式」的路徑
+  assert.match(app.text("#intake-help"), /不留也可以送出/);
   app.$("#ci-line").value = "wang_1234";
   click(app.$("#go-btn"));
   await flush();
@@ -502,6 +498,22 @@ test("收件模式（還不能自動找）：開場就講清楚；確認畫面�
   assert.equal(S.validateSubmit(sub).err, null);
   assert.equal(app.text("#deg-msg"), "收到了，景泰會用你留的方式回覆你。", "有留聯絡方式：才說景泰會回覆");
   assert.equal(app.$("#deg-lost").hidden, true);
+});
+
+test("收件模式：聯絡方式選填、不強迫——什麼都不留也送得出去（匿名），也不要求勾同意", { skip: SKIP }, async () => {
+  const net = fakeNet({ config: () => ({ ...CONFIG, mode: "intake" }), submit: () => ({ ok: true, v: 1, status: "degraded", kind: "general", jobId: null, saved: true, msg: "x" }) });
+  const app = await boot({ net });
+  await sayAndContinue(app, "南屯兩房，1800萬以內");
+  clickAct(app, "go-now");
+  assert.equal(app.$("#intake-lead").hidden, false);
+  await app.clock.advance(6000);
+  click(app.$("#go-btn"));
+  await flush();
+  assert.equal(app.state(), "s9", "沒留聯絡方式也送出");
+  const sub = app.net.by("submit")[0].body;
+  assert.equal(sub.contact, null);
+  assert.equal(sub.consent, null);
+  assert.equal(S.validateSubmit(sub).err, null, "伺服器端驗證也過");
 });
 
 test("收件模式＋不想被追問：不強迫留聯絡方式，也不顯示聯絡欄位", { skip: SKIP }, async () => {
