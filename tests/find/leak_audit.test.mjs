@@ -48,6 +48,24 @@ test("--dist：T1 命中就失敗，輸出只有位置與規則編號、不印�
   assert.equal(run(ok, ["--dist", "dist", "--denylist", denylist(ok)]).code, 0);
 });
 
+test("--dist：首頁「房市筆記」新聞卡片（data-editorial-feed）內的禁字放行；卡片外、其他頁面一律照樣命中", () => {
+  const card = '<article class="u2-note" data-editorial-feed><a href="/posts/x/"><h3>標題</h3><p>內文有 fake_forbidden_1 當資料來源</p></a></article>';
+  const ok = mk();
+  write(ok, "dist/index.html", "<html><body>\n" + card + "\n<p>乾淨</p></body></html>");
+  assert.equal(run(ok, ["--dist", "dist", "--denylist", denylist(ok)]).code, 0, "首頁卡片內放行");
+  const outside = mk();
+  write(outside, "dist/index.html", "<html><body>\n" + card + "\n<p>卡片外有 fake_forbidden_1</p></body></html>");
+  const r1 = run(outside, ["--dist", "dist", "--denylist", denylist(outside)]);
+  assert.equal(r1.code, 1, "卡片外仍然命中");
+  assert.match(r1.out, /dist\/index\.html:3:T1-1/, "行號不因剝掉卡片而位移");
+  const other = mk();
+  write(other, "dist/find/index.html", "<html><body>\n" + card + "\n</body></html>");
+  assert.equal(run(other, ["--dist", "dist", "--denylist", denylist(other)]).code, 1, "只有首頁生效，/find/ 的同樣標記不放行");
+  const noMark = mk();
+  write(noMark, "dist/index.html", '<html><body>\n<article class="u2-note"><p>fake_forbidden_1</p></article></body></html>');
+  assert.equal(run(noMark, ["--dist", "dist", "--denylist", denylist(noMark)]).code, 1, "沒有標記就照樣命中");
+});
+
 test("--dist：T2（公司網域）在 JSON-LD 與公司揭露區塊內放行，其他位置才算命中", () => {
   const d = mk();
   write(d, "dist/find/index.html", `<html><head><script type="application/ld+json">{"url":"FAKE_COMPANY_2"}</script></head><body><footer data-company-disclosure>FAKE_COMPANY_2</footer></body></html>`);

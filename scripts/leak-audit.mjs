@@ -206,6 +206,12 @@ function stripWhitelisted(html) {
     .replace(/<([a-z0-9]+)\b[^>]*data-company-disclosure[^>]*>[\s\S]*?<\/\1>/gi, blank);
 }
 
+/** 首頁「房市筆記」新聞卡片（<article … data-editorial-feed>）：編輯內容（新聞標題與摘要）依慣例會標註第三方統計的資料來源，
+ *  不是查詢功能的痕跡；只在首頁（modeDist 只對 dist/index.html 開）剝掉，行數不變。卡片外面、其他頁面、JS、CSS 一律照樣嚴查。 */
+function stripEditorial(html) {
+  return html.replace(/<article\b[^>]*data-editorial-feed[^>]*>[\s\S]*?<\/article>/gi, s => s.replace(/[^\n]/g, ""));
+}
+
 function scanLines(rel, text, rules, { allowT3 = false, whitelistT2 = false, addedOnly = null, mark = "" } = {}) {
   const lines = text.split(/\r?\n/);
   const t2lines = whitelistT2 ? stripWhitelisted(text).split(/\r?\n/) : lines;
@@ -222,6 +228,7 @@ function scanLines(rel, text, rules, { allowT3 = false, whitelistT2 = false, add
 
 /** 一個文字檔的完整比對：原文逐行 → 正規化逐行 → 壓平（只比 T1 的長字面）。addedOnly（只掃新增行）時，後兩遍改看整個檔案。 */
 function scanText(rel, text, rules, opts = {}) {
+  if (opts.editorial) text = stripEditorial(text);
   scanLines(rel, text, rules, opts);
   if (opts.deep === false) return; // 不會出貨的檔案（tests／scripts／docs）只做原文比對：測試本來就會用拆字、編碼來避免把禁字寫進來
   let base = opts.whitelistT2 ? stripWhitelisted(text) : text;
@@ -362,7 +369,7 @@ function modeDist(rules, dist) {
     if (BINARY_EXT.test(p)) continue;
     const text = scopedText(p);
     if (text === null) continue;
-    scanText(rel(p), text, rules, { allowT3: false, whitelistT2: p.endsWith(".html") });
+    scanText(rel(p), text, rules, { allowT3: false, whitelistT2: p.endsWith(".html"), editorial: p === path.join(dist, "index.html") });
     n++;
   }
   for (const p of walk(path.join(dist, "photos", "ui2"))) if (IMAGE_EXT.test(p)) {

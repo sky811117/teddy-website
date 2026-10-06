@@ -537,7 +537,7 @@ const bigKanBanAccounts = [
                       ? post.data.ogImage.src
                       : null;
                 return idx === 0 ? (
-                  <article class="u2-note">
+                  <article class="u2-note" data-editorial-feed>
                     <a href={`/posts/${post.id}/`}>
                       {coverSrc ? (
                         <img class="u2-note__img" src={coverSrc} alt="" width="800" height="450" loading="lazy" decoding="async" />
@@ -552,7 +552,7 @@ const bigKanBanAccounts = [
               })}
               <div class="u2-notes__rest">
                 {recentPosts.slice(1).map(post => (
-                  <article class="u2-note u2-note--rows">
+                  <article class="u2-note u2-note--rows" data-editorial-feed>
                     <a href={`/posts/${post.id}/`}>
                       <h3>{post.data.title}</h3>
                       {post.data.description && <p class="u2-small u2-clamp">{post.data.description}</p>}
