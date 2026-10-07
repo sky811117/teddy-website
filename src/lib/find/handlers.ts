@@ -596,6 +596,9 @@ export function resetConfigCache(): void {
   healthCache = null;
 }
 
+/** 最近一次健康檢查沒拿到 live 的原因（只放類別代號）：給 config 的 diag 用 */
+let healthWhy = "";
+
 export async function handleConfig(ctx: FindCtx, deps: Deps = realDeps()): Promise<Response> {
   const { request, env } = ctx;
   if (request.method !== "GET") return methodNotAllowed();
@@ -609,7 +612,9 @@ export async function handleConfig(ctx: FindCtx, deps: Deps = realDeps()): Promi
       if (f.kind === "ok" && isObj(f.json) && f.json.ok === true) {
         mode = f.json.mode === "live" ? "live" : "intake";
         healthCache = { at: now, mode };
+        healthWhy = mode === "live" ? "" : "intake";
       } else {
+        healthWhy = f.kind === "down" ? f.cls.replace(/_/g, "") : "h" + f.status;
         // 健康檢查逾時／出錯：沿用上一次的結果，不要把網站翻成「收件模式」又翻回來（會讓客人看到文案閃來閃去）；5 秒後再試
         logFail("health", f.kind === "down" ? f.cls : "unexpected");
         mode = healthCache ? healthCache.mode : "intake";
@@ -620,7 +625,8 @@ export async function handleConfig(ctx: FindCtx, deps: Deps = realDeps()): Promi
   const evt = liveReady(env) ? await makeEvtToken(env, deps.now()) : null;
   const miss = setupMissing(env);
   // 收件模式時帶原因代碼：cfg-<缺的格子>（官網設定沒齊）或 cfg-home（設定齊了、是家用機回報收件模式／連不上）
-  const diag = mode === "live" ? undefined : miss ? "cfg-" + miss : "cfg-home";
+  // cfg-home-intake＝家用機自己說收件；cfg-home-h401＝簽章對不上（兩邊密碼不同）；cfg-home-network／timeout＝連不進家用機
+  const diag = mode === "live" ? undefined : miss ? "cfg-" + miss : ("cfg-home" + (healthWhy ? "-" + healthWhy : "")).slice(0, 24);
   return jsonRes({ ok: true, v: 1, mode, turnstileSiteKey: publicSiteKey(env.TURNSTILE_SITE_KEY), needMax: 300, consentV: CONSENT_V, tplV: 1, evt, diag });
 }
 
