@@ -100,7 +100,7 @@ test("沒過期的 qa 頁：揭露區塊在 <body> 開頭、個人化腳本帶�
   await withNow(NOW, () => withFetch(() => new Response(PAGE, { headers: { "content-type": "text/html; charset=utf-8" } }), async calls => {
     const res = await call(NEW, qaId(TODAY + 29));
     assert.equal(res.status, 200);
-    assert.equal(res.headers.get("cache-control"), "private, max-age=0");
+    assert.equal(res.headers.get("cache-control"), "private, max-age=0, no-store");
     assert.equal(res.headers.get("x-robots-tag"), "noindex, nofollow");
     assert.equal(res.headers.get("referrer-policy"), "no-referrer");
     const html = await res.text();
@@ -266,5 +266,23 @@ test("RT-18：qa 推薦頁帶保守的內容安全政策（防嵌框、禁 objec
     assert.match(csp, /base-uri 'self'/);
     const old = await call(NEW, "ab12cd34");
     assert.equal(old.headers.get("content-security-policy"), null);
+  }));
+});
+
+test("剛產生、還沒發布的推薦頁（上游 404）：不放邊緣快取也不讓瀏覽器快取；上游只快取 2xx（2026-10-07 景泰拿到 404 連結）", async () => {
+  let seenInit = null;
+  await withNow(NOW, () => withFetch((u, init) => { seenInit = init; return new Response("<html><head></head><body>404</body></html>", { status: 404, headers: { "content-type": "text/html; charset=utf-8" } }); }, async calls => {
+    const res = await call(NEW, "qsAbCd1234");
+    assert.equal(res.status, 404);
+    assert.equal(res.headers.get("cache-control"), "private, max-age=0, no-store");
+    assert.equal(calls.length, 1);
+    const cf = seenInit && seenInit.cf;
+    assert.ok(cf && cf.cacheTtlByStatus && cf.cacheTtlByStatus["200-299"] === 30 && cf.cacheTtlByStatus["300-599"] === 0, "上游只快取 2xx");
+    assert.equal(cf.cacheTtl, undefined, "不再用會連 404 一起快取的 cacheTtl");
+  }));
+  await withNow(NOW, () => withFetch(() => new Response("<html><head></head><body>ok</body></html>", { headers: { "content-type": "text/html; charset=utf-8" } }), async () => {
+    const res = await call(NEW, "qsAbCd1234");
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get("cache-control"), "public, max-age=30", "正常頁維持 30 秒快取");
   }));
 });

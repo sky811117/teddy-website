@@ -240,8 +240,10 @@ export const onRequest = async ({
       // （驗證者發現：url 為空字串時下面那道「最終網址」檢查會放行）。
       redirect: "manual",
       // 邊快取 30s：加速客戶載入、減 GitHub Pages 壓力；regen 同 id 最多延遲 30s
+      // 2026-10-07：只快取 2xx。原本 cacheTtl 連 404 也快取 30 秒——推薦頁剛產生、GitHub Pages 還沒發布時被查一次，
+      // 之後 30 秒內所有人（含家用機的「等網址生效」輪詢與客人）都拿到快取的 404，景泰實測拿到 404 連結。
       // cf 是 Workers 執行期欄位，標準 RequestInit 型別沒有 → 斷言避開 TS2353/2769
-      cf: { cacheTtl: 30, cacheEverything: true },
+      cf: { cacheEverything: true, cacheTtlByStatus: { "200-299": 30, "300-599": 0 } },
     } as RequestInit);
   } catch {
     return plainResponse(502, "分享頁暫時無法載入，請稍後再試。");
@@ -324,8 +326,8 @@ export const onRequest = async ({
     status: upstream.status,
     headers: {
       "content-type": "text/html; charset=utf-8",
-      // qa 推薦頁不放邊緣快取，避免過期頁被快取住
-      "cache-control": qa ? "private, max-age=0" : "public, max-age=30",
+      // qa 推薦頁不放邊緣快取，避免過期頁被快取住；非 2xx（例如剛產生、還沒發布的 404）一律不快取，重新整理就拿得到新頁
+      "cache-control": qa || upstream.status < 200 || upstream.status > 299 ? "private, max-age=0, no-store" : "public, max-age=30",
       // nosniff／X-Frame-Options／no-referrer／noindex（雙保險，頁面 meta 也有 noindex）
       ...SHARE_BASE_HEADERS,
       // qa 頁與主站同源：先把「不准被嵌框、不准改 base、不准 object／外部表單」鎖上（RT-18）
