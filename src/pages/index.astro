@@ -213,7 +213,7 @@ const bigKanBanAccounts = [
   <Header2 />
 
   <main id="main-content" class="ui2">
-    {/* ============ 1 開場：一張「找房卡」＋人像（#hero 保留：FloatingCTA 依賴這個 id） ============ */}
+    {/* ============ 1 開場：一張「找房卡」＋居家情境圖（#hero 保留：FloatingCTA 依賴這個 id） ============ */}
     <section id="hero" class="u2-hero">
       <div class="u2-wrap u2-hero__grid">
         <div class="u2-hero__text">
@@ -322,25 +322,28 @@ const bigKanBanAccounts = [
           </p>
         </div>
 
-        {/* 桌機才有：門洞人像＋小幫手對話預覽。手機只放 44px 小門洞頭像，不下載大圖（img 用 1×1 透明圖，<source> 只在 ≥1024px 啟用） */}
+        {/* 桌機才有：門洞居家情境圖＋小幫手對話預覽。手機只放 44px 小門洞頭像，不下載大圖（img 用 1×1 透明圖，<source> 只在 ≥1024px 啟用）。
+            2026-10-07 景泰：首頁大圖原本是本人大頭照，客人不想一進來看到房仲的臉 → 改 AI 生成的北歐風客廳＋窗外台中市景；本人照片只留在作者小框／關於我。
+            圖是 AI 生成（scripts/gen_image.py，檔案帶 XMP AI 標記），畫面上要標「示意圖」，alt 不能寫成任何實際物件或社區。 */}
         <div class="u2-hero__visual">
           <figure class="u2-arch">
             <picture>
               <source
                 media="(min-width:1024px)"
-                srcset="/photos/ui2/portrait-440.webp 440w, /photos/ui2/portrait-880.webp 880w"
+                srcset="/photos/ui2/home-hero-440.webp 440w, /photos/ui2/home-hero-880.webp 880w"
                 sizes="26rem"
                 type="image/webp"
               />
               <img
                 src="data:image/gif;base64,R0lGODlhAQABAAAAACw="
-                alt="陳景泰 / 泰迪 — 台中房仲"
-                width="815"
-                height="1041"
+                alt="明亮的北歐風客廳，窗外是台中市景與山景（AI 生成示意圖，非實際物件）"
+                width="1024"
+                height="1280"
                 fetchpriority="high"
                 decoding="async"
               />
             </picture>
+            <figcaption class="u2-arch__tag">示意圖</figcaption>
           </figure>
           <div class="u2-hero__chat" aria-hidden="true">
             <div class="u2-msg u2-msg--me"><div class="u2-bubble"><p>北屯三房，兩千萬內</p></div></div>

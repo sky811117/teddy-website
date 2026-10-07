@@ -1,11 +1,12 @@
-/* ui2 首頁：門洞人像、帳本列、目錄列、尺寸線步驟，以及首頁各區塊的版面。 */
+/* ui2 首頁：門洞情境圖、帳本列、目錄列、尺寸線步驟，以及首頁各區塊的版面。 */
 @layer components {
 
-/* ---------- 門洞（人像）與小屋 ---------- */
+/* ---------- 門洞（居家情境圖）與小屋 ---------- */
 .u2-arch { position: relative; overflow: hidden; border-radius: var(--u2-r-arch); background: var(--u2-wood-100); aspect-ratio: 4 / 5; }
-.u2-arch img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 8%; mix-blend-mode: multiply; }
+.u2-arch img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; }
 html[data-theme="dark"] .u2-arch { background: #efe6d6; }
-html[data-theme="dark"] .u2-arch img { mix-blend-mode: normal; }
+/* AI 生成圖必標「示意圖」；放右下，避開左下的小幫手對話框 */
+.u2-arch__tag { position: absolute; right: .75rem; bottom: .75rem; padding: .1rem .5rem; border-radius: 999px; background: rgb(255 255 255 / .82); color: #4a3f33; font-size: .75rem; line-height: 1.5; letter-spacing: .04em; }
 
 /* ---------- 帳本列（首頁信任條）---------- */
 .u2-ledger { display: grid; grid-template-columns: repeat(2, 1fr); border-block: 2px solid var(--u2-ink); }
