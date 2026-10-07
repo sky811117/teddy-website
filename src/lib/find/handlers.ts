@@ -116,7 +116,22 @@ function upstreamBase(env: Env): URL | null {
  * 缺鹽的後果很大：家用機會把所有人歸進同一個防灌爆桶，一個機器人就能讓所有真人收到「操作太頻繁」。
  */
 export function liveReady(env: Env): boolean {
-  return env.FIND_ENABLED === "1" && !!upstreamBase(env) && envStr(env.FIND_HMAC_SECRET).length >= 16 && envStr(env.FIND_IP_SALT).length >= 8;
+  return setupMissing(env) === "";
+}
+
+/**
+ * 查詢功能的設定缺哪幾格（只回代號，不回任何值）：e＝FIND_ENABLED 不是 1、u＝FIND_UPSTREAM_URL 不是 https 網址、
+ * h＝FIND_HMAC_SECRET 短於 16 字、s＝FIND_IP_SALT 短於 8 字。全齊回空字串。
+ * 2026-10-07：景泰填完仍是收件模式，後台看不到值；/api/find/config 在收件模式時帶 diag=cfg-<代號> 方便查是哪一格。
+ * FIND_ENABLED 前後空白一律去掉（貼值時多一個空白就整個不開，很難發現）。
+ */
+export function setupMissing(env: Env): string {
+  let m = "";
+  if (envStr(env.FIND_ENABLED) !== "1") m += "e";
+  if (!upstreamBase(env)) m += "u";
+  if (envStr(env.FIND_HMAC_SECRET).length < 16) m += "h";
+  if (envStr(env.FIND_IP_SALT).length < 8) m += "s";
+  return m;
 }
 
 async function forward(env: Env, deps: Deps, method: "GET" | "POST", pathQs: string, payload: unknown, timeoutMs: number): Promise<Forwarded> {
@@ -603,7 +618,10 @@ export async function handleConfig(ctx: FindCtx, deps: Deps = realDeps()): Promi
     }
   }
   const evt = liveReady(env) ? await makeEvtToken(env, deps.now()) : null;
-  return jsonRes({ ok: true, v: 1, mode, turnstileSiteKey: publicSiteKey(env.TURNSTILE_SITE_KEY), needMax: 300, consentV: CONSENT_V, tplV: 1, evt });
+  const miss = setupMissing(env);
+  // 收件模式時帶原因代碼：cfg-<缺的格子>（官網設定沒齊）或 cfg-home（設定齊了、是家用機回報收件模式／連不上）
+  const diag = mode === "live" ? undefined : miss ? "cfg-" + miss : "cfg-home";
+  return jsonRes({ ok: true, v: 1, mode, turnstileSiteKey: publicSiteKey(env.TURNSTILE_SITE_KEY), needMax: 300, consentV: CONSENT_V, tplV: 1, evt, diag });
 }
 
 /** 公開接口只准吐「長得像 Turnstile Site Key」的值（約 24 字元，例：0x4…／1x0…／2x0…／3x0…）。
