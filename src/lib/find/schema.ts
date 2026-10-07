@@ -52,7 +52,8 @@ export const IDEM_RE = /^[A-Za-z0-9_-]{22}$/;
 export const JOB_ID_RE = /^a[A-Za-z0-9_-]{22}$/;
 export const FROM_RE = /^[a-z0-9_]{1,24}$/;
 export const IP_H_RE = /^[0-9a-f]{16}$/;
-export const SHARE_URL_RE = /^https:\/\/teddy-house\.tw\/share\/qa[0-9a-z]{4}[a-z2-7]{26}\/$/;
+// qa＋30 碼＝S-1 指定代號（帶到期日）；qs＋8 碼＝推薦頁產生器自己給的代號（2026-10-07 起 S-1 上線前公開入口沿用，家用機 AIF_PUBLIC_GEN_OK）
+export const SHARE_URL_RE = /^https:\/\/teddy-house\.tw\/share\/(?:qa[0-9a-z]{4}[a-z2-7]{26}|qs[0-9A-Za-z]{8})\/$/;
 const ROAD_RE = /^[一-鿿]{1,10}(?:路|街|大道)(?:[一二三四五六七八九十]{1,2}段)?$/;
 
 /**
