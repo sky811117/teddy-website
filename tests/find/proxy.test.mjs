@@ -24,7 +24,8 @@ async function loadOriginal() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "share-orig-"));
   const abs = rel => JSON.stringify(path.join(ROOT, rel).replace(/\\/g, "/"));
   // 合併進 main 之後，HEAD 的版本本身就會 import src/lib/find/shareqa：兩個相對路徑都換成絕對路徑（在暫存資料夾打包才找得到）
-  src = src.replace('"../../astro-paper.config"', abs("astro-paper.config.ts")).replace('"../../src/lib/find/shareqa"', abs("src/lib/find/shareqa.ts"));
+  // 2026-10-07：HEAD 之後也會 import 其他 src/lib/find/* 模組（origin、sharepick）：一律換成絕對路徑，不然打包失敗、比對測試會被默默略過
+  src = src.replace('"../../astro-paper.config"', abs("astro-paper.config.ts")).replace(/"\.\.\/\.\.\/src\/lib\/find\/([A-Za-z0-9_-]+)"/g, (_m, f) => abs(`src/lib/find/${f}.ts`));
   const entry = path.join(dir, "orig.ts");
   fs.writeFileSync(entry, src);
   try {

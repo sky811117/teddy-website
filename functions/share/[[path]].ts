@@ -34,6 +34,7 @@
 
 import config from "../../astro-paper.config";
 import { expiredResponse, injectQaBlocks, isQaExpired, parseQa, qaBackToSite } from "../../src/lib/find/shareqa";
+import { injectPick, pickHostOk } from "../../src/lib/find/sharepick";
 
 const UPSTREAM = "https://sky811117.github.io/teddy-shares/";
 // 2026-10-07：推薦頁產生器 commit 進 teddy-shares（公開 repo、main 分支）後，GitHub Pages（legacy 建置）要 1～3 分鐘以上才發布
@@ -348,6 +349,12 @@ export const onRequest = async ({
   } else if (!promoOff && !html.includes("想看更多好屋") && html.includes("</body>")) {
     html = html.replace("</body>", BACK_TO_SITE + "</body>");
   }
+
+  // 推薦頁「傳給景泰」（2026-10-07）：只在景泰本人的頁（頁面單獨一行寫 var LIKE_NOTIFY = true;，同事頁是 false）注入 /js/share-pick.js，
+  // qa、qs 等所有代號都一樣。正式網域、本機，以及舊網址 teddy-website-blog.pages.dev 都注入：推薦頁產生器發出去的連結還是舊網址；
+  // 舊網址上的腳本會跨網域送到 https://teddy-house.tw/api/find/pick（請求打在正式網域，WAF 照樣管得到）。
+  // 預覽網址不注入。其他頁面輸出不變（見 src/lib/find/sharepick.ts）。
+  if (pickHostOk(request)) html = injectPick(html, route.id);
 
   return new Response(html, {
     status,

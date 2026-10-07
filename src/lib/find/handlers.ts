@@ -79,7 +79,8 @@ const methodNotAllowed = () => errRes("E_METHOD");
 const envStr = (v: string | undefined): string => (v ?? "").trim();
 
 /* ---------- 讀本文 ---------- */
-async function readJson(request: Request, maxBytes: number): Promise<{ value?: unknown; err?: ErrCode }> {
+// 2026-10-07：匯出給 pick.ts（推薦頁「傳給景泰」）共用；行為不變
+export async function readJson(request: Request, maxBytes: number): Promise<{ value?: unknown; err?: ErrCode }> {
   const len = parseInt(request.headers.get("content-length") || "0", 10);
   if (len > maxBytes) return { err: "E_TOO_LARGE" };
   let buf: ArrayBuffer;
@@ -166,7 +167,7 @@ async function forward(env: Env, deps: Deps, method: "GET" | "POST", pathQs: str
   }
 }
 
-function logFail(where: string, cls: string): void {
+export function logFail(where: string, cls: string): void {
   // 只記泛化代碼：不記本文、不記上游回應、不記網址
   console.warn(`find:${where}_fail:${cls}`);
 }
@@ -258,8 +259,9 @@ async function sendTgOne(deps: Deps, t: { token: string; chat: string }, text: s
   }
 }
 
-/** 找房專用那隻送不出去（例如新機器人還沒按「開始」）就改用舊表單那隻送，線索不掉；全失敗才回 ok=false＋代碼 */
-async function sendTg(env: Env, deps: Deps, text: string): Promise<TgResult> {
+/** 找房專用那隻送不出去（例如新機器人還沒按「開始」）就改用舊表單那隻送，線索不掉；全失敗才回 ok=false＋代碼
+ *  （2026-10-07：匯出給 pick.ts 共用；行為不變） */
+export async function sendTg(env: Env, deps: Deps, text: string): Promise<TgResult> {
   const targets = tgTargetsLabeled(env);
   const pre = findPartial(env) ? "tg-p" : "tg";
   if (!targets.length) {
