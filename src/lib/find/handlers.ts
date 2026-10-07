@@ -17,6 +17,8 @@ import {
   validateEventBatch, validateFeedback, validateSubmit,
 } from "./schema";
 import type { SubmitClean } from "./schema";
+import { MemWindow, SCORE_MAX_BYTES, sanitizeTop, validateScore } from "./score";
+import type { TopRow } from "./score";
 import { verifyTurnstile } from "./turnstile";
 
 /** 前端 render 人機驗證時帶的 action（伺服器端查驗會比對；同一把金鑰被別處重用時，別處的 token 通不過這裡） */
@@ -47,6 +49,7 @@ export const RESPONSE_KEYS = [
   "ok", "v", "status", "stage", "msg", "kind", "jobId", "queue", "shareUrl", "count", "hint", "pollMs", "saved", "missing",
   "ask", "code", "mode", "turnstileSiteKey", "needMax", "consentV", "tplV", "retry", "evt",
   "diag",   // 2026-10-07：送不出去時的失敗種類短代碼（例如 tg-h403），只由本檔產生，不轉傳上游的任何東西
+  "week", "all", "me",   // 2026-10-07：小遊戲排行榜（/api/find/top）；內容由 score.ts 的 sanitizeTop 逐欄重組
 ] as const;
 const KEYSET = new Set<string>(RESPONSE_KEYS);
 
@@ -638,5 +641,85 @@ export async function handleConfig(ctx: FindCtx, deps: Deps = realDeps()): Promi
 export function publicSiteKey(v: unknown): string | null {
   const s = typeof v === "string" ? v.trim() : "";
   return /^[0-9]x[A-Za-z0-9_-]{8,27}$/.test(s) ? s : null;
+}
+
+/* ---------- 小遊戲排行榜（2026-10-07）：/api/find/score（POST）、/api/find/top（GET） ----------
+ * 規則都在家用機（mp_aif_scores.py）：只收 3 小時內的公開工作、同一工作只留最高分、1 分鐘 6 次、合理性、暱稱過濾。
+ * 這裡只做同源、大小、格式、每 IP 每分鐘上限（記憶體視窗，見 score.ts 的限制說明），然後簽章轉送。
+ * 家用機連不上、或官網設定沒齊：score 回 {ok:true, saved:false}、top 回空榜，一律不報錯（小遊戲不能因為排行榜壞掉而出錯）。
+ * 「查詢模式不是 live」（家用機健康檢查說收件）不影響這兩支：只要設定齊就照常轉送。
+ * 榜的範圍（家用機決定）：week＝台灣時間這週一 00:00 起、all＝近 30 天；同一來源（同 IP 同一天）每榜只佔一格。
+ */
+export const SCORE_PER_IP_MIN = 30;
+export const TOP_PER_IP_MIN = 60;
+export const TOP_CACHE_MS = 30000;
+const scoreWin = new MemWindow();
+const topWin = new MemWindow();
+let topCache: { at: number; week: TopRow[]; all: TopRow[] } | null = null;
+
+/** 測試用：清掉排行榜的快取與限流視窗 */
+export function resetScoreState(): void {
+  topCache = null;
+  scoreWin.clear();
+  topWin.clear();
+}
+
+export async function handleScore(ctx: FindCtx, deps: Deps = realDeps()): Promise<Response> {
+  const { request, env } = ctx;
+  if (request.method !== "POST") return methodNotAllowed();
+  if (!originAllowed(request)) return errRes("E_ORIGIN");
+  const rd = await readJson(request, SCORE_MAX_BYTES);
+  if (rd.err) return errRes(rd.err);
+  const s = validateScore(rd.value);
+  if (!s) return errRes("E_BAD_REQUEST");
+  const notSaved = () => jsonRes({ ok: true, v: 1, saved: false });
+  if (!liveReady(env)) return notSaved();
+  const now = deps.now();
+  const ip = await ipHash(env.FIND_IP_SALT, request.headers.get("cf-connecting-ip"), now);
+  if (!scoreWin.hit(ip ?? "-", SCORE_PER_IP_MIN, 60000, now)) return errRes("E_RATE");
+  // 只轉送白名單欄位；不帶 IP 雜湊（家用機用工作編號限流，不需要知道是誰）
+  const payload = { v: 1, jid: s.jid, floors: s.floors, ms: s.ms, perfect: s.perfect, name: s.name };
+  const f = await forward(env, deps, "POST", "/aif/v1/score", payload, 4000);
+  if (f.kind === "down") {
+    logFail("score", f.cls);
+    return notSaved();
+  }
+  if (f.status === 200 && isObj(f.json) && f.json.ok === true) {
+    topCache = null;            // 同一個 isolate 的快取作廢，下一個看榜的人拿到新的
+    return jsonRes({ ok: true, v: 1, saved: true });
+  }
+  logFail("score", f.status === 401 ? "auth" : "unexpected");
+  return notSaved();
+}
+
+export async function handleTop(ctx: FindCtx, deps: Deps = realDeps()): Promise<Response> {
+  const { request, env } = ctx;
+  if (request.method !== "GET") return methodNotAllowed();
+  if (!sameOriginGet(request)) return errRes("E_ORIGIN");
+  const id = new URL(request.url).searchParams.get("id");
+  if (id !== null && !JOB_ID_RE.test(id)) return errRes("E_BAD_REQUEST");
+  const empty = { ok: true, v: 1, week: [], all: [], me: null };
+  if (!liveReady(env)) return jsonRes(empty);
+  const now = deps.now();
+  const fresh = topCache && now - topCache.at < TOP_CACHE_MS ? topCache : null;
+  const fromCache = () => jsonRes(fresh ? { ok: true, v: 1, week: fresh.week, all: fresh.all, me: null } : empty);
+  if (!id && fresh) return fromCache();
+  if (id) {
+    // 帶工作編號＝要算自己的名次，每次都問家用機；太頻繁就只給快取（不報錯）
+    const ip = await ipHash(env.FIND_IP_SALT, request.headers.get("cf-connecting-ip"), now);
+    if (!topWin.hit(ip ?? "-", TOP_PER_IP_MIN, 60000, now)) return fromCache();
+  }
+  const f = await forward(env, deps, "GET", id ? `/aif/v1/top?id=${id}` : "/aif/v1/top", null, 4000);
+  if (f.kind === "down") {
+    logFail("top", f.cls);
+    return fromCache();
+  }
+  const view = f.status === 200 ? sanitizeTop(f.json) : null;
+  if (!view) {
+    logFail("top", f.status === 401 ? "auth" : "unexpected");
+    return fromCache();
+  }
+  topCache = { at: now, week: view.week, all: view.all };
+  return jsonRes({ ok: true, v: 1, week: view.week, all: view.all, me: id ? view.me : null });
 }
 

@@ -356,6 +356,21 @@ test("遊戲進行中結果好了：不中斷，出現橫幅；按『查看』�
   assert.ok(app.events().some(e => e.e === "result_click" && e.a === "banner"));
 });
 
+test("遊戲已結束（例如放著不玩 30 秒自己收掉）時結果好了：不出橫幅，直接切到結果", { skip: SKIP }, async () => {
+  const net = fakeNet({ status: () => ({ ok: true, v: 1, status: "done", count: 5, shareUrl: SHARE }) });
+  let destroyed = false;
+  const app = await boot({ net, pre: w => { w.mountWaitGame = () => ({ getState: () => ({ status: "over" }), skip() {}, destroy() { destroyed = true; } }); } });
+  await sayAndContinue(app, "南屯兩房，1800萬以內");
+  clickAct(app, "go-now");
+  await app.clock.advance(6000);
+  click(app.$("#go-btn"));
+  await flush();
+  await app.clock.advance(2000);
+  assert.equal(app.state(), "s7", "遊戲不在進行中就直接看結果");
+  assert.equal(app.$("#ready-banner").hidden, true);
+  assert.equal(destroyed, true, "切到結果時遊戲被收掉");
+});
+
 test("跳過遊戲：遊戲被銷毀、顯示固定一句；等待不受影響", { skip: SKIP }, async () => {
   let destroyed = false;
   const app = await boot({ pre: w => { w.mountWaitGame = () => ({ getState: () => ({ status: "ready" }), skip() {}, destroy() { destroyed = true; } }); } });

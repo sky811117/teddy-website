@@ -1,29 +1,49 @@
-// 守護小屋：純邏輯測試（node 內建 test runner，不連網、不用瀏覽器）
+// 蓋大樓：純邏輯測試（node 內建 test runner，不連網、不用瀏覽器）
 // 執行：node --test tests/find/
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { requireClassic } from '../_helpers.mjs';
 
 const { core } = requireClassic('public/js/wait-game.js');
-const { CFG, FOES, FOE_KEYS } = core;
+const { CFG } = core;
 const DT = CFG.STEP;
+const TAU = Math.PI * 2;
+const finite = (v) => typeof v === 'number' && Number.isFinite(v);
 
 /* ---------- 小工具 ---------- */
-function fresh(seed = 1, W = 360, H = 236) {
-  const s = core.createGame({ W, H, seed });
-  s.spawnT = 1e9;                 // 預設不自動生成，讓每個測試自己擺怪
+const fresh = (seed = 1, W = 340, H = 276, extra = {}) => core.createGame(Object.assign({ W, H, seed }, extra));
+const ref = (s) => (s.floors.length ? s.floors[s.floors.length - 1] : s.found);
+const center = (r) => r.x + r.w / 2;
+// 讓放下位置剛好是 x（step 先用目前吊鉤位置放下，再往前擺）
+function dropAt(s, x) {
+  const u = Math.max(-1, Math.min(1, (x - s.W / 2) / s.m.amp));
+  s.phi = Math.asin(u); core.hook(s);
+  core.step(s, DT, { drop: true });
+  assert.equal(s.ph === 'fall' || s.over || s.ph === 'wait', true, `沒有放下：${s.ph}`);
+  const rel = s.cur ? s.cur.x : null;
+  let n = 0;
+  while (s.ph === 'fall' && n++ < 600) core.step(s, DT, {});
+  return rel;
+}
+function waitSwing(s) { let n = 0; while (s.ph === 'wait' && n++ < 600) core.step(s, DT, {}); }
+function gauss(r) { let u = 0; while (u === 0) u = core.rand(r); return Math.sqrt(-2 * Math.log(u)) * Math.cos(TAU * core.rand(r)); }
+// 模擬真人：挑 react 秒之後的第一個「吊鉤經過塔頂中心」的時機，再加上 sigma 秒的手感誤差
+function bot(seed, sigma, { W = 340, H = 276, react = 0.35, maxT = 400 } = {}) {
+  const s = core.createGame({ W, H, seed }), r = core.createGame({ seed: seed * 31 + 7 });
+  while (!s.over && s.t < maxT) {
+    if (s.ph !== 'swing') { core.step(s, DT, {}); continue; }
+    const m = s.m, a = Math.asin(Math.max(-1, Math.min(1, (center(ref(s)) - W / 2) / m.amp))), om = core.speed(s) / m.amp;
+    let best = Infinity;
+    for (const c of [a, Math.PI - a]) for (let k = 0; k < 3; k++) {
+      const t = ((((c - s.phi) % TAU) + TAU) % TAU + k * TAU) / om;
+      if (t >= react && t < best) best = t;
+    }
+    const n = Math.max(0, Math.round((best + sigma * gauss(r)) / DT));
+    for (let i = 0; i < n && !s.over; i++) core.step(s, DT, {});
+    core.step(s, DT, { drop: true });
+  }
   return s;
 }
-function foe(type, x, y, extra = {}) {
-  const sp = FOES[type];
-  return Object.assign({ id: 0, type, bx: x, x, y, r: sp.r, age: 0, ph: 0, vy: 0, amp: 0, freq: 0, acc: 0, dead: false }, extra);
-}
-function run(s, seconds, inp) {
-  const n = Math.round(seconds / DT);
-  for (let i = 0; i < n && !s.over; i++) core.step(s, DT, typeof inp === 'function' ? inp(s) : inp);
-  return s;
-}
-const finite = (v) => typeof v === 'number' && Number.isFinite(v);
 
 /* ---------- 亂數 ---------- */
 test('rand：同種子同序列、不同種子不同、值域 [0,1)', () => {
@@ -37,82 +57,117 @@ test('rand：同種子同序列、不同種子不同、值域 [0,1)', () => {
   assert.ok(mean > 0.4 && mean < 0.6, `平均 ${mean}`);
 });
 
-test('createGame：初始值與最小尺寸夾限', () => {
+/* ---------- 版面 ---------- */
+test('metrics：各種寬高下，樓高、擺幅、吊點與塔頂位置都合理（掛著的樓層不會撞到塔頂）', () => {
+  for (const W of [140, 240, 282, 320, 340, 400, 520, 680, 1000, 1600]) {
+    for (const H of [120, 150, 200, 236, 276, 300, 360, 420]) {
+      const m = core.metrics(W, H);
+      assert.ok(m.fh >= 16 && m.fh <= 28, `fh ${m.fh}`);
+      assert.ok(m.baseW >= 110 && m.baseW <= 200 && m.baseW <= W, `baseW ${m.baseW} W ${W}`);
+      assert.ok(m.amp >= 30 && m.amp <= Math.max(30, W / 2 - 8), `amp ${m.amp} W ${W}`);
+      assert.ok(m.rope > m.amp * 2, '繩長要比擺幅長（鐘擺）');
+      assert.ok(m.tol > 0 && m.tol < 10);
+      assert.equal(m.gy, H - CFG.GROUND_H);
+      if (W >= 200) assert.ok(W / 2 + m.amp + m.baseW / 2 <= W - 4 + 1e-9, `W${W}：擺到最旁邊時樓層還在畫面內`);
+      if (H >= 196) {
+        assert.ok(m.hangY + m.fh + m.fh <= m.topY, `W${W} H${H}：掛著的樓層與塔頂之間至少隔一層樓高`);
+        assert.ok(m.topY < m.gy - m.fh * 2, `W${W} H${H}：塔頂下方至少看得到兩層`);
+      }
+      // 擺到最旁邊會抬高 rope - √(rope² - amp²)；樓層上緣仍在角落膠囊（底約 33px）下面
+      if (H >= 236) assert.ok(m.hangY - (m.rope - Math.sqrt(m.rope ** 2 - m.amp ** 2)) >= 34, `W${W} H${H}：擺到最旁邊不會鑽到角落膠囊底下`);
+    }
+  }
+  // 手機（320～430px 寬、頁面高 276）：起始寬約 4 成，擺幅比起始寬小，第一層不會一放就整塊落空
+  for (const W of [282, 320, 375, 430]) {
+    const m = core.metrics(W, 276);
+    assert.ok(m.amp < m.baseW, `W${W} amp ${m.amp} < baseW ${m.baseW}`);
+  }
+});
+
+test('createGame：初始狀態、最小尺寸夾限、地基置中、一開始就有一層吊在一側', () => {
   const s = core.createGame({ W: 10, H: 10, seed: 1 });
-  assert.equal(s.W, 140);
-  assert.equal(s.H, 120);
-  assert.equal(s.gy, 120 - CFG.GROUND_H);
-  assert.equal(s.hp, CFG.MAX_HP);
-  assert.equal(s.score, 0);
-  assert.equal(s.over, false);
-  assert.equal(s.hx, 70);
+  assert.equal(s.W, CFG.MIN_W);
+  assert.equal(s.H, CFG.MIN_H);
+  const t = fresh(3);
+  assert.equal(t.floors.length, 0);
+  assert.equal(t.points, 0);
+  assert.equal(t.over, false);
+  assert.equal(t.ph, 'swing');
+  assert.equal(t.cam, 0);
+  assert.ok(Math.abs(center(t.found) - t.W / 2) < 1e-9, '地基置中');
+  assert.equal(t.found.w, t.m.baseW);
+  assert.equal(t.cur.w, t.found.w, '第一層跟地基一樣寬');
+  assert.ok(Math.abs(Math.abs(t.hx - t.W / 2) - t.m.amp) < 1e-6, '從擺幅的一端開始');
+  assert.ok(finite(t.hy) && t.hy < t.m.hangY, '擺到一端時會微微抬高');
+  const sides = new Set();
+  for (let seed = 1; seed <= 20; seed++) sides.add(Math.sign(fresh(seed).hx - 170));
+  assert.equal(sides.size, 2, '左右兩側都會出現');
 });
 
-/* ---------- 難度曲線 ---------- */
-test('difficulty：只隨擊殺數緩升、有上下限、單調', () => {
-  let prev = core.difficulty(0, 360, 236);
-  for (let k = 1; k <= 400; k++) {
-    const d = core.difficulty(k, 360, 236);
-    assert.ok(d.interval <= prev.interval + 1e-12, `間隔不得變長 k=${k}`);
-    assert.ok(d.speed >= prev.speed - 1e-12, `速度不得變慢 k=${k}`);
-    assert.ok(d.maxAlive >= prev.maxAlive, `上限不得變少 k=${k}`);
-    assert.ok(d.level >= prev.level);
-    prev = d;
+/* ---------- 擺盪 ---------- */
+test('擺盪：左右都在擺幅內、正中間最低、會來回、速度隨層數變快且有上限、減少動態時較慢', () => {
+  const s = fresh(5);
+  let minX = Infinity, maxX = -Infinity, lowY = -Infinity, flips = 0, prev = s.hx, dir = 0;
+  for (let i = 0; i < 60 * 12; i++) {
+    core.step(s, DT, {});
+    minX = Math.min(minX, s.hx); maxX = Math.max(maxX, s.hx); lowY = Math.max(lowY, s.hy);
+    const d = Math.sign(s.hx - prev); if (d && dir && d !== dir) flips++; if (d) dir = d; prev = s.hx;
   }
-  const end = core.difficulty(100000, 360, 236);
-  assert.ok(end.interval >= 0.42 / 1.35 - 1e-9 && end.interval <= 1.25 / 0.8, '間隔下限');
-  assert.ok(end.speed <= 132 * 1.3 + 1e-9, '速度上限');
-  assert.ok(end.maxAlive <= 11, '同時上限');
-  assert.ok(end.weights.roach <= 3);
-  // 起點要夠緩：第一隻怪從掉落到地面至少 3 秒
-  const d0 = core.difficulty(0, 360, 236);
-  assert.ok((236 - CFG.GROUND_H) / (d0.speed * 1.15 * 1.1) >= 3, '起點太快');
-  // 負數、NaN 不爆
-  for (const bad of [-5, NaN, undefined, null]) {
-    const d = core.difficulty(bad, 360, 236);
-    assert.ok(finite(d.interval) && finite(d.speed) && finite(d.maxAlive));
+  assert.ok(minX >= s.W / 2 - s.m.amp - 1e-6 && maxX <= s.W / 2 + s.m.amp + 1e-6);
+  assert.ok(maxX - minX > s.m.amp * 1.9, '真的有擺到兩邊');
+  assert.ok(Math.abs(lowY - s.m.hangY) < 0.5, `正中間在 hangY：${lowY}`);
+  assert.ok(flips >= 3, `12 秒內至少來回幾次：${flips}`);
+  // 速度：單調、有上限
+  let pv = 0;
+  for (let n = 0; n <= 200; n++) {
+    const t = fresh(1); t.floors = Array.from({ length: n }, () => ({ x: 0, w: 10, lit: 0, b: false }));
+    const v = core.speed(t);
+    assert.ok(v >= pv - 1e-12, `n=${n}`); pv = v;
+    assert.ok(v <= CFG.VMAX * t.m.scale + 1e-9);
+  }
+  const a = fresh(1), b = fresh(1, 340, 276, { calm: true });
+  assert.ok(Math.abs(core.speed(b) / core.speed(a) - CFG.CALM) < 1e-12, '減少動態：擺盪變慢');
+  // 起點夠慢、上限玩得了：最快時，一來一回仍要 2 秒以上（擺幅不變）
+  const top = fresh(1); top.floors = Array.from({ length: 999 }, () => ({ x: 0, w: 10 }));
+  assert.ok(TAU * top.m.amp / core.speed(top) >= 2, `最快週期 ${(TAU * top.m.amp / core.speed(top)).toFixed(2)}s`);
+  assert.ok(TAU * a.m.amp / core.speed(a) >= 4, '一開始很慢');
+});
+
+/* ---------- 判定 ---------- */
+test('judge：完美（誤差 ≤ tol 不切、對齊）、切掉超出（左右兩邊）、完全沒疊到', () => {
+  const tol = 5;
+  let j = core.judge(100, 120, 103, 120, tol);
+  assert.deepEqual([j.kind, j.x, j.w, j.cw], ['perfect', 100, 120, 0]);
+  j = core.judge(100, 120, 95, 120, tol);
+  assert.equal(j.kind, 'perfect', '剛好 5px 也算');
+  j = core.judge(100, 120, 94.9, 120, tol);
+  assert.equal(j.kind, 'cut');
+  j = core.judge(100, 120, 130, 120, tol);       // 偏右 30
+  assert.deepEqual([j.kind, j.x, j.w, j.cx, j.cw], ['cut', 130, 90, 220, 30]);
+  j = core.judge(100, 120, 60, 120, tol);        // 偏左 40
+  assert.deepEqual([j.kind, j.x, j.w, j.cx, j.cw], ['cut', 100, 80, 60, 40]);
+  assert.equal(core.judge(100, 120, 220, 120, tol).kind, 'miss', '剛好碰到邊不算疊到');
+  assert.equal(core.judge(100, 120, -40, 120, tol).kind, 'miss');
+  assert.equal(core.judge(100, 120, 219.7, 120, tol).kind, 'miss', '重疊不到 0.5px 算沒疊到');
+  assert.equal(core.judge(100, 120, 216, 120, tol).kind, 'miss', '只剩 4px（比完美容許誤差還窄的一根針）也算沒疊到');
+  assert.equal(core.judge(100, 120, 214, 120, tol).kind, 'cut', '剩 6px 還算疊到');
+  for (let d = -130; d <= 130; d += 0.7) {
+    const q = core.judge(50, 100, 50 + d, 100, 4);
+    if (q.kind === 'cut') { assert.ok(Math.abs(q.w + q.cw - 100) < 1e-9); assert.ok(q.x >= 50 - 1e-9 && q.x + q.w <= 150 + 1e-9); }
   }
 });
 
-test('difficulty：越寬的場地，生成越密、同時越多（但有上限）', () => {
-  const narrow = core.difficulty(0, 320, 236), wide = core.difficulty(0, 640, 236), huge = core.difficulty(0, 4000, 236);
-  assert.ok(wide.interval < narrow.interval);
-  assert.ok(wide.maxAlive >= narrow.maxAlive);
-  assert.ok(huge.interval >= 0.42 / 1.35 - 1e-9 || core.difficulty(0, 4000, 236).interval > 0);
-  assert.equal(huge.interval, core.difficulty(0, 9000, 236).interval, '寬度加成有上限');
-});
-
-test('pickType：邊界與權重 0 的種類不會被抽到', () => {
-  const w = { mold: 3, leak: 3, termite: 2.5, roach: 1, noise: 1.5 };
-  assert.equal(core.pickType(w, 0), 'mold');
-  assert.equal(core.pickType(w, 0.9999999), 'noise');
-  const only = { mold: 0, leak: 0, termite: 1, roach: 0, noise: 0 };
-  for (let i = 0; i < 50; i++) assert.equal(core.pickType(only, i / 50), 'termite');
-  const s = fresh(7);
-  const seen = new Set();
-  for (let i = 0; i < 400; i++) seen.add(core.pickType(core.difficulty(0, 360, 236).weights, core.rand(s)));
-  assert.equal(seen.size, FOE_KEYS.length, '五種怪一開始就都會出現');
-});
-
-/* ---------- 計分 ---------- */
-test('comboMult / scoreFor / scoreBucket', () => {
-  assert.equal(core.comboMult(0), 1);
-  assert.equal(core.comboMult(5), 1);
-  assert.equal(core.comboMult(6), 1.5);
-  assert.equal(core.comboMult(12), 2);
-  assert.equal(core.comboMult(18), 2.5);
-  assert.equal(core.comboMult(9999), 2.5, '倍率有上限');
-  assert.equal(core.comboMult(-3), 1);
-  assert.equal(core.scoreFor('mold', 0), 10);
-  assert.equal(core.scoreFor('roach', 0), 20);
-  assert.equal(core.scoreFor('termite', 6), 23);   // 15 × 1.5 四捨五入
-  assert.equal(core.scoreFor('noise', 18), 63);    // 25 × 2.5
+test('計分與級距：一般 10 分；完美 +5×連擊（最多 +30）；scoreBucket 單調 0～9', () => {
+  assert.equal(core.scoreFor(false, 0), 10);
+  assert.equal(core.scoreFor(false, 5), 10);
+  assert.equal(core.scoreFor(true, 1), 15);
+  assert.equal(core.scoreFor(true, 3), 25);
+  assert.equal(core.scoreFor(true, 999), 40);
   let prev = 0;
-  for (let sc = -10; sc <= 5000; sc++) {
-    const b = core.scoreBucket(sc);
+  for (let n = -5; n <= 300; n++) {
+    const b = core.scoreBucket(n);
     assert.ok(Number.isInteger(b) && b >= 0 && b <= 9);
-    assert.ok(b >= prev || sc < 0);
-    if (sc >= 0) prev = b;
+    if (n >= 0) { assert.ok(b >= prev); prev = b; }
   }
   assert.equal(core.scoreBucket(0), 0);
   assert.equal(core.scoreBucket(1e9), 9);
@@ -125,334 +180,301 @@ test('fixedSteps：累積、單格上限 5 步、丟棄積欠、壞值安全', (
   assert.deepEqual(core.fixedSteps(0, 0), { n: 0, acc: 0 });
   assert.equal(core.fixedSteps(0, 1 / 60).n, 1);
   assert.equal(core.fixedSteps(0, 1 / 30).n, 2);
-  // 兩個 10ms 湊成 1 步
   let r = core.fixedSteps(0, 0.01); assert.equal(r.n, 0);
   r = core.fixedSteps(r.acc, 0.01); assert.equal(r.n, 1);
   assert.ok(r.acc >= 0 && r.acc < DT);
-  // 卡 1 秒：最多補 5 步，其餘丟掉
   r = core.fixedSteps(0, 1);
   assert.equal(r.n, CFG.MAX_STEPS);
   assert.equal(r.acc, 0);
-  // 壞值
   for (const bad of [NaN, -1, undefined, Infinity]) {
     const x = core.fixedSteps(0, bad);
     assert.ok(Number.isInteger(x.n) && x.n >= 0 && x.n <= CFG.MAX_STEPS && x.acc >= 0, String(bad));
   }
-  // 長時間平均：60fps 一秒 60 步
   let acc = 0, total = 0;
   for (let i = 0; i < 600; i++) { const q = core.fixedSteps(acc, 1 / 144 * (i % 2 ? 1.1 : 0.9)); acc = q.acc; total += q.n; }
   assert.ok(Math.abs(total - 600 * (1 / 144) * 60) <= 2, `步數 ${total}`);
 });
 
-/* ---------- 碰撞 ---------- */
-test('hitBulletFoe：命中、擦邊、錯過、線段上緣下緣', () => {
-  const f = foe('leak', 100, 100);                 // r=14 → 有效半徑約 14.4
-  assert.ok(core.hitBulletFoe({ x: 100, y: 100 }, f));
-  assert.ok(core.hitBulletFoe({ x: 100 + 13, y: 100 }, f));
-  assert.ok(!core.hitBulletFoe({ x: 100 + 16, y: 100 }, f));
-  assert.ok(core.hitBulletFoe({ x: 100, y: 100 + 12 }, f), '子彈尖端在怪下緣內側（線段 112..122）');
-  assert.ok(!core.hitBulletFoe({ x: 100, y: 100 + 16 }, f), '尖端在怪下緣外側');
-  assert.ok(core.hitBulletFoe({ x: 100, y: 100 - 20 }, f), '線段尾端（y+10）碰到怪的上緣（80..90）');
-  assert.ok(!core.hitBulletFoe({ x: 100, y: 100 - 26 }, f), '線段 74..84 差一點');
-  assert.ok(!core.hitBulletFoe({ x: 100, y: 300 }, f));
+/* ---------- 放下、掉落、疊上 ---------- */
+test('放下：只在擺盪中有效；掉落中、等下一層時按了不算，也不會排隊', () => {
+  const s = fresh(7);
+  core.step(s, DT, { drop: true });
+  assert.equal(s.ph, 'fall');
+  assert.equal(s.drops, 1);
+  assert.equal(s.events.filter((e) => e.t === 'drop').length, 1);
+  for (let i = 0; i < 5; i++) core.step(s, DT, { drop: true });
+  assert.equal(s.drops, 1, '掉落中再按不算');
+  let n = 0;
+  while (s.ph === 'fall' && n++ < 600) core.step(s, DT, { drop: true });
+  assert.equal(s.ph, 'wait');
+  core.step(s, DT, { drop: true });
+  assert.equal(s.drops, 1, '等下一層時按了不算');
+  waitSwing(s);
+  assert.equal(s.ph, 'swing');
+  assert.equal(s.drops, 1, '沒有排隊自動放下');
+  assert.ok(s.t - s.spawnT < DT * 2, '下一層剛掛上');
 });
 
-test('子彈不會穿過怪（最快一步位移 < 怪直徑）', () => {
-  const step = CFG.BULLET_SPEED * DT * CFG.MAX_STEPS;      // 單幀最壞也只有 5 步
-  assert.ok(CFG.BULLET_SPEED * DT + CFG.BULLET_LEN > 2 * 13 * 0.92 - 12, '一步不跨過整隻怪');
-  const s = fresh(2);
-  s.foes.push(foe('roach', s.hx, 80, { r: 13 }));
-  s.bullets.push({ x: s.hx, y: 80 + CFG.BULLET_SPEED * DT + 5, dead: false });
-  core.step(s, DT, {});
-  assert.equal(s.kills, 1);
-  assert.ok(step > 0);
+test('放下用「目前畫面上的吊鉤位置」（先放再擺，不會晚一步）；hook(s, a) 可以超前畫（插補用）', () => {
+  const s = fresh(31);
+  for (let i = 0; i < 30; i++) core.step(s, DT, {});
+  const hx = s.hx, hy = s.hy, phi = s.phi;
+  core.step(s, DT, { drop: true });
+  assert.equal(s.ph, 'fall');
+  assert.equal(s.cur.x, hx, '放下的 x 就是按下時吊鉤的 x');
+  assert.ok(s.phi !== phi, '吊鉤照樣往前擺');
+  assert.ok(s.cur.top <= s.m.gy - hy && s.cur.top > s.m.gy - hy - 2, '從按下時吊著的高度開始掉');
+  const t = fresh(32), om = core.speed(t) / t.m.amp;
+  core.hook(t, om * DT);
+  const ahead = t.hx;
+  core.hook(t);
+  core.step(t, DT, {});
+  assert.ok(Math.abs(t.hx - ahead) < 1e-9, '超前 a 弧度畫出來的位置＝下一步的位置');
+  // 畫面把吊鉤畫在插補位置時（s.hx 被改成超前的位置），放下就用那個位置
+  const v = fresh(33);
+  core.hook(v, om * DT * 0.5);
+  const shown = v.hx;
+  core.step(v, DT, { drop: true });
+  assert.equal(v.cur.x, shown);
 });
 
-/* ---------- 小屋移動與射擊 ---------- */
-test('鍵盤移動：速度、左右夾限', () => {
-  const s = fresh(3, 360);
-  const x0 = s.hx;
-  run(s, 0.25, { dir: 1 });
-  assert.ok(s.hx > x0 + 50, '往右移動');
-  run(s, 5, { dir: 1 });
-  assert.equal(s.hx, 360 - (CFG.HOUSE_W / 2 + 3), '右牆停住');
-  run(s, 5, { dir: -1 });
-  assert.equal(s.hx, CFG.HOUSE_W / 2 + 3, '左牆停住');
+test('亮燈與陽台在掛上時就抽好：吊著的那層有亮燈資料，落地後同一組（不換燈）', () => {
+  const s = fresh(34);
+  let lit = 0;
+  for (let i = 0; i < 8; i++) {
+    const c = s.cur;
+    assert.ok(Number.isInteger(c.lit) && c.lit >= 0 && c.lit < 65536 && typeof c.b === 'boolean');
+    lit |= c.lit;
+    const want = [c.lit, c.b];
+    dropAt(s, center(ref(s)));
+    assert.deepEqual([ref(s).lit, ref(s).b], want, `第 ${i + 1} 層落地沿用同一組`);
+    waitSwing(s);
+  }
+  assert.ok(lit > 0, '總有幾扇窗是亮的');
 });
 
-test('指標移動：有最高速度、目標超出邊界會被夾住、不跳格', () => {
-  const s = fresh(4, 360);
-  s.hx = 100;
-  core.step(s, DT, { targetX: 300 });
-  const moved = s.hx - 100;
-  assert.ok(moved > 0 && moved <= 360 * 2.2 * DT + 1e-9, `一步最多 ${360 * 2.2 * DT}`);
-  run(s, 2, { targetX: 99999 });
-  assert.equal(s.hx, 360 - (CFG.HOUSE_W / 2 + 3));
-  run(s, 2, { targetX: -99999 });
-  assert.equal(s.hx, CFG.HOUSE_W / 2 + 3);
-  const before = s.hx;
-  core.step(s, DT, { targetX: NaN, dir: 0 });
-  assert.equal(s.hx, before, 'NaN 目標視為沒有目標');
-});
-
-test('射擊：冷卻、連發數、子彈上限、子彈出膛位置', () => {
-  const s = fresh(5);
-  core.step(s, DT, { fire: true });
-  assert.equal(s.shots, 1);
-  assert.equal(s.bullets[0].x, s.hx);
-  assert.ok(Math.abs(s.bullets[0].y - (s.gy - CFG.HOUSE_H - CFG.BARREL_H - CFG.BULLET_SPEED * DT)) < 1e-9, '從炮管頂端出膛，同一步已飛一格');
-  run(s, 1, { fire: true });
-  const expected = Math.floor(1 / CFG.FIRE_CD) + 1;      // 約每 0.2 秒一發
-  assert.ok(s.shots >= expected - 1 && s.shots <= expected + 2, `一秒發數 ${s.shots}`);
-  const t = fresh(6);
-  const big = Math.round(CFG.MAX_BULLETS * 3);
-  for (let i = 0; i < big; i++) t.bullets.push({ x: 10, y: 10, dead: false });
-  core.step(t, DT, { fire: true });
-  assert.equal(t.shots, 0, '子彈滿了就不再發');
-  const u = fresh(6);
-  run(u, 1, { fire: false });
-  assert.equal(u.shots, 0, '沒按就不發');
-});
-
-/* ---------- 擊殺、計分、連擊 ---------- */
-test('擊殺：加分、連擊 +1、怪與子彈一起消失、發出 kill 事件', () => {
+test('掉落：垂直掉、不左右飄、越掉越快；放下後約 0.2～0.6 秒落地', () => {
   const s = fresh(8);
-  s.foes.push(foe('termite', s.hx, 60));
-  s.bullets.push({ x: s.hx, y: 68, dead: false });
-  core.step(s, DT, {});
-  assert.equal(s.kills, 1);
-  assert.equal(s.score, 15);
-  assert.equal(s.combo, 1);
-  assert.equal(s.foes.length, 0);
-  assert.equal(s.bullets.length, 0);
-  const ev = s.events.filter((e) => e.t === 'kill');
-  assert.equal(ev.length, 1);
-  assert.equal(ev[0].pts, 15);
-  assert.equal(ev[0].type, 'termite');
+  const rel = (s.phi = 0, core.step(s, DT, { drop: true }), s.cur.x);
+  let n = 0, lastVy = 0;
+  while (s.ph === 'fall') {
+    assert.equal(s.cur.x, rel);
+    assert.ok(s.cur.vy >= lastVy); lastVy = s.cur.vy;
+    core.step(s, DT, {}); n++;
+  }
+  const t = n * DT;
+  assert.ok(t > 0.2 && t < 0.6, `落地 ${t.toFixed(2)}s`);
 });
 
-test('一顆子彈只打一隻（打最低的那隻）', () => {
+test('對準（正中間）＝完美：不切、對齊、連擊 +1、完美分數；第一層是地基上的店面', () => {
   const s = fresh(9);
-  const hi = foe('mold', s.hx, 60), lo = foe('mold', s.hx, 75);
-  s.foes.push(hi, lo);
-  s.bullets.push({ x: s.hx, y: 75, dead: false });
-  core.step(s, DT, {});
-  assert.equal(s.kills, 1);
-  assert.equal(s.foes.length, 1);
-  assert.ok(s.foes[0].y < 70, '留下的是上面那隻');
+  dropAt(s, center(s.found));
+  assert.equal(s.floors.length, 1);
+  const f = s.floors[0];
+  assert.equal(f.x, s.found.x, '對齊下面那層');
+  assert.equal(f.w, s.found.w, '不切');
+  assert.equal(s.combo, 1);
+  assert.equal(s.perfects, 1);
+  assert.equal(s.points, 15);
+  const land = s.events.find((e) => e.t === 'land');
+  assert.ok(land && land.perfect && land.n === 1 && land.combo === 1);
+  assert.equal(s.events.filter((e) => e.t === 'cut').length, 0);
 });
 
-test('連擊倍率：第 7 隻起 ×1.5；漏掉一隻就歸零', () => {
+test('偏一點：留下重疊、切掉超出（事件帶切下的那塊）、連擊歸零、樓層變窄', () => {
   const s = fresh(10);
-  for (let i = 0; i < 6; i++) {
-    s.foes.push(foe('leak', s.hx, 60));
-    s.bullets.push({ x: s.hx, y: 68, dead: false });
-    core.step(s, DT, {});
-  }
-  assert.equal(s.score, 60);
-  s.foes.push(foe('leak', s.hx, 60));
-  s.bullets.push({ x: s.hx, y: 68, dead: false });
-  core.step(s, DT, {});
-  assert.equal(s.score, 60 + 15, '第 7 隻 10×1.5');
-  // 漏一隻
-  s.foes.push(foe('mold', 20, s.gy));
-  core.step(s, DT, {});
+  const c0 = center(s.found), w0 = s.found.w;
+  dropAt(s, c0 + 20);
+  const f = s.floors[0];
+  assert.ok(Math.abs(f.w - (w0 - 20)) < 1e-6, `寬 ${f.w}`);
+  assert.ok(Math.abs(f.x - (s.found.x + 20)) < 1e-6);
+  const cut = s.events.find((e) => e.t === 'cut');
+  assert.ok(cut, 'cut 事件');
+  assert.ok(Math.abs(cut.w - 20) < 1e-6 && Math.abs(cut.x - (s.found.x + w0)) < 1e-6 && cut.left === false);
+  assert.equal(cut.y, CFG.FOUND_H, '切下的那塊從這層的高度開始掉');
   assert.equal(s.combo, 0);
-  assert.equal(s.hp, CFG.MAX_HP - 1);
-  s.foes.push(foe('leak', s.hx, 60));
-  s.bullets.push({ x: s.hx, y: 68, dead: false });
-  const before = s.score;
-  core.step(s, DT, {});
-  assert.equal(s.score - before, 10, '歸零後回到 ×1');
+  assert.equal(s.points, 10);
+  waitSwing(s);
+  assert.ok(Math.abs(s.cur.w - f.w) < 1e-9, '下一層跟著變窄');
+  s.events.length = 0;
+  dropAt(s, center(f) - 15);
+  const c2 = s.events.find((e) => e.t === 'cut');
+  assert.equal(c2.left, true, '偏左就切左邊');
+  assert.ok(Math.abs(s.floors[1].x - f.x) < 1e-6);
 });
 
-test('補強：每擊殺 25 隻 +1 屋況，最多回到滿', () => {
+test('完全沒疊到：遊戲結束（miss 與 over 各發一次）、結束後狀態凍結', () => {
   const s = fresh(11);
-  s.hp = 3;
-  for (let i = 0; i < CFG.HEAL_EVERY; i++) {
-    s.foes.push(foe('leak', s.hx, 60));
-    s.bullets.push({ x: s.hx, y: 68, dead: false });
-    core.step(s, DT, {});
-  }
-  assert.equal(s.kills, CFG.HEAL_EVERY);
-  assert.equal(s.hp, 4);
-  assert.ok(s.events.some((e) => e.t === 'heal'));
-  const t = fresh(12);
-  t.kills = CFG.HEAL_EVERY - 1;
-  t.foes.push(foe('leak', t.hx, 60));
-  t.bullets.push({ x: t.hx, y: 68, dead: false });
-  core.step(t, DT, {});
-  assert.equal(t.hp, CFG.MAX_HP, '已滿不超過上限');
-});
-
-/* ---------- 屋況與結束 ---------- */
-test('掉到地面：屋況 -1、連擊歸零、怪移除', () => {
-  const s = fresh(13);
-  s.combo = 5;
-  s.foes.push(foe('leak', 30, s.gy - 5));
-  core.step(s, DT, {});
-  assert.equal(s.hp, CFG.MAX_HP - 1);
-  assert.equal(s.combo, 0);
-  assert.equal(s.foes.length, 0);
-  assert.equal(s.leaks, 1);
-  assert.ok(s.events.some((e) => e.t === 'leak'));
-});
-
-test('撞到屋頂也算（屋頂是斜的：屋脊比屋簷高）', () => {
-  const s = fresh(14);
-  const top = s.gy - CFG.HOUSE_H;
-  assert.equal(core.roofY(s, 0), top);
-  assert.equal(core.roofY(s, CFG.HOUSE_W / 2), top + CFG.ROOF_DROP);
-  assert.equal(core.roofY(s, 999), top + CFG.ROOF_DROP, '屋簷之外不再下降');
-  s.foes.push(foe('mold', s.hx, top - 40));
-  core.step(s, DT, {});
-  assert.equal(s.hp, CFG.MAX_HP, '還在天上');
-  s.foes.push(foe('mold', s.hx, top - 4));
-  core.step(s, DT, {});
-  assert.equal(s.hp, CFG.MAX_HP - 1, '碰到屋脊');
-  const t = fresh(15);
-  t.hx = 200;
-  t.foes.push(foe('mold', 60, t.gy - 100));
-  core.step(t, DT, {});
-  assert.equal(t.hp, CFG.MAX_HP, '離小屋很遠的怪在空中不算');
-});
-
-test('屋況歸零：結束一次、事件只發一次、之後 step 不動', () => {
-  const s = fresh(16);
-  for (let i = 0; i < CFG.MAX_HP; i++) { s.foes.push(foe('mold', 20, s.gy)); core.step(s, DT, {}); }
-  assert.equal(s.hp, 0);
+  dropAt(s, center(s.found) + 60);               // 先切掉一大塊（塔頂往右偏）
+  waitSwing(s);
+  const r = s.floors[0];
+  assert.ok(Math.abs(center(r) - r.w - 2 - s.W / 2) < s.m.amp, '這個位置擺得到');
+  dropAt(s, center(r) - r.w - 2);                // 整塊落在左邊旁邊
   assert.equal(s.over, true);
+  assert.equal(s.ph, 'over');
+  assert.equal(s.floors.length, 1);
+  assert.equal(s.events.filter((e) => e.t === 'miss').length, 1);
   assert.equal(s.events.filter((e) => e.t === 'over').length, 1);
+  const miss = s.events.find((e) => e.t === 'miss');
+  assert.ok(miss.w > 0 && finite(miss.x) && finite(miss.y) && miss.vy > 0);
   const snap = JSON.stringify(s);
-  core.step(s, DT, { fire: true, dir: 1 });
-  core.step(s, DT, {});
-  assert.equal(JSON.stringify(s), snap, '結束後狀態凍結');
+  core.step(s, DT, { drop: true }); core.step(s, DT, {});
+  assert.equal(JSON.stringify(s), snap, '結束後不再動');
 });
 
-test('同一步內多隻同時漏掉：屋況不會變負數，over 只發一次', () => {
-  const s = fresh(17);
-  s.hp = 1;
-  for (let i = 0; i < 6; i++) s.foes.push(foe('mold', 20 + i * 40, s.gy));
-  core.step(s, DT, {});
-  assert.equal(s.hp, 0);
-  assert.equal(s.events.filter((e) => e.t === 'over').length, 1);
+test('連續完美：連擊累加、分數越來越多；連 3 次起樓層加寬一點（不超過起始寬）', () => {
+  const s = fresh(12);
+  dropAt(s, center(s.found) + 30);               // 先切窄 30
+  waitSwing(s);
+  const w1 = s.floors[0].w, p0 = s.points;
+  for (let i = 0; i < 3; i++) { dropAt(s, center(ref(s))); waitSwing(s); }
+  assert.equal(s.combo, 3);
+  assert.equal(s.maxCombo, 3);
+  assert.equal(s.points - p0, 15 + 20 + 25);
+  assert.equal(s.floors[1].w, w1, '第 1、2 次完美不加寬');
+  assert.equal(s.floors[2].w, w1);
+  assert.ok(Math.abs(s.floors[3].w - (w1 + CFG.GROW * s.m.scale)) < 1e-9, '第 3 次加寬');
+  assert.ok(Math.abs(center(s.floors[3]) - center(s.floors[2])) < 1e-9, '往兩邊各加一半');
+  for (let i = 0; i < 40; i++) { dropAt(s, center(ref(s))); waitSwing(s); }
+  assert.ok(Math.abs(ref(s).w - s.found.w) < 1e-9, '最多回到起始寬');
+  assert.ok(s.floors.every((f) => f.w <= s.found.w + 1e-9));
+  dropAt(s, center(ref(s)) + 25);
+  assert.equal(s.combo, 0, '沒對準就歸零');
+  // 第 20 層以後連續完美不再加寬（不然手準的人永遠不會窄下來）
+  assert.ok(s.floors.length >= CFG.GROW_MAX);
+  waitSwing(s);
+  const w2 = ref(s).w;
+  for (let i = 0; i < 6; i++) { dropAt(s, center(ref(s))); waitSwing(s); }
+  assert.equal(s.combo, 6);
+  assert.equal(ref(s).w, w2, '超過 20 層：完美不加寬');
 });
 
-/* ---------- 怪物行為 ---------- */
-test('怪物不會超出左右邊界（含擺動的蟑螂與白蟻）', () => {
-  for (const W of [200, 360, 640]) {
-    const s = core.createGame({ W, H: 236, seed: 21 });
-    s.spawnT = 0;
-    for (let i = 0; i < 4000 && !s.over; i++) {
-      core.step(s, DT, { targetX: s.foes.length ? s.foes[0].x : null, fire: true });
-      for (const f of s.foes) assert.ok(f.x >= f.r + 2 - 1e-9 && f.x <= W - f.r - 2 + 1e-9, `W=${W} x=${f.x}`);
-      s.events.length = 0;
+test('完美容許誤差：前 25 層固定；之後每層慢慢縮小，最少剩 4 成；落地判定用的是縮小後的值', () => {
+  const s = fresh(21);
+  const at = (n) => { s.floors = Array.from({ length: n }, () => ({ x: s.found.x, w: s.found.w, lit: 0, b: false })); return core.tolAt(s); };
+  assert.equal(at(0), s.m.tol);
+  assert.equal(at(25), s.m.tol);
+  assert.ok(Math.abs(at(35) - s.m.tol * 0.75) < 1e-9);
+  assert.ok(Math.abs(at(45) - s.m.tol * 0.5) < 1e-9);
+  assert.ok(Math.abs(at(200) - s.m.tol * CFG.TOL_MIN) < 1e-9);
+  let prev = Infinity;
+  for (let n = 0; n < 120; n++) { const t = at(n); assert.ok(t <= prev + 1e-12 && t > 0); prev = t; }
+  // 第 45 層：偏 3px（大於 0.5×tol=2.55px）就要切
+  const g = fresh(22);
+  g.floors = Array.from({ length: 45 }, () => ({ x: g.found.x, w: g.found.w, lit: 0, b: false }));
+  g.cur.w = g.found.w;
+  dropAt(g, center(g.found) + 3);
+  assert.equal(g.combo, 0, '高樓層偏 3px 不再算完美');
+  assert.ok(Math.abs(ref(g).w - (g.found.w - 3)) < 1e-6);
+});
+
+/* ---------- 畫面捲動 ---------- */
+test('蓋高後畫面往上捲：塔頂停在 topY 附近；cam 不會變負數；減少動態時直接到位', () => {
+  const s = fresh(13);
+  for (let i = 0; i < 12; i++) { dropAt(s, center(ref(s))); waitSwing(s); }
+  for (let i = 0; i < 120; i++) core.step(s, DT, {});
+  const topScreen = s.m.gy - (core.towerTop(s) - s.cam);
+  assert.ok(s.cam > 0);
+  assert.ok(Math.abs(topScreen - s.m.topY) < 1, `塔頂在螢幕 ${topScreen}，目標 ${s.m.topY}`);
+  const c = fresh(13, 340, 276, { calm: true });
+  for (let i = 0; i < 12; i++) {
+    dropAt(c, center(ref(c)));
+    const target = Math.max(0, core.towerTop(c) - (c.m.gy - c.m.topY));
+    assert.equal(c.cam, target, '減少動態：落地那一步就到位');
+    waitSwing(c);
+  }
+  const f = fresh(14);
+  for (let i = 0; i < 300; i++) { core.step(f, DT, {}); assert.ok(f.cam >= 0); }
+  assert.equal(f.cam, 0, '還矮的時候不捲');
+});
+
+test('掛著的樓層永遠在塔頂上方（不會一掛上就卡進樓裡）', () => {
+  for (const H of [200, 236, 276, 360]) {
+    const s = fresh(15, 340, H);
+    for (let i = 0; i < 25; i++) {
+      waitSwing(s);
+      const bottomWorld = s.cam + s.m.gy - s.hy - s.m.fh;
+      assert.ok(bottomWorld > core.towerTop(s) + 4, `H${H} 第 ${i} 層：吊著的底 ${bottomWorld.toFixed(1)} > 塔頂 ${core.towerTop(s)}`);
+      dropAt(s, center(ref(s)));
     }
   }
 });
 
-test('噪音越掉越快；其他怪等速', () => {
-  const a = fresh(22), b = fresh(22);
-  a.foes.push(foe('noise', 100, 0, { vy: 40, acc: FOES.noise.acc }));
-  b.foes.push(foe('leak', 100, 0, { vy: 40, acc: 0 }));
-  run(a, 1.0, {}); run(b, 1.0, {});
-  assert.ok(Math.abs(b.foes[0].y - 40) < 1.2, `等速 ${b.foes[0].y}`);
-  assert.ok(a.foes[0].y > b.foes[0].y + 3, `噪音較快 ${a.foes[0].y}`);
-  const t = fresh(23);
-  t.foes.push(foe('noise', 100, -1e6, { vy: 40, acc: 0.3, age: 1e6 }));
-  const y0 = t.foes[0].y;
-  core.step(t, DT, {});
-  assert.ok(t.foes[0].y - y0 <= 40 * 2.2 * DT + 1e-9, '加速倍率有上限 2.2');
-});
-
-test('生成：不超過同時上限、x 在場內、剛生成的怪彼此不重疊', () => {
-  const s = core.createGame({ W: 360, H: 236, seed: 31 });
-  let maxSeen = 0;
-  for (let i = 0; i < 60 * 40 && !s.over; i++) {
-    core.step(s, DT, { fire: false });
-    s.hp = CFG.MAX_HP;               // 不讓它結束，專測生成
-    s.over = false;
-    maxSeen = Math.max(maxSeen, s.foes.length);
-    for (const f of s.foes) { assert.ok(f.x > 0 && f.x < 360); assert.ok(finite(f.y)); }
-    s.events.length = 0;
-  }
-  assert.ok(maxSeen <= core.difficulty(0, 360, 236).maxAlive, `同時 ${maxSeen}`);
-  assert.ok(maxSeen >= 2, '有在生成');
-});
-
-test('不開火的人，約 8～20 秒內結束；開場至少有 5 秒緩衝', () => {
-  for (let seed = 1; seed <= 12; seed++) {
-    const s = core.createGame({ W: 360, H: 236, seed });
-    let t = 0;
-    while (!s.over && t < 60) { core.step(s, DT, {}); s.events.length = 0; t += DT; }
+/* ---------- 難度與時間 ---------- */
+test('一般玩家（手感誤差 50ms）：大約 30～90 秒、十幾到三十幾層自然結束', () => {
+  const ts = [];
+  for (let seed = 1; seed <= 10; seed++) {
+    const s = bot(seed, 0.05);
     assert.ok(s.over, `seed ${seed} 沒結束`);
-    assert.ok(t >= 5 && t <= 22, `seed ${seed} 結束於 ${t.toFixed(1)}s`);
+    assert.ok(s.floors.length >= 10 && s.floors.length <= 60, `seed ${seed} 蓋了 ${s.floors.length} 層`);
+    ts.push(s.t);
   }
+  ts.sort((a, b) => a - b);
+  assert.ok(ts[0] >= 25 && ts[9] <= 95, `時間 ${ts.map((t) => t.toFixed(0)).join(',')}`);
+  const med = ts[5];
+  assert.ok(med >= 30 && med <= 75, `中位數 ${med.toFixed(0)}s`);
 });
 
-function bot(seed, W, mode, react, maxT) {
-  const s = core.createGame({ W, H: 236, seed });
-  let t = 0, tgt = null, nl = 0;
-  while (!s.over && t < maxT) {
-    if (t >= nl) {
-      nl = t + react;
-      let low = null;
-      for (const f of s.foes) { if (f.y < 24) continue; if (!low || f.y > low.y) low = f; }
-      tgt = low ? low.x : null;
-    }
-    const inp = { dir: 0, targetX: null, fire: false };
-    if (mode === 'key' && tgt != null) { const d = tgt - s.hx; inp.dir = Math.abs(d) < 6 ? 0 : (d > 0 ? 1 : -1); inp.fire = Math.abs(d) < 14; }
-    if (mode === 'touch') { inp.fire = true; if (tgt != null) inp.targetX = s.hx + Math.max(-10, Math.min(10, tgt - s.hx)); }
-    core.step(s, DT, inp); s.events.length = 0; t += DT;
+test('手很準的人（誤差 15ms）也會自然結束：一局中位數 < 150 秒，沒有拖到 5 分鐘以上的', () => {
+  const ts = [];
+  for (let seed = 1; seed <= 12; seed++) {
+    const s = bot(seed, 0.015, { maxT: 600 });
+    assert.ok(s.over, `seed ${seed} 玩了 ${s.t.toFixed(0)} 秒還沒結束（${s.floors.length} 層）`);
+    ts.push(s.t);
   }
-  return { s, t };
-}
+  ts.sort((a, b) => a - b);
+  assert.ok(ts[6] < 150, `中位數 ${ts[6].toFixed(0)}s（${ts.map((t) => t.toFixed(0)).join(',')}）`);
+  assert.ok(ts[11] < 300, `最長 ${ts[11].toFixed(0)}s`);
+});
 
-test('有在瞄準的人明顯比不動的人活得久，分數也更高（難度合理）', () => {
-  let better = 0;
+test('手越穩蓋越高（難度是公平的）；亂按的人很快結束；手機寬與桌機寬的難度差不多', () => {
+  const avg = (sigma, opt) => { let n = 0; for (let seed = 1; seed <= 8; seed++) n += bot(seed, sigma, opt).floors.length; return n / 8; };
+  const steady = avg(0.03), normal = avg(0.05), shaky = avg(0.1);
+  assert.ok(steady > normal && normal > shaky, `${steady} > ${normal} > ${shaky}`);
+  assert.ok(shaky >= 5, `手很不穩也能蓋幾層：${shaky}`);
+  const phone = avg(0.05, { W: 282 }), desk = avg(0.05, { W: 680 });
+  assert.ok(Math.abs(phone - desk) / normal < 0.25, `手機 ${phone}、桌機 ${desk}`);
+  // 一掛上就放（完全不瞄）
   for (let seed = 1; seed <= 6; seed++) {
-    const { s, t } = bot(seed, 360, 'key', 0.25, 400);
-    assert.ok(s.score > 300, `seed ${seed} 分數 ${s.score}`);
-    if (t > 40) better++;
+    const s = fresh(seed);
+    while (!s.over && s.t < 120) core.step(s, DT, { drop: true });
+    assert.ok(s.over && s.t < 60, `seed ${seed}：亂按 ${s.t.toFixed(0)}s、${s.floors.length} 層`);
   }
-  assert.equal(better, 6, '鍵盤玩家（反應 0.25 秒）都該撐過 40 秒');
 });
 
-test('難度確實會把鍵盤玩家逼到結束（不是無限過關）', () => {
-  let ended = 0;
-  for (let seed = 1; seed <= 6; seed++) if (bot(seed, 360, 'key', 0.25, 400).s.over) ended++;
-  assert.ok(ended >= 5, `結束 ${ended}/6`);
+test('不放的人：邏輯層不會自己結束，就一直擺（30 秒沒放由畫面層結束這局）', () => {
+  const s = fresh(16);
+  for (let i = 0; i < 60 * 120; i++) core.step(s, DT, {});
+  assert.equal(s.over, false);
+  assert.equal(s.ph, 'swing');
+  assert.ok(finite(s.phi) && Math.abs(s.phi) <= TAU, 'phi 不會無限累加');
 });
 
-/* ---------- 不變量（亂灌輸入）---------- */
-test('不變量：亂灌輸入 40 組種子，狀態永遠合法', () => {
+/* ---------- 不變量、決定性、壞值 ---------- */
+test('不變量：亂灌輸入 40 組種子與尺寸，狀態永遠合法', () => {
   for (let seed = 100; seed < 140; seed++) {
-    const W = 200 + (seed % 5) * 120, H = 200 + (seed % 3) * 60;
-    const s = core.createGame({ W, H, seed });
-    const rng = core.createGame({ seed: seed * 7 + 1 });
-    let lastScore = 0;
-    for (let i = 0; i < 60 * 90 && !s.over; i++) {
-      const r = core.rand(rng);
-      const inp = { dir: r < 0.3 ? -1 : r < 0.6 ? 1 : 0, targetX: r > 0.9 ? core.rand(rng) * W * 1.4 - W * 0.2 : null, fire: core.rand(rng) < 0.5 };
-      core.step(s, DT * (0.5 + core.rand(rng) * 1.5), inp);
+    const W = 200 + (seed % 5) * 120, H = 200 + (seed % 3) * 70;
+    const s = core.createGame({ W, H, seed }), rng = core.createGame({ seed: seed * 7 + 1 });
+    let lastPts = 0, lastN = 0;
+    for (let i = 0; i < 60 * 200 && !s.over; i++) {
+      core.step(s, DT * (0.5 + core.rand(rng) * 1.5), { drop: core.rand(rng) < 0.03 });
       s.events.length = 0;
-      assert.ok(s.hp >= 0 && s.hp <= CFG.MAX_HP);
-      assert.ok(s.score >= lastScore); lastScore = s.score;
-      assert.ok(finite(s.hx) && s.hx >= CFG.HOUSE_W / 2 + 3 - 1e-9 && s.hx <= W - CFG.HOUSE_W / 2 - 3 + 1e-9);
-      assert.ok(s.bullets.length <= CFG.MAX_BULLETS);
-      assert.ok(s.foes.every((f) => finite(f.x) && finite(f.y) && !f.dead));
-      assert.ok(s.kills <= s.shots, '擊殺數不可能多於發射數');
+      assert.ok(s.points >= lastPts); lastPts = s.points;
+      assert.ok(s.floors.length >= lastN); lastN = s.floors.length;
+      assert.ok(finite(s.cam) && s.cam >= 0);
+      assert.ok(finite(s.hx) && s.hx >= W / 2 - s.m.amp - 1e-6 && s.hx <= W / 2 + s.m.amp + 1e-6);
+      assert.ok(finite(s.hy));
+      for (const f of s.floors) assert.ok(finite(f.x) && f.w > 0 && f.w <= s.found.w + 1e-9);
+      if (s.cur) assert.ok(finite(s.cur.x) && finite(s.cur.top) && s.cur.w > 0);
+      assert.ok(s.perfects <= s.floors.length && s.combo <= s.perfects);
     }
   }
 });
 
 test('決定性：同種子＋同輸入 → 完全相同的狀態', () => {
   const play = () => {
-    const s = core.createGame({ W: 360, H: 236, seed: 777 });
-    for (let i = 0; i < 60 * 30 && !s.over; i++) {
-      core.step(s, DT, { dir: (Math.floor(i / 40) % 3) - 1, fire: i % 7 < 4 });
-      s.events.length = 0;
-    }
+    const s = core.createGame({ W: 360, H: 276, seed: 777 });
+    for (let i = 0; i < 60 * 60 && !s.over; i++) { core.step(s, DT, { drop: i % 97 === 0 }); s.events.length = 0; }
     return JSON.stringify(s);
   };
   assert.equal(play(), play());
@@ -461,27 +483,32 @@ test('決定性：同種子＋同輸入 → 完全相同的狀態', () => {
 test('step 對壞的 dt 安全：NaN／負數／0 不動；巨大 dt 被夾在 0.1 秒', () => {
   const s = fresh(50);
   const snap = JSON.stringify(s);
-  for (const bad of [NaN, -1, 0, undefined, null, 'x']) core.step(s, bad, { fire: true });
+  for (const bad of [NaN, -1, 0, undefined, null, 'x']) core.step(s, bad, { drop: true });
   assert.equal(JSON.stringify(s), snap);
   core.step(s, 100, {});
   assert.ok(s.t <= 0.1 + 1e-12);
 });
 
-test('resize：位置按比例縮放、小屋不出界、不重來', () => {
-  const s = fresh(60, 400, 240);
-  s.foes.push(foe('leak', 200, 90), foe('roach', 380, 30, { r: 13 }));
-  s.bullets.push({ x: 300, y: 100, dead: false });
-  s.hx = 380;
-  core.resize(s, 200, 180);
+test('resize：寬度按起始寬的比例縮放並置中、樓高跟著新版面、遊戲不重來；尺寸沒變就不動；最小尺寸夾限', () => {
+  const s = fresh(60, 400, 276);
+  for (let i = 0; i < 4; i++) { dropAt(s, center(ref(s)) + (i % 2 ? 6 : -6)); waitSwing(s); }
+  const n = s.floors.length, x0 = s.floors[1].x, w0 = s.floors[1].w, pts = s.points;
+  const k = core.metrics(200, 236).baseW / core.metrics(400, 276).baseW;
+  core.resize(s, 200, 236);
   assert.equal(s.W, 200);
-  assert.equal(s.gy, 180 - CFG.GROUND_H);
-  assert.equal(s.foes[0].x, 100);
-  assert.ok(s.hx <= 200 - CFG.HOUSE_W / 2 - 3 + 1e-9);
-  assert.ok(Math.abs(s.foes[0].y - 90 * (150 / 210)) < 1e-9);
-  assert.equal(s.bullets[0].x, 150);
+  assert.equal(s.m.gy, 236 - CFG.GROUND_H);
+  assert.equal(s.floors.length, n);
+  assert.equal(s.points, pts);
+  assert.ok(Math.abs(s.floors[1].x - (100 + (x0 - 200) * k)) < 1e-9 && Math.abs(s.floors[1].w - w0 * k) < 1e-9);
+  assert.ok(Math.abs(s.found.w - s.m.baseW) < 1e-9, '地基寬跟新版面一致（比例不走樣）');
+  assert.ok(Math.abs(center(s.found) - 100) < 1e-9, '重新置中');
+  assert.ok(Math.abs(s.hx - s.W / 2) <= s.m.amp + 1e-9);
   const same = JSON.stringify(s);
-  core.resize(s, 200, 180);
-  assert.equal(JSON.stringify(s), same, '尺寸沒變就不動');
+  core.resize(s, 200, 236);
+  assert.equal(JSON.stringify(s), same);
   core.resize(s, 20, 20);
-  assert.equal(s.W, 140, '最小寬度夾限');
+  assert.equal(s.W, CFG.MIN_W);
+  assert.equal(s.H, CFG.MIN_H);
+  for (let i = 0; i < 600 && !s.over; i++) { core.step(s, DT, { drop: i % 50 === 0 }); s.events.length = 0; }
+  assert.ok(finite(s.cam) && finite(s.hx));
 });

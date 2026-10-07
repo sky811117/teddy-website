@@ -1,4 +1,5 @@
 // 最小假 DOM：讓 node 能跑 mountWaitGame 的介面層（沒有瀏覽器、沒有 jsdom、不連網）
+// 2026-10-07：改成「蓋大樓」後多了 rotate、createLinearGradient（天空漸層）與覆蓋面板的元素
 // 只實作遊戲用到的 API；canvas 2D context 會記錄所有呼叫，供測試檢查。
 
 const COLOR_OK = /^(#[0-9a-f]{3,8}|rgba?\([^)]*\)|hsla?\([^)]*\)|red|blue|white|black|transparent)$/i;
@@ -20,7 +21,7 @@ export function makeCtx(trace = false) {
     },
   };
   const names = ['setTransform', 'clearRect', 'fillRect', 'beginPath', 'closePath', 'moveTo', 'lineTo', 'arc', 'ellipse', 'rect',
-    'quadraticCurveTo', 'bezierCurveTo', 'fill', 'stroke', 'save', 'restore', 'translate', 'scale', 'setLineDash', 'fillText'];
+    'quadraticCurveTo', 'bezierCurveTo', 'fill', 'stroke', 'save', 'restore', 'translate', 'scale', 'rotate', 'setLineDash', 'fillText'];
   for (const n of names) {
     ctx[n] = (...a) => {
       for (const x of a) if (typeof x === 'number' && !Number.isFinite(x)) throw new Error(`ctx.${n} 收到非有限數值：${a}`);
@@ -30,6 +31,13 @@ export function makeCtx(trace = false) {
       if (n === 'fillText') ctx.texts.push(String(a[0]));
     };
   }
+  ctx.gradients = 0;
+  ctx.createLinearGradient = (...a) => {
+    for (const x of a) if (!Number.isFinite(x)) throw new Error(`createLinearGradient 收到非有限數值：${a}`);
+    ctx.gradients++; calls.push(['createLinearGradient', ...a]);
+    const stops = [];
+    return { stops, addColorStop(o, c) { if (!(o >= 0 && o <= 1) || !COLOR_OK.test(String(c))) throw new Error(`addColorStop(${o}, ${c})`); stops.push([o, c]); } };
+  };
   return ctx;
 }
 
@@ -67,14 +75,14 @@ class FakeEl {
 
 /**
  * 安裝全域假環境。回傳 { env, uninstall }。
- * opts: { fieldW, fieldH, dpr, media:{query:boolean}, cssVars:{'--u2-ink':'#...'}, storage:'ok'|'throw'|'none', noCanvas, noObservers }
+ * opts: { fieldW, fieldH, dpr, media:{query:boolean}, cssVars:{'--u2-ink':'#...'}, storage:'ok'|'throw'|'none', noCanvas, noObservers, trace }
  */
 export function installFakeDom(opts = {}) {
   const doc = new FakeEl('#document', null); doc.doc = doc;
   doc.documentElement = new FakeEl('html', doc);
   doc.head = new FakeEl('head', doc); doc.body = new FakeEl('body', doc);
   doc.documentElement.appendChild(doc.head); doc.documentElement.appendChild(doc.body);
-  doc.hidden = false; doc.activeElement = null; doc.noCanvas = !!opts.noCanvas;
+  doc.hidden = false; doc.activeElement = null; doc.noCanvas = !!opts.noCanvas; doc.trace = !!opts.trace;
 
   const origCreate = (tag) => {
     const e = new FakeEl(tag, doc);
@@ -168,6 +176,13 @@ export function mountParts(env, container) {
     note: root ? root.byClass('wg-note')[0] : null,
     skip: root ? root.byClass('wg-skip')[0] : null,
     title: root ? root.byClass('wg-title')[0] : null,
+    panel: root ? root.byClass('wg-panel')[0] : null,
+    ph: root ? root.byClass('wg-ph')[0] : null,
+    pb: root ? root.byClass('wg-pb')[0] : null,
+    pm: root ? root.byClass('wg-pm')[0] : null,
+    pk: root ? root.byClass('wg-pk')[0] : null,
+    btn: root ? root.byClass('wg-btn')[0] : null,
+    live: root ? root.byClass('wg-sr')[0] : null,
     ctx: root ? root.byClass('wg-canvas')[0].getContext('2d') : null,
   };
 }

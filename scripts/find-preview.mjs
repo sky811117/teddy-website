@@ -120,8 +120,28 @@ async function fakeFetch(url, init = {}) {
     try { const b = JSON.parse(String(init.body)); logEv(`[事件] ${(b.events || []).map(e => e.e + (e.s ? "@" + e.s : "")).join(" ")}`); } catch { /* ignore */ }
     return json({ ok: true, n: 1 });
   }
+  // 小遊戲排行榜（本機假榜：只記在記憶體；真正的暱稱過濾與合理性檢查在家用機，這裡只做最簡單的「同工作留最高」）
+  if (p === "score") {
+    try {
+      const raw = typeof init.body === "string" ? init.body : new TextDecoder().decode(init.body);   // forward() 送的是位元組
+      const b = JSON.parse(raw);
+      const old = board.get(b.jid);
+      if (b.floors > 0 && (!old || b.floors > old.floors)) board.set(b.jid, { floors: b.floors, name: String(b.name || "").slice(0, 8) || "訪客" + b.jid.slice(1, 5).toUpperCase(), t: Date.now() });
+      logEv(`[排行] 收到成績 ${b.floors} 層`);
+    } catch { /* ignore */ }
+    return json({ ok: true, v: 1, saved: true });
+  }
+  if (p === "top") {
+    const id = new URL(u).searchParams.get("id");
+    const all = [...board.entries()].sort((a, b) => b[1].floors - a[1].floors || a[1].t - b[1].t);
+    const list = all.slice(0, 10).map(([, r], i) => ({ rank: i + 1, name: r.name, floors: r.floors }));
+    const idx = id ? all.findIndex(([k]) => k === id) : -1;
+    const me = idx >= 0 ? { rank: idx + 1, floors: all[idx][1].floors, weekRank: idx + 1 } : null;
+    return json({ ok: true, v: 1, week: list, all: list, me });
+  }
   return json({ ok: false }, 404);
 }
+const board = new Map();
 const deps = { fetch: fakeFetch, now: () => Date.now() };
 
 /* ---------- 靜態檔 ---------- */
@@ -179,7 +199,7 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, ORIGIN);
     if (url.pathname.startsWith("/api/find/")) {
       const name = url.pathname.slice("/api/find/".length);
-      const fn = { config: H.handleConfig, submit: H.handleSubmit, status: H.handleStatus, contact: H.handleContact, event: H.handleEvent, feedback: H.handleFeedback }[name];
+      const fn = { config: H.handleConfig, submit: H.handleSubmit, status: H.handleStatus, contact: H.handleContact, event: H.handleEvent, feedback: H.handleFeedback, score: H.handleScore, top: H.handleTop }[name];
       if (!fn) { res.writeHead(404).end(); return; }
       const body = req.method === "GET" || req.method === "HEAD" ? undefined : await readBody(req);
       const request = new Request(ORIGIN + req.url, { method: req.method, headers: req.headers, body });
