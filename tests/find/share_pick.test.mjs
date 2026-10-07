@@ -3,6 +3,7 @@
 //   瀏覽器端 public/js/share-pick.js（純函式＋假 DOM 整段流程）。全部離線：fetch 用假的、不連任何真實主機。
 // 2026-10-07 審查修正：R1 舊網址也注入＋跨網域送到正式網域（CORS 只開給舊網址）、R3 伺服器端核對推薦頁（代號／本人頁／slug／名稱用頁面的字）、
 //   R4 同事頁內文寫到 true 那句不注入、R5 honeypot 名稱與紀錄、R6 列印不留底部空白。
+// 2026-10-07 第二版：喜歡通知（kind:"like"）——客人新按下「我喜歡」就由官網推 Telegram（限流另外一桶、預覽旗標不送、載入時已喜歡不送）。
 import test from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
@@ -430,6 +431,184 @@ test("pageCards：從推薦頁抓按鈕的 slug 與名稱（實體還原、補�
   assert.equal(P.unescapeHtml("&amp;lt;|&#x27;|&#39;|&#0;|&#xD800;"), "&lt;|'|'||");
 });
 
+/* ===================== 伺服器端：喜歡通知（kind:"like"） ===================== */
+const likeBody = (over = {}) => ({ kind: "like", share_id: "qsAbCd1234", slug: "q9z8y7x6w5", ...over });
+const LIKE_LINES = (name, id = "qsAbCd1234") => [
+  "【推薦頁｜客人按了喜歡】",
+  `物件：<code>${name}</code>`,
+  `推薦頁：https://teddy-house.tw/share/${id}/`,
+  "時間：2026-10-07 14:30（台灣時間）",
+  "（客人還沒留聯絡方式；如果他按「傳給景泰」會另外收到一則）",
+];
+
+test("喜歡通知：正常送出一則（讀推薦頁一次、送找房機器人一次），回應只有 {ok, v, saved}；訊息格式固定、不含 IP 與 UA", async () => {
+  P.resetPickState();
+  const n = net();
+  const res = await P.handlePick(req(likeBody(), { headers: { "content-type": "text/plain;charset=UTF-8", "user-agent": "Mozilla/5.0 (TestUA-77)" } }), n.deps);
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("cache-control"), "no-store");
+  assert.equal(res.headers.get("access-control-allow-origin"), null, "同源請求不帶 CORS");
+  assert.deepEqual(await jsonOf(res), { ok: true, v: 1, saved: true });
+  assert.deepEqual(pageCalls(n).map(c => c.url), [PAGES + "qsAbCd1234/"]);
+  assert.deepEqual(tgCalls(n).map(botOf), ["find-token"]);
+  const body = JSON.parse(tgCalls(n)[0].init.body);
+  assert.equal(body.parse_mode, "HTML");
+  assert.equal(body.disable_web_page_preview, true);
+  const t = body.text;
+  assert.deepEqual(t.split("\n"), LIKE_LINES("測試社區B 12樓 3房|1,980 萬|45.2 坪"));
+  assert.ok(!t.includes("203.0.113.7") && !t.includes("TestUA"), "不放 IP、不放 UA");
+  assert.equal(P.formatLike({ share_id: "qsAbCd1234", name: "測試社區B 12樓 3房|1,980 萬|45.2 坪" }, NOW), t);
+});
+
+test("喜歡通知：名稱一律用推薦頁上的字；本文多帶的名稱、聯絡方式、物件清單一律不看；不需要聯絡方式與同意勾選", async () => {
+  P.resetPickState();
+  const n = net();
+  const extra = { name: "免費送房 快加我", line: "spam_line", phone: "0911222333", note: "x", consent: false, items: [{ slug: "q1a2b3c4d5", name: "亂寫" }] };
+  const res = await P.handlePick(req(likeBody({ slug: "q5k5k5k5k5", ...extra })), n.deps);
+  assert.deepEqual(await jsonOf(res), { ok: true, v: 1, saved: true });
+  assert.equal(tgCalls(n).length, 1);
+  const t = textOf(tgCalls(n)[0]);
+  assert.deepEqual(t.split("\n"), LIKE_LINES("測試社區C 8樓 2房|1,200 萬|30.1 坪"));
+  assert.ok(!/免費送房|spam_line|0911222333|亂寫|測試社區A/.test(t));
+  assert.deepEqual(P.validateLike(likeBody(extra)), { out: { share_id: "qsAbCd1234", slug: "q9z8y7x6w5" }, err: null }, "只留代號與 slug");
+});
+
+test("喜歡通知：格式不對 400；slug 不在頁面上 400；同事頁 404；假代號 404；qa 過期 404；上游抓不到 saved:false＋pg-；都不送 Telegram", async () => {
+  // 格式
+  const E = b => P.validateLike(b).err;
+  assert.equal(E(likeBody()), null);
+  for (const bad of [null, [], {}, likeBody({ kind: "LIKE" }), likeBody({ share_id: "abc" }), likeBody({ share_id: "qs/../x" }),
+    likeBody({ slug: "" }), likeBody({ slug: "bad slug" }), likeBody({ slug: "s".repeat(41) }), likeBody({ slug: 5 }), likeBody({ slug: undefined })]) {
+    assert.equal(E(bad), "E_BAD_REQUEST", JSON.stringify(bad));
+  }
+  P.resetPickState();
+  let n = net();
+  let r = await P.handlePick(req(likeBody({ slug: "bad slug" })), n.deps);
+  assert.equal(r.status, 400);
+  assert.equal(n.calls.length, 0, "格式不對：不讀推薦頁");
+  // slug 不在頁面上
+  r = await P.handlePick(req(likeBody({ slug: "notOnPage1" })), n.deps);
+  assert.equal(r.status, 400);
+  assert.equal((await jsonOf(r)).code, "E_BAD_REQUEST");
+  assert.equal(pageCalls(n).length, 1);
+  assert.equal(tgCalls(n).length, 0);
+  // 同事頁
+  n = net({ page: () => htmlRes(MATE_PAGE) });
+  r = await P.handlePick(req(likeBody()), n.deps);
+  assert.equal(r.status, 404);
+  assert.equal((await jsonOf(r)).code, "E_NOT_FOUND");
+  assert.equal(tgCalls(n).length, 0);
+  // 假代號（Pages 與原始檔都 404）
+  n = net({ page: () => htmlRes("nope", 404) });
+  assert.equal((await P.handlePick(req(likeBody()), n.deps)).status, 404);
+  assert.deepEqual(pageCalls(n).map(c => c.url), [PAGES + "qsAbCd1234/", RAW + "qsAbCd1234/index.html"]);
+  assert.equal(tgCalls(n).length, 0);
+  // qa 過期：不讀頁面
+  const b36 = x => x.toString(36).padStart(4, "0");
+  const qa = d => `qa${b36(d)}${"abcdefghijklmnopqrstuvwxyz".replace(/[^a-z2-7]/g, "a")}`;
+  n = net();
+  assert.equal((await P.handlePick(req(likeBody({ share_id: qa(QA.dayIndex(NOW) - 1) })), n.deps)).status, 404);
+  assert.equal(n.calls.length, 0);
+  // 上游暫時抓不到
+  n = net({ page: () => htmlRes("x", 503) });
+  r = await P.handlePick(req(likeBody()), n.deps);
+  assert.equal(r.status, 200);
+  assert.deepEqual(await jsonOf(r), { ok: true, v: 1, saved: false, diag: "pg-h503" });
+  assert.equal(tgCalls(n).length, 0);
+});
+
+test("喜歡通知：kind 只認 \"like\"；「傳給景泰」的本文帶 kind 只收 \"pick\"，其他值 400（不會被當成喜歡或表單）", async () => {
+  P.resetPickState();
+  const n = net();
+  assert.equal(P.validatePick(good({ kind: "pick" })).err, null);
+  for (const k of ["weird", "Like", 1, null, true]) assert.equal(P.validatePick(good({ kind: k })).err, "E_BAD_REQUEST", String(k));
+  assert.equal((await P.handlePick(req(good({ kind: "weird" })), n.deps)).status, 400);
+  assert.equal((await P.handlePick(req({ kind: "weird", share_id: "qsAbCd1234", slug: "q9z8y7x6w5" }), n.deps)).status, 400);
+  assert.equal(n.calls.length, 0);
+  assert.equal((await P.handlePick(req(good({ kind: "pick" })), n.deps)).status, 200);
+  assert.ok(textOf(tgCalls(n)[0]).startsWith("【推薦頁｜客人選了 2 間】"));
+});
+
+test("喜歡通知限流：同一 IP 10 分鐘 20 則（第 21 則 429、不讀頁面）；跟「傳給景泰」的 5 次各算各的；別的 IP 不受影響；10 分鐘後恢復", async () => {
+  assert.equal(P.LIKE_PER_IP, 20);
+  P.resetPickState();
+  let now = NOW;
+  const n = net();
+  const deps = { ...n.deps, now: () => now };
+  // 先把「傳給景泰」的 5 次用完
+  for (let i = 0; i < P.PICK_PER_IP; i++) assert.equal((await P.handlePick(req(good()), deps)).status, 200, `傳給景泰第 ${i + 1} 次`);
+  assert.equal((await P.handlePick(req(good()), deps)).status, 429, "傳給景泰第 6 次");
+  // 喜歡照樣有 20 則
+  for (let i = 0; i < P.LIKE_PER_IP; i++) assert.equal((await P.handlePick(req(likeBody()), deps)).status, 200, `喜歡第 ${i + 1} 則`);
+  const before = n.calls.length;
+  const r21 = await P.handlePick(req(likeBody()), deps);
+  assert.equal(r21.status, 429);
+  assert.equal((await jsonOf(r21)).code, "E_RATE");
+  assert.equal(n.calls.length, before, "被擋的那則不讀推薦頁、不送");
+  assert.equal(tgCalls(n).length, P.PICK_PER_IP + P.LIKE_PER_IP);
+  // 反過來：喜歡先用完，「傳給景泰」照常
+  P.resetPickState();
+  for (let i = 0; i < P.LIKE_PER_IP; i++) await P.handlePick(req(likeBody()), deps);
+  assert.equal((await P.handlePick(req(likeBody()), deps)).status, 429);
+  assert.equal((await P.handlePick(req(good()), deps)).status, 200, "喜歡用完，傳給景泰不受影響");
+  assert.equal((await P.handlePick(req(likeBody(), { headers: { "cf-connecting-ip": "198.51.100.9" } }), deps)).status, 200, "別的 IP 不受影響");
+  now += P.PICK_WINDOW_MS + 1;
+  assert.equal((await P.handlePick(req(likeBody()), deps)).status, 200, "10 分鐘後恢復");
+});
+
+test("喜歡通知限流：isolate 總量另外一桶（核對通過才算；喜歡洗滿了，「傳給景泰」照常；假代號灌不滿它）", async () => {
+  P.resetPickState();
+  const n = net({ page: u => (u.includes("qsFake") ? htmlRes("nope", 404) : htmlRes(OWNER_PAGE)) });
+  for (let i = 0; i < 30; i++) {
+    const s = (await P.handlePick(req(likeBody({ share_id: "qsFake" + String(i).padStart(4, "0") }), { headers: { "cf-connecting-ip": `192.0.2.${i}` } }), n.deps)).status;
+    assert.equal(s, 404);
+  }
+  let ok = 0, rate = 0;
+  for (let i = 0; i < P.LIKE_GLOBAL + 5; i++) {
+    const s = (await P.handlePick(req(likeBody(), { headers: { "cf-connecting-ip": `198.51.100.${i % 250}` } }), n.deps)).status;
+    if (s === 200) ok++; else if (s === 429) rate++;
+  }
+  assert.equal(ok, P.LIKE_GLOBAL);
+  assert.equal(rate, 5);
+  assert.equal((await P.handlePick(req(good(), { headers: { "cf-connecting-ip": "203.0.113.99" } }), n.deps)).status, 200, "傳給景泰的總量不受影響");
+});
+
+test("喜歡通知：舊網址跨網域（text/plain 簡單請求、不先預檢）→ 成功與失敗都帶 CORS；別的網站、打在舊網址都 403", async () => {
+  P.resetPickState();
+  const n = net();
+  const ok = await P.handlePick(req(likeBody(), { headers: { origin: OLD, "content-type": "text/plain;charset=UTF-8" } }), n.deps);
+  assert.equal(ok.status, 200);
+  assert.equal(ok.headers.get("access-control-allow-origin"), OLD);
+  assert.deepEqual(await jsonOf(ok), { ok: true, v: 1, saved: true });
+  assert.ok(textOf(tgCalls(n)[0]).includes("推薦頁：https://teddy-house.tw/share/qsAbCd1234/"), "網址一律正式網域");
+  const bad = await P.handlePick(req(likeBody({ slug: "notOnPage1" }), { headers: { origin: OLD } }), n.deps);
+  assert.equal(bad.status, 400);
+  assert.equal(bad.headers.get("access-control-allow-origin"), OLD);
+  assert.equal((await P.handlePick(req(likeBody(), { headers: { origin: "https://evil.example" } }), n.deps)).status, 403);
+  assert.equal((await P.handlePick(req(likeBody(), { headers: { origin: "https://abc123.teddy-website-blog.pages.dev" } }), n.deps)).status, 403);
+  assert.equal((await P.handlePick(req(likeBody(), { url: OLD + "/api/find/pick", headers: { origin: OLD } }), n.deps)).status, 403, "請求打在舊網址：不收（RT-05）");
+  assert.equal(tgCalls(n).length, 1);
+});
+
+test("喜歡通知：頁面上的物件文字一樣跳脫、隱藏網址；找房機器人送不出去改用舊表單那隻；兩隻都失敗 saved:false＋tg- 代碼", async () => {
+  P.resetPickState();
+  const evilCards = card("s1", "<script>alert(1)</script> evil.example 10樓 </code><a href=x>", "1,000", "20");
+  let n = net({ page: () => htmlRes(SHARE_HTML({ cards: evilCards })) });
+  assert.deepEqual(await jsonOf(await P.handlePick(req(likeBody({ slug: "s1" })), n.deps)), { ok: true, v: 1, saved: true });
+  const t = textOf(tgCalls(n)[0]);
+  assert.equal(t.split("\n").length, 5);
+  assert.ok(!/<script|<a |evil\.example/.test(t));
+  assert.equal((t.match(/<code>/g) || []).length, (t.match(/<\/code>/g) || []).length);
+  n = net({ tg: u => (u.includes("find-token") ? new Response("{}", { status: 403 }) : Response.json({ ok: true })) });
+  assert.deepEqual(await jsonOf(await P.handlePick(req(likeBody()), n.deps)), { ok: true, v: 1, saved: true });
+  assert.deepEqual(tgCalls(n).map(botOf), ["find-token", "contact-token"]);
+  n = net({ tg: () => new Response("{}", { status: 403 }) });
+  const j = await jsonOf(await P.handlePick(req(likeBody()), n.deps));
+  assert.equal(j.saved, false);
+  assert.match(j.diag, /^tg-/);
+  assert.deepEqual(Object.keys(j).sort(), ["diag", "ok", "saved", "v"]);
+});
+
 /* ===================== 官網代理：注入 ===================== */
 test("injectPick：只有本人頁才放腳本（帶代號與版本戳）；同事頁、沒有這行、已經有、壞代號都原樣", () => {
   const out = SP.injectPick(OWNER_PAGE, "qsAbCd1234");
@@ -606,6 +785,8 @@ test("share-pick.js 靜態檢查：IIFE（壓縮安全）、不寫瀏覽器儲�
   const code = CLIENT_SRC.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|\s)\/\/[^\n]*/g, "$1");
   assert.ok(!/localStorage\s*\.\s*setItem|sessionStorage|indexedDB|document\.cookie/.test(code), "不存聯絡資料");
   assert.ok(/localStorage\.getItem\('teddy_like_'/.test(code), "只讀頁面自己存的喜歡紀錄");
+  assert.ok(/localStorage\.getItem\('teddy_admin'\) === '1'/.test(code), "預覽旗標跟頁面同一個（只讀）");
+  assert.deepEqual([...code.matchAll(/localStorage\.(\w+)\(/g)].map(m => m[1]).filter((v, i, a) => a.indexOf(v) === i), ["getItem"], "localStorage 只讀不寫");
   assert.ok(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write/.test(code), "不用 HTML 字串插入");
   assert.ok(!/\beval\(|new Function/.test(code));
   assert.ok(CLIENT_SRC.includes("var API = '/api/find/pick';"));
@@ -628,6 +809,7 @@ test("share-pick.js 壓縮後（postbuild-minify 同一組選項）匯出與行�
   assert.equal(m.exports.normPhone("+886 912 345 678"), "0912345678");
   assert.equal(m.exports.clip("字".repeat(70), 60), "字".repeat(60));
   assert.equal(m.exports.apiFor("teddy-website-blog.pages.dev"), "https://teddy-house.tw/api/find/pick");
+  assert.deepEqual(JSON.parse(m.exports.likeInit("qsAbCd1234", "s1", true).body), { kind: "like", share_id: "qsAbCd1234", slug: "s1" });
 });
 
 /* ===================== 瀏覽器端：假 DOM 整段流程 ===================== */
@@ -650,6 +832,10 @@ function bootClient({ html = SHARE_HTML(), local = {}, host = "teddy-house.tw", 
   return { clock, doc, win, calls, $, like };
 }
 const visible = el => !!el && !el.hidden && !(el.closest && el.closest("[hidden]"));
+/** 送出的請求分兩種：喜歡通知（kind:"like"）與「傳給景泰」（沒有 kind） */
+const isLikeCall = c => !!c.body && c.body.kind === "like";
+const likesOf = app => app.calls.filter(isLikeCall);
+const picksOf = app => app.calls.filter(c => !isLikeCall(c));
 
 test("假 DOM：沒選不出現；按喜歡（含之前就按過的）→「已選 N 間」；同一間不重複算", { skip: !parse5 && "缺 parse5" }, async () => {
   const app = bootClient({ local: { teddy_like_qsAbCd1234_q5k5k5k5k5: "1" } });
@@ -684,7 +870,8 @@ test("假 DOM：開表單 → 列出卡片上看得到的字 → 空白送出顯
 
   submit(app.$(".sp-form"));
   await flush();
-  assert.equal(app.calls.length, 0, "沒填完不送");
+  assert.equal(picksOf(app).length, 0, "沒填完不送");
+  assert.deepEqual(likesOf(app).map(c => c.body.slug), ["q1a2b3c4d5", "q9z8y7x6w5"], "按的兩間喜歡各送了一則通知（跟表單無關）");
   assert.ok(visible(app.$("#sp-contact-err")) && visible(app.$("#sp-ok-err")));
   assert.equal(app.$("#sp-line").getAttribute("aria-invalid"), "true");
   assert.equal(app.doc.activeElement, app.$("#sp-line"), "焦點移到第一個要補的欄位");
@@ -696,8 +883,9 @@ test("假 DOM：開表單 → 列出卡片上看得到的字 → 空白送出顯
   submit(app.$(".sp-form"));
   assert.equal(app.$(".sp-submit").disabled, true, "送出中鎖按鈕");
   await flush();
-  assert.equal(app.calls.length, 1);
-  const c = app.calls[0];
+  assert.equal(picksOf(app).length, 1);
+  assert.equal(likesOf(app).length, 2, "送出表單不會再多送喜歡通知");
+  const c = picksOf(app)[0];
   assert.equal(c.url, "/api/find/pick", "正式網域：同源");
   assert.equal(c.init.method, "POST");
   assert.equal(c.init.credentials, "same-origin");
@@ -734,10 +922,10 @@ test("假 DOM：舊網址 pages.dev 上的推薦頁 → 跨網域送到 https://
   app.$("#sp-ok").checked = true;
   submit(app.$(".sp-form"));
   await flush();
-  assert.equal(app.calls.length, 1);
-  assert.equal(app.calls[0].url, "https://teddy-house.tw/api/find/pick");
-  assert.equal(app.calls[0].init.credentials, "omit");
-  assert.equal(app.calls[0].init.mode, "cors");
+  assert.equal(picksOf(app).length, 1);
+  assert.equal(picksOf(app)[0].url, "https://teddy-house.tw/api/find/pick");
+  assert.equal(picksOf(app)[0].init.credentials, "omit");
+  assert.equal(picksOf(app)[0].init.mode, "cors");
   assert.ok(visible(app.$(".sp-done")));
 });
 
@@ -813,4 +1001,132 @@ test("假 DOM：不是推薦頁（沒有我喜歡按鈕、網址不是 /share/<�
   c.win.location.hostname = "sky811117.github.io";
   vm.runInContext(CLIENT_SRC, vm.createContext(c.win));
   assert.equal(c.doc.querySelector("#sp-root"), null, "別的主機（例如直接開 GitHub Pages 原頁）不啟動");
+});
+
+/* ===================== 瀏覽器端：喜歡通知 ===================== */
+test("share-pick.js：likeInit——本文只有 kind／代號／slug；text/plain（跨網域不先預檢）、keepalive、舊網址不帶 cookie；伺服器收得下", () => {
+  const same = C.likeInit("qsAbCd1234", "q9z8y7x6w5", false);
+  assert.deepEqual(JSON.parse(same.body), { kind: "like", share_id: "qsAbCd1234", slug: "q9z8y7x6w5" });
+  assert.equal(same.method, "POST");
+  assert.equal(same.headers["content-type"], "text/plain;charset=UTF-8");
+  assert.equal(same.credentials, "same-origin");
+  assert.equal(same.keepalive, true);
+  assert.equal(same.referrerPolicy, "origin");
+  assert.equal(C.likeInit("qsAbCd1234", "s1", true).credentials, "omit");
+  assert.equal(P.validateLike(JSON.parse(same.body)).err, null);
+});
+
+test("假 DOM 喜歡通知：新按下送一則（同源、kind like）；同一間只送一次；失敗與成功畫面都不出聲；不寫瀏覽器儲存", { skip: !parse5 && "缺 parse5" }, async () => {
+  const app = bootClient();
+  await flush();
+  await app.clock.advance(100);
+  assert.equal(app.calls.length, 0, "載入時不送");
+  await app.like(1);
+  assert.equal(likesOf(app).length, 1);
+  const c = likesOf(app)[0];
+  assert.equal(c.url, "/api/find/pick");
+  assert.deepEqual(c.body, { kind: "like", share_id: "qsAbCd1234", slug: "q9z8y7x6w5" });
+  assert.equal(c.init.credentials, "same-origin");
+  assert.equal(c.init.keepalive, true);
+  assert.equal(P.validateLike(c.body).err, null, "伺服器收得下");
+  // 再按一次（頁面上已經是喜歡，按了不會變）→ 不送
+  await app.like(1);
+  // 就算按鈕的 liked 被拿掉又加回（頁面本身不會這樣，保險）也不再送
+  const b = app.doc.querySelectorAll(".card-like")[1];
+  b.classList.remove("liked");
+  click(b);
+  await app.clock.advance(60);
+  await app.like(1);
+  assert.equal(likesOf(app).length, 1, "同一間只送一次");
+  await app.like(0);
+  assert.deepEqual(likesOf(app).map(x => x.body.slug), ["q9z8y7x6w5", "q1a2b3c4d5"], "別間照常送");
+  assert.equal(app.$(".sp-msg").textContent, "", "不跳任何提示");
+  assert.ok(!visible(app.$(".sp-sheet")), "不打開表單");
+  assert.equal(app.$(".sp-count").textContent, "已選2間", "「已選 N 間」照常");
+  assert.deepEqual([...app.win.localStorage._m.keys()], [], "沒有寫任何瀏覽器儲存");
+  assert.deepEqual([...app.win.sessionStorage._m.keys()], []);
+});
+
+test("假 DOM 喜歡通知：送不出去（連不上／500／429）一律靜默——不跳提示、浮動列照常、之後的表單照常送", { skip: !parse5 && "缺 parse5" }, async () => {
+  const fails = [
+    () => { throw new TypeError("Failed to fetch"); },
+    () => new Response("oops", { status: 500 }),
+    () => new Response(JSON.stringify({ ok: false, v: 1, code: "E_RATE" }), { status: 429 }),
+  ];
+  for (const bad of fails) {
+    const app = bootClient({ api: n => (n === 1 ? bad() : Response.json({ ok: true, v: 1, saved: true })) });
+    await app.like(0);
+    await flush();
+    assert.equal(likesOf(app).length, 1);
+    assert.equal(app.$(".sp-msg").textContent, "");
+    assert.ok(visible(app.$(".sp-bar")));
+    click(app.$(".sp-send"));
+    app.$("#sp-phone").value = "0912345678";
+    app.$("#sp-ok").checked = true;
+    submit(app.$(".sp-form"));
+    await flush();
+    assert.equal(picksOf(app).length, 1);
+    assert.ok(visible(app.$(".sp-done")), "表單照常送出");
+  }
+});
+
+test("假 DOM 喜歡通知：景泰預覽（localStorage teddy_admin === '1'，跟頁面同一個旗標）不送；其他值照送", { skip: !parse5 && "缺 parse5" }, async () => {
+  const admin = bootClient({ local: { teddy_admin: "1" } });
+  await admin.like(0);
+  await admin.like(1);
+  assert.equal(likesOf(admin).length, 0, "預覽不推給自己");
+  assert.equal(admin.$(".sp-count").textContent, "已選2間", "「已選 N 間」照常");
+  for (const v of ["0", "true", ""]) {
+    const app = bootClient({ local: { teddy_admin: v } });
+    await app.like(0);
+    assert.equal(likesOf(app).length, 1, `teddy_admin=${JSON.stringify(v)}`);
+  }
+});
+
+test("假 DOM 喜歡通知：載入時就已喜歡的（按鈕 liked 或頁面 localStorage）不送、再點也不送；別的分頁按的不重複送；新按的才送", { skip: !parse5 && "缺 parse5" }, async () => {
+  const cards = card("q1a2b3c4d5", "測試社區A 10樓 2房", "1,338", "37.57", true) +
+    card("q9z8y7x6w5", "測試社區B 12樓 3房", "1,980", "45.2") +
+    card("q5k5k5k5k5", "測試社區C 8樓 2房", "1,200", "30.1") +
+    card("q7m7m7m7m7", "測試社區D 6樓 3房", "1,500", "40.2");
+  const app = bootClient({ html: SHARE_HTML({ cards }), local: { teddy_like_qsAbCd1234_q5k5k5k5k5: "1" } });
+  await flush();
+  await app.clock.advance(100);
+  assert.equal(app.calls.length, 0, "載入時不送");
+  assert.equal(app.$(".sp-count").textContent, "已選2間");
+  const btn = i => app.doc.querySelectorAll(".card-like")[i];
+  // 已經喜歡的那間再點（頁面上不會變）→ 不送
+  click(btn(0));
+  await app.clock.advance(60);
+  // localStorage 有、按鈕比較晚才亮（例如頁面自己的程式較晚跑）→ 也不送
+  await app.like(2);
+  assert.equal(likesOf(app).length, 0);
+  // 別的分頁按了第 4 間（這頁收到 storage 事件、localStorage 有、這頁按鈕沒亮）→ 只記下來；之後這頁再按也不重複送
+  app.win.localStorage.setItem("teddy_like_qsAbCd1234_q7m7m7m7m7", "1");
+  for (const fn of app.win._l.storage || []) fn({ key: "teddy_like_qsAbCd1234_q7m7m7m7m7" });
+  await app.clock.advance(60);
+  await app.like(3);
+  assert.equal(likesOf(app).length, 0, "別的分頁按的，那邊已經送過");
+  // 新按的那間 → 送一則
+  await app.like(1);
+  assert.deepEqual(likesOf(app).map(x => x.body.slug), ["q9z8y7x6w5"]);
+});
+
+test("假 DOM 喜歡通知：舊網址 pages.dev → 跨網域送到 https://teddy-house.tw/api/find/pick、不帶 cookie、text/plain 不先預檢", { skip: !parse5 && "缺 parse5" }, async () => {
+  const app = bootClient({ host: "teddy-website-blog.pages.dev" });
+  await app.like(2);
+  assert.equal(likesOf(app).length, 1);
+  const c = likesOf(app)[0];
+  assert.equal(c.url, "https://teddy-house.tw/api/find/pick");
+  assert.deepEqual(c.body, { kind: "like", share_id: "qsAbCd1234", slug: "q5k5k5k5k5" });
+  assert.equal(c.init.credentials, "omit");
+  assert.equal(c.init.mode, "cors");
+  assert.equal(c.init.headers["content-type"], "text/plain;charset=UTF-8");
+  assert.equal(c.init.keepalive, true);
+  // 伺服器那邊：舊網址來源、text/plain 本文 → 照樣收、帶 CORS
+  P.resetPickState();
+  const n = net();
+  const r = await P.handlePick(req(c.init.body, { headers: { origin: OLD, "content-type": c.init.headers["content-type"] } }), n.deps);
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get("access-control-allow-origin"), OLD);
+  assert.deepEqual(textOf(tgCalls(n)[0]).split("\n"), LIKE_LINES("測試社區C 8樓 2房|1,200 萬|30.1 坪"));
 });

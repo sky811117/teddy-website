@@ -3,8 +3,13 @@
  * 端點 POST /api/find/pick（functions/api/find/pick.ts 只是薄包裝），前端是官網代理注入的 public/js/share-pick.js。
  *
  * 跟頁面原本的「我喜歡」是兩條路：原本按喜歡會由推薦頁自己送到推薦頁服務（Vercel 的 /api/track），再由那邊推 Telegram
- * 「泰迪的小聲音」；那條路本來就存在，景泰反映「按喜歡收不到」要另外查 Vercel 那邊（見交付說明），這裡不碰它。
+ * 「泰迪的小聲音」；那條路要 Vercel 有設 TELEGRAM_* 才會推，沒設就靜靜跳過（景泰反映「按喜歡收不到」），這裡不改它、也不擋它。
  * 這條補的是「客人沒有地方留聯絡方式、一次把選好的物件交給景泰」。
+ *
+ * 喜歡通知（2026-10-07 第二版）：同一個端點也收 { kind:"like", share_id, slug }——客人在推薦頁「新按下」我喜歡時，
+ *   share-pick.js 送一則過來，改由官網這條已經通的路推 Telegram（不用等 Vercel 那邊設定）。不需要聯絡方式、不需要同意勾選；
+ *   一樣走同源／舊網址 CORS、4KB 上限、推薦頁核對（本人頁、slug 在頁面上、名稱用頁面上的字），訊息不含 IP、UA。
+ *   限流另外一桶（每 IP 10 分鐘 20 則、每個 isolate 10 分鐘 60 則），跟「傳給景泰」的 5 次／60 則互不影響。
  *
  * 流程：同源（或舊網址的推薦頁跨網域）→ 本文大小（4KB）→ honeypot（有填就假成功、不送，但記一筆）→ 格式驗證
  *   → qa 頁過期就不收 → 每 IP 限流 → 伺服器端核對推薦頁（審查 R3，見下）→ isolate 總量限流 → 組 Telegram 訊息 → 送出。
@@ -29,8 +34,11 @@
  *
  * ⚠️ 限流的限制：Function 沒有跨請求狀態，這裡是每個 isolate 自己的記憶體滑動視窗（score.ts 的 MemWindow）：
  *    同一 IP 10 分鐘最多 5 次（核對推薦頁之前就算）、同一個 isolate 10 分鐘最多 60 則（核對通過才算，假代號灌不滿它）。
+ *    喜歡通知另外一桶：同一 IP 10 分鐘最多 20 則、同一個 isolate 10 分鐘最多 60 則（算法同上）。
  *    Cloudflare 開很多個 isolate、冷啟動就清空，所以這不是全域限流；上線前一定要在 Cloudflare 後台對 /api/find/pick
- *    設 WAF 速率限制（同一 IP 10 分鐘 3～5 次），沒設不要上（見交付說明的手動設定清單）。
+ *    設 WAF 速率限制，沒設不要上（見交付說明的手動設定清單）。
+ *    ⚠️ 喜歡通知跟「傳給景泰」同一條路徑，WAF 只看路徑分不出兩種：門檻要留給喜歡（客人一次按好幾間），
+ *    原本建議的「同一 IP 10 分鐘 3～5 次」太緊，會讓按了幾個喜歡的客人接著按「傳給景泰」被 Cloudflare 擋掉。
  *    這條端點沒有人機驗證（推薦頁沒有載入驗證元件），這是刻意的取捨：只送給景泰自己的 TG、要有真的推薦頁代號、而且有上面兩層上限。
  */
 import type { ErrCode } from "./errors";
@@ -49,6 +57,9 @@ export const PICK_NAME_MAX = 20;
 export const PICK_NOTE_MAX = 200;
 export const PICK_PER_IP = 5;
 export const PICK_GLOBAL = 60;
+/** 喜歡通知的限流（另外一桶，跟「傳給景泰」不共用） */
+export const LIKE_PER_IP = 20;
+export const LIKE_GLOBAL = 60;
 export const PICK_WINDOW_MS = 10 * 60 * 1000;
 /** 核對推薦頁：每次讀取的逾時、頁面大小上限（跟代理的 raw 備援同一個上限）、最多看幾張卡片 */
 export const PICK_PAGE_TIMEOUT_MS = 6000;
@@ -92,6 +103,8 @@ export type PickClean = {
 export function validatePick(b: unknown): { out: PickClean | null; err: ErrCode | null } {
   const bad = (err: ErrCode = "E_BAD_REQUEST") => ({ out: null, err });
   if (!isObj(b)) return bad();
+  // 種類：沒帶（現行前端）或 "pick" 才是「傳給景泰」；"like" 在 handle 就分流走了，其他值一律不收
+  if (b.kind !== undefined && b.kind !== "pick") return bad();
   if (typeof b.share_id !== "string" || !PICK_SHARE_ID_RE.test(b.share_id)) return bad();
   if (!Array.isArray(b.items) || b.items.length < 1 || b.items.length > PICK_ITEMS_MAX) return bad();
   const items: PickItem[] = [];
@@ -127,6 +140,16 @@ export function validatePick(b: unknown): { out: PickClean | null; err: ErrCode 
   return { out: { share_id: b.share_id, items, name, line, phone, note }, err: null };
 }
 
+export type LikeClean = { share_id: string; slug: string };
+
+/** 喜歡通知的本文：{ kind:"like", share_id, slug }。只取這兩個欄位，其他鍵（就算帶了名稱、聯絡方式）一律不看。 */
+export function validateLike(b: unknown): { out: LikeClean | null; err: ErrCode | null } {
+  if (!isObj(b) || b.kind !== "like") return { out: null, err: "E_BAD_REQUEST" };
+  if (typeof b.share_id !== "string" || !PICK_SHARE_ID_RE.test(b.share_id)) return { out: null, err: "E_BAD_REQUEST" };
+  if (typeof b.slug !== "string" || !PICK_SLUG_RE.test(b.slug)) return { out: null, err: "E_BAD_REQUEST" };
+  return { out: { share_id: b.share_id, slug: b.slug }, err: null };
+}
+
 /** honeypot：字串照收；非字串但有值（機器人亂塞）當成有填 */
 export function honeypot(b: unknown): string {
   if (!isObj(b)) return "";
@@ -158,6 +181,17 @@ export function formatPick(c: PickClean, nowMs: number): string {
   lines.push(esc(`推薦頁：${PICK_SITE}/share/${c.share_id}/`));
   lines.push(esc(`時間：${twTime(nowMs)}（台灣時間）`));
   return lines.join("\n");
+}
+
+/** 喜歡通知的 Telegram 訊息（HTML 模式，跳脫規則同 formatPick）。name 是伺服器從推薦頁抓的物件名稱。 */
+export function formatLike(c: { share_id: string; name: string }, nowMs: number): string {
+  return [
+    esc("【推薦頁｜客人按了喜歡】"),
+    esc("物件：") + code(hideLinks(c.name) || "（名稱無法顯示）"),
+    esc(`推薦頁：${PICK_SITE}/share/${c.share_id}/`),
+    esc(`時間：${twTime(nowMs)}（台灣時間）`),
+    esc("（客人還沒留聯絡方式；如果他按「傳給景泰」會另外收到一則）"),
+  ].join("\n");
 }
 
 /* ---------- 推薦頁核對（審查 R3） ---------- */
@@ -301,11 +335,16 @@ function withCors(res: Response): Response {
 /* ---------- 限流（每個 isolate 自己的記憶體視窗；限制見檔頭） ---------- */
 const ipWin = new MemWindow();
 const allWin = new MemWindow();
+// 喜歡通知另外一桶（客人連按好幾間喜歡，不會吃掉「傳給景泰」的額度）
+const likeIpWin = new MemWindow();
+const likeAllWin = new MemWindow();
 
 /** 測試用：清掉限流視窗 */
 export function resetPickState(): void {
   ipWin.clear();
   allWin.clear();
+  likeIpWin.clear();
+  likeAllWin.clear();
 }
 
 /** IP 不直接當鍵：取 SHA-256 前 16 碼（記憶體裡也不留原始 IP）。沒有 IP 標頭（本機測試）一律 "-"。 */
@@ -317,6 +356,51 @@ async function ipKey(ip: string | null): Promise<string> {
   } catch {
     return "-";
   }
+}
+
+/** 核對推薦頁（審查 R3）：沒有這個代號／不是本人頁 → 404；上游暫時抓不到 → saved:false＋pg-代碼；通過 → 頁面上的物件（slug → 名稱） */
+async function checkPage(deps: Deps, id: string, where: "pick" | "like"): Promise<{ cards: Map<string, string> } | { res: Response }> {
+  const page = await fetchSharePage(deps, id);
+  if (page.kind === "missing") {
+    logFail(where, "page_missing");
+    return { res: errRes("E_NOT_FOUND") };
+  }
+  if (page.kind === "down") {
+    logFail(where, "page_" + page.cls);
+    return { res: jsonRes({ ok: true, v: 1, saved: false, diag: "pg-" + page.cls }) };
+  }
+  if (!isOwnerPage(page.html)) {
+    logFail(where, "not_owner");
+    return { res: errRes("E_NOT_FOUND") };
+  }
+  return { cards: pageCards(page.html) };
+}
+
+/** 喜歡通知：驗證 → qa 過期不收 → 每 IP 限流（喜歡那一桶）→ 核對推薦頁 → isolate 總量（喜歡那一桶）→ 送 Telegram */
+async function handleLike(ctx: FindCtx, deps: Deps, body: unknown): Promise<Response> {
+  const { out, err } = validateLike(body);
+  if (err || !out) return errRes(err ?? "E_BAD_REQUEST");
+  const now = deps.now();
+  const qa = parseQa(out.share_id.toLowerCase());
+  if (qa && isQaExpired(qa.expDay, now)) return errRes("E_NOT_FOUND");
+  const key = await ipKey(ctx.request.headers.get("cf-connecting-ip"));
+  if (!likeIpWin.hit(key, LIKE_PER_IP, PICK_WINDOW_MS, now)) {
+    logFail("like", "rate");
+    return errRes("E_RATE");
+  }
+  const chk = await checkPage(deps, out.share_id, "like");
+  if ("res" in chk) return chk.res;
+  const name = chk.cards.get(out.slug);
+  if (name === undefined) {
+    logFail("like", "slug");
+    return errRes("E_BAD_REQUEST");
+  }
+  if (!likeAllWin.hit("*", LIKE_GLOBAL, PICK_WINDOW_MS, now)) {
+    logFail("like", "rate_all");
+    return errRes("E_RATE");
+  }
+  const tg = await sendTg(ctx.env, deps, formatLike({ share_id: out.share_id, name }, now));
+  return jsonRes(tg.ok ? { ok: true, v: 1, saved: true } : { ok: true, v: 1, saved: false, diag: tg.diag });
 }
 
 async function handle(ctx: FindCtx, deps: Deps, src: "same" | "old" | null): Promise<Response> {
@@ -340,6 +424,8 @@ async function handle(ctx: FindCtx, deps: Deps, src: "same" | "old" | null): Pro
   if (!src) return errRes("E_ORIGIN");
   const rd = await readJson(request, PICK_MAX_BYTES);
   if (rd.err) return errRes(rd.err);
+  // 喜歡通知（kind:"like"）走自己的流程：沒有表單、沒有 honeypot，限流另外一桶
+  if (isObj(rd.value) && rd.value.kind === "like") return handleLike(ctx, deps, rd.value);
   // 機器人：honeypot 有填 → 假成功（不驗證、不送、不算進限流，也不告訴它哪裡被擋）。
   // 審查 R5：萬一是真人的瀏覽器自動填入填到它，客人看到成功、景泰卻沒收到——記一筆，事後查得到。
   if (honeypot(rd.value) !== "") {
@@ -358,20 +444,9 @@ async function handle(ctx: FindCtx, deps: Deps, src: "same" | "old" | null): Pro
     return errRes("E_RATE");
   }
   // 核對推薦頁（審查 R3）
-  const page = await fetchSharePage(deps, out.share_id);
-  if (page.kind === "missing") {
-    logFail("pick", "page_missing");
-    return errRes("E_NOT_FOUND");
-  }
-  if (page.kind === "down") {
-    logFail("pick", "page_" + page.cls);
-    return jsonRes({ ok: true, v: 1, saved: false, diag: "pg-" + page.cls });
-  }
-  if (!isOwnerPage(page.html)) {
-    logFail("pick", "not_owner");
-    return errRes("E_NOT_FOUND");
-  }
-  const cards = pageCards(page.html);
+  const chk = await checkPage(deps, out.share_id, "pick");
+  if ("res" in chk) return chk.res;
+  const cards = chk.cards;
   const items: PickItem[] = [];
   for (const it of out.items) {
     const nm = cards.get(it.slug);

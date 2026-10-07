@@ -4,6 +4,10 @@
  * - 送到哪裡：在正式網域（teddy-house.tw）就是同源的 /api/find/pick；在舊網址（teddy-website-blog.pages.dev，推薦頁連結還在用）
  *   就跨網域送到 https://teddy-house.tw/api/find/pick（不帶 cookie；伺服器只對舊網址這一個來源開 CORS）。其他主機不啟動。
  * - 不改頁面原本「我喜歡」的行為：只讀按鈕的 liked 狀態，以及頁面自己存的 localStorage（teddy_like_<代號>_<slug>）。
+ * - 喜歡通知：客人「新按下」我喜歡（按之前沒有 liked、按後變 liked）時，另外送一則 { kind:"like", share_id, slug } 到同一個端點，
+ *   由官網推 Telegram（頁面原本送推薦頁服務那條照送，這裡不擋它）。頁面載入時就已經喜歡的、別的分頁按的不送；
+ *   同一個物件在這一頁只送一次（記在記憶體；頁面自己的 localStorage 讓重新整理後它變成「載入時就已喜歡」）；
+ *   景泰按過預覽（localStorage teddy_admin === '1'，跟頁面同一個旗標）不送。失敗一律靜默（頁面自己已經有「已通知」小提示）。
  * - 聯絡資料不存在瀏覽器（不寫 localStorage／sessionStorage）；送出成功就清空表單。
  * - 物件名稱只取卡片上本來就看得到的文字（標題、價格、坪數、樓層），一律用 textContent，不用 innerHTML。
  *   （伺服器會再用推薦頁本身核對，Telegram 裡的名稱以伺服器從頁面抓的為準。）
@@ -97,6 +101,16 @@ function apiFor(hostname) {
   if (/^(?:www\.)?teddy-house\.tw$/.test(h) || h === 'localhost' || h === '127.0.0.1') return API;
   if (h === OLD_HOST) return API_PROD;
   return '';
+}
+
+/** 喜歡通知的請求內容。content-type 用 text/plain：跨網域（舊網址）時才是「簡單請求」、不用先送 OPTIONS 預檢，
+ *  keepalive 才不會被瀏覽器擋（客人按完喜歡馬上離開頁面也送得出去）。伺服器不看 content-type，一樣當 JSON 讀、一樣檢查來源。 */
+function likeInit(shareId, slug, cross) {
+  return {
+    method: 'POST', headers: { 'content-type': 'text/plain;charset=UTF-8' },
+    body: JSON.stringify({ kind: 'like', share_id: shareId, slug: slug }),
+    credentials: cross ? 'omit' : 'same-origin', mode: 'cors', referrerPolicy: 'origin', keepalive: true
+  };
 }
 
 /** 頁面既有聯絡區的 LINE ID（a[href] 裡的 line.me/ti/p/~ID）。讀不到回 ''。 */
@@ -307,6 +321,34 @@ function start() {
     }
     return out;
   }
+
+  /* ---------- 按喜歡 → 通知景泰 ---------- */
+  // 這一頁已經處理過的喜歡：載入時就已喜歡的、別的分頁按的、已經通知過的。只放 slug，不寫任何瀏覽器儲存。
+  var seenLike = {};
+  function isAdmin() {
+    try { return root.localStorage.getItem('teddy_admin') === '1'; } catch (e) { return false; }
+  }
+  function notifyLike(slug) {
+    if (isAdmin() || typeof root.fetch !== 'function') return;
+    try {
+      var p = root.fetch(api, likeInit(shareId, slug, cross));
+      if (p && typeof p.then === 'function') p.then(null, function () { /* 靜默 */ });
+    } catch (e) { /* 靜默 */ }
+  }
+  /** 找出「新按下」的喜歡：按鈕變成 liked、這一頁還沒處理過 → 送一則。
+   *  只有 localStorage 有、按鈕沒亮的（別的分頁按的，那邊已經送過）只記下來、不送。initial＝載入時：全部只記不送。 */
+  function checkLikes(initial) {
+    var btns = doc.querySelectorAll('.card-like');
+    for (var i = 0; i < btns.length; i++) {
+      var b = btns[i], slug = b.getAttribute('data-slug') || '';
+      if (!SLUG_RE.test(slug) || seenLike[slug]) continue;
+      var liked = !!(b.classList && b.classList.contains('liked'));
+      if (liked && !initial) { seenLike[slug] = 1; notifyLike(slug); }
+      else if (liked || stored(slug)) seenLike[slug] = 1;
+    }
+  }
+  try { checkLikes(true); } catch (e) { /* ignore */ }
+
   function setLift() {
     try {
       var h = bar.getBoundingClientRect ? bar.getBoundingClientRect().height : 0;
@@ -324,6 +366,7 @@ function start() {
     if (showBar) setLift();
   }
   function refresh() {
+    try { checkLikes(false); } catch (e) { /* ignore */ }
     try {
       current = collect();
       var key = current.map(function (it) { return it.slug; }).join(',');
@@ -559,7 +602,7 @@ function start() {
   refresh();
 }
 
-var exp = { clip: clip, cut: cut, normPhone: normPhone, normLine: normLine, describe: describe, lineFromPage: lineFromPage, validate: validate, apiFor: apiFor, MAX_ITEMS: MAX_ITEMS, ITEM_MAX: ITEM_MAX };
+var exp = { clip: clip, cut: cut, normPhone: normPhone, normLine: normLine, describe: describe, lineFromPage: lineFromPage, validate: validate, apiFor: apiFor, likeInit: likeInit, MAX_ITEMS: MAX_ITEMS, ITEM_MAX: ITEM_MAX };
 if (typeof module !== 'undefined' && module.exports) module.exports = exp;
 if (doc && root.location) {
   var boot = function () { try { start(); } catch (e) { /* 靜默：推薦頁原本的功能不受影響 */ } };
