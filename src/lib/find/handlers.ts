@@ -7,7 +7,7 @@
  * 零痕跡規則：回應只含 4.0 通則的白名單鍵；所有給客人看的字都來自 errors.ts 的固定表；
  * 不透傳上游的標頭、文字或錯誤；日誌只記泛化代碼，不記本文。
  */
-import { hmacHex, ipHash, signRequest, uaKind } from "./canon";
+import { hmacHex, ipHash, keyId, signRequest, uaKind } from "./canon";
 import { DEGRADE_LOST_MSG, DEGRADE_MSG, DEGRADE_MSG_CONTACT, ERR, POLL_MS, STAGE_OF, STATUS_MSG } from "./errors";
 import type { DegradeKind, ErrCode } from "./errors";
 import { formatContactLead, formatLead } from "./leadfmt";
@@ -615,6 +615,8 @@ export async function handleConfig(ctx: FindCtx, deps: Deps = realDeps()): Promi
         healthWhy = mode === "live" ? "" : "intake";
       } else {
         healthWhy = f.kind === "down" ? f.cls.replace(/_/g, "") : "h" + f.status;
+        // 401＝家用機不收這個簽章：附上官網這把密碼的 kid（sha256 前 8 碼，推不回密碼），跟家用機 aif_keygen --show-kid 對照
+        if (f.kind === "ok" && f.status === 401) healthWhy = "k" + (await keyId(envStr(env.FIND_HMAC_SECRET))).slice(0, 8);
         // 健康檢查逾時／出錯：沿用上一次的結果，不要把網站翻成「收件模式」又翻回來（會讓客人看到文案閃來閃去）；5 秒後再試
         logFail("health", f.kind === "down" ? f.cls : "unexpected");
         mode = healthCache ? healthCache.mode : "intake";
