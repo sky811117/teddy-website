@@ -121,12 +121,14 @@ async function fakeFetch(url, init = {}) {
     return json({ ok: true, n: 1 });
   }
   // 小遊戲排行榜（本機假榜：只記在記憶體；真正的暱稱過濾與合理性檢查在家用機，這裡只做最簡單的「同工作留最高」）
+  // 暱稱：去掉空白、剪 8 字；含「官方」「客服」或 6 位以上連續數字就換成「訪客XXXX」（模擬沒通過過濾，看前端的「沒通過檢查」提示）
   if (p === "score") {
     try {
       const raw = typeof init.body === "string" ? init.body : new TextDecoder().decode(init.body);   // forward() 送的是位元組
       const b = JSON.parse(raw);
       const old = board.get(b.jid);
-      if (b.floors > 0 && (!old || b.floors > old.floors)) board.set(b.jid, { floors: b.floors, name: String(b.name || "").slice(0, 8) || "訪客" + b.jid.slice(1, 5).toUpperCase(), t: Date.now() });
+      if (b.floors > 0 && (!old || b.floors > old.floors)) board.set(b.jid, { floors: b.floors, name: fakeName(b.name, b.jid) || (old && old.name) || guestOf(b.jid), t: Date.now() });
+      else if (old && b.floors === old.floors && b.name) old.name = fakeName(b.name, b.jid) || old.name;   // 合約：同一工作同層數再送一次＝更新暱稱
       logEv(`[排行] 收到成績 ${b.floors} 層`);
     } catch { /* ignore */ }
     return json({ ok: true, v: 1, saved: true });
@@ -142,6 +144,12 @@ async function fakeFetch(url, init = {}) {
   return json({ ok: false }, 404);
 }
 const board = new Map();
+const guestOf = jid => "訪客" + jid.slice(1, 5).toUpperCase();
+function fakeName(n, jid) {
+  const t = Array.from(String(n || "").normalize("NFKC").replace(/\s+/g, "")).slice(0, 8).join("");
+  if (!t) return "";
+  return /官方|客服|[0-9]{6,}/.test(t) ? guestOf(jid) : t;
+}
 const deps = { fetch: fakeFetch, now: () => Date.now() };
 
 /* ---------- 靜態檔 ---------- */

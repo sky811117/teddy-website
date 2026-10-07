@@ -171,3 +171,34 @@
 .u2-tag--check { min-height: 1.5rem; margin-inline-start: .5rem; padding: .05rem .5rem; background: var(--u2-warn-tint); border-color: var(--u2-warn); color: var(--u2-warn); font-size: var(--u2-fs-0); font-weight: 700; vertical-align: middle; }
 .u2-sheet__note { display: block; margin-top: .25rem; font-size: var(--u2-fs-1); font-weight: 400; line-height: 1.6; color: var(--u2-ink-2); }
 }
+
+/* ---------- 等待小遊戲排行榜（#wait-board，wait-board.js 玩完一局才填）：客人頁面字一律 ≥17px（1rem）；
+   顏色只用設計系統 token（淺／深色自動跟著換）。手機 320px：暱稱自己換行，不撐破列；分頁鈕放不下就換到下一行。 ---------- */
+@layer components {
+.u2-lb { display: grid; gap: .75rem; margin-top: var(--u2-s4); padding: 1rem; border: 1px solid var(--u2-line); border-radius: var(--u2-r-panel); background: var(--u2-vellum); font-size: var(--u2-fs-2); }
+.u2-lb__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem .75rem; }
+.u2-lb__h { font-size: var(--u2-fs-3); font-weight: 700; line-height: 1.4; }
+.u2-lb__tabs { display: inline-flex; gap: 2px; padding: 3px; border: 1.5px solid var(--u2-line-strong); border-radius: var(--u2-r-pill); background: var(--u2-sunken); }
+.u2-lb__tab { min-height: 2.75rem; padding: .35rem 1rem; border: 0; border-radius: var(--u2-r-pill); background: transparent; color: var(--u2-ink-2); font: inherit; font-size: var(--u2-fs-2); font-weight: 700; line-height: 1.3; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.u2-lb__tab[aria-pressed="true"] { background: var(--u2-wood-600); color: var(--u2-on-wood); }
+@media (hover: hover) { .u2-lb__tab[aria-pressed="false"]:hover { color: var(--u2-ink); background: var(--u2-wood-100); } }
+.u2-lb__list { display: grid; gap: .25rem; }
+.u2-lb__row { display: flex; align-items: center; gap: .6rem; min-height: 2.75rem; padding: .2rem .6rem; border: 1.5px solid transparent; border-radius: var(--u2-r-opt); line-height: 1.4; }
+.u2-lb__row:nth-child(odd) { background: var(--u2-sunken); }
+.u2-lb__rk { flex: none; display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border: 1.5px solid var(--u2-line-strong); border-radius: 50%; font-weight: 700; font-variant-numeric: tabular-nums; }
+.u2-lb__row:nth-child(-n+3) .u2-lb__rk { background: var(--u2-wood-100); border-color: var(--u2-wood-500); }
+.u2-lb__nm { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.u2-lb__fl { flex: none; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.u2-lb__you { flex: none; padding: .05rem .55rem; border-radius: var(--u2-r-pill); background: var(--u2-wood-600); color: var(--u2-on-wood); font-weight: 700; }
+.u2-lb__row.is-me { background: var(--u2-wood-100); border-color: var(--u2-wood-500); font-weight: 700; }
+.u2-lb__msg { color: var(--u2-ink-2); line-height: 1.6; text-wrap: pretty; }   /* 不要讓「話。」一兩個字孤零零掉到下一行 */
+.u2-lb__mine { color: var(--u2-ink); font-weight: 700; }
+/* #lb-note：送出暱稱後焦點會移到這句（tabindex=-1）。鍵盤使用者仍看得到焦點，但用細一點、圓角的框，不像一個可以按的按鈕 */
+.u2-lb__msg[tabindex="-1"]:focus-visible { outline-width: 2px; outline-offset: 4px; border-radius: var(--u2-r-opt); }
+.u2-lb__form { display: grid; gap: .5rem; padding-top: .85rem; border-top: 1px dashed var(--u2-line-strong); }
+.u2-lb__form label { font-weight: 700; line-height: 1.5; }
+.u2-lb__nb { display: inline-block; }   /* 窄螢幕：括號說明整段換到下一行，不切在「選／填」中間 */
+.u2-lb__send { display: flex; gap: .5rem; }
+.u2-lb__send .u2-input { flex: 1 1 auto; min-width: 0; }
+.u2-lb__send .u2-btn { flex: none; }
+}

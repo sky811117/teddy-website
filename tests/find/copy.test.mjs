@@ -19,6 +19,7 @@ const FILES = [
   "public/js/find-app.js",
   "public/js/find-brief.js",
   "public/js/wait-game.js",
+  "public/js/wait-board.js",
   "src/lib/find/errors.ts",
   "src/lib/find/shareqa.ts",
 ];
@@ -84,5 +85,10 @@ test("隱私聲明與頁面承諾一致：30 天、180 天、不交給外部的�
   assert.match(priv, /保存 30 天後刪除/);
   assert.match(priv, /180 天/);
   assert.match(priv, /姓名、聯絡方式、在意的事與你打的那一句話不會交出去/);
-  assert.match(priv, /updatedAt = "2026-10-06"/);
+  assert.match(priv, /updatedAt = "2026-10-07"/);
+  // 2026-10-07 等待小遊戲排行榜（審查 LB-P1）：暱稱與層數公開顯示、跟需求連在一起、保存 180 天，都要寫出來
+  assert.match(priv, /暱稱和層數會公開顯示/);
+  assert.match(priv, /跟你這次的需求連在一起保存/);
+  assert.match(priv, /成績與暱稱保存 180 天後刪除/);
+  assert.match(page, /暱稱會公開在排行榜上/);
 });

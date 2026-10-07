@@ -819,7 +819,9 @@ test("等待畫面的疲勞題：回答過題目、等滿 10 秒才出現；回�
 
 test("檔案大小與靜態稽核：find-app.js 沒有第三方分析、沒有 eval、沒有外部主機（人機驗證除外）", async () => {
   const src = APP_SRC;
-  assert.ok(Buffer.byteLength(src) <= 80 * 1024, `原始檔 ${Buffer.byteLength(src)}`);
+  // 原始檔大小以 repo 內的 LF 版本計：Windows 開 core.autocrlf 簽出時每行多一個 CR（約 +1.4KB），上線檔是 LF（2026-10-07 審查 LB-T1）
+  const lf = Buffer.byteLength(src.replace(/\r\n/g, "\n"));
+  assert.ok(lf <= 80 * 1024, `原始檔 ${lf}`);
   assert.ok(!/\b(gtag|dataLayer|fbq|_paq|mixpanel|analytics\.)\b/.test(src));
   assert.ok(!/\beval\s*\(|new\s+Function\s*\(/.test(src));
   assert.ok(!/document\.write|innerHTML\s*=|outerHTML\s*=|insertAdjacentHTML/.test(src), "不用 innerHTML 類寫法");

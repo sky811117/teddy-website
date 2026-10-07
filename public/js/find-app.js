@@ -936,8 +936,7 @@ function handleSubmitResult(r) {
 var unknowns = 0, lowFreq = false, readyShown = false;
 function startWaiting(first) {
   unknowns = 0; lowFreq = false; readyShown = false; gameSkipped = false;
-  $$('.u2-ready, #ready-banner').forEach(function (e) { e.hidden = true; });
-  var rb = byId('ready-banner'); if (rb) rb.hidden = true;
+  $$('.u2-ready, #ready-banner, #wait-board').forEach(function (e) { e.hidden = true; });
   var lw = byId('wait-long'); if (lw) lw.hidden = true;
   applyNoChase();
   setSteps('q');
@@ -1024,7 +1023,7 @@ function onDone(j) {
   endWait('done');
   S.res = { shareUrl: j.shareUrl, count: typeof j.count === 'number' ? j.count : null };
   var playing = false;
-  try { playing = !!(game && game.getState && game.getState().status === 'playing'); } catch (e) { playing = false; }
+  try { playing = !!(game && game.getState && game.getState().status === 'playing') || root.WaitBoard.busy(); } catch (e) { playing = false; }   // 正在打排行榜暱稱也先出橫幅（排行榜沒載入＝丟例外＝沒在打）
   if (playing) {
     readyShown = true;
     var rb = byId('ready-banner'); if (rb) rb.hidden = false;
@@ -1050,6 +1049,7 @@ function mountGame() {
             var sc = root.WaitGameCore && root.WaitGameCore.scoreBucket ? root.WaitGameCore.scoreBucket(e.score) : 0;
             track('game', { a: e.type, sc: Math.max(0, Math.min(9, sc | 0)), pl: Math.min(99, e.plays | 0) });
           }
+          if (e.type === 'over' && S.jobId) board(S.jobId, e, game.getState());
         }
       });
     } catch (e) { wrap.hidden = true; game = null; }
@@ -1059,6 +1059,17 @@ function mountGame() {
   var s = doc.createElement('script');
   s.src = '/js/wait-game.js?v=' + encodeURIComponent(v || 'dev');
   s.onload = go; s.onerror = function () { gameLoading = false; wrap.hidden = true; };
+  doc.head.appendChild(s);
+}
+/* 排行榜 wait-board.js：遊戲結束才載入（網址在 #wait-board 的 data-src）；只有真的在等的需求（有工作編號）才送分數。
+   只試載一次（b.lbTry）：被擋或 404 就算了，不每玩完一局再插一次 script */
+function board(j, e, g) {
+  var b = byId('wait-board'), s;
+  if (root.WaitBoard) { root.WaitBoard.over(j, e, g, track); return; }
+  if (!b || b.lbTry) return;
+  b.lbTry = s = doc.createElement('script');
+  s.src = b.getAttribute('data-src');
+  s.onload = function () { if (root.WaitBoard) board(j, e, g); };
   doc.head.appendChild(s);
 }
 function skipGame() {

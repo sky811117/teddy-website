@@ -12,7 +12,7 @@ const src = fs.readFileSync(path.join(ROOT, "public/js/wait-game.js"), "utf8");
 const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:'"])\/\/.*$/gm, "$1");   // 去掉註解，只看程式
 
 test("體積：未壓縮 < 40000 位元組；上線壓縮後 < 24000、gzip 後 < 11000 位元組（等待時才載入）", () => {
-  const raw = Buffer.byteLength(src, "utf8");
+  const raw = Buffer.byteLength(src.replace(/\r\n/g, "\n"), "utf8");   // 以 repo 內的 LF 版本計：Windows 開 core.autocrlf 簽出時每行會多一個 CR（上線檔是 LF）
   const mini = transformSync(src, { minify: true, loader: "js", legalComments: "none", charset: "utf8" }).code;
   const min = Buffer.byteLength(mini, "utf8"), gz = gzipSync(mini).length;
   assert.ok(raw < 40000, `未壓縮 ${raw} bytes`);

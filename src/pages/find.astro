@@ -4,7 +4,8 @@
  *
  * 一頁完成：打一句話或用選的 → 小幫手整理條件、問幾題 → 確認 → 等待（可玩小遊戲）→ 結果／降級。
  * 這個檔只放靜態骨架與固定文案；對話流程、送出、輪詢、回饋、事件都在 public/js/find-app.js，
- * 條件抽取在 public/js/need-extract.js，小遊戲在 public/js/wait-game.js（等待時才載入）。
+ * 條件抽取在 public/js/need-extract.js，小遊戲在 public/js/wait-game.js（等待時才載入），
+ * 小遊戲排行榜在 public/js/wait-board.js（玩完一局才載入；這裡只放 #wait-board 的容器與固定文案）。
  *
  * 對外只呼叫同源的 /api/find/*。這個檔、這些腳本與樣式都在公開 repo：不得出現任何外部服務的名稱、網域或端點。
  * 資料怎麼用的承諾見 /privacy/；改了資料流要同步改那一頁。
@@ -37,6 +38,7 @@ function fileVer(rel: string): string {
 const vApp = fileVer("public/js/find-app.js");
 const vNeed = fileVer("public/js/need-extract.js");
 const vGame = fileVer("public/js/wait-game.js");
+const vBoard = fileVer("public/js/wait-board.js");
 
 const title = `找房小幫手｜打一句話，先看幾間 | ${config.site.title}`;
 const description =
@@ -304,6 +306,31 @@ const concernHelp = "這幾項只會讓景泰知道從哪聊起，不會拿去�
                 </div>
                 <div class="u2-gamebox" id="wait-game-mount"></div>
                 <p class="u2-small u2-game-skipped" id="game-skipped" hidden>好，不玩了。結果好了會在這裡出現。</p>
+                <!-- 蓋大樓排行榜：玩完一局才由 wait-board.js 打開並填入（暱稱只用 textContent）；只在有工作編號的等待中出現。放在 #game-wrap 裡：遊戲載不到時一起收起來。
+                     讀屏提示只走 #lb-live（一直在頁面上）；#lb-note 是看得到的結果句，表單收起來時焦點移到它（tabindex=-1），所以不再掛 role=status 免得唸兩次。
+                     資料流（成績＋選填暱稱公開顯示、保存 180 天）已寫進 /privacy/。 -->
+                <section class="u2-lb" id="wait-board" aria-labelledby="lb-h" data-src={`/js/wait-board.js?v=${vBoard}`} hidden>
+                  <div class="u2-lb__head">
+                    <h3 class="u2-lb__h" id="lb-h">排行榜</h3>
+                    <div class="u2-lb__tabs" role="group" aria-label="排行榜範圍">
+                      <button class="u2-lb__tab" type="button" data-lb="week" aria-pressed="true">本週</button>
+                      <button class="u2-lb__tab" type="button" data-lb="all" aria-pressed="false">近 30 天</button>
+                    </div>
+                  </div>
+                  <ol class="u2-lb__list" id="lb-list" aria-labelledby="lb-h" hidden></ol>
+                  <p class="u2-lb__msg" id="lb-empty">排行榜載入中…</p>
+                  <p class="u2-lb__msg u2-lb__mine" id="lb-me" hidden></p>
+                  <form class="u2-lb__form" id="lb-form" novalidate hidden>
+                    <label for="lb-name">留個暱稱上榜<span class="u2-lb__nb">（最多 8 個字，選填）</span></label>
+                    <div class="u2-lb__send">
+                      <input id="lb-name" class="u2-input" type="text" maxlength="8" autocomplete="off" enterkeyhint="send" placeholder="例：蓋樓高手" aria-describedby="lb-help" />
+                      <button class="u2-btn u2-btn--ghost" type="submit" id="lb-send">送出</button>
+                    </div>
+                    <p class="u2-lb__msg" id="lb-help">暱稱會公開在排行榜上，不填就顯示「訪客」。請不要寫真實姓名或電話。</p>
+                  </form>
+                  <p class="u2-lb__msg" id="lb-note" tabindex="-1" hidden></p>
+                  <p class="u2-sr" id="lb-live" aria-live="polite"></p>
+                </section>
               </div>
 
               <details class="u2-details" id="wait-lead">

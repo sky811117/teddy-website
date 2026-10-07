@@ -17,13 +17,13 @@ function load(code) {
 }
 const plain = o => JSON.parse(JSON.stringify(o));
 
-test("postbuild-minify：四支新腳本都會被壓縮（不會被『頂層名稱找不到』跳過）", () => {
+test("postbuild-minify：五支新腳本都會被壓縮（不會被『頂層名稱找不到』跳過）", () => {
   const src = fs.readFileSync(path.join(ROOT, "scripts/postbuild-minify.mjs"), "utf8");
   // 用跟 postbuild-minify 相同的判斷式：外層是 IIFE 的檔案，不檢查頂層名稱
   const m = /const missing = \((\/\^[^\n]*?\/)\.test\(code\)/.exec(src);
   assert.ok(m, "postbuild-minify.mjs 沒有 IIFE 例外判斷");
   const re = new Function("return " + m[1])();
-  for (const f of ["find-app.js", "need-extract.js", "find-brief.js", "wait-game.js"]) {
+  for (const f of ["find-app.js", "need-extract.js", "find-brief.js", "wait-game.js", "wait-board.js"]) {
     assert.ok(re.test(read(f)), `${f} 不是 IIFE 開頭`);
     assert.ok(mini(read(f)).length < read(f).length, `${f} 壓縮後沒有變小`);
   }
@@ -60,4 +60,12 @@ test("壓縮後：wait-game 的計分與匯出與原檔相同；find-brief 語�
   assert.deepEqual(Object.keys(B).sort(), Object.keys(A).sort());
   for (const v of [0, 1, 9, 10, 49, 50, 199, 200, 1000, 99999]) assert.equal(B.core.scoreBucket(v), A.core.scoreBucket(v), String(v));
   assert.doesNotThrow(() => new vm.Script(mini(read("find-brief.js"))));
+});
+
+test("壓縮後：wait-board 匯出的介面與原檔相同", () => {
+  const A = load(read("wait-board.js"));
+  const B = load(mini(read("wait-board.js")));
+  assert.deepEqual(Object.keys(B).sort(), Object.keys(A).sort());
+  for (const k of Object.keys(A)) assert.equal(typeof B[k], typeof A[k], k);
+  assert.deepEqual(plain(B.T), plain(A.T), "固定文案沒有被壓壞");
 });

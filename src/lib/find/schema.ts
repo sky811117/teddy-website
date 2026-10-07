@@ -520,6 +520,9 @@ export const EVENT_SPEC: Record<string, Record<string, Spec>> = {
   submit_res: { st: E("queued", "need_more", "degraded", "error"), err: E(...ERR_CODES), sv: B },
   wait_end: { st: E("done", "empty", "degraded", "abandon"), ws: I(0, 1800), qa: I(0, 99), polls: I(0, 999) },
   game: { a: E("start", "over", "skip"), sc: I(0, 9), pl: I(0, 99) },
+  // 2026-10-07 小遊戲排行榜（wait-board.js）：只記「有送出成績」「有留暱稱」的次數，不記暱稱內容。
+  // ⚠️ 家用機 mp_aif_events.py 的 EVENT_SPEC 要補同一行才記得下來；沒補之前家用機逐則丟掉（同批其他事件照收）。
+  lb: { a: E("send", "name") },
   result: { n: I(0, 12), ws: I(0, 1800) },
   result_click: { a: E("open", "copy", "banner", "refine", "lineq") },
   contact: { r: E("show", "submit", "skip"), m: L(["line", "phone", "email"], 3) },

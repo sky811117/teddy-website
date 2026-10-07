@@ -21,7 +21,7 @@
  *   --diff [--base <ref>]       掃「本分支相對 base 的新增行；新檔掃全文」（含尚未 commit 的修改與未追蹤的新檔）。
  *                               base 預設是環境變數 LEAK_BASE，再沒有就 main。⚠️ 合併進 main 之後 main 對 main 是空的，
  *                               要改指「上一次上線的 commit 或 tag」，不然什麼都掃不到。
- *   --dist <dir>                掃建置產物：<dir>/find/**、首頁、隱私頁、404、新 JS（find-app、need-extract、wait-game、find-brief）、
+ *   --dist <dir>                掃建置產物：<dir>/find/**、首頁、隱私頁、404、新 JS（find-app、need-extract、wait-game、wait-board、find-brief）、
  *                               _astro/*.js、含 u2- 的 CSS（設計系統）、sitemap／llms.txt／_headers／_redirects
  *   --bundle <dir>              掃 Function 打包物（T1、T2；T3 允許）。打包物要用 charset=utf8 產生，否則中文被轉成 \uXXXX
  *                               （本腳本也會解開，但請兩邊都做）
@@ -52,7 +52,7 @@ const opt = n => {
 };
 const cwd = process.cwd();
 
-const BROWSER_JS = ["find-app.js", "need-extract.js", "wait-game.js", "find-brief.js"];
+const BROWSER_JS = ["find-app.js", "need-extract.js", "wait-game.js", "wait-board.js", "find-brief.js"];
 // T3 允許出現的原始碼位置（相對 repo 根，正斜線）
 const T3_OK = [/^functions\//, /^src\/lib\/find\//, /^scripts\//, /^tests\//];
 // 對外主機白名單（載入資源用）：同源，加上人機驗證與全站既有的分析腳本（Layout 一律載入，Consent Mode 預設拒絕）
@@ -443,7 +443,7 @@ function modeNoSourcemap(dirs) {
     for (const p of walk(path.resolve(cwd, d))) {
       n++;
       if (p.endsWith(".map")) hit(rel(p), 1, "SOURCEMAP");
-      else if (/\.(?:js|mjs|css)$/.test(p) && /find|wait-game|need-extract|ui2|handlers|\/_worker/i.test(p)) {
+      else if (/\.(?:js|mjs|css)$/.test(p) && /find|wait-game|wait-board|need-extract|ui2|handlers|\/_worker/i.test(p)) {
         const t = readSafe(p);
         if (t && /\/\/# sourceMappingURL=|\/\*# sourceMappingURL=/.test(t)) hit(rel(p), 1, "SOURCEMAP");
       }
