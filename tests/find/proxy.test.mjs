@@ -275,7 +275,7 @@ test("剛產生、還沒發布的推薦頁（上游 404）：不放邊緣快取�
     const res = await call(NEW, "qsAbCd1234");
     assert.equal(res.status, 404);
     assert.equal(res.headers.get("cache-control"), "private, max-age=0, no-store");
-    assert.equal(calls.length, 1);
+    assert.equal(calls.length, 2, "Pages 404 之後會再試一次 repo 原始檔（也 404）");
     const cf = seenInit && seenInit.cf;
     assert.ok(cf && cf.cacheTtlByStatus && cf.cacheTtlByStatus["200-299"] === 30 && cf.cacheTtlByStatus["300-599"] === 0, "上游只快取 2xx");
     assert.equal(cf.cacheTtl, undefined, "不再用會連 404 一起快取的 cacheTtl");
@@ -284,5 +284,33 @@ test("剛產生、還沒發布的推薦頁（上游 404）：不放邊緣快取�
     const res = await call(NEW, "qsAbCd1234");
     assert.equal(res.status, 200);
     assert.equal(res.headers.get("cache-control"), "public, max-age=30", "正常頁維持 30 秒快取");
+  }));
+});
+
+test("Pages 還沒發布（404）時，頁面本體改讀 repo 原始檔：200、照樣注入回官網區塊與標頭；原始檔也沒有才回 404（2026-10-07 實測 Pages 要 186 秒）", async () => {
+  const RAW = "https://raw.githubusercontent.com/sky811117/teddy-shares/main/";
+  const page = "<html><head><title>t</title></head><body><p>物件</p></body></html>";
+  await withNow(NOW, () => withFetch(u => (u.startsWith(RAW)
+    ? new Response(page, { headers: { "content-type": "text/plain; charset=utf-8", "content-security-policy": "default-src 'none'; sandbox" } })
+    : new Response("404", { status: 404, headers: { "content-type": "text/html; charset=utf-8" } })), async calls => {
+    const res = await call(NEW, "qsAbCd1234");
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get("content-type"), "text/html; charset=utf-8");
+    assert.equal(res.headers.get("content-security-policy"), null, "不轉出原始檔的 sandbox 標頭");
+    assert.equal(res.headers.get("x-robots-tag"), "noindex, nofollow");
+    const html = await res.text();
+    assert.ok(html.includes("<p>物件</p>"));
+    assert.ok(html.includes('<meta name="robots" content="noindex,nofollow">'));
+    assert.deepEqual(calls, ["https://sky811117.github.io/teddy-shares/qsAbCd1234/", RAW + "qsAbCd1234/index.html"]);
+  }));
+  // 原始檔也沒有 → 照原本 404、不快取
+  await withNow(NOW, () => withFetch(() => new Response("nope", { status: 404, headers: { "content-type": "text/plain" } }), async () => {
+    const res = await call(NEW, "qsAbCd1234");
+    assert.equal(res.status, 404);
+  }));
+  // 資源檔（非頁面本體）不走原始檔
+  await withNow(NOW, () => withFetch(() => new Response("nope", { status: 404, headers: { "content-type": "text/plain" } }), async calls => {
+    await call(NEW, "qsAbCd1234/a.png");
+    assert.equal(calls.length, 1);
   }));
 });

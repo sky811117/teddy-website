@@ -36,6 +36,10 @@ import config from "../../astro-paper.config";
 import { expiredResponse, injectQaBlocks, isQaExpired, parseQa, qaBackToSite } from "../../src/lib/find/shareqa";
 
 const UPSTREAM = "https://sky811117.github.io/teddy-shares/";
+// 2026-10-07：推薦頁產生器 commit 進 teddy-shares（公開 repo、main 分支）後，GitHub Pages（legacy 建置）要 1～3 分鐘以上才發布
+// （實測 186 秒），客人拿到連結先看到 404。原始檔在 commit 當下就讀得到：Pages 回 404 時，頁面本體（index.html）改從這裡讀。
+// 只用在「白名單解析出的同一個代號的 index.html」，內容一樣走下面的注入與標頭，不轉出 raw 的任何標頭。
+const RAW_UPSTREAM = "https://raw.githubusercontent.com/sky811117/teddy-shares/main/";
 const GA4_ID = "G-WMQCYK4L88";
 // 官網網址從設定組（astro-paper.config.ts 的 site.url），換網域不用改這裡；去掉尾斜線再接路徑
 const SITE = config.site.url.replace(/\/+$/, "");
@@ -258,7 +262,30 @@ export const onRequest = async ({
     return plainResponse(502, "分享頁暫時無法載入，請稍後再試。");
   }
 
-  const ct = upstream.headers.get("content-type") || "";
+  let ct = upstream.headers.get("content-type") || "";
+  let status = upstream.status;
+  let rawHtml: string | null = null;
+
+  // 頁面本體剛產生、Pages 還沒發布（404）：改讀 repo 原始檔（只限 index.html，同一個代號）
+  if (status === 404 && route.file === null) {
+    try {
+      const raw = await fetch(`${RAW_UPSTREAM}${upstreamUrl.first}/index.html`, {
+        headers: { "User-Agent": "teddy-website-share-proxy" },
+        redirect: "manual",
+        cf: { cacheEverything: true, cacheTtlByStatus: { "200-299": 30, "300-599": 0 } },
+      } as RequestInit);
+      if (raw.status === 200) {
+        const text = await raw.text();
+        if (text.length <= 2_000_000 && /<html[\s>]/i.test(text)) {
+          rawHtml = text;
+          status = 200;
+          ct = "text/html; charset=utf-8";
+        }
+      }
+    } catch {
+      /* 讀不到原始檔就照原本回 404 */
+    }
+  }
 
   // 非 HTML（圖片 / 其他資源）原樣回傳；nosniff 讓瀏覽器照 content-type 處理、不自己猜成 HTML／JS。
   // CSP sandbox：萬一有人直接開這個資源網址（例如惡意 svg），裡面的腳本跑不起來；當成 <img>／<link> 子資源載入時不受影響。
@@ -273,7 +300,7 @@ export const onRequest = async ({
     });
   }
 
-  let html = await upstream.text();
+  let html = rawHtml !== null ? rawHtml : await upstream.text();
 
   // 注入 noindex / no-referrer（雙保險，2026-09-06）：
   //   - 上游 sky811117.github.io 是公開 repo、頁面標題含客戶稱謂與找房需求，
@@ -323,11 +350,11 @@ export const onRequest = async ({
   }
 
   return new Response(html, {
-    status: upstream.status,
+    status,
     headers: {
       "content-type": "text/html; charset=utf-8",
       // qa 推薦頁不放邊緣快取，避免過期頁被快取住；非 2xx（例如剛產生、還沒發布的 404）一律不快取，重新整理就拿得到新頁
-      "cache-control": qa || upstream.status < 200 || upstream.status > 299 ? "private, max-age=0, no-store" : "public, max-age=30",
+      "cache-control": qa || status < 200 || status > 299 ? "private, max-age=0, no-store" : "public, max-age=30",
       // nosniff／X-Frame-Options／no-referrer／noindex（雙保險，頁面 meta 也有 noindex）
       ...SHARE_BASE_HEADERS,
       // qa 頁與主站同源：先把「不准被嵌框、不准改 base、不准 object／外部表單」鎖上（RT-18）
