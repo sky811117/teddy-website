@@ -859,7 +859,10 @@ function submit() {
     return;
   }
   setBusy(true);
-  if (!S.idem) S.idem = newId();
+  // 冪等鍵跟著「這次要找的內容」走：內容一樣（連點、網路重送）沿用同一把；換了條件或句子就換新的。
+  // 2026-10-07 景泰實測「現在輸入什麼他都不會找新的案子」：原本只在第一次產生，之後每一筆都被家用機當成同一筆重送、回舊結果。
+  var idemSig = JSON.stringify([S.fields, S.freeText || '', S.context, !!S.skip, S.refineOf || null]);
+  if (!S.idem || S.idemSig !== idemSig) { S.idem = newId(); S.idemSig = idemSig; }
   ensureTurnstile();
   var fillMs = Math.max(0, Math.round(nowMs() - (S.startTs || 0)));
   function send(token) {
