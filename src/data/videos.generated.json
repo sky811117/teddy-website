@@ -1,11 +1,25 @@
 {
-  "generatedAt": "2026-10-07T20:26:40+08:00",
+  "generatedAt": "2026-10-09T20:19:18+08:00",
   "source": {
-    "registrySyncedAt": "2026-10-06 22:40",
+    "registrySyncedAt": "2026-10-08 22:38",
     "since": "2026-07-01"
   },
-  "count": 35,
+  "count": 36,
   "videos": [
+    {
+      "id": "yt-zkq2k6S5itg",
+      "platform": "youtube",
+      "videoId": "zkq2k6S5itg",
+      "url": "https://www.youtube.com/shorts/zkq2k6S5itg",
+      "title": "台中北屯｜惠宇樂觀｜3房2廳2衛｜2150萬",
+      "category": "看屋開箱",
+      "district": "北屯區",
+      "community": "惠宇樂觀",
+      "pubDate": "2026-10-08",
+      "listingCodes": [
+        "1228243"
+      ]
+    },
     {
       "id": "yt-ZUeVwUGjlhU",
       "platform": "youtube",
