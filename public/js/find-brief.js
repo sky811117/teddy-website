@@ -31,6 +31,27 @@ var COPY = {
   no_chase: ['你不想被一直追問，所以這一頁沒有任何要你留資料的欄位。想問的時候，再主動傳訊息給景泰就好。']
 };
 var MAX_BYTES = 600;
+/* 社區名（cm）：跟伺服器 src/lib/find/schema.ts 的 commOk 同一套（正規化、形狀、ROAD_BAD、CM_JUNK、CM_GEN、不能是區名／簡稱／常見錯字），
+ * 再加「5 位以上連續數字不收」（電話、帳號；社區名冊 0 筆）。#k 是網址的一部分，任何人都能自己組：不合格就整個不顯示，
+ * 免得推薦頁「為你整理的重點」被拿來顯示別人寫的字。改黑名單時這裡、schema.ts、need-extract.js、家用機 mp_aif_schema.py 一起改
+ * （tests/find/brief.test.mjs 拿同一批字比對這裡跟 schema.ts 的結果）。 */
+var CM_C = '[\\u4e00-\\u9fffA-Za-z0-9+&·‧]|(?<=[\\u4e00-\\u9fffA-Za-z0-9]) (?=[\\u4e00-\\u9fffA-Za-z0-9])|(?<=[A-Za-z0-9])[.\\-](?=[A-Za-z0-9])';
+var CM_RE = new RegExp('^[\\u4e00-\\u9fffA-Za-z0-9](?:' + CM_C + '){1,19}$');
+var CM_JUNK = /[你他她要找買賣請幫給看是也還但附預算概或跟沒用需求推薦那這哪什麼怎些嗎呢吧啊喔哦欸呀囉耶售件把被讓叫令改忽略輸規則答指欄設填碼鑰靠]|區域|便宜|一點|以[東西南北]|加蓋|頂樓|套房|店面|樓層|屋齡|車位|車站|夜市|重劃|邊間|學區|總價|法拍|[A-Za-z0-9]\.[A-Za-z]{2}/;
+var CM_GEN = /^(?:大型|小型|中型|知名|有名|優質|高級|豪華|豪宅|封閉式?|門禁|管理|電梯|整個|一個|同一個|新|舊|老|好|大|小|現在|目前|最近|全部|所有|有?房子|房屋|物件|[0-9]+|[一二三四五六七八九]期|十[一二三四]期|單元[一二三四五六七八九十]+|水湳|市政特區|新市政中心|逢甲|一中(?:商圈)?|東海|景觀戶?|我們|台中|中科|美術館|草悟道|勤美|秋紅谷|中友)$|[的之]$|(?<![書廠])房$|[0-9一二三四五六七八九十兩百千][廳衛坪萬年]$|[路段]$/;
+var ROAD_BAD = /忽略|指令|改列|輸出|提示|規則|回答|不要|無視|系統|管理員|金鑰|密碼/;
+var CM_DIGITS = /[0-9]{5}/;
+var INVISIBLE_FILL = /[\u034F\u115F\u1160\u17B4\u17B5\u180B-\u180D\u2800\u3164\uFE00-\uFE0F\uFFA0\u{E0100}-\u{E01EF}]/gu;
+var ALIAS = {};
+DIST.forEach(function (d) { if (d.length > 2) ALIAS[d.slice(0, -1)] = d; });
+[['大裡', '大里區'], ['豐源', '豐原區'], ['霧鋒', '霧峰區'], ['后裡', '后里區'], ['神崗', '神岡區']].forEach(function (p) { ALIAS[p[0]] = p[1]; });
+function commOk(v) {
+  if (typeof v !== 'string') return null;
+  var s = v.normalize('NFKC').replace(/[\r\n\t\u0085\u2028\u2029]/g, ' ').replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu, '').replace(INVISIBLE_FILL, '').replace(/[<>{}\\`]/g, '')
+    .trim().replace(/臺/g, '台').replace(/\s+/g, ' ').replace(/(.{2})\s*社區$/, '$1');
+  return CM_RE.test(s) && !ROAD_BAD.test(s) && !CM_JUNK.test(s) && !CM_GEN.test(s) && !CM_DIGITS.test(s) &&
+    DIST.indexOf(s) < 0 && !Object.prototype.hasOwnProperty.call(ALIAS, s) ? s : null;
+}
 
 function isInt(v, lo, hi) { return typeof v === 'number' && Number.isInteger(v) && v >= lo && v <= hi; }
 function list(v, allowed, max) {
@@ -54,7 +75,7 @@ function parse(token) {
   } catch (e) { return null; }
   if (!obj || typeof obj !== 'object' || Array.isArray(obj) || obj.v !== 1) return null;
   var f = obj.f && typeof obj.f === 'object' && !Array.isArray(obj.f) ? obj.f : {};
-  var out = { d: list(f.d, DIST, 2), pmax: isInt(f.pmax, 100, 100000) ? f.pmax : null, pmin: isInt(f.pmin, 100, 100000) ? f.pmin : null, r: null, t: list(f.t, Object.keys(TYPES), 2), a: isInt(f.a, 1, 60) ? f.a : null, pk: (typeof f.pk === 'string' && Object.prototype.hasOwnProperty.call(PK, f.pk)) ? f.pk : null, fx: [], top: f.top === 1 };
+  var out = { d: list(f.d, DIST, 2), cm: commOk(f.cm), z: f.z === 'r74' ? 'r74' : null, pmax: isInt(f.pmax, 100, 100000) ? f.pmax : null, pmin: isInt(f.pmin, 100, 100000) ? f.pmin : null, r: null, t: list(f.t, Object.keys(TYPES), 2), a: isInt(f.a, 1, 60) ? f.a : null, pk: (typeof f.pk === 'string' && Object.prototype.hasOwnProperty.call(PK, f.pk)) ? f.pk : null, fx: [], top: f.top === 1 };
   if (Array.isArray(f.r) && f.r.length === 2) {
     var lo = isInt(f.r[0], 1, 6) ? f.r[0] : null, hi = isInt(f.r[1], 1, 6) ? f.r[1] : null;
     if (lo !== null || hi !== null) out.r = [lo, hi];
@@ -69,6 +90,8 @@ function parse(token) {
 
 function tags(m) {
   var t = [];
+  if (m.cm) t.push(m.cm + '社區');
+  else if (m.z) t.push('74環內');
   if (m.d.length) t.push(m.d.join('、'));
   if (m.r) t.push(m.r[0] !== null && m.r[1] !== null ? (m.r[0] === m.r[1] ? m.r[0] + ' 房' : m.r[0] + '～' + m.r[1] + ' 房') : m.r[0] !== null ? m.r[0] + ' 房以上' : m.r[1] + ' 房以內');
   if (m.t.length) t.push(m.t.map(function (k) { return TYPES[k]; }).join('、'));
@@ -82,10 +105,12 @@ function tags(m) {
   return t;
 }
 
-/* 資料 → 要顯示的內容（純函式，Node 可測） */
-function model(token) {
+/* 資料 → 要顯示的內容（純函式，Node 可測）。page＝推薦頁本身（伺服器產生）的文字：有給的話，社區標籤只在頁面上本來就有
+   「{cm}社區」時才顯示（需求欄寫的是名冊名稱，例「文華匯社區（西屯區）」）。#k 誰都能自己組，這樣別人寫的字不會出現在推薦頁上 */
+function model(token, page) {
   var m = parse(token);
   if (!m) return null;
+  if (m.cm && typeof page === 'string' && page.indexOf(m.cm + '社區') < 0) m.cm = null;
   var points = [];
   m.c.forEach(function (k) { if (COPY[k]) points.push({ concern: k, text: COPY[k][0], link: COPY[k][1] || null, label: COPY[k][2] || null }); });
   return { tags: tags(m), points: points, noChase: m.c.indexOf('no_chase') >= 0, token: token };
@@ -159,7 +184,7 @@ function takeToken() {
 
 function run() {
   var tok = takeToken();
-  var data = tok ? model(tok) : null;
+  var data = tok ? model(tok, document.body ? document.body.textContent || '' : '') : null;
   if (!data) return; // 沒有片段或驗證失敗：只留伺服器端的揭露區塊
   var node = render(data), notice = document.getElementById('qa-notice');
   if (notice && notice.parentNode) notice.parentNode.insertBefore(node, notice.nextSibling);

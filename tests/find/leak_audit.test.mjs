@@ -375,3 +375,73 @@ test("RT-01：build-safe 的 --no-diff 與雲端流程——deploy.yml／ci.yml 
   const bs = fs.readFileSync(path.join(ROOT, "scripts", "build-safe.mjs"), "utf8");
   assert.match(bs, /--no-diff/);
 });
+
+/* ===================== 2026-10-09 範圍找法：地圖模組與自架的地圖程式庫 ===================== */
+test("--dist：find-scope.js、find-map.js、find-map.css、自架程式庫 js/vendor/** 都要掃（T1、T3 都不准）", () => {
+  for (const [f, t, id] of [
+    ["dist/js/find-scope.js", `var a='${T}';`, "T1-1"],
+    ["dist/js/find-map.js", "var a='FAKE_INTERNAL_3';", "T3-1"],
+    ["dist/js/find-map.css", `.u2-map{content:'${T}'}`, "T1-1"],
+    ["dist/js/vendor/leaflet/1.9.4/leaflet.js", `!function(){var x="${T}"}();`, "T1-1"],
+    ["dist/js/vendor/leaflet/1.9.4/LICENSE", `BSD\n${T}`, "T1-1"],
+  ]) {
+    const r = auditHtml("<p>乾淨</p>", { [f]: t });
+    assert.equal(r.code, 1, f);
+    assert.match(r.out, new RegExp(f.replace(/[./]/g, "\\$&") + ":\\d+:" + id), f);
+  }
+  assert.equal(auditHtml("<p>乾淨</p>", { "dist/js/find-map.js": "var a=1;", "dist/js/vendor/leaflet/1.9.4/leaflet.js": "!function(){}();" }).code, 0);
+});
+
+test("--hosts：地圖圖片主機（內政部國土測繪中心）只准出現在 find-map.js 與 _headers（CSP）；其他檔出現就擋；find-map.js／find-map.css／vendor 裡的其他外部主機照樣擋", () => {
+  const d = mk();
+  write(d, "dist/find/index.html", "<html><p>乾淨</p></html>");
+  write(d, "dist/js/find-map.js", "var TILE_URL='https://wmts.nlsc.gov.tw/wmts/x/{z}/{y}/{x}';x.src='https://wmts.nlsc.gov.tw/a.png';");
+  write(d, "dist/_headers", "/find/*\n  Content-Security-Policy: img-src 'self' data: https://wmts.nlsc.gov.tw");
+  assert.equal(run(d, ["--hosts", "--dist", "dist"]).code, 0);
+  // 2026-10-09 審查 SEC-07：原本是全域白名單，任何建置檔都能從那台主機載資源。改成只准那兩個檔
+  for (const [f, t] of [
+    ["dist/find/index.html", '<html>\n<img src="https://wmts.nlsc.gov.tw/wmts/x/default/g/15/1/2"></html>'],
+    ["dist/js/find-scope.js", "var u='https://wmts.nlsc.gov.tw/x';"],
+    ["dist/js/find-map.css", ".u2-map{background:url(https://wmts.nlsc.gov.tw/x.png)}"],
+    ["dist/privacy/index.html", "<p>wmts.nlsc.gov.tw</p>"],
+  ]) {
+    const e = mk();
+    write(e, "dist/find/index.html", "<html></html>");
+    write(e, f, t);
+    const r = run(e, ["--hosts", "--dist", "dist"]);
+    assert.equal(r.code, 1, f);
+    assert.match(r.out, /:HOST/);
+  }
+  for (const [f, t] of [
+    ["dist/js/find-map.js", "fetch('https://elsewhere.example/tiles');"],
+    ["dist/js/find-map.css", ".u2-map{background:url(https://elsewhere.example/x.png)}"],
+    ["dist/js/vendor/leaflet/1.9.4/leaflet.js", "x.src='https://elsewhere.example/x.js';"],
+  ]) {
+    const e = mk();
+    write(e, "dist/find/index.html", "<html></html>");
+    write(e, f, t);
+    const r = run(e, ["--hosts", "--dist", "dist"]);
+    assert.equal(r.code, 1, f);
+    assert.match(r.out, /:HOST/);
+  }
+});
+
+test("--no-sourcemap：自架程式庫（js/vendor/**）帶 sourceMappingURL 就失敗（原版 leaflet.js 最後一行有，要拿掉）", () => {
+  const d = mk();
+  write(d, "dist/js/vendor/leaflet/1.9.4/leaflet.js", "!function(){}();\n");
+  write(d, "dist/js/vendor/leaflet/1.9.4/leaflet.css", ".leaflet-container{}\n");
+  assert.equal(run(d, ["--no-sourcemap", "dist"]).code, 0);
+  write(d, "dist/js/vendor/leaflet/1.9.4/leaflet.js", "!function(){}();\n//# sourceMappingURL=leaflet.js.map");
+  const r = run(d, ["--no-sourcemap", "dist"]);
+  assert.equal(r.code, 1);
+  assert.match(r.out, /vendor\/leaflet\/1\.9\.4\/leaflet\.js:1:SOURCEMAP/);
+  write(d, "dist/js/vendor/leaflet/1.9.4/leaflet.js", "!function(){}();\n");
+  write(d, "dist/js/vendor/leaflet/1.9.4/leaflet.css", ".x{}\n/*# sourceMappingURL=leaflet.css.map */");
+  assert.equal(run(d, ["--no-sourcemap", "dist"]).code, 1);
+});
+
+test("repo 裡的自架程式庫與地圖模組：建置前就沒有 sourceMappingURL、沒有 .map 檔", () => {
+  assert.equal(run(ROOT, ["--no-sourcemap", "public/js/vendor"]).code, 0);
+  assert.ok(!/sourceMappingURL/.test(fs.readFileSync(path.join(ROOT, "public/js/find-map.js"), "utf8") + fs.readFileSync(path.join(ROOT, "public/js/find-map.css"), "utf8")));
+  assert.equal(fs.readdirSync(path.join(ROOT, "public/js/vendor/leaflet/1.9.4")).sort().join(","), "LICENSE,leaflet.css,leaflet.js", "只放三個檔");
+});

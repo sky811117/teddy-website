@@ -50,6 +50,7 @@ export const RESPONSE_KEYS = [
   "ask", "code", "mode", "turnstileSiteKey", "needMax", "consentV", "tplV", "retry", "evt",
   "diag",   // 2026-10-07：送不出去時的失敗種類短代碼（例如 tg-h403），只由本檔產生，不轉傳上游的任何東西
   "week", "all", "me",   // 2026-10-07：小遊戲排行榜（/api/find/top）；內容由 score.ts 的 sanitizeTop 逐欄重組
+  "caps",   // 2026-10-09：家用機支援哪幾種範圍找法（community／zone／geo），只收 SCOPE_CAPS 白名單裡的值
 ] as const;
 const KEYSET = new Set<string>(RESPONSE_KEYS);
 
@@ -596,7 +597,13 @@ export async function handleFeedback(ctx: FindCtx, deps: Deps = realDeps()): Pro
 }
 
 /* ---------- config（執行期設定；Turnstile 的 site key 由這裡回傳，免去重新建置） ---------- */
-let healthCache: { at: number; mode: "live" | "intake" } | null = null;
+/** 範圍找法的代碼（家用機 health 的 caps）：家用機說支援才打開前端入口，舊家用機不會收到看不懂的欄位 */
+export const SCOPE_CAPS = ["community", "zone", "geo"] as const;
+export function capsOf(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return SCOPE_CAPS.filter(c => v.includes(c));
+}
+let healthCache: { at: number; mode: "live" | "intake"; caps: string[] } | null = null;
 export function resetConfigCache(): void {
   healthCache = null;
 }
@@ -609,14 +616,16 @@ export async function handleConfig(ctx: FindCtx, deps: Deps = realDeps()): Promi
   if (request.method !== "GET") return methodNotAllowed();
   if (!sameOriginGet(request)) return errRes("E_ORIGIN");
   let mode: "live" | "intake" = "intake";
+  let caps: string[] = [];
   if (liveReady(env)) {
     const now = deps.now();
-    if (healthCache && now - healthCache.at < 15000) mode = healthCache.mode;
+    if (healthCache && now - healthCache.at < 15000) ({ mode, caps } = healthCache);
     else {
       const f = await forward(env, deps, "GET", "/aif/v1/health", null, 3000);
       if (f.kind === "ok" && isObj(f.json) && f.json.ok === true) {
         mode = f.json.mode === "live" ? "live" : "intake";
-        healthCache = { at: now, mode };
+        caps = mode === "live" ? capsOf(f.json.caps) : [];   // 收件模式不開任何範圍入口
+        healthCache = { at: now, mode, caps };
         healthWhy = mode === "live" ? "" : "intake";
       } else {
         healthWhy = f.kind === "down" ? f.cls.replace(/_/g, "") : "h" + f.status;
@@ -625,7 +634,8 @@ export async function handleConfig(ctx: FindCtx, deps: Deps = realDeps()): Promi
         // 健康檢查逾時／出錯：沿用上一次的結果，不要把網站翻成「收件模式」又翻回來（會讓客人看到文案閃來閃去）；5 秒後再試
         logFail("health", f.kind === "down" ? f.cls : "unexpected");
         mode = healthCache ? healthCache.mode : "intake";
-        healthCache = { at: now - 10000, mode };
+        caps = healthCache ? healthCache.caps : [];
+        healthCache = { at: now - 10000, mode, caps };
       }
     }
   }
@@ -634,7 +644,7 @@ export async function handleConfig(ctx: FindCtx, deps: Deps = realDeps()): Promi
   // 收件模式時帶原因代碼：cfg-<缺的格子>（官網設定沒齊）或 cfg-home（設定齊了、是家用機回報收件模式／連不上）
   // cfg-home-intake＝家用機自己說收件；cfg-home-h401＝簽章對不上（兩邊密碼不同）；cfg-home-network／timeout＝連不進家用機
   const diag = mode === "live" ? undefined : miss ? "cfg-" + miss : ("cfg-home" + (healthWhy ? "-" + healthWhy : "")).slice(0, 24);
-  return jsonRes({ ok: true, v: 1, mode, turnstileSiteKey: publicSiteKey(env.TURNSTILE_SITE_KEY), needMax: 300, consentV: CONSENT_V, tplV: 1, evt, diag });
+  return jsonRes({ ok: true, v: 1, mode, turnstileSiteKey: publicSiteKey(env.TURNSTILE_SITE_KEY), needMax: 300, consentV: CONSENT_V, tplV: 1, evt, diag, caps });
 }
 
 /** 公開接口只准吐「長得像 Turnstile Site Key」的值（約 24 字元，例：0x4…／1x0…／2x0…／3x0…）。

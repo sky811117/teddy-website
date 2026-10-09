@@ -443,5 +443,5 @@ test("R4-2 靜態：路名清單不在 find-app.js 裡（不進首載 JS）；�
   assert.ok(!APP_SRC.includes("崇德路"), "沒有內嵌任何路名清單");
   assert.deepEqual([...APP_SRC.matchAll(/['"]\/data\/[^'"]*['"]/g)].map(m => m[0]), ["'/data/tc-addr/index.json'"]);
   assert.ok(!/\bXMLHttpRequest\b|importScripts|new Worker/.test(APP_SRC));
-  assert.ok(Buffer.byteLength(APP_SRC.replace(/\r\n/g, "\n")) < 80 * 1024, "以 LF 版本計（Windows 簽出會變 CRLF）");
+  assert.ok(Buffer.byteLength(APP_SRC.replace(/\r\n/g, "\n")) <= 84 * 1024, "以 LF 版本計（Windows 簽出會變 CRLF）；2026-10-09 範圍找法放寬到 84KB");
 });

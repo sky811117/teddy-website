@@ -1,5 +1,5 @@
 {
- "version": 1,
+ "version": 2,
  "cases": [
   {
    "id": "e001",
@@ -719,6 +719,234 @@
     "a": "skip"
    },
    "note": "t 邊界"
+  },
+  {
+   "id": "e040",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "start",
+    "t": 600,
+    "how": "comm"
+   },
+   "expect": {
+    "e": "start",
+    "t": 600,
+    "how": "comm"
+   }
+  },
+  {
+   "id": "e041",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "start",
+    "t": 600,
+    "how": "map"
+   },
+   "expect": {
+    "e": "start",
+    "t": 600,
+    "how": "map"
+   }
+  },
+  {
+   "id": "e042",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "start",
+    "t": 600,
+    "how": "zone"
+   },
+   "expect": {
+    "e": "start",
+    "t": 600,
+    "how": "zone"
+   }
+  },
+  {
+   "id": "e043",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "start",
+    "t": 600,
+    "how": "geo"
+   },
+   "expect": {
+    "e": "start",
+    "t": 600
+   },
+   "note": "不認得的入口代碼丟棄"
+  },
+  {
+   "id": "e044",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "free_submit",
+    "t": 9000,
+    "lvl": "thin",
+    "got": [
+     "scope"
+    ],
+    "miss": [
+     "price",
+     "rooms"
+    ]
+   },
+   "expect": {
+    "e": "free_submit",
+    "t": 9000,
+    "lvl": "thin",
+    "got": [
+     "scope"
+    ],
+    "miss": [
+     "price",
+     "rooms"
+    ]
+   }
+  },
+  {
+   "id": "e045",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "free_submit",
+    "t": 9000,
+    "got": [
+     "district",
+     "price",
+     "rooms",
+     "type",
+     "parking",
+     "age",
+     "area",
+     "floor",
+     "scope"
+    ]
+   },
+   "expect": {
+    "e": "free_submit",
+    "t": 9000,
+    "got": [
+     "district",
+     "price",
+     "rooms",
+     "type",
+     "parking",
+     "age",
+     "area",
+     "floor",
+     "scope"
+    ]
+   },
+   "note": "九個欄位代碼都有：上限 9"
+  },
+  {
+   "id": "e046",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "free_submit",
+    "t": 9000,
+    "got": [
+     "district",
+     "price",
+     "rooms",
+     "type",
+     "parking",
+     "age",
+     "area",
+     "floor",
+     "scope",
+     "scope"
+    ]
+   },
+   "expect": {
+    "e": "free_submit",
+    "t": 9000
+   },
+   "note": "超過 9 個（去重前）整個鍵丟棄"
+  },
+  {
+   "id": "e047",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "edit",
+    "t": 31000,
+    "k": "scope"
+   },
+   "expect": {
+    "e": "edit",
+    "t": 31000,
+    "k": "scope"
+   }
+  },
+  {
+   "id": "e048",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "area",
+    "t": 32000,
+    "a": "open",
+    "m": "view"
+   },
+   "expect": {
+    "e": "area",
+    "t": 32000,
+    "a": "open",
+    "m": "view"
+   }
+  },
+  {
+   "id": "e049",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "area",
+    "t": 33000,
+    "a": "done",
+    "m": "lasso"
+   },
+   "expect": {
+    "e": "area",
+    "t": 33000,
+    "a": "done",
+    "m": "lasso"
+   }
+  },
+  {
+   "id": "e050",
+   "kind": "event",
+   "server": false,
+   "input": {
+    "e": "area",
+    "t": 33000,
+    "a": "zoom",
+    "m": "lasso",
+    "poly": [
+     [
+      24.16,
+      120.64
+     ],
+     [
+      24.17,
+      120.65
+     ]
+    ],
+    "km2": 1
+   },
+   "expect": {
+    "e": "area",
+    "t": 33000,
+    "m": "lasso"
+   },
+   "note": "不認得的動作丟棄；座標、面積不是事件欄位，一律丟棄"
   },
   {
    "id": "e101",

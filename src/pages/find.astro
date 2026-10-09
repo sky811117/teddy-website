@@ -6,8 +6,11 @@
  * 這個檔只放靜態骨架與固定文案；對話流程、送出、輪詢、回饋、事件都在 public/js/find-app.js，
  * 條件抽取在 public/js/need-extract.js，小遊戲在 public/js/wait-game.js（等待時才載入），
  * 小遊戲排行榜在 public/js/wait-board.js（玩完一局才載入；這裡只放 #wait-board 的容器與固定文案）。
+ * 其他找法（指定社區／74環內／地圖，2026-10-09）在 public/js/find-scope.js（第一次用到才載入；這裡放 s1 的骨架、入口與固定文案），
+ * 地圖畫面在 public/js/find-map.js（按「在地圖上圈範圍」才載入，程式庫放本站 /js/vendor/）。入口只在家用機回報支援（config 的 caps）時才出現。
  *
- * 對外只呼叫同源的 /api/find/*。這個檔、這些腳本與樣式都在公開 repo：不得出現任何外部服務的名稱、網域或端點。
+ * 對外只呼叫同源的 /api/find/*。這個檔、這些腳本與樣式都在公開 repo：不得出現搜尋來源的任何痕跡；地圖圖片服務例外——
+ * 名稱只能出現在圖資標示、s1 的「範圍怎麼來的」與常見問題的資料說明，網域只能出現在 find-map.js 的 TILE_URL。
  * 資料怎麼用的承諾見 /privacy/；改了資料流要同步改那一頁。
  */
 import fs from "node:fs";
@@ -39,6 +42,9 @@ const vApp = fileVer("public/js/find-app.js");
 const vNeed = fileVer("public/js/need-extract.js");
 const vGame = fileVer("public/js/wait-game.js");
 const vBoard = fileVer("public/js/wait-board.js");
+const vScope = fileVer("public/js/find-scope.js");
+const vMap = fileVer("public/js/find-map.js");
+const vMapCss = fileVer("public/js/find-map.css");
 
 const title = `找房小幫手｜打一句話，先看幾間 | ${config.site.title}`;
 const description =
@@ -75,7 +81,7 @@ const faqs = [
   },
   {
     q: "我打的字會被保存嗎？",
-    a: "你打的那句話和聯絡方式最多保存 30 天；條件只留匿名的粗略分級。你可以隨時請景泰刪除。完整說明在隱私權政策。",
+    a: "你打的那句話、聯絡方式、你在地圖上選的範圍最多保存 30 天；條件只留匿名的粗略分級。打開地圖時，地圖圖片由內政部國土測繪中心提供，它看得到你在看哪裡。你可以隨時請景泰刪除。完整說明在隱私權政策。",
   },
 ];
 
@@ -149,6 +155,16 @@ const concernHelp = "這幾項只會讓景泰知道從哪聊起，不會拿去�
                 </div>
               </div>
               <div class="u2-row"><button class="u2-btn u2-btn--ghost" type="button" id="pick-btn">用選的就好</button></div>
+              <!-- 其他找法：家用機回報支援（config 的 caps）才由 find-app.js 打開；按了才載入 find-scope.js -->
+              <div class="u2-scope-entry" id="scope-entry" hidden>
+                <p class="u2-scope-entry__t">也可以這樣找：</p>
+                <div class="u2-row">
+                  <button class="u2-btn u2-btn--ghost" type="button" data-scope="community" data-busy="開啟中…" hidden>找某個社區</button>
+                  <button class="u2-btn u2-btn--ghost" type="button" data-scope="zone" data-busy="開啟中…" hidden>74環內（舊市區）</button>
+                  <button class="u2-btn u2-btn--ghost" type="button" data-scope="geo" data-busy="開啟中…" hidden>在地圖上圈範圍</button>
+                </div>
+                <p class="u2-scope__err" id="scope-entry-err" role="alert" hidden>這個功能暫時打不開。可以直接打一句話，例如：文華匯社區有在賣嗎。</p>
+              </div>
             </div>
 
             <noscript>
@@ -167,12 +183,49 @@ const concernHelp = "這幾項只會讓景泰知道從哪聊起，不會拿去�
               <summary>資料怎麼用？</summary>
               <div class="u2-details__body">
                 <ul class="u2-promise">
-                  <li><svg class="u2-ico" aria-hidden="true"><use href="#i-check"></use></svg><span>交給搜尋的，只有區域、預算、房數這類物件條件。</span></li>
+                  <li><svg class="u2-ico" aria-hidden="true"><use href="#i-check"></use></svg><span>交給搜尋的，只有區域、預算、房數、社區名這類物件條件；你在地圖上選的範圍座標不會交出去。</span></li>
                   <li><svg class="u2-ico" aria-hidden="true"><use href="#i-lock"></use></svg><span>你的姓名、聯絡方式、在意的事、你打的那句話，不會交出去。</span></li>
-                  <li><svg class="u2-ico" aria-hidden="true"><use href="#i-info"></use></svg><span>你打的字和聯絡方式最多保存 30 天，條件只留匿名的粗略分級。完整說明在<a class="u2-link" href="/privacy/">隱私權政策</a>。</span></li>
+                  <li><svg class="u2-ico" aria-hidden="true"><use href="#i-info"></use></svg><span>你打的字、聯絡方式、你在地圖上選的範圍最多保存 30 天，條件只留匿名的粗略分級。完整說明在<a class="u2-link" href="/privacy/">隱私權政策</a>。</span></li>
                 </ul>
               </div>
             </details>
+          </div>
+
+          <!-- ===== s1 其他找法（社區／74環內／地圖）：find-scope.js 第一次用到才載入；地圖本體在 find-map.js（WEB-MAP） ===== -->
+          <div class="u2-state" data-s="s1" tabindex="-1" hidden data-src={`/js/find-scope.js?v=${vScope}`}>
+            <h2 class="u2-h3" id="scope-h" tabindex="-1">其他找法</h2>
+            <div class="u2-row u2-scope-tabs" id="scope-tabs" role="group" aria-label="換一種找法">
+              <button class="u2-btn u2-btn--ghost" type="button" data-sc="to-community" aria-pressed="false" hidden>找某個社區</button>
+              <button class="u2-btn u2-btn--ghost" type="button" data-sc="to-zone" aria-pressed="false" hidden>74環內</button>
+              <button class="u2-btn u2-btn--ghost" type="button" data-sc="to-geo" aria-pressed="false" hidden>在地圖上圈</button>
+            </div>
+
+            <form id="scope-comm" class="u2-scope" hidden novalidate>
+              <label class="u2-label" for="scope-comm-in">社區名稱</label>
+              <input id="scope-comm-in" class="u2-input" type="text" maxlength="20" autocomplete="off" enterkeyhint="search" aria-describedby="scope-comm-help scope-comm-err" />
+              <p class="u2-scope__help" id="scope-comm-help">打社區的名字就好，不用加「社區」兩個字。我會幫你找這個社區在賣、符合條件的物件；同一戶有好幾家在賣的，會併成一間。</p>
+              <p class="u2-scope__err" id="scope-comm-err" role="alert" hidden></p>
+              <div class="u2-row"><button class="u2-btn u2-btn--primary" type="submit">找這個社區</button><button class="u2-btn u2-btn--ghost" type="button" data-sc="pick">不用範圍，改用選區域</button><button class="u2-btn u2-btn--ghost" type="button" data-sc="back">回上一步</button></div>
+            </form>
+
+            <div id="scope-zone" class="u2-scope" hidden>
+              <p class="u2-scope__lead">「74環內」是指台74 快速道路圍起來的範圍，大致就是舊台中市區：</p>
+              <ul class="u2-scope__list">
+                <li>中區、西區、南區、北區全部，東區大部分</li>
+                <li>北屯、西屯、南屯在 74 內側的部分</li>
+                <li>潭子頭家厝一帶</li>
+                <li>太平只有靠近北屯、東區的一小塊</li>
+              </ul>
+              <p class="u2-scope__help">大里、烏日、霧峰不算在內。物件在不在環內，是用物件的位置判斷的。</p>
+              <details class="u2-scope__more"><summary>範圍怎麼來的</summary><p class="u2-scope__help">用公開的地圖資料畫出 74 環的範圍。範圍資料：© OpenStreetMap 貢獻者（開放資料庫授權）。</p></details>
+              <div class="u2-row"><button class="u2-btn u2-btn--primary" type="button" data-sc="zone-go">就找 74環內</button><button class="u2-btn u2-btn--ghost" type="button" data-sc="pick">不用範圍，改用選區域</button><button class="u2-btn u2-btn--ghost" type="button" data-sc="back">回上一步</button></div>
+            </div>
+
+            <div id="scope-map" class="u2-scope" hidden data-src={`/js/find-map.js?v=${vMap}`} data-lib="/js/vendor/leaflet/1.9.4/leaflet.js" data-css="/js/vendor/leaflet/1.9.4/leaflet.css" data-mcss={`/js/find-map.css?v=${vMapCss}`}>
+              <div id="scope-map-mount"><p class="u2-scope__help" role="status">地圖載入中…</p></div>
+              <p class="u2-scope__err" id="scope-map-fail" role="alert" hidden>地圖沒有載入成功。可以改用「選區域」，或用「找某個社區」。</p>
+              <div class="u2-row"><button class="u2-btn u2-btn--ghost" type="button" data-sc="pick">不用範圍，改用選區域</button><button class="u2-btn u2-btn--ghost" type="button" data-sc="back">回上一步</button></div>
+            </div>
           </div>
 
           <!-- ===== s2 我聽到的條件 ===== -->
@@ -185,6 +238,16 @@ const concernHelp = "這幾項只會讓景泰知道從哪聊起，不會拿去�
           <div class="u2-state" data-s="s3" tabindex="-1" hidden>
             <div class="u2-chat" id="s3-chat" role="log" aria-live="polite" aria-relevant="additions"></div>
             <div id="s3-tray"></div>
+            <!-- 選區域那一題下面的範圍入口：find-app.js 在 q_district 時打開（按鈕顯示與否跟開場入口一樣看 caps） -->
+            <div class="u2-scope-entry" id="s3-alt" hidden>
+              <p class="u2-scope-entry__t">也可以：</p>
+              <div class="u2-row">
+                <button class="u2-btn u2-btn--ghost" type="button" data-scope="community" data-busy="開啟中…" hidden>找某個社區</button>
+                <button class="u2-btn u2-btn--ghost" type="button" data-scope="zone" data-busy="開啟中…" hidden>74環內（舊市區）</button>
+                <button class="u2-btn u2-btn--ghost" type="button" data-scope="geo" data-busy="開啟中…" hidden>在地圖上圈範圍</button>
+              </div>
+              <p class="u2-scope__err" id="s3-alt-err" role="alert" hidden>這個功能暫時打不開。可以直接在上面選區域。</p>
+            </div>
             <p class="u2-small" id="s3-direct">不想再回答了？<button class="u2-btn u2-btn--text" type="button" data-act="go-now">直接開始找</button></p>
           </div>
 
@@ -196,6 +259,7 @@ const concernHelp = "這幾項只會讓景泰知道從哪聊起，不會拿去�
                 <div class="u2-bubble"><p id="s4-title" tabindex="-1">確認一下，我就開始找：</p></div>
               </div>
             </div>
+            <p class="u2-scope__note u2-scope__gone" id="s4-scope-gone" role="alert" hidden>你選的這種找法（社區、74環內或地圖）現在暫時不能用，已經先拿掉了。可以改選區域，再按一次「開始找」。</p>
             <div class="u2-sheet" role="group" aria-label="需求單">
               <div class="u2-sheet__head"><span>需求單</span><small>這些會拿去找房</small></div>
               <dl id="sheet-rows"></dl>
@@ -370,7 +434,8 @@ const concernHelp = "這幾項只會讓景泰知道從哪聊起，不會拿去�
               </div>
               <p class="u2-cap" id="copy-note" role="status">複製給別人的連結不含你在意的事。這一頁會保留 30 天。</p>
               <input class="u2-input u2-copyurl" id="copy-url" type="text" readonly aria-label="推薦頁連結（長按複製）" hidden />
-              <p class="u2-small">這只是第一批，不是全部。覺得哪裡不準，告訴我，可以再調。</p>
+              <p class="u2-small" id="s7-first">這只是第一批，不是全部。覺得哪裡不準，告訴我，可以再調。</p>
+              <p class="u2-scope__note" id="s7-comm" hidden>這是你指定的社區這次找到、符合條件的物件。想看全部，或請景泰幫你留意新的，可以 LINE 問景泰。</p>
             </section>
 
             <div class="u2-sheet u2-sheet--compact" aria-label="這次用的條件">
@@ -417,10 +482,14 @@ const concernHelp = "這幾項只會讓景泰知道從哪聊起，不會拿去�
             <div class="u2-chat" role="log" aria-live="polite" aria-relevant="additions">
               <div class="u2-msg u2-msg--bot">
                 <span class="u2-avatar" aria-hidden="true"><HouseMark /></span>
-                <div class="u2-bubble"><p id="s8-title" tabindex="-1">這次沒有找到完全符合的。放寬一點再試試？</p><p class="u2-small">點一下就會改條件，再找一次。</p></div>
+                <div class="u2-bubble"><p id="s8-title" tabindex="-1">這次沒有找到完全符合的。<span class="u2-s8-more">放寬一點再試試？</span></p><p class="u2-small">點一下就會改條件，再找一次。</p></div>
               </div>
             </div>
             <ul class="u2-hints" id="hint-list"></ul>
+            <div class="u2-scope-fb" id="s8-scope-fb" hidden>
+              <p>可以改用區域找，或 LINE 問景泰。</p>
+              <div class="u2-row"><button class="u2-btn u2-btn--ghost" type="button" data-act="pick">改用選區域</button></div>
+            </div>
             <div class="u2-row">
               <span class="u2-small">想直接問景泰？</span>
               <a class="u2-btn u2-btn--line u2-btn--sm" href="/go/line?src=find-empty" data-lineq><svg class="u2-ico" aria-hidden="true"><use href="#i-chat"></use></svg>LINE 問景泰</a>
@@ -498,9 +567,9 @@ const concernHelp = "這幾項只會讓景泰知道從哪聊起，不會拿去�
           <div class="u2-aside-card">
             <h2>資料怎麼用</h2>
             <ul class="u2-promise">
-              <li><svg class="u2-ico" aria-hidden="true"><use href="#i-check"></use></svg><span>交給搜尋的，只有區域、預算、房數這類物件條件。</span></li>
+              <li><svg class="u2-ico" aria-hidden="true"><use href="#i-check"></use></svg><span>交給搜尋的，只有區域、預算、房數、社區名這類物件條件；你在地圖上選的範圍座標不會交出去。</span></li>
               <li><svg class="u2-ico" aria-hidden="true"><use href="#i-lock"></use></svg><span>你的姓名、聯絡方式、在意的事、你打的那句話，不會交出去。</span></li>
-              <li><svg class="u2-ico" aria-hidden="true"><use href="#i-info"></use></svg><span>你打的字和聯絡方式最多保存 30 天，條件只留匿名的粗略分級。完整說明在<a class="u2-link" href="/privacy/">隱私權政策</a>。</span></li>
+              <li><svg class="u2-ico" aria-hidden="true"><use href="#i-info"></use></svg><span>你打的字、聯絡方式、你在地圖上選的範圍最多保存 30 天，條件只留匿名的粗略分級。完整說明在<a class="u2-link" href="/privacy/">隱私權政策</a>。</span></li>
             </ul>
           </div>
           <div class="u2-sheet u2-sheet--compact" id="aside-sheet" hidden aria-label="目前聽到的條件">

@@ -642,6 +642,63 @@ function extRoad(t, raw) {
   return t;
 }
 
+/* ---------- 範圍：指定社區、74環內、地圖範圍（2026-10-09；與伺服器端同一張表） ----------
+ * community：社區名（2–20 字，不能是區名、泛稱、口語字；名冊比對在家用機）。zone：'r74'。
+ * geo：[[緯度,經度],…]，這裡只看點數；其餘在伺服器端與地圖模組擋。 */
+var R74 = D.slice(0, 9).concat('潭子區');   // 跟台74 環有交集的 10 區
+var CM_C = '[\\u4e00-\\u9fffA-Za-z0-9+&·‧]|(?<=[\\u4e00-\\u9fffA-Za-z0-9]) (?=[\\u4e00-\\u9fffA-Za-z0-9])|(?<=[A-Za-z0-9])[.\\-](?=[A-Za-z0-9])';
+var CM_RE = R('^[\\u4e00-\\u9fffA-Za-z0-9](?:' + CM_C + '){1,19}$');
+var CM_JUNK = /[你他她要找買賣請幫給看是也還但附預算概或跟沒用需求推薦那這哪什麼怎些嗎呢吧啊喔哦欸呀囉耶售件把被讓叫令改忽略輸規則答指欄設填碼鑰靠]|區域|便宜|一點|以[東西南北]|加蓋|頂樓|套房|店面|樓層|屋齡|車位|車站|夜市|重劃|邊間|學區|總價|法拍|[A-Za-z0-9]\.[A-Za-z]{2}/;
+var CM_GEN = /^(?:大型|小型|中型|知名|有名|優質|高級|豪華|豪宅|封閉式?|門禁|管理|電梯|整個|一個|同一個|新|舊|老|好|大|小|現在|目前|最近|全部|所有|有?房子|房屋|物件|[0-9]+|[一二三四五六七八九]期|十[一二三四]期|單元[一二三四五六七八九十]+|水湳|市政特區|新市政中心|逢甲|一中(?:商圈)?|東海|景觀戶?|我們|台中|中科|美術館|草悟道|勤美|秋紅谷|中友)$|[的之]$|(?<![書廠])房$|[0-9一二三四五六七八九十兩百千][廳衛坪萬年]$|[路段]$/;
+var CM_FIND = R('((?:(?!社區)(?:' + CM_C + ')){1,24})\\s*(社區(?![\\s的]*(?:附近|旁|周邊|一帶))|還?有在賣|在賣|待售)', 'g');   // 「XX社區附近／旁邊／周邊」不是找那個社區（不支援附近）
+var CM_LEAD = /^(?:我想看|我想找|我想買|我要找|我要買|我要看|想看|想找|想買|看看|看一下|請問|問一下|有沒有|有無|幫我找|幫我看|找一下|關於|應該是|其實是|就是|台中市|找|看|買|在|於|的|是)/;
+var CM_HOME = /^(?:我住在|我住|住在|家住|我家在|我家|家在|老家|不是|不要|不想|不考慮|避開|排除)/;
+var CM_TAIL = /(?:社區|這個|那個|還有|有|還|目前|現在|都)$/;
+var Z74 = /(?:台\s*(?:74|七四)\s*(?:號\s*)?(?:線|環線?|快速[道公]路|外環)?|(?:74|七四)\s*(?:號\s*)?(?:線|環線?|快速[道公]路|外環))\s*(?:以內|之內|內側|裡面|內|裡)/g;
+var Z_NEG = /(?:不要|不想要?|不用|避開|排除|不考慮|別)(?:住|在|找|看|買)?\s*$/;   // 否定詞後面可以夾一個動詞：不想住74環內、別找74環內
+
+function commOk(v) {
+  if (typeof v !== 'string') return null;
+  var s = normText(v).trim().replace(/臺/g, '台').replace(/\s+/g, ' ').replace(/(.{2})\s*社區$/, '$1');
+  return CM_RE.test(s) && !ROAD_BAD.test(s) && !CM_JUNK.test(s) && !CM_GEN.test(s) && D.indexOf(s) < 0 && !Object.prototype.hasOwnProperty.call(ALIAS, s) ? s : null;
+}
+// 首載預算（砍法①）：只看點數 3–24
+function geoOk(v) { return Array.isArray(v) && v.length > 2 && v.length < 25 ? v : null; }
+// 74環內：先蓋掉，免得被樓層、坪數、價格吃掉；前面有否定詞就不收
+function extZone(t, raw) {
+  all(Z74, t).forEach(m => {
+    if (!Z_NEG.test(t.slice(Math.max(0, m.index - 6), m.index))) raw.zone = 'r74';
+    t = mask(t, m.index, m.index + m[0].length);
+  });
+  return t;
+}
+/* 指定社區：「XX社區」「XX有在賣／在賣／待售」。在型態之後、區域之前跑；「社區」說法優先，同一種以後面的為準，只蓋最後採用的名稱＋標記字 */
+function extCommunity(t, raw) {
+  var best = null;
+  all(CM_FIND, t).forEach(m => {
+    var c = m[1].trim(), e = m.index + m[1].trimEnd().length, ds = [], x, n = 9;
+    if (m[2] === '社區' && /新$/.test(c)) return;   // 「新社區」是行政區，交給區域規則
+    // 首載預算（砍法②）：不分段；名稱裡的單一空白照收，家用機再處理
+    while (n-- > 0 && c.length > 1) {   // 開頭：住處、否定整筆不要；區名全名剝掉記下；口語剝掉（簡稱不剝）
+      if (CM_HOME.test(c)) return;
+      x = D.find(d => !c.indexOf(d));
+      if (x) ds.push(x); else if (!(x = (CM_LEAD.exec(c) || [''])[0])) break;
+      c = c.slice(x.length).trim();
+    }
+    e -= c.length;   // 從名稱開頭蓋到標記字結尾
+    while ((x = CM_TAIL.exec(c)) && c.length - x[0].length >= 2) c = c.slice(0, -x[0].length);
+    x = commOk(c);
+    if (!x) return;   // 不像社區名：不蓋字
+    if (!best || m[2] === '社區' || best.k !== '社區') best = { s: x, ds: ds, k: m[2], a: e, b: m.index + m[0].length };
+  });
+  if (best) {
+    raw.community = best.s;
+    if (best.ds.length && !raw.districts) raw.districts = best.ds.slice(0, 1);
+    t = mask(t, best.a, best.b);
+  }
+  return t;
+}
+
 /* ---------- 自我更正／別人的意見（W3；邏輯與伺服器端規則一對一） ---------- */
 var SEG_STEPS = [extFloors, extArea, extAge, extRooms, extPrice, extParking, extTypes, extDistricts]; // R4：更正看全部欄位群
 
@@ -783,6 +840,14 @@ function normalizeFields(raw) {
     else if (ROAD_JUNK.test(road)) issues.push('road:unknown'); // 無字典：至少擋含口語字的假路名
     else out.road = road;
   }
+  one(raw, out, issues, 'community', commOk);
+  one(raw, out, issues, 'zone', pick(['r74']));
+  one(raw, out, issues, 'geo', geoOk);
+  // 範圍互斥（社區 ＞ 地圖 ＞ 74環）：社區留區（家用機拿來挑同名社區）；地圖不留區與路段；74環碰到環外的區就不算，留下來時不帶路段
+  function drop(k, why) { if (k in out) { delete out[k]; issues.push(k + ':' + why); } }
+  if (out.community) { drop('zone', 'scope'); drop('geo', 'scope'); drop('road', 'scope'); }
+  else if (out.geo) { drop('zone', 'scope'); drop('districts', 'scope'); drop('road', 'scope'); }
+  else if (out.zone) { if ((out.districts || []).some(d => R74.indexOf(d) < 0)) drop('zone', 'conflict'); else drop('road', 'scope'); }
   [['price_min_wan', 'price_max_wan', 100, 100000], ['rooms_min', 'rooms_max', 1, 6], ['area_min_ping', 'area_max_ping', 5, 300]].forEach(g => {
     var a = raw[g[0]], b = raw[g[1]], av = null, bv = null;
     if (!nul(a)) { av = intIn(a, g[2], g[3]); if (av === null) issues.push(g[0] + ':invalid'); }
@@ -822,13 +887,14 @@ function onlyStudio(f) { var ts = f.types || []; return ts.length > 0 && ts.ever
 function keys(o) { return Object.keys(o).length; }
 
 function assess(fields, skip) {
-  var f = fields || {}, hasD = !!(f.districts && f.districts.length), hp = hasPrice(f), hr = hasRooms(f), missing = [], level;
+  // 「有地點」＝區域、社區、74環內或地圖範圍；只給社區名也可以直接送（thin）
+  var f = fields || {}, hasD = !!((f.districts && f.districts.length) || f.community || f.zone || f.geo), hp = hasPrice(f), hr = hasRooms(f), missing = [], level;
   if (!hasD) missing.push('district');
   if (!hp) missing.push('price');
   if (!hr) missing.push('rooms');
   if (!keys(f)) level = 'empty';
   else if (hasD && hp && hr) level = 'ok';
-  else if (hasD && (hp || hr)) level = 'thin';
+  else if (hasD && (hp || hr || f.community)) level = 'thin';
   else level = 'vague';
   return { level: level, sendable: level === 'ok' || level === 'thin' || (level === 'vague' && !!skip), missing: missing };
 }
@@ -838,11 +904,13 @@ function nextQuestions(fields, context, answered, skipped, maxN, skip) {
   var f = fields || {}, c = context || {}, done = {}, out = [];
   (answered || []).forEach(q => { done[q] = 1; });
   (skipped || []).forEach(q => { done[q] = 1; });
-  if (!(f.districts && f.districts.length)) out.push('q_district');
-  if (!hasPrice(f)) out.push('q_budget');
-  if (!hasRooms(f) && !onlyStudio(f)) out.push('q_rooms');
-  if (nul(f.parking) && !onlyStudio(f)) out.push('q_parking');
-  if (nul(f.age_max)) out.push('q_age');
+  if (!f.community) {   // 指定社區：不問硬題（整個社區的待售物件），只留選填題
+    if (!(f.districts && f.districts.length) && !f.zone && !f.geo) out.push('q_district');
+    if (!hasPrice(f)) out.push('q_budget');
+    if (!hasRooms(f) && !onlyStudio(f)) out.push('q_rooms');
+    if (nul(f.parking) && !onlyStudio(f)) out.push('q_parking');
+    if (nul(f.age_max)) out.push('q_age');
+  }
   if (!(c.concerns && c.concerns.length)) out.push('q_concerns');
   if (!c.stage) out.push('q_stage');
   if (!c.timeline) out.push('q_timeline');
@@ -861,9 +929,10 @@ function extract(text) {
   if (PRESALE.test(t)) { dropped.push('presale'); t = t.replace(new RegExp(PRESALE.source, 'g'), ' '); }
   var hint = t;
   t = applyCorrections(t, inferred);
+  t = extZone(t, raw);
   t = extFloors(t, raw); t = extArea(t, raw, inferred); t = extAge(t, raw, inferred); t = extRooms(t, raw);
   t = extPrice(t, raw, inferred); t = extParking(t, raw, inferred); t = extTypes(t, raw, inferred);
-  t = extDistricts(t, raw, inferred); t = extRoad(t, raw);
+  t = extCommunity(t, raw); t = extDistricts(t, raw, inferred); t = extRoad(t, raw);
   var fields = normalizeFields(raw).fields, ctx = {};
   for (var i = 0; i < STAGE_RULES.length; i++) if (STAGE_RULES[i][1].test(hint)) { ctx.stage = STAGE_RULES[i][0]; break; }
   var sp = SPECIAL_RULES.filter(r => r[1].test(hint)).map(r => r[0]);
@@ -871,13 +940,14 @@ function extract(text) {
   var ch = CONCERN_RULES.filter(r => r[1].test(hint)).map(r => r[0]);
   if (ch.length) ctx.concerns_hint = ch;
   var a = assess(fields);
-  return { fields: fields, context: ctx, dropped: dropped, pii: sc.pii, out_of_scope: oos, inferred: inferred, level: oos ? 'empty' : a.level, missing: a.missing };
+  // rest：規則都抽完、蓋完字之後剩下的字（最多 40 字），只在瀏覽器裡給「是社區的名字嗎？」那一題猜用；不送出、不存
+  return { fields: fields, context: ctx, dropped: dropped, pii: sc.pii, out_of_scope: oos, inferred: inferred, level: oos ? 'empty' : a.level, missing: a.missing, rest: t.replace(/\s+/g, ' ').trim().slice(0, 40) };
 }
 
 /* ---------- 推薦頁片段（#k=）：條件與在意的事只在客人的瀏覽器裡，不進網址以外的任何地方 ---------- */
 var FRAG_MAX = 600;
 // 片段裡的短鍵 ↔ 欄位名（順序＝輸出順序；與伺服器端 token 逐字相同）
-var FRAG_F = { d: 'districts', pmax: 'price_max_wan', pmin: 'price_min_wan', r: 'rooms', t: 'types', a: 'age_max', pk: 'parking', fx: 'floor_exclude', top: 'exclude_top' };
+var FRAG_F = { d: 'districts', cm: 'community', z: 'zone', pmax: 'price_max_wan', pmin: 'price_min_wan', r: 'rooms', t: 'types', a: 'age_max', pk: 'parking', fx: 'floor_exclude', top: 'exclude_top' };
 var FRAG_C = { c: 'concerns', s: 'special', st: 'stage', tl: 'timeline' };
 function b64u(bytes) {
   return btoa(String.fromCharCode.apply(null, bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');

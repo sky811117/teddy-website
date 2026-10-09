@@ -9,9 +9,13 @@
  *   3. /share/qa… 回一頁本機假的推薦頁（內容明顯是示範用），並套用真正的注入區塊（揭露、個人化重點、回官網）。
  *
  * 用法：
- *   node scripts/find-preview.mjs [--port 4321] [--dist dist] [--mode done|fast|slow|empty|degraded|down|intake]
+ *   node scripts/find-preview.mjs [--port 4321] [--dist dist] [--mode done|fast|slow|empty|degraded|down|intake|…] [--caps all|community|none]
  *   模式：done 約 40 秒做完（預設）｜fast 約 6 秒｜slow 130 秒才做完（看「比平常久」）｜empty 找不到符合的｜
  *         degraded 系統忙（改由景泰親自回覆）｜down 後端連不上（降級收件）｜intake 後端關閉（只收件）
+ *   範圍找法（2026-10-09）0 筆時的各種說法：comm_unknown 社區名冊對不到｜comm_empty 社區這次沒有｜geo_none 地圖這一塊沒看到｜
+ *         geo_partial 地圖只看了最新上架的一部分｜geo_out 範圍不在台中市｜geo_smaller 範圍跨太多區｜scope_busy 範圍找法用的人多
+ *   --caps：假家用機回報支援哪幾種範圍找法（all＝社區／74環內／地圖，預設；community＝只有社區；none＝都不支援，入口不出現）
+ *   地圖圖片：預覽不連外部——/js/find-map.js 裡的圖片網址會換成本機的 /__tiles/{z}/{y}/{x}（淺灰格線假圖）。
  *
  * 安全：只綁 127.0.0.1；沒有任何對外連線（假上游、假驗證、假 TG 都在記憶體裡）；不寫任何檔案（暫存打包放系統暫存夾）。
  * 終端機只印事件名稱與計數，不印你在頁面上輸入的任何內容。
@@ -22,6 +26,7 @@ import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import zlibSync from "node:zlib";
 import { buildSync } from "esbuild";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -30,8 +35,16 @@ const opt = (n, d) => { const i = argv.indexOf(n); return i >= 0 && argv[i + 1] 
 const PORT = parseInt(opt("--port", "4321"), 10);
 const DIST = path.resolve(ROOT, opt("--dist", "dist"));
 const MODE = opt("--mode", "done");
-const MODES = ["done", "fast", "slow", "empty", "degraded", "down", "intake"];
+// 範圍找法 0 筆時，家用機回的提示碼（說法由前端 find-scope.js 挑）
+const SCOPE_EMPTY = {
+  comm_unknown: ["comm_fix", "scope_drop"], comm_empty: ["scope_drop"], geo_none: ["geo_redraw", "scope_drop"],
+  geo_partial: ["geo_partial", "scope_drop"], geo_out: ["geo_out"], geo_smaller: ["geo_smaller"], scope_busy: ["scope_busy"],
+};
+const MODES = ["done", "fast", "slow", "empty", "degraded", "down", "intake", ...Object.keys(SCOPE_EMPTY)];
 if (!MODES.includes(MODE)) { console.error("--mode 只能是：" + MODES.join("｜")); process.exit(2); }
+const CAPS_ARG = opt("--caps", "all");
+const CAPS = { all: ["community", "zone", "geo"], community: ["community"], none: [] }[CAPS_ARG];
+if (!CAPS) { console.error("--caps 只能是：all｜community｜none"); process.exit(2); }
 if (!fs.existsSync(path.join(DIST, "find", "index.html"))) { console.error("找不到 " + path.join(DIST, "find/index.html") + "：請先建置（見交接文件的『怎麼預覽』）。"); process.exit(2); }
 
 /* ---------- 把 Function 程式碼打包後載入（記憶體內的假環境，不連網） ---------- */
@@ -82,6 +95,7 @@ function statusFor(job) {
   if (MODE === "slow") return t < 130 ? { status: "searching" } : { status: "done", shareUrl: doneUrl, count: 3 };
   if (MODE === "empty") return t < 4 ? { status: "queued", queue: { ahead: 0, eta_s: 10 } } : t < 12 ? { status: "searching" } : { status: "empty", hint: ["loosen_price", "loosen_district"] };
   if (MODE === "degraded") return t < 4 ? { status: "queued", queue: { ahead: 3, eta_s: 200 } } : { status: "degraded", kind: "busy" };
+  if (SCOPE_EMPTY[MODE]) return t < 3 ? { status: "searching" } : { status: "empty", hint: SCOPE_EMPTY[MODE] };
   return t < 6 ? { status: "queued", queue: { ahead: 1, eta_s: 40 } } : t < 28 ? { status: "searching" } : t < 40 ? { status: "building" } : { status: "done", shareUrl: doneUrl, count: 3 };
 }
 
@@ -98,11 +112,16 @@ async function fakeFetch(url, init = {}) {
   if (!u.startsWith(UP + "/aif/v1/")) throw new Error("預覽不連外部：" + u.slice(0, 30));
   if (MODE === "down") throw new TypeError("preview: upstream down");
   const p = u.slice((UP + "/aif/v1/").length).split("?")[0];
-  if (p === "health") return json({ ok: true, v: 1, mode: "live", queue: { len: 0, eta_s: 0 } });
+  if (p === "health") return json({ ok: true, v: 1, mode: "live", queue: { len: 0, eta_s: 0 }, caps: CAPS });
   if (p === "submit") {
     const id = rid();
     jobs.set(id, { t0: Date.now() });
-    logEv(`[送出] 工作編號已建立（模式 ${MODE}）`);
+    let sc = "";
+    try {
+      const f = JSON.parse(typeof init.body === "string" ? init.body : new TextDecoder().decode(init.body)).fields || {};
+      sc = f.community ? "｜範圍：社區" : f.zone ? "｜範圍：74環內" : f.geo ? `｜範圍：地圖（${f.geo.length} 個點）` : "";
+    } catch { /* ignore */ }
+    logEv(`[送出] 工作編號已建立（模式 ${MODE}${sc}）`);   // 只印範圍種類，不印社區名與座標
     return json({ ok: true, v: 1, status: "queued", jobId: id, queue: { ahead: 1, eta_s: 40 }, saved: true });
   }
   if (p === "status") {
@@ -152,6 +171,39 @@ function fakeName(n, jid) {
 }
 const deps = { fetch: fakeFetch, now: () => Date.now() };
 
+/* ---------- 假地圖圖片（預覽不連外部）：256×256 淺灰底＋格線的 PNG，所有 z/y/x 都回同一張 ---------- */
+function crc32(buf) {
+  let c, crc = 0xffffffff;
+  for (let n = 0; n < buf.length; n++) {
+    c = (crc ^ buf[n]) & 0xff;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    crc = (crc >>> 8) ^ c;
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+function pngChunk(type, data) {
+  const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
+  const td = Buffer.concat([Buffer.from(type, "ascii"), data]);
+  const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(td));
+  return Buffer.concat([len, td, crc]);
+}
+function fakeTile() {
+  const W = 256, raw = Buffer.alloc((W * 3 + 1) * W);
+  for (let y = 0; y < W; y++) {
+    raw[y * (W * 3 + 1)] = 0;
+    for (let x = 0; x < W; x++) {
+      const line = x % 64 === 0 || y % 64 === 0, v = line ? 0xc8 : 0xe9, o = y * (W * 3 + 1) + 1 + x * 3;
+      raw[o] = v; raw[o + 1] = v; raw[o + 2] = line ? 0xbe : 0xe4;
+    }
+  }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(W, 0); ihdr.writeUInt32BE(W, 4); ihdr[8] = 8; ihdr[9] = 2;
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), pngChunk("IHDR", ihdr), pngChunk("IDAT", zlibSync.deflateSync(raw)), pngChunk("IEND", Buffer.alloc(0))]);
+}
+const TILE_PNG = fakeTile();
+// find-map.js 裡的地圖圖片網址（…/{z}/{y}/{x}）換成本機假圖；用網址的形狀找，不在這支腳本裡寫外部主機名稱
+const TILE_RE = /https:\/\/[a-z0-9.-]+\/[^'"`\s]*\{z\}\/\{y\}\/\{x\}/g;
+
 /* ---------- 靜態檔 ---------- */
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".ico": "image/x-icon", ".woff2": "font/woff2", ".txt": "text/plain; charset=utf-8", ".xml": "application/xml" };
 // 假驗證：頁面會呼叫 window.turnstile.render，這裡直接給一個假 token，不載入外部腳本
@@ -172,6 +224,7 @@ function serveStatic(urlPath, res) {
   let body = fs.readFileSync(p);
   const headers = { "content-type": MIME[ext] || "application/octet-stream", "cache-control": "no-store" };
   if (ext === ".html" && /[\\/]find[\\/]index\.html$/.test(p)) body = Buffer.from(body.toString("utf8").replace("<head>", "<head>" + TS_SHIM));
+  if (/[\\/]js[\\/]find-map\.js$/.test(p)) body = Buffer.from(body.toString("utf8").replace(TILE_RE, ORIGIN + "/__tiles/{z}/{y}/{x}"));
   res.writeHead(200, headers).end(body);
 }
 
@@ -220,13 +273,14 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (url.pathname.startsWith("/share/")) { await serveShare(url.pathname, res); return; }
+    if (/^\/__tiles\/\d{1,2}\/\d{1,7}\/\d{1,7}$/.test(url.pathname)) { res.writeHead(200, { "content-type": "image/png", "cache-control": "no-store", "access-control-allow-origin": "*" }).end(TILE_PNG); return; }
     serveStatic(url.pathname, res);
   } catch (e) {
     res.writeHead(500, { "content-type": "text/plain; charset=utf-8" }).end("預覽伺服器內部錯誤：" + String(e && e.message).slice(0, 80));
   }
 });
 server.listen(PORT, "127.0.0.1", () => {
-  console.log(`找房小幫手本機預覽（模式：${MODE}）— 只綁 127.0.0.1，沒有任何對外連線。按 Ctrl+C 結束。`);
+  console.log(`找房小幫手本機預覽（模式：${MODE}｜範圍找法：${CAPS.length ? CAPS.join("、") : "不支援"}）— 只綁 127.0.0.1，沒有任何對外連線。按 Ctrl+C 結束。`);
   console.log(`  首頁            ${ORIGIN}/`);
   console.log(`  找房小幫手      ${ORIGIN}/find/    （來源標記試試 ${ORIGIN}/find/?from=line ）`);
   console.log(`  推薦頁（有效）  ${ORIGIN}/share/${LIVE_ID}/`);

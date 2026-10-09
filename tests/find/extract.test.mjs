@@ -36,7 +36,9 @@ test("extract（規則式層）逐案相符", () => {
     const [got, exp] = normExtract(r, { ...c.expect, ...(HOME_REVISED[c.id] || {}) });
     try {
       assert.deepEqual(got, exp);
-      for (const x of c.must_not || []) assert.ok(!JSON.stringify(r).includes(x), `${c.id} 不得含 ${x}`);
+      // rest＝規則抽完剩下的字（只在瀏覽器裡給「是社區的名字嗎？」猜用，不送出、不存），本來就是原句的一部分，不算在「不得含」裡
+      const { rest, ...rr } = r;
+      for (const x of c.must_not || []) assert.ok(!JSON.stringify(rr).includes(x), `${c.id} 不得含 ${x}`);
     } catch (e) {
       bad.push(`${c.id} ${JSON.stringify(c.text)}\n   got=${JSON.stringify(got)}\n   exp=${JSON.stringify(exp)}`);
     }
@@ -146,6 +148,7 @@ test("#k 片段：不含路段、坪數、樓層下限；拒絕怪字串；大�
 
 test("validate 提交本文逐案相符", () => {
   for (const c of cases("validate")) {
+    if (c.only === "server") continue;   // 只有伺服器端跑的案（geo 的面積、交叉、長邊；首載砍法①後也含 geo 形狀）
     const { out, err } = validateSubmit(NE, c.body);
     const e = c.expect;
     if ("err" in e) { assert.equal(out, null, c.id); assert.equal(err, e.err, c.id); continue; }
@@ -173,9 +176,12 @@ test("檔案大小在預算內、零網路與零儲存呼叫", async () => {
   // 原始檔約 38KB、壓縮後約 25KB、gzip 約 11KB。實際預算是 11.3 的「首載 JS（find-app＋need-extract）≤25KB gzip」，所以這裡守 gzip。
   // 2026-10-06 JS 移植員：移植 Python 規則式抽取器當天新增的行為（口語價格、自我更正、別人的意見、樓層清單、房數、未完工泛化…）後，
   // 原始檔約 57KB（含大量中文註解）、gzip 約 14.7KB；預算從 40KB／12KB 放寬到 60KB／15.5KB（量測值再加約 5% 餘裕）。
+  // 2026-10-09 範圍找法（指定社區、74環內、地圖範圍的抽取與驗證、rest）：照規格 §6.3 放寬到 66KB／17.5KB
+  //（量測：原始檔 66,637（LF）、gzip 17,316）。原始檔以 repo 內的 LF 版本計（Windows 簽出可能變 CRLF，每行多 1 位元組）。
   const min = transformSync(src, { minify: true, loader: "js", charset: "utf8", legalComments: "none" }).code;
-  assert.ok(Buffer.byteLength(src) <= 60 * 1024, `原始檔 ${Buffer.byteLength(src)}`);
-  assert.ok(zlib.gzipSync(min).length <= 15.5 * 1024, `gzip ${zlib.gzipSync(min).length}`);
+  const lf = Buffer.byteLength(src.replace(/\r\n/g, "\n"));
+  assert.ok(lf <= 66 * 1024, `原始檔 ${lf}`);
+  assert.ok(zlib.gzipSync(min).length <= 17.5 * 1024, `gzip ${zlib.gzipSync(min).length}`);
   assert.ok(!/\b(fetch|XMLHttpRequest|sendBeacon|WebSocket|localStorage|sessionStorage|eval|document\.cookie)\b/.test(src));
   assert.ok(!/new Function\(/.test(src));
 });

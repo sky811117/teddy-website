@@ -202,3 +202,34 @@
 .u2-lb__send .u2-input { flex: 1 1 auto; min-width: 0; }
 .u2-lb__send .u2-btn { flex: none; }
 }
+
+/* ---------- 其他找法（2026-10-09：指定社區／74環內／地圖；入口、s1 面板、s7／s8 的範圍說法）。地圖本體（.u2-map 以下）在 /js/find-map.css。
+   客人頁面字一律 ≥17px（--u2-fs-2 以上，不用 fs-0／fs-1）；顏色只用設計系統 token（淺／深色自動換）。
+   手機 320px：按鈕列自己換行；按鈕字長的自己折行，不撐出橫向捲動。 ---------- */
+@layer components {
+.u2-scope-entry { display: grid; gap: .5rem; margin-top: var(--u2-s4); }
+.u2-scope-entry__t { font-size: var(--u2-fs-2); color: var(--u2-ink-2); line-height: 1.6; }
+.u2-scope-entry .u2-btn, .u2-scope .u2-btn, .u2-scope-tabs .u2-btn, .u2-scope-fb .u2-btn { max-width: 100%; white-space: normal; }
+.u2-scope-tabs .u2-btn[aria-pressed="true"] { background: var(--u2-wood-100); border-color: var(--u2-wood-600); color: var(--u2-ink); }
+.u2-scope { display: grid; gap: .75rem; padding: 1rem; border: 1px solid var(--u2-line); border-radius: var(--u2-r-panel); background: var(--u2-vellum); font-size: var(--u2-fs-2); }
+.u2-scope[hidden] { display: none; }
+.u2-scope__lead { font-size: var(--u2-fs-2); font-weight: 700; line-height: 1.6; }
+.u2-scope__help { font-size: var(--u2-fs-2); color: var(--u2-ink-2); line-height: 1.7; }
+.u2-scope__err { font-size: var(--u2-fs-2); color: var(--u2-err); font-weight: 700; line-height: 1.6; }
+.u2-scope__list { display: grid; gap: .25rem; padding-left: 1.25rem; list-style: disc; font-size: var(--u2-fs-2); line-height: 1.7; }
+.u2-scope__more > summary { min-height: 2.75rem; display: flex; align-items: center; color: var(--u2-wood); font-weight: 700; cursor: pointer; }
+.u2-scope__note { font-size: var(--u2-fs-2); color: var(--u2-ink); line-height: 1.7; }
+.u2-scope__note[hidden], .u2-scope-entry[hidden], .u2-scope-fb[hidden] { display: none; }
+.u2-scope-fb { display: grid; gap: .6rem; padding: 1rem; border: 1.5px solid var(--u2-line-strong); border-radius: var(--u2-r-opt); background: var(--u2-sunken); font-size: var(--u2-fs-2); line-height: 1.7; }
+.u2-scope-q { display: grid; gap: .6rem; }
+.u2-scope-q .u2-tags { gap: .5rem; }
+.u2-scope-ban { font-size: var(--u2-fs-2); line-height: 1.7; }
+/* 確認畫面：範圍這次不能用、已經先拿掉（find-app 依 S.cg 打開） */
+.u2-scope__gone { margin: .75rem 0; padding: .75rem 1rem; border: 1.5px solid var(--u2-line-strong); border-radius: var(--u2-r-opt); background: var(--u2-sunken); }
+/* s8：範圍模組載不到、只剩 #s8-scope-fb 的退路時，標題不說「放寬一點」、副標「點一下就會改條件」也收起來（下面沒有放寬按鈕） */
+[data-s="s8"]:has(#s8-scope-fb:not([hidden])) :is(.u2-s8-more, #s8-title + .u2-small) { display: none; }
+#scope-comm-in { max-width: 24rem; }
+@media (max-width: 359px) {
+  .u2-scope .u2-row .u2-btn, .u2-scope-entry .u2-row .u2-btn, .u2-scope-fb .u2-btn { width: 100%; }
+}
+}

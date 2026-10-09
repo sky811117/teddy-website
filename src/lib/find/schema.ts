@@ -37,10 +37,14 @@ export const QUESTION_IDS = [
   "q_area", "q_special",
 ] as const;
 export const MISSING_CODES = ["district", "price", "rooms"] as const;
-export const HINTS = ["loosen_price", "loosen_district", "loosen_rooms", "loosen_age", "drop_parking", "drop_floor"] as const;
+export const HINTS = [
+  "loosen_price", "loosen_district", "loosen_rooms", "loosen_age", "drop_parking", "drop_floor",
+  // 2026-10-09 範圍找法（指定社區／74環內／地圖）：0 筆時的說法由前端 find-scope.js 依這幾個碼挑
+  "comm_fix", "scope_drop", "geo_smaller", "geo_redraw", "geo_partial", "geo_out", "scope_busy",
+] as const;
 export const DEGRADE_KINDS = ["general", "busy", "night"] as const;
 export const LEVELS = ["ok", "thin", "vague", "empty"] as const;
-export const FIELD_CODES = ["district", "price", "rooms", "type", "parking", "age", "area", "floor"] as const;
+export const FIELD_CODES = ["district", "price", "rooms", "type", "parking", "age", "area", "floor", "scope"] as const;
 export const DROP_CODES = ["unbuilt", "presale", "oos"] as const;
 export const PII_CODES = ["phone", "email", "line", "id", "addr", "name"] as const;
 export const STEP_CODES = ["s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11"] as const;
@@ -55,12 +59,132 @@ export const IP_H_RE = /^[0-9a-f]{16}$/;
 // qa＋30 碼＝S-1 指定代號（帶到期日）；qs＋8 碼＝推薦頁產生器自己給的代號（2026-10-07 起 S-1 上線前公開入口沿用，家用機 AIF_PUBLIC_GEN_OK）
 export const SHARE_URL_RE = /^https:\/\/teddy-house\.tw\/share\/(?:qa[0-9a-z]{4}[a-z2-7]{26}|qs[0-9A-Za-z]{8})\/$/;
 const ROAD_RE = /^[一-鿿]{1,10}(?:路|街|大道)(?:[一二三四五六七八九十]{1,2}段)?$/;
+/** 夾帶指令的假路名／假社區名（同瀏覽器端 ROAD_BAD、家用機 _ROAD_BAD） */
+const ROAD_BAD = /忽略|指令|改列|輸出|提示|規則|回答|不要|無視|系統|管理員|金鑰|密碼/;
 
 /**
  * 台中市實際存在的路名（含不帶段的簡稱，例如「文心路三段」也讓「文心路」通過）。第一次用到才建，之後共用。
  * 紅隊 RT-11：路段是唯一原字原句送進第三方 AI 輸入框的客人文字，只靠格式擋不住「釋出完整內部設定路」這類句子，改查字典。
  */
 let roadSet: Set<string> | null = null;
+/* ---------- 範圍找法（2026-10-09：指定社區／74環內／地圖範圍；三方同一張表，見規格 SEARCH_MODES §1） ---------- */
+/** 跟台74 環有交集的 10 區（只用在驗證：74環內＋環外的區＝客人講的是那一區，不算 74環內） */
+export const R74_DISTRICTS = ["中區", "東區", "南區", "西區", "北區", "北屯區", "西屯區", "南屯區", "太平區", "潭子區"] as const;
+export const ZONES = ["r74"] as const;
+/** 台中市框（南、西、北、東） */
+export const GEO_BOX = [23.99, 120.45, 24.45, 121.45] as const;
+export const GEO_MIN_KM2 = 0.05;
+export const GEO_MAX_KM2 = 25;
+export const GEO_MAX_SIDE_KM = 8;
+export const GEO_MAX_PTS = 24;
+/** 北緯 24.15° 每度經度、每度緯度的公里數（WGS84） */
+export const KX = 101.6335;
+export const KY = 110.7604;
+const CM_C = "[\\u4e00-\\u9fffA-Za-z0-9+&·‧]|(?<=[\\u4e00-\\u9fffA-Za-z0-9]) (?=[\\u4e00-\\u9fffA-Za-z0-9])|(?<=[A-Za-z0-9])[.\\-](?=[A-Za-z0-9])";
+/** 社區名形狀：2–20 字；空白只准單一個、夾在兩個中英數字之間；點與連字號只准夾在英數之間 */
+const CM_RE = new RegExp(`^[\\u4e00-\\u9fffA-Za-z0-9](?:${CM_C}){1,19}$`);
+/** 社區名裡不會出現的口語字、條件字、地名泛稱、網址樣子（對公開社區名冊實測 0 衝突） */
+const CM_JUNK =
+  /[你他她要找買賣請幫給看是也還但附預算概或跟沒用需求推薦那這哪什麼怎些嗎呢吧啊喔哦欸呀囉耶售件把被讓叫令改忽略輸規則答指欄設填碼鑰靠]|區域|便宜|一點|以[東西南北]|加蓋|頂樓|套房|店面|樓層|屋齡|車位|車站|夜市|重劃|邊間|學區|總價|法拍|[A-Za-z0-9]\.[A-Za-z]{2}/;
+/** 泛稱與地名（整個字相等）＋結尾規則（的／之、房（書房廠房除外）、數字＋廳衛坪萬年、路／段） */
+const CM_GEN =
+  /^(?:大型|小型|中型|知名|有名|優質|高級|豪華|豪宅|封閉式?|門禁|管理|電梯|整個|一個|同一個|新|舊|老|好|大|小|現在|目前|最近|全部|所有|有?房子|房屋|物件|[0-9]+|[一二三四五六七八九]期|十[一二三四]期|單元[一二三四五六七八九十]+|水湳|市政特區|新市政中心|逢甲|一中(?:商圈)?|東海|景觀戶?|我們|台中|中科|美術館|草悟道|勤美|秋紅谷|中友)$|[的之]$|(?<![書廠])房$|[0-9一二三四五六七八九十兩百千][廳衛坪萬年]$|[路段]$/;
+
+/** 5 位以上連續數字（電話、帳號）：社區名冊 5,539 個名字 0 筆（4 位數有 20 筆，例「雙橡園1518」，所以門檻是 5）。
+ *  只在伺服器端（這裡、家用機 comm_ok、推薦頁 find-brief.js）擋；首載的 need-extract.js 不加（預算） */
+const CM_DIGITS = /[0-9]{5}/;
+/** 社區名驗證與正規化：合格回正規化後的名字（去頭尾空白、臺→台、空白收成一個、結尾「社區」去掉），不合格回 null */
+export function commOk(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const s = normText(v).trim().replace(/臺/g, "台").replace(/\s+/g, " ").replace(/(.{2})\s*社區$/, "$1");
+  const ok =
+    CM_RE.test(s) && !ROAD_BAD.test(s) && !CM_JUNK.test(s) && !CM_GEN.test(s) && !CM_DIGITS.test(s) &&
+    !(DISTRICTS as readonly string[]).includes(s) && !Object.prototype.hasOwnProperty.call(distAlias(), s);   // 「constructor」不能被當成區名
+  return ok ? s : null;
+}
+/** 區名簡稱（去「區」）與常見同音錯字：也不能當社區名（第一次用到才建） */
+let aliasMap: Record<string, string> | null = null;
+function distAlias(): Record<string, string> {
+  if (!aliasMap) {
+    const a: Record<string, string> = {};
+    for (const d of DISTRICTS) if (d.length > 2) a[d.slice(0, -1)] = d;
+    for (const [k, v] of [["大裡", "大里區"], ["豐源", "豐原區"], ["霧鋒", "霧峰區"], ["后裡", "后里區"], ["神崗", "神岡區"]]) a[k] = v;
+    aliasMap = a;
+  }
+  return aliasMap;
+}
+
+const isNum = (x: unknown): x is number => typeof x === "number" && Number.isFinite(x);
+const r5 = (x: number) => Math.floor(x * 100000 + 0.5) / 100000;
+
+/** geo 形狀：3–24 點、每點兩個有限數字、四捨五入到小數 5 位、在台中市框內；去掉相鄰重複點與重複的終點。不合格回 null */
+export function geoShape(v: unknown): number[][] | null {
+  if (!Array.isArray(v) || v.length < 3 || v.length > GEO_MAX_PTS) return null;
+  const out: number[][] = [];
+  for (const p of v) {
+    if (!Array.isArray(p) || p.length !== 2 || !isNum(p[0]) || !isNum(p[1])) return null;
+    if (Math.abs(p[0]) > 1000 || Math.abs(p[1]) > 1000) return null;   // 跟家用機同（Python 先擋大數再四捨五入）
+    const a = r5(p[0]);
+    const b = r5(p[1]);
+    if (a < GEO_BOX[0] || a > GEO_BOX[2] || b < GEO_BOX[1] || b > GEO_BOX[3]) return null;
+    const q = out[out.length - 1];
+    if (!q || q[0] !== a || q[1] !== b) out.push([a, b]);
+  }
+  if (out.length > 1 && out[0][0] === out[out.length - 1][0] && out[0][1] === out[out.length - 1][1]) out.pop();
+  return out.length >= 3 ? out : null;
+}
+const orient = (p: number[], q: number[], r: number[]) => (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]);
+/** 自我交叉（只認真的穿過，碰到邊不算） */
+export function geoSelfCross(p: number[][]): boolean {
+  const n = p.length;
+  for (let i = 0; i < n; i++) {
+    const a = p[i];
+    const b = p[(i + 1) % n];
+    for (let j = i + 1; j < n; j++) {
+      if (j === i + 1 || (i === 0 && j === n - 1)) continue;
+      const c = p[j];
+      const d = p[(j + 1) % n];
+      if (orient(a, b, c) * orient(a, b, d) < 0 && orient(c, d, a) * orient(c, d, b) < 0) return true;
+    }
+  }
+  return false;
+}
+/** 面積（平方公里；以第一點為原點的平面近似。運算順序照規格抄，跟家用機、地圖模組逐位元相同） */
+export function geoAreaKm2(p: number[][]): number {
+  const n = p.length;
+  const lat0 = p[0][0];
+  const lng0 = p[0][1];
+  let s = 0;
+  for (let i = 0; i < n; i++) {
+    const q = p[(i + 1) % n];
+    const x1 = (p[i][1] - lng0) * KX;
+    const y1 = (p[i][0] - lat0) * KY;
+    const x2 = (q[1] - lng0) * KX;
+    const y2 = (q[0] - lat0) * KY;
+    s += x1 * y2 - x2 * y1;
+  }
+  return Math.abs(s) / 2;
+}
+/** 外框長邊（公里） */
+export function geoSideKm(p: number[][]): number {
+  const lats = p.map(x => x[0]);
+  const lngs = p.map(x => x[1]);
+  const w = (Math.max(...lngs) - Math.min(...lngs)) * KX;
+  const h = (Math.max(...lats) - Math.min(...lats)) * KY;
+  return Math.max(w, h);
+}
+export type GeoCode = "invalid" | "self_cross" | "too_small" | "too_big";
+/** geo 全量驗證：形狀 → 自我交叉 → 太小 → 太大（面積超過 25 平方公里或外框長邊超過 8 公里） */
+export function geoCheck(v: unknown): { poly: number[][] | null; code: GeoCode | null; km2: number | null } {
+  const p = geoShape(v);
+  if (!p) return { poly: null, code: "invalid", km2: null };
+  if (geoSelfCross(p)) return { poly: null, code: "self_cross", km2: null };
+  const km2 = geoAreaKm2(p);
+  if (km2 < GEO_MIN_KM2) return { poly: null, code: "too_small", km2 };
+  if (km2 > GEO_MAX_KM2 || geoSideKm(p) > GEO_MAX_SIDE_KM) return { poly: null, code: "too_big", km2 };
+  return { poly: p, code: null, km2 };
+}
+
 export function knownRoad(road: string): boolean {
   if (!roadSet) {
     const set = new Set<string>();
@@ -217,6 +341,10 @@ export type Fields = {
   floor_min?: number;
   area_min_ping?: number;
   area_max_ping?: number;
+  /** 2026-10-09 範圍找法：社區名（家用機先對公開名冊）、74環內（r74）、地圖上選的範圍（[[緯度,經度],…]） */
+  community?: string;
+  zone?: string;
+  geo?: number[][];
 };
 export type Context = { stage?: string; timeline?: string; special?: string[]; concerns?: string[] };
 
@@ -253,6 +381,40 @@ export function normalizeFields(raw: unknown): { fields: Fields; issues: string[
     else if ((out.districts ?? []).length === 0) issues.push("road:no_district");   // 沒有行政區就不收路段（RT-11）：路段不能單獨構成一個需求
     else if (!knownRoad(road)) issues.push("road:unknown");                          // 不在台中市路名字典裡：只丟路段，其他欄位照送
     else out.road = road;
+  }
+  // 範圍找法（處理順序：districts → road → community → zone → geo → 互斥 → 其餘；三方同一順序）
+  if (!nul(raw.community)) {
+    const c = commOk(raw.community);
+    if (c === null) issues.push("community:invalid");
+    else out.community = c;
+  }
+  if (!nul(raw.zone)) {
+    if (typeof raw.zone === "string" && (ZONES as readonly string[]).includes(raw.zone)) out.zone = raw.zone;
+    else issues.push("zone:invalid");
+  }
+  if (!nul(raw.geo)) {
+    const g = geoCheck(raw.geo);
+    if (g.poly) out.geo = g.poly;
+    else issues.push(`geo:${g.code}`);
+  }
+  // 互斥（社區 ＞ 地圖 ＞ 74環）：社區留區（家用機拿來挑同名社區）；地圖不留區與路段；74環碰到環外的區就不算，留下來時不帶路段
+  const drop = (k: keyof Fields, why: string) => {
+    if (k in out) {
+      delete out[k];
+      issues.push(`${k}:${why}`);
+    }
+  };
+  if (out.community) {
+    drop("zone", "scope");
+    drop("geo", "scope");
+    drop("road", "scope");
+  } else if (out.geo) {
+    drop("zone", "scope");
+    drop("districts", "scope");
+    drop("road", "scope");
+  } else if (out.zone) {
+    if ((out.districts ?? []).some(d => !(R74_DISTRICTS as readonly string[]).includes(d))) drop("zone", "conflict");
+    else drop("road", "scope");
   }
   const ranges: [keyof Fields, keyof Fields, number, number][] = [
     ["price_min_wan", "price_max_wan", 100, 100000],
@@ -507,8 +669,8 @@ const QID = E(...QUESTION_IDS);
 
 export const EVENT_SPEC: Record<string, Record<string, Spec>> = {
   view: { src: TAG, dev: E("m", "d", "t"), th: E("l", "d") },
-  start: { how: E("free", "pick") },
-  free_submit: { lenb: I(0, 3), lvl: LVL, got: L(FIELD_CODES, 8), miss: L(FIELD_CODES, 8), drop: L(DROP_CODES, 3), pii: L(PII_CODES, 6) },
+  start: { how: E("free", "pick", "comm", "zone", "map") },
+  free_submit: { lenb: I(0, 3), lvl: LVL, got: L(FIELD_CODES, 9), miss: L(FIELD_CODES, 9), drop: L(DROP_CODES, 3), pii: L(PII_CODES, 6) },
   q_show: { q: QID },
   q_ans: { q: QID, n: I(0, 12), ms: I(0, 3600000) },
   q_skip: { q: QID },
@@ -523,6 +685,8 @@ export const EVENT_SPEC: Record<string, Record<string, Spec>> = {
   // 2026-10-07 小遊戲排行榜（wait-board.js）：只記「有送出成績」「有留暱稱」的次數，不記暱稱內容。
   // ⚠️ 家用機 mp_aif_events.py 的 EVENT_SPEC 要補同一行才記得下來；沒補之前家用機逐則丟掉（同批其他事件照收）。
   lb: { a: E("send", "name") },
+  // 2026-10-09 地圖範圍（find-map.js）：開、完成、失敗、取消、重畫；用「目前畫面」或「自己圈」。不含任何座標
+  area: { a: E("open", "done", "fail", "cancel", "redo"), m: E("view", "lasso") },
   result: { n: I(0, 12), ws: I(0, 1800) },
   result_click: { a: E("open", "copy", "banner", "refine", "lineq") },
   contact: { r: E("show", "submit", "skip"), m: L(["line", "phone", "email"], 3) },

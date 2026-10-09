@@ -90,6 +90,12 @@
 # Security headers — 全站
 # geolocation=(self)：工具頁的「用我的位置」要用（瀏覽器仍會先問使用者）。
 # 原本是 geolocation=()＝整站禁止定位，嫌惡設施地圖的「用我的位置」在正式站一直按了沒反應（2026-09-29 發現）。
+# 找房小幫手（/find/）：圖片只准本站、data:、地圖圖片（內政部國土測繪中心）與全站既有的分析服務；
+# 不准外掛物件、不准改 <base>、不准被別的網站框起來。腳本（Layout 的 GA 內嵌、人機驗證）這一版先不管，
+# 要收 script-src 得先替內嵌腳本算 hash，改用 Report-Only 試過再上。地圖圖片網域只准寫在這裡與 find-map.js（leak-audit 會查）
+/find/*
+  Content-Security-Policy: img-src 'self' data: https://wmts.nlsc.gov.tw https://*.google-analytics.com https://*.googletagmanager.com; object-src 'none'; base-uri 'self'; frame-ancestors 'self'
+
 /*
   X-Content-Type-Options: nosniff
   X-Frame-Options: SAMEORIGIN

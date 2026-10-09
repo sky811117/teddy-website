@@ -67,7 +67,7 @@ var UNSURE_ASK = '你好像更正過，我先照聽到的放進來。哪一個�
 var HINT_OK = ['loan', 'condition', 'commute', 'school', 'price_unsure'];
 var SOFT_Q = ['q_concerns', 'q_stage', 'q_timeline'];   // 不影響搜尋、只讓景泰之後更懂客人的選填題
 var NO_CHASE_ACK = '好，我不會問你要電話，這一頁也不會有要你留資料的欄位。';
-var FIELD_CODE = { districts: 'district', price_min_wan: 'price', price_max_wan: 'price', rooms_min: 'rooms', rooms_max: 'rooms', types: 'type', parking: 'parking', age_max: 'age', area_min_ping: 'area', area_max_ping: 'area', floor_exclude: 'floor', exclude_top: 'floor', floor_min: 'floor' };
+var FIELD_CODE = { community: 'scope', zone: 'scope', geo: 'scope', districts: 'district', price_min_wan: 'price', price_max_wan: 'price', rooms_min: 'rooms', rooms_max: 'rooms', types: 'type', parking: 'parking', age_max: 'age', area_min_ping: 'area', area_max_ping: 'area', floor_exclude: 'floor', exclude_top: 'floor', floor_min: 'floor' };
 
 /* ===================== 純邏輯（Node 可測） ===================== */
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -99,9 +99,19 @@ function floorText(f) {
   if (has(f.floor_min)) p.push(f.floor_min + ' 樓以上');
   return p.join('、');
 }
-/* 需求單的列：[鍵, 標題, 文字]（沒有值的必問三項也列出，方便點「改」） */
+/* 範圍（指定社區／74環內／地圖）：家用機回報支援（config 的 caps）才開入口；畫面在 find-scope.js（延遲載入） */
+var SCOPES = ['community', 'zone', 'geo'];
+function scopeText(f) { return f.community ? f.community + '社區' : f.zone ? '74環內' : f.geo ? '地圖上選的範圍' : ''; }
+/* 家用機沒說支援的範圍欄位拿掉（設定已載入、而且是 live 才做；收件模式不剝）。有拿掉就記 s.cg，s2 會說明 */
+function capGate(f, s) {
+  var g = clone(f);
+  if (s.cfgOk && s.mode === 'live') SCOPES.forEach(function (k) { if (has(g[k]) && s.caps.indexOf(k) < 0) { delete g[k]; s.cg = true; } });
+  return g;
+}
+/* 需求單的列：[鍵, 標題, 文字]（沒有值的必問三項也列出，方便點「改」）。有範圍時第一列是「範圍」（社區不帶區：客人講的區可能是錯的） */
 function sheetRows(f) {
-  var rows = [['district', '區域', (f.districts || []).join('、') + (f.road || '') || '不限']];
+  var sc = scopeText(f), ds = (f.districts || []).join('、');
+  var rows = [sc ? ['scope', '範圍', sc + (f.zone && ds ? '（' + ds + '）' : '')] : ['district', '區域', ds + (f.road || '') || '不限']];
   rows.push(['price', '預算', priceText(f) || '不限']);
   rows.push(['rooms', '房數', roomsText(f) || '不限']);
   if (f.types && f.types.length) rows.push(['type', '型態', f.types.map(function (t) { return labelOf(TYPE_OPTS, t); }).join('、')]);
@@ -117,7 +127,8 @@ function sheetRows(f) {
 function condTags(f, u) {
   var t = [];
   function add(k, s) { if (s) t.push(s + (u && u.indexOf(k) >= 0 ? '（請確認）' : '')); }
-  add('district', f.districts && f.districts.length ? f.districts.join('、') + (f.road || '') : '');
+  add('scope', scopeText(f));
+  add('district', f.districts && f.districts.length && !f.community ? f.districts.join('、') + (f.road || '') : '');
   add('rooms', roomsText(f));
   add('type', f.types && f.types.length ? f.types.map(function (x) { return labelOf(TYPE_OPTS, x); }).join('、') : '');
   add('price', priceText(f));
@@ -270,7 +281,7 @@ function mkEvent(name, t, step, props) {
 var FindCore = {
   condTags: condTags, unsureKeys: unsureKeys, roadKnown: roadKnown, UNSURE: UNSURE, UNSURE_ASK: UNSURE_ASK, quietTags: quietTags, sheetRows: sheetRows, gotCodes: gotCodes, lenBucket: lenBucket, applyAnswer: applyAnswer,
   preselect: preselect, ackText: ackText, hintFix: hintFix, hintDetail: hintDetail, summaryText: summaryText, pollDelay: pollDelay,
-  buildBody: buildBody, shareLink: shareLink, mkEvent: mkEvent, newId: newId, roomsText: roomsText, priceText: priceText,
+  buildBody: buildBody, shareLink: shareLink, mkEvent: mkEvent, newId: newId, roomsText: roomsText, priceText: priceText, scopeText: scopeText, capGate: capGate,
   ERR_MSG: ERR_MSG, DEGRADE_MSG: DEGRADE_MSG, DEGRADE_MSG_CONTACT: DEGRADE_MSG_CONTACT, DEGRADE_MSG_NOCHASE: DEGRADE_MSG_NOCHASE, SOFT_Q: SOFT_Q, QCOPY: QCOPY, HINT_COPY: HINT_COPY, AREA_RANGE: AREA_RANGE, NO_CHASE_ACK: NO_CHASE_ACK,
   OPTS: { CONCERN: CONCERN_OPTS, TYPE: TYPE_OPTS, PARKING: PK_OPTS, AGE: AGE_OPTS, STAGE: STAGE_OPTS, TIMELINE: TL_OPTS, SPECIAL: SPECIAL_OPTS, AREA: AREA_OPTS, BUDGETS: BUDGETS, DIST_MAIN: DIST_MAIN }
 };
@@ -324,7 +335,7 @@ function nowMs() { return ((root.performance && root.performance.now) ? root.per
 function freshS(o) {
   return {
     sid: o.sid, idem: '', jobId: null, step: 's0', fields: {}, context: {}, hints: [], freeText: '', skip: false, refineOf: null,
-    plan: [], planIdx: 0, answered: [], skipped: [], nudged: false, returnTo: null, from: o.from, mode: o.mode, siteKey: o.siteKey, cfgOk: false, evt: '',
+    plan: [], planIdx: 0, answered: [], skipped: [], nudged: false, returnTo: null, from: o.from, mode: o.mode, siteKey: o.siteKey, cfgOk: o.cfgOk, evt: '', caps: o.caps || [],
     consentV: o.consentV, startTs: 0, lastLvl: 'empty', extractMeta: null, res: null, answeredCount: 0, polls: 0, qaStart: 0,
     waitStart: 0, fatigueDone: false, contactSent: false, unsure: []
   };
@@ -368,12 +379,12 @@ function api(path, method, body) {
 }
 
 /* ---------- 持久化（只在同一個分頁；重整後可以接著等） ---------- */
-function persist() {
-  store('set', SESSION_KEY, JSON.stringify({ sid: S.sid, idem: S.idem, jobId: S.jobId, step: S.step, fields: S.fields, context: S.context, freeText: S.freeText, from: S.from, res: S.res, waitStart: S.waitStart, fatigueDone: S.fatigueDone, contactSent: S.contactSent, unsure: S.unsure }));
+function persist() {   // 範圍畫面（s1）存成進來前那一步：重整後回到那裡，不會停在一個沒有內容的畫面
+  store('set', SESSION_KEY, JSON.stringify({ sid: S.sid, idem: S.idem, jobId: S.jobId, step: S.step === 's1' ? S.scopeFrom : S.step, fields: S.fields, context: S.context, freeText: S.freeText, from: S.from, res: S.res, waitStart: S.waitStart, fatigueDone: S.fatigueDone, contactSent: S.contactSent, unsure: S.unsure }));
 }
 
 /* ---------- 狀態切換 ---------- */
-var FOCUS = { s2: '#s2-chat', s3: '.u2-tray__q', s4: '#s4-title', s6: '#wait-h', s7: '#res-h', s8: '#s8-title', s9: '#deg-msg', s10: '#err-msg' };
+var FOCUS = { s1: '#scope-h', s2: '#s2-chat', s3: '.u2-tray__q', s4: '#s4-title', s6: '#wait-h', s7: '#res-h', s8: '#s8-title', s9: '#deg-msg', s10: '#err-msg' };
 function show(step, noFocus) {
   S.step = step;
   $$('.u2-state').forEach(function (d) { d.hidden = d.getAttribute('data-s') !== step; });
@@ -432,6 +443,30 @@ function degradeText(kind) {
   return (S.contactSent ? DEGRADE_MSG_CONTACT : DEGRADE_MSG)[k];
 }
 
+/* ---------- find-scope.js 第一次用到才載入（s1 的 data-src）。載入中又被叫：記最後一件事（p.sFn），載好做它。
+   客人按的入口（btn）換「開啟中…」；載不到或 10 秒沒好 → 恢復、開同一畫面的 .u2-scope__err、可再按。背景載入失敗不動錯誤字 ---------- */
+function scope(fn, btn) {
+  var p = $('[data-s="s1"]'), err = btn && $('.u2-scope__err', btn.closest('.u2-state')), txt = btn && btn.textContent, s, t;
+  if (root.FindScope) { root.FindScope.init(SCOPE_API); fn(root.FindScope); return; }
+  if (!p) return;
+  p.sFn = fn;
+  if (p.sTry) return;
+  function end(ok) {
+    if (p.sTry !== s) return;
+    root.clearTimeout(t);
+    if (btn) { btn.removeAttribute('aria-busy'); btn.textContent = txt; err.hidden = ok; }
+    if (ok) scope(p.sFn); else p.sTry = null;
+  }
+  if (btn) { btn.setAttribute('aria-busy', 'true'); btn.textContent = btn.getAttribute('data-busy'); err.hidden = 1; }
+  p.sTry = s = doc.createElement('script');
+  s.src = p.getAttribute('data-src');
+  s.onload = function () { end(!!root.FindScope); };
+  s.onerror = function () { end(0); };
+  t = root.setTimeout(end, 10000);
+  doc.head.appendChild(s);
+}
+var SCOPE_API = { S: function () { return S; }, show: show, track: track, startedHow: startedHow, toConfirm: toConfirm, enterQuestions: enterQuestions, pickMode: pickMode, persist: persist };
+
 /* ---------- s0 → s2：一句話 ---------- */
 function startedHow(how) {
   if (S.startTs) return;
@@ -443,7 +478,10 @@ function submitFree(text) {
   if (!text) { var ta = byId('free-text'); if (ta) ta.focus(); return; }
   startedHow('free');
   S.freeText = text.slice(0, 300);
-  var r = NE.extract(S.freeText);     // 與送出的內容一致（伺服器只收 300 字）；#q= 網址帶進來的超長文字也不會整段餵給抽取器
+  var r = NE.extract(S.freeText), a;     // 與送出的內容一致（伺服器只收 300 字）；#q= 網址帶進來的超長文字也不會整段餵給抽取器
+  S.cg = false;
+  r.fields = capGate(r.fields, S);
+  if (S.cg && !r.out_of_scope) { a = NE.assess(r.fields); r.level = a.level; r.missing = a.missing; }
   S.fields = r.fields;
   S.context = {};
   if (r.context.stage) S.context.stage = r.context.stage;
@@ -459,6 +497,9 @@ function submitFree(text) {
   renderHeard(text, r);
   show('s2');
   verifyRoad();
+  // s2 的延遲掛勾：範圍被拿掉要說明；沒聽出地點、剩下的字像社區名時問「是社區的名字嗎？」（載不到就維持原樣）
+  var f = r.fields;
+  if (S.cg || (S.caps.indexOf('community') >= 0 && !(f.districts || scopeText(f)) && r.rest[1])) scope(function (F) { F.heard(r); });
 }
 function renderHeard(text, r) {
   var log = byId('s2-chat'), act = byId('s2-actions');
@@ -595,7 +636,8 @@ function showQuestion() {
   ]);
   tray.appendChild(trayEl);
   refresh();
-  var d = byId('s3-direct'); if (d) d.hidden = !!S.returnTo;
+  var d = byId('s3-direct'), al = byId('s3-alt'); if (d) d.hidden = !!S.returnTo;
+  if (al) al.hidden = qid !== 'q_district' || byId('scope-entry').hidden;   // 選區域那一題下面也放範圍入口（「用選的就好」的客人也看得到）
   show('s3');
   on(okBtn, 'click', function () { answerQuestion(qid, inputs, otherNum); });
   on(trayEl, 'keydown', function (e) { if (e.key === 'Enter' && !multi && e.target && e.target.tagName === 'INPUT') { e.preventDefault(); answerQuestion(qid, inputs, otherNum); } });
@@ -696,10 +738,10 @@ function toConfirm() {
   if (gb) gb.textContent = mode ? '送出需求' : '開始找';
   if (gn) gn.textContent = mode ? '目前由景泰看過再回覆，不是自動找。' : '通常 1～2 分鐘。';
   // 收件模式：不是自動找，景泰要有聯絡方式才回得到客人，所以這一步就要問；「不想被追問」的客人不強迫
-  var il = byId('intake-lead'), nl = byId('s4-nocontact'), ih = byId('intake-help');
+  var il = byId('intake-lead'), nl = byId('s4-nocontact');   // #intake-help 的字寫在頁面上
   if (il) il.hidden = !mode || hasNoChase();
   if (nl) nl.hidden = mode && !hasNoChase();
-  if (ih) ih.textContent = '想讓景泰回你，LINE 或手機留一項就好。不留也可以送出，只是景泰就沒辦法回你。';
+  byId('s4-scope-gone').hidden = !S.cg;   // 範圍被拿掉：說一句
   if (mode && hasNoChase() && nl) nl.textContent = '你選了不想被追問，所以留不留聯絡方式都可以。不留的話，這筆需求只會被記下來，想問的時候直接 LINE 景泰。';
   track('confirm', { lvl: a.level, fn: Math.min(14, Object.keys(S.fields).length) });
   ensureTurnstile();
@@ -760,8 +802,9 @@ function renderExtras() {
   });
 }
 function editRow(key) {
-  if (EDIT_Q[key]) { track('edit', { k: key }); enterQuestions([EDIT_Q[key]], 's4'); return; }
   track('edit', { k: key });
+  if (key === 'scope') { scope(function (m) { m.edit(); }); return; }   // 不帶按鈕（「改」裡有讀屏字，不換字）
+  if (EDIT_Q[key]) { enterQuestions([EDIT_Q[key]], 's4'); return; }
   var d = byId('more-details'); if (d) { d.open = true; var i = $('input', d); if (i) i.focus(); }
 }
 
@@ -858,6 +901,10 @@ function submit() {
     });
     return;
   }
+  // caps 沒列的範圍（設定晚到、#k 帶來的）：不靜靜拿掉就送；先拿掉、回確認畫面說明，再按一次才送
+  S.cg = 0;
+  var g = capGate(S.fields, S);
+  if (S.cg) { S.fields = g; toConfirm(); return; }
   setBusy(true);
   // 冪等鍵跟著「這次要找的內容」走：內容一樣（連點、網路重送）沿用同一把；換了條件或句子就換新的。
   // 2026-10-07 景泰實測「現在輸入什麼他都不會找新的案子」：原本只在第一次產生，之後每一筆都被家用機當成同一筆重送、回舊結果。
@@ -943,6 +990,7 @@ function startWaiting(first) {
   renderQueue(first && first.queue);
   show('s6');
   if (S.mode === 'live') mountGame();
+  if (scopeText(S.fields)) scope(function () { /* 等待時先載好，到 s7／s8 不用再等 */ });
   var fb = byId('fatigue-box'); if (fb) fb.hidden = true;
   schedulePoll(2000);
   if (timers.tick) root.clearInterval(timers.tick);
@@ -1106,26 +1154,31 @@ function showResult() {
   track('result', { n: Math.min(12, r.count || 0), ws: Math.min(1800, Math.round(elapsed() / 1000)) });
   doc.title = doc.title.replace(/^（好了）/, '');
   show('s7');
+  if (root.FindScope || scopeText(S.fields)) scope(function (m) { m.done(); });   // 社區模式換一句；載過的話一般結果也交給它換回原句
 }
 
 /* ---------- s8：沒有完全符合 ---------- */
 function showEmpty(hints) {
   destroyGame();
-  var ul = byId('hint-list');
+  var ul = byId('hint-list'), sc = scopeText(S.fields), fb = byId('s8-scope-fb');
   ul.textContent = '';
   var list = hints.filter(function (x) { return HINT_COPY[x]; });
-  if (!list.length) list = ['loosen_price', 'loosen_district', 'drop_floor'];
+  // 有範圍：只畫認得的放寬；一個都不認得時不用舊的退回清單（放寬價格、多看一個區對範圍沒用），改成「改用區域找／LINE 問景泰」
+  if (!list.length && !sc) list = ['loosen_price', 'loosen_district', 'drop_floor'];
+  if (fb) fb.hidden = !sc || list.length > 0;
   list.forEach(function (x) {
     var b = h('button', { class: 'u2-opt u2-opt--btn', type: 'button', 'data-hint': x }, [h('span', { class: 'u2-opt__txt' }, [HINT_COPY[x], h('small', { text: hintDetail(S.fields, x) })])]);
     ul.appendChild(h('li', {}, [b]));
   });
   track('result', { n: 0, ws: Math.min(1800, Math.round(elapsed() / 1000)) });
   show('s8');
+  if (root.FindScope || sc) scope(function (m) { m.empty(hints); });   // 範圍的說法與按鈕；載過的話一般結果也交給它換回原樣
 }
 function applyHint(x) {
   track('result_click', { a: 'refine' });
   S.refineOf = S.jobId; S.idem = ''; S.jobId = null;
   if (x === 'loosen_district') { enterQuestions(['q_district'], 's4'); return; }
+  if (!HINT_COPY[x]) { scope(function (m) { m.hint(x); }); return; }   // 範圍那幾種（換個寫法、重新選範圍、改用區域找…）
   S.fields = hintFix(S.fields, S.context, x);
   toConfirm();
 }
@@ -1145,8 +1198,6 @@ function showDegraded(kind, lost, diag) {
   if (sb) sb.hidden = !lost;
   if (copy) copy.hidden = !lost;
   if (sum) sum.value = summaryText(S.fields, S.context);
-  var help = byId('deg-help');
-  if (help) help.textContent = '不留也可以，晚點再回來看看。';
   var sub = byId('deg-sub');
   if (sub) sub.textContent = S.contactSent ? '你的條件和聯絡方式都記下來了，不用再填一次。' : '你的條件已經記下來了，不用再填一次。';
   show('s9');
@@ -1229,9 +1280,10 @@ function setupFeedback() {
 
 /* ---------- 點擊分派 ---------- */
 function onClick(e) {
-  var t = e.target && e.target.closest ? e.target.closest('[data-act],[data-edit],[data-hint],[data-fill],[data-lineq]') : null;
+  var t = e.target && e.target.closest ? e.target.closest('[data-act],[data-edit],[data-hint],[data-fill],[data-lineq],[data-scope]') : null;
   if (!t) return;
   if (t.hasAttribute('data-fill')) { var ta = byId('free-text'); if (ta) { ta.value = t.getAttribute('data-fill'); ta.focus(); startedHow('free'); } return; }
+  if (t.hasAttribute('data-scope')) { scope(function (m) { m.open(t.getAttribute('data-scope')); }, t); return; }
   if (t.hasAttribute('data-edit')) { editRow(t.getAttribute('data-edit')); return; }
   if (t.hasAttribute('data-hint')) { applyHint(t.getAttribute('data-hint')); return; }
   if (t.hasAttribute('data-lineq')) { track('result_click', { a: 'lineq' }); return; }
@@ -1246,9 +1298,10 @@ function onClick(e) {
   else if (act === 'restart') resetAll();
   else if (act === 'pick') pickMode();
 }
-function pickMode() {
+function pickMode() {   // 「用選的」就是選區域，跟範圍互斥：先拿掉社區／74環內／地圖
   startedHow('pick');
   S.fields = S.fields || {};
+  SCOPES.forEach(function (k) { delete S.fields[k]; });
   S.freeText = '';
   byId('s3-chat').textContent = '';
   enterQuestions(NE.nextQuestions(S.fields, S.context, [], [], 4, false), null);
@@ -1285,6 +1338,9 @@ function loadConfig() {
     if (typeof j.turnstileSiteKey === 'string' && /^[0-9A-Za-z_-]{6,80}$/.test(j.turnstileSiteKey)) S.siteKey = j.turnstileSiteKey;
     if (typeof j.consentV === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(j.consentV)) S.consentV = j.consentV;
     if (typeof j.evt === 'string' && /^[0-9a-z]{1,8}\.[0-9a-f]{20}$/.test(j.evt)) S.evt = j.evt;
+    S.caps = SCOPES.filter(function (k) { return [].concat(j.caps).indexOf(k) >= 0; });   // 家用機支援的範圍找法：各自開關入口
+    $$('[data-scope]').forEach(function (b) { b.hidden = S.caps.indexOf(b.getAttribute('data-scope')) < 0; });
+    var se = byId('scope-entry'); if (se) se.hidden = !S.caps.length || S.mode !== 'live';
     if (j.ok === true) S.cfgOk = true;
   });
 }

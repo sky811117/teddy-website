@@ -21,8 +21,9 @@
  *   --diff [--base <ref>]       掃「本分支相對 base 的新增行；新檔掃全文」（含尚未 commit 的修改與未追蹤的新檔）。
  *                               base 預設是環境變數 LEAK_BASE，再沒有就 main。⚠️ 合併進 main 之後 main 對 main 是空的，
  *                               要改指「上一次上線的 commit 或 tag」，不然什麼都掃不到。
- *   --dist <dir>                掃建置產物：<dir>/find/**、首頁、隱私頁、404、新 JS（find-app、need-extract、wait-game、wait-board、find-brief）、
- *                               _astro/*.js、含 u2- 的 CSS（設計系統）、sitemap／llms.txt／_headers／_redirects
+ *   --dist <dir>                掃建置產物：<dir>/find/**、首頁、隱私頁、404、新 JS（find-app、need-extract、wait-game、wait-board、find-brief、
+ *                               find-scope、find-map）、find-map.css、自架的地圖程式庫 js/vendor/**、_astro/*.js、含 u2- 的 CSS（設計系統）、
+ *                               sitemap／llms.txt／_headers／_redirects
  *   --bundle <dir>              掃 Function 打包物（T1、T2；T3 允許）。打包物要用 charset=utf8 產生，否則中文被轉成 \uXXXX
  *                               （本腳本也會解開，但請兩邊都做）
  *   --samples <dir>             掃「端點回應樣本」（含標頭）：T1、T2、T3 全部禁用（瀏覽器看得到的回應不得有任何一層）
@@ -52,11 +53,17 @@ const opt = n => {
 };
 const cwd = process.cwd();
 
-const BROWSER_JS = ["find-app.js", "need-extract.js", "wait-game.js", "wait-board.js", "find-brief.js"];
+const BROWSER_JS = ["find-app.js", "need-extract.js", "wait-game.js", "wait-board.js", "find-brief.js", "find-scope.js", "find-map.js"];
+// 跟著瀏覽器端 JS 出貨的其他檔：地圖畫面的樣式（find-map.css）；自架的地圖程式庫整個資料夾（js/vendor/**，2026-10-09 Leaflet 1.9.4）
+const BROWSER_OTHER = ["find-map.css"];
+const VENDOR_DIR = ["js", "vendor"];
 // T3 允許出現的原始碼位置（相對 repo 根，正斜線）
 const T3_OK = [/^functions\//, /^src\/lib\/find\//, /^scripts\//, /^tests\//];
-// 對外主機白名單（載入資源用）：同源，加上人機驗證與全站既有的分析腳本（Layout 一律載入，Consent Mode 預設拒絕）
+// 對外主機白名單（載入資源用）：同源，加上人機驗證與全站既有的分析腳本（Layout 一律載入，Consent Mode 預設拒絕）；
 const HOST_OK = new Set(["teddy-house.tw", "www.teddy-house.tw", "challenges.cloudflare.com", "www.googletagmanager.com", "www.google-analytics.com"]);
+// 只准出現在特定檔案的主機（2026-10-09 地圖圖片＝內政部國土測繪中心開放圖資）：網域只能寫在 find-map.js（TILE_URL 那一處）
+// 與 _headers（/find/ 的 CSP img-src）。其他任何檔出現這個網域都算違規——不管是不是載入型寫法（find.astro 檔頭的規定）
+const HOST_FILE_ONLY = { "wmts.nlsc.gov.tw": /(^|[\\/])(?:js[\\/]find-map\.js|_headers(?:\.txt)?)$/ };
 // 二進位（圖片、字型…）不逐行掃；svg 是文字，要掃
 const BINARY_EXT = /\.(png|jpe?g|webp|gif|ico|avif|woff2?|ttf|otf|mp4|webm|mp3|pdf|zip|gz|br|map)$/i;
 const IMAGE_EXT = /\.(png|jpe?g|webp|gif|avif|ico)$/i;
@@ -352,7 +359,8 @@ function distFiles(dist, { forHosts = false } = {}) {
     if (fs.existsSync(path.join(dist, f))) out.push(path.join(dist, f));
   }
   for (const p of walk(dist)) if (/(^|[\\/])sitemap[^\\/]*\.xml$/i.test(p) && path.dirname(p) === dist) out.push(p);
-  for (const f of BROWSER_JS) if (fs.existsSync(path.join(dist, "js", f))) out.push(path.join(dist, "js", f));
+  for (const f of [...BROWSER_JS, ...BROWSER_OTHER]) if (fs.existsSync(path.join(dist, "js", f))) out.push(path.join(dist, "js", f));
+  for (const p of walk(path.join(dist, ...VENDOR_DIR))) out.push(p);
   for (const p of walk(path.join(dist, "_astro"))) {
     if (p.endsWith(".js")) { if (!forHosts) out.push(p); } // 全站共用的 JS 套件也掃禁字：新功能不該把任何字帶進去（對外主機另有既有的表單等用途，不在白名單檢查範圍）
     else if (p.endsWith(".css")) {
@@ -407,7 +415,7 @@ function modeHosts(dist) {
   let n = 0;
   const check = (file, line, u) => {
     const h = hostOf(u);
-    if (h && !HOST_OK.has(h)) hit(file, line, "HOST");
+    if (h && !HOST_OK.has(h) && !(HOST_FILE_ONLY[h] && HOST_FILE_ONLY[h].test(file))) hit(file, line, "HOST");
   };
   for (const p of distFiles(dist, { forHosts: true })) {
     if (BINARY_EXT.test(p)) continue;
@@ -417,6 +425,7 @@ function modeHosts(dist) {
     const f = rel(p);
     text.split(/\r?\n/).forEach((ln, i) => {
       const L = i + 1;
+      for (const [hh, okFile] of Object.entries(HOST_FILE_ONLY)) if (ln.toLowerCase().includes(hh) && !okFile.test(f)) hit(f, L, "HOST");
       if (p.endsWith(".html")) {
         // 載入型屬性：script／img／iframe／source／video／audio／form action／link 的 href（排除 preconnect、dns-prefetch 等提示）
         for (const m of ln.matchAll(/<(script|img|iframe|source|video|audio|embed|track)\b[^>]*?\b(?:src|srcset|poster)=["']([^"']+)["']/gi)) check(f, L, m[2].split(/\s+/)[0]);
@@ -443,7 +452,7 @@ function modeNoSourcemap(dirs) {
     for (const p of walk(path.resolve(cwd, d))) {
       n++;
       if (p.endsWith(".map")) hit(rel(p), 1, "SOURCEMAP");
-      else if (/\.(?:js|mjs|css)$/.test(p) && /find|wait-game|wait-board|need-extract|ui2|handlers|\/_worker/i.test(p)) {
+      else if (/\.(?:js|mjs|css)$/.test(p) && /find|wait-game|wait-board|need-extract|ui2|handlers|[\\/]vendor[\\/]|\/_worker/i.test(p)) {   // vendor＝自架的地圖程式庫（原版帶 sourceMappingURL，要拿掉）
         const t = readSafe(p);
         if (t && /\/\/# sourceMappingURL=|\/\*# sourceMappingURL=/.test(t)) hit(rel(p), 1, "SOURCEMAP");
       }

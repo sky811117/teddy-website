@@ -10,8 +10,10 @@ import crypto from "node:crypto";
 import { ROOT, FIX, readFixture } from "./_helpers.mjs";
 
 const SHA = {
-  "need_fixtures.json": "1543deb76ca5116ccd86b759b177494378c9f7b14ea91e1f6365ac52a24a489f",   // 2026-10-06 14:40 與家用機正本重新同步（x106 RT-11 修訂）
-  "event_cases.json": "e2d3bea4078443c3a2bd6736677ea01832c9b8d0beadad7dc276cea8ac0eee8c",
+  // 2026-10-09 範圍找法（指定社區／74環內／地圖）：家用機正本 version 2（363 案，含 xs／vs／as／fs 新案）與事件新案，tools/sync_fixtures.py --copy 同步
+  // 2026-10-09 審查修正：家用機正本加 xs86–xs95（社區附近、74環否定夾動詞、非 ASCII 數字）與 vs34–vs37（社區名 5 位數字，only:"server"），377 案
+  "need_fixtures.json": "e4e15b4e20133e8eb39fe5a58dec4ed16ca7599b6bedecb61645d4f72cf6f939",
+  "event_cases.json": "a9c13d6a9e90bae387f20d03078e30adc5493dc30c40290d5ec3a70f8168e063",
   "sign_vectors.json": "96609db0ef7d444a16e915621615f6e1ff4c30f858940425b2636c806c8919d0",
 };
 
@@ -39,6 +41,13 @@ test("夾具規模：抽取 ≥80 句、規則式 ≥60、需要 LLM 才行的 �
   assert.ok(ext.filter(c => c.inject).length >= 4);
   for (const k of ["compose", "assess", "pii", "validate", "brief", "frag"]) assert.ok(FX.cases.some(c => c.kind === k), k);
   assert.equal(new Set(FX.cases.map(c => c.id)).size, FX.cases.length, "id 不可重複");
+  // 2026-10-09 範圍找法（version 2）：extract 212（規則式 197）、validate 63、assess 17、frag 22
+  assert.ok(ext.length >= 200 && ext.filter(c => c.tier === "rules").length >= 190);
+  assert.ok(FX.cases.filter(c => /^xs\d+$/.test(c.id)).length >= 80, "社區／74環內的抽取句");
+  assert.ok(FX.cases.filter(c => /^vs\d+$/.test(c.id)).length >= 33, "社區／74環內／地圖範圍的驗證案");
+  assert.ok(!FX.cases.some(c => c.id === "xs50"), "注入句（忽略規則社區）不放共用夾具");
+  assert.ok(["fs03", "fs04"].every(id => FX.cases.some(c => c.id === id)), "#k 鍵順序 d, cm, z");
+  for (const c of FX.cases.filter(c => c.kind === "validate" && "only" in c)) assert.equal(c.only, "server", c.id);
 });
 
 test("find-brief.js 版本戳（version.ts）沒有過期", () => {

@@ -34,8 +34,11 @@ const CONCERN_LABEL: Record<string, string> = {
 const DEV_LABEL: Record<string, string> = { m: "手機", d: "桌機", t: "平板", b: "不明" };
 const PREF_LABEL: Record<string, string> = { line: "LINE", phone: "電話", email: "Email" };
 
+/** 條件（系統固定文字，還沒跳脫）。社區名是客人打的字，不在這裡：formatLead 另外包 <code>；地圖範圍只寫點數，不寫座標 */
 export function condParts(f: Fields): string[] {
   const p: string[] = [];
+  if (f.zone) p.push("74環內");
+  if (f.geo?.length) p.push(`地圖範圍（${f.geo.length} 個點）`);
   if (f.districts?.length) p.push(f.districts.join("、") + (f.road ?? ""));
   if (f.rooms_min !== undefined || f.rooms_max !== undefined) {
     if (f.rooms_min !== undefined && f.rooms_max !== undefined) p.push(f.rooms_min === f.rooms_max ? `${f.rooms_min} 房` : `${f.rooms_min}～${f.rooms_max} 房`);
@@ -98,8 +101,9 @@ export function formatLead(i: LeadInput): string {
     esc(`來源：${i.from ?? "（無標記）"}｜${DEV_LABEL[i.dev] ?? "不明"}｜原因：${i.why === "intake" ? "收件模式" : i.why === "upstream_down" ? "後端沒接到" : "人機驗證服務連不上"}`),
   );
   if (i.ref) lines.push(esc("對帳碼：") + code(i.ref));
-  const cond = condParts(i.fields);
-  lines.push(esc(`條件：${cond.length ? cond.join("｜") : "（沒有抽到條件）"}`));
+  const cond = condParts(i.fields).map(esc);
+  if (i.fields.community) cond.unshift(`${code(hideLinks(i.fields.community))}社區`);   // 社區名是客人打的字：框起來，像網址／電話／帳號的字再遮掉
+  lines.push(esc("條件：") + (cond.length ? cond.join(esc("｜")) : esc("（沒有抽到條件）")));
   const ctx: string[] = [];
   if (i.context.stage) ctx.push(STAGE_LABEL[i.context.stage] ?? i.context.stage);
   if (i.context.timeline) ctx.push(TIMELINE_LABEL[i.context.timeline] ?? i.context.timeline);

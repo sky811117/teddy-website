@@ -1,0 +1,69 @@
+/* find-map.css 找房小幫手的地圖畫面（find-map.js 建的 DOM：.u2-mapui、.u2-map 以下全部；入口與 s1 面板在 ui2-find.css）。
+   跟 Leaflet 的樣式一起延遲載入、排在它後面。不分層：Leaflet 的樣式也沒分層，這樣才蓋得過它預設的 12px 字與淺灰底。
+   客人看得到的字一律 ≥17px（--u2-fs-2）；顏色只用設計系統 token（淺／深色自動換）；地圖圖片的濾鏡跟著深淺色換。
+   手機：地圖高約半個畫面；動作列黏在畫面底部（大拇指旁邊）；320 寬不撐出橫向捲動。 */
+.u2-mapui { display: grid; gap: .75rem; min-width: 0; scroll-margin-top: .5rem; font-size: var(--u2-fs-2); line-height: 1.7; color: var(--u2-ink); }
+.u2-mapui [hidden] { display: none !important; }
+.u2-mapui p { margin: 0; }
+.u2-map__lead, .u2-map__status, .u2-map__credit, .u2-map__keys, .u2-map__keys p { font-size: var(--u2-fs-2); line-height: 1.7; }
+.u2-map__credit, .u2-map__keys p { color: var(--u2-ink-2); }
+.u2-map__keys > summary { min-height: 2.75rem; display: flex; align-items: center; color: var(--u2-wood); font-weight: 700; cursor: pointer; }
+
+/* 地圖本體：自己一個堆疊層（Leaflet 內部的 400／1000 層不會蓋過站上的選單與動作列） */
+.u2-map__wrap { position: relative; min-width: 0; max-width: 100%; }
+.u2-map {
+  position: relative; z-index: 0; isolation: isolate;
+  width: 100%; max-width: 100%;
+  height: clamp(240px, 50vh, 440px);
+  height: clamp(240px, 50svh, 440px);
+  border: 1.5px solid var(--u2-line-strong); border-radius: var(--u2-r-field);
+}
+.u2-map.leaflet-container { font: inherit; font-size: var(--u2-fs-2); background: var(--u2-paper); }
+.u2-map.leaflet-container:focus-visible { outline: 3px solid var(--u2-focus); outline-offset: 2px; }
+/* 自己圈的時候：手指在地圖上是畫線，不是捲網頁（圈完就拿掉這個 class） */
+.u2-map.u2-map--draw { touch-action: none; cursor: crosshair; }
+
+/* 放大／縮小（自己做的，44×44、17px 中文字；Leaflet 內建的是英文說明，關掉） */
+.u2-map__zoom { position: absolute; top: .5rem; right: .5rem; z-index: 1; display: grid; gap: .375rem; }
+.u2-map__zbtn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 44px; min-height: 44px; padding: 0 .375rem;
+  border: 1.5px solid var(--u2-line-strong); border-radius: var(--u2-r-btn);
+  background: var(--u2-vellum); color: var(--u2-ink); box-shadow: var(--u2-sh-1);
+  font: inherit; font-size: var(--u2-fs-2); font-weight: 700; line-height: 1.2; cursor: pointer;
+}
+@media (hover: hover) { .u2-map__zbtn:hover { background: var(--u2-wood-100); } }   /* 手機點完不會一直亮著 */
+.u2-map__zbtn:disabled { opacity: .55; cursor: not-allowed; }
+.u2-map__zbtn:focus-visible { outline: 3px solid var(--u2-focus); outline-offset: 2px; }
+
+/* 動作列：緊貼地圖下方；捲到哪裡都黏在畫面底部 */
+.u2-map__bar {
+  position: sticky; bottom: 0; z-index: 2;
+  display: grid; gap: .375rem;
+  padding: .5rem .5rem calc(.5rem + env(safe-area-inset-bottom, 0px));
+  border: 1px solid var(--u2-line); border-top-color: var(--u2-line-strong); border-radius: var(--u2-r-field);
+  background: var(--u2-paper);
+}
+.u2-map__status { min-height: 1.7em; font-weight: 700; }
+.u2-map__modes { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.u2-map__modes .u2-btn { min-width: 0; padding-inline: .25rem; letter-spacing: 0; white-space: normal; }
+.u2-map__modes .u2-btn[aria-pressed="true"] { background: var(--u2-wood-100); border-color: var(--u2-wood-600); color: var(--u2-ink); }
+.u2-map__acts { display: flex; flex-wrap: wrap; gap: .5rem; }
+.u2-map__acts .u2-btn { flex: 1 1 auto; max-width: 100%; white-space: normal; }
+@media (max-width: 359px) {
+  .u2-map__acts .u2-btn { flex-basis: 100%; }
+}
+
+/* 畫的線與圈（Leaflet 的 SVG）：顏色走 token，JS 裡不寫顏色 */
+.u2-map .u2-map__line, .u2-map .u2-map__ring, .u2-map .u2-map__old { stroke: var(--u2-wood); stroke-linejoin: round; stroke-linecap: round; }
+.u2-map .u2-map__line { stroke-width: 3px; fill: none; }
+.u2-map .u2-map__ring { stroke-width: 3px; fill: var(--u2-wood-500); fill-opacity: .2; }
+.u2-map .u2-map__ring--bad { stroke: var(--u2-err); fill: var(--u2-err); stroke-dasharray: 8 6; }
+.u2-map .u2-map__old { stroke-width: 2px; stroke-dasharray: 6 6; fill: none; }
+
+/* 地圖圖片：淺色稍微壓暗、偏暖；深色反相成夜間版（不會先閃一整片淺灰） */
+.u2-map .leaflet-tile-pane { filter: saturate(.94) contrast(1.12) brightness(.97) hue-rotate(-6deg); }
+:root[data-theme="dark"] .u2-map .leaflet-tile-pane { filter: invert(.93) hue-rotate(180deg) saturate(.7) contrast(1.1); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .u2-map .leaflet-tile-pane { filter: invert(.93) hue-rotate(180deg) saturate(.7) contrast(1.1); }
+}

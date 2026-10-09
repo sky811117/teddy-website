@@ -141,3 +141,30 @@ test("代碼帶「哪一隻＋金鑰長相」（不洩漏金鑰）：f／c、k �
   assert.equal(j.diag, "tg-p-ch404a");
   assert.match(j.diag, /^[a-z0-9-]{1,24}$/);   // 前端只顯示符合這個格式的代碼
 });
+
+/* ---------- 2026-10-09 範圍找法：收件線索怎麼寫社區／74環內／地圖範圍 ---------- */
+const L = (await bundleTs("src/lib/find/leadfmt.ts")).mod;
+const lead = fields => L.formatLead({ why: "intake", fields, context: {}, free_text: "", contact: null, consent: null, from: null, dev: "m" });
+
+test("收件線索：社區名是客人打的字，包在 <code>（跳脫）；74環內照寫；地圖只寫點數、不寫座標", () => {
+  let t = lead({ districts: ["西屯區"], community: "文華匯", rooms_min: 3, rooms_max: 3 });
+  assert.match(t, /^條件：<code>文華匯<\/code>社區｜西屯區｜3 房$/m);
+  t = lead({ community: "<b>&amp;x" });
+  assert.ok(t.includes("<code>b&amp;amp;x</code>社區"), t);   // normText 先拿掉 <>，其餘跳脫
+  assert.ok(!/<b>/.test(t));
+  t = lead({ districts: ["北屯區"], zone: "r74", price_max_wan: 2000 });
+  assert.match(t, /^條件：74環內｜北屯區｜2000 萬以內$/m);
+  t = lead({ geo: [[24.16123, 120.64456], [24.16, 120.65], [24.17, 120.65], [24.17, 120.64]], rooms_min: 2, rooms_max: 2 });
+  assert.match(t, /^條件：地圖範圍（4 個點）｜2 房$/m);
+  assert.ok(!/24\.16|120\.64/.test(t), "不貼座標");
+  assert.match(lead({}), /^條件：（沒有抽到條件）$/m, "沒有條件時照舊");
+});
+
+test("審查 SEC-01：收件線索的社區名再過 hideLinks（像網址、@帳號的字遮掉）", () => {
+  // formatLead 拿到的欄位在前面已經驗過（commOk 擋掉這些），這裡是多一層：萬一舊資料或別的路徑帶進來也不會原樣推到 TG
+  const t = lead({ community: "加我 @abc123", rooms_min: 3, rooms_max: 3 });
+  assert.ok(!t.includes("@abc123"), t);
+  assert.ok(!lead({ community: "文華匯 0912345678" }).includes("0912345678"));
+  assert.match(t, /^條件：<code>[^<]*<\/code>社區｜3 房$/m);
+  assert.match(lead({ community: "文華匯" }), /^條件：<code>文華匯<\/code>社區$/m, "正常的社區名不受影響");
+});

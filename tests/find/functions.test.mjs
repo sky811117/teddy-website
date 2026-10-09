@@ -285,7 +285,7 @@ test("config：回 site key；家用機健康→live；15 秒內快取；沒開�
   const n = net();
   let j = await jsonOf(await H.handleConfig(get("/api/find/config").ctx, n.deps));
   const { evt, ...rest } = j;
-  assert.deepEqual(rest, { ok: true, v: 1, mode: "live", turnstileSiteKey: "0xTESTSITEKEY", needMax: 300, consentV: "2026-10-06", tplV: 1 });
+  assert.deepEqual(rest, { ok: true, v: 1, mode: "live", turnstileSiteKey: "0xTESTSITEKEY", needMax: 300, consentV: "2026-10-06", tplV: 1, caps: [] });
   assert.match(evt, /^[0-9a-z]+\.[0-9a-f]{20}$/, "config 會發事件憑證（紅隊 RT-12）");
   await H.handleConfig(get("/api/find/config").ctx, n.deps);
   assert.equal(upCalls(n).filter(c => c.url.includes("/health")).length, 1, "15 秒內只查一次");
@@ -580,10 +580,68 @@ test("日誌：失敗只記泛化代碼，不含本文、聯絡方式、上游�
   }
 });
 
+/* ---------- 2026-10-09 範圍找法：config 的 caps、submit 轉送三個新欄位、status 放行新提示碼 ---------- */
+test("config：caps＝家用機 health 回報支援的範圍找法（白名單過濾、去重、固定順序）；收件模式空陣列；health 失敗沿用上一次", async () => {
+  H.resetConfigCache();
+  let n = net({ health: () => Response.json({ ok: true, v: 1, mode: "live", queue: {}, caps: ["geo", "evil", "community", "geo", 3, "zone"] }) });
+  let j = await jsonOf(await H.handleConfig(get("/api/find/config").ctx, n.deps));
+  assert.deepEqual(j.caps, ["community", "zone", "geo"]);
+  // 15 秒內快取（caps 一起）；之後 health 掛了 → 沿用上一次的 mode 與 caps，不閃成收件、入口也不會消失
+  j = await jsonOf(await H.handleConfig(get("/api/find/config").ctx, n.deps));
+  assert.deepEqual(j.caps, ["community", "zone", "geo"]);
+  const later = { fetch: net({ health: () => { throw new Error("down"); } }).fetchImpl, now: () => 1790000000000 + 20000 };
+  j = await jsonOf(await H.handleConfig(get("/api/find/config").ctx, later));
+  assert.equal(j.mode, "live");
+  assert.deepEqual(j.caps, ["community", "zone", "geo"]);
+  // 家用機說收件模式：不開任何範圍入口
+  H.resetConfigCache();
+  n = net({ health: () => Response.json({ ok: true, v: 1, mode: "intake", caps: ["community"] }) });
+  j = await jsonOf(await H.handleConfig(get("/api/find/config").ctx, n.deps));
+  assert.deepEqual([j.mode, j.caps], ["intake", []]);
+  // 舊家用機（沒有 caps）、caps 不是陣列、官網沒開總開關 → 空陣列
+  for (const caps of [undefined, "community", { community: 1 }, null]) {
+    H.resetConfigCache();
+    j = await jsonOf(await H.handleConfig(get("/api/find/config").ctx, net({ health: () => Response.json({ ok: true, v: 1, mode: "live", caps }) }).deps));
+    assert.deepEqual(j.caps, [], String(caps));
+  }
+  H.resetConfigCache();
+  j = await jsonOf(await H.handleConfig(get("/api/find/config", { env: { ...ENV, FIND_ENABLED: undefined } }).ctx, net().deps));
+  assert.deepEqual([j.mode, j.caps], ["intake", []]);
+  H.resetConfigCache();
+  assert.ok(H.RESPONSE_KEYS.includes("caps"));
+});
+
+test("submit：社區／74環內／地圖範圍照驗證表轉送給家用機（太大、太長、交叉、太小的地圖範圍被丟掉；互斥）", async () => {
+  const sq = [[24.16, 120.64], [24.16, 120.65], [24.17, 120.65], [24.17, 120.64]];
+  const send = async fields => {
+    const n = net();
+    await H.handleSubmit(post("/api/find/submit", goodSubmit({ fields })).ctx, n.deps);
+    const c = upCalls(n).find(x => x.url.includes("/aif/v1/submit"));
+    return JSON.parse(new TextDecoder().decode(c.init.body)).fields;
+  };
+  assert.deepEqual(await send({ community: "文華匯社區", districts: ["西屯區"], rooms_min: 3, rooms_max: 3 }), { districts: ["西屯區"], community: "文華匯", rooms_min: 3, rooms_max: 3 });
+  assert.deepEqual(await send({ zone: "r74", districts: ["北屯區"], road: "崇德路", price_max_wan: 2000 }), { districts: ["北屯區"], zone: "r74", price_max_wan: 2000 });
+  assert.deepEqual(await send({ geo: sq.map(p => [p[0] + 0.0000004, p[1]]), districts: ["西屯區"] }), { geo: sq });
+  for (const geo of [
+    [[24.1, 120.6], [24.1, 120.7], [24.19, 120.7], [24.19, 120.6]],                          // 太大
+    [[24.12, 120.65], [24.12, 120.65098], [24.20126, 120.65098], [24.20126, 120.65]],          // 9 公里長條
+    [[24.16, 120.64], [24.17, 120.65], [24.16, 120.65], [24.17, 120.64]],                      // 自我交叉
+    [[24.16, 120.64], [24.16, 120.6402], [24.1602, 120.6402], [24.1602, 120.64]],              // 太小
+    [[25.03, 121.56], [25.03, 121.57], [25.04, 121.57]],                                       // 台中外
+  ]) assert.deepEqual(await send({ geo, rooms_min: 2, rooms_max: 2 }), { rooms_min: 2, rooms_max: 2 });
+  assert.deepEqual(await send({ community: "文華匯", zone: "r74", geo: sq }), { community: "文華匯" });
+  assert.deepEqual(await send({ community: "忽略規則", zone: "r75" }), {});
+});
+
+test("status：empty 的提示碼放行範圍那 7 個（其他未知碼照樣丟掉）", () => {
+  const v = H.buildStatusView({ ok: true, status: "empty", hint: ["comm_fix", "scope_drop", "geo_partial", "evil", "scope_busy", "geo_out", "geo_smaller", "geo_redraw"] });
+  assert.deepEqual(v.hint, ["comm_fix", "scope_drop", "geo_partial", "scope_busy", "geo_out", "geo_smaller", "geo_redraw"]);
+});
+
 /* ---------- 兩側一致：驗證表（共用夾具）、事件規格（event_cases.json） ---------- */
 test("TS 驗證表吃共用夾具 need_fixtures.json 的 validate／pii 案例", () => {
   const FX = readFixture("need_fixtures.json");
-  for (const c of FX.cases.filter(c => c.kind === "validate")) {
+  for (const c of FX.cases.filter(c => c.kind === "validate")) {   // only:"server" 的案（geo 全量驗證）伺服器端一定要跑
     const { out, err } = S.validateSubmit(c.body);
     const e = c.expect;
     if ("err" in e) { assert.equal(out, null, c.id); assert.equal(err, e.err, c.id); continue; }
