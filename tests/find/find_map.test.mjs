@@ -253,6 +253,7 @@ async function mapEnv({ reduceMotion = false, size = null, preL = false, rects =
       if (t === "div" && size) { e.clientWidth = size[0]; e.clientHeight = size[1]; }
       if (t === "div" && rects) {
         win.innerHeight = rects.vh;
+        win.scrollBy = o => log.scrolled.push(["window", o]);
         e.getBoundingClientRect = () => rects[e.className.split(" ")[0]] || { top: 0, bottom: 0, height: 0 };
         e.scrollIntoView = o => log.scrolled.push([e.className, o]);
       }
@@ -510,6 +511,28 @@ test("自己圈：一筆畫完 → 簡化（≤24 點）→ 鎖住（不再收�
   assert.deepEqual(areaEvents(t.log), [{ a: "open", m: "view" }, { a: "done", m: "lasso" }]);
 });
 
+test("圈完：黏在底部的動作列蓋到地圖下緣（320×640 實測蓋掉 98px）→ 網頁往下捲到不蓋（上面空間不夠就捲到地圖頂）；沒蓋到就不捲；減少動態時不用平滑捲動", { skip: NO_DOM }, async () => {
+  const pts = circle(150, 160, 60, 40);
+  const drawn = async (rects, reduceMotion = false) => {
+    const t = await mapEnv({ rects, reduceMotion });
+    await t.built();
+    t.log.scrolled.length = 0;   // 開圖時的「捲到地圖」另外測
+    click(t.btn('data-mm="lasso"'));
+    t.stroke(pts);
+    assert.match(t.status(), /^圈好了/);
+    return plain(t.log.scrolled);
+  };
+  const cover = { vh: 640, "u2-map": { top: 138, bottom: 458, height: 320 }, "u2-map__bar": { top: 360, bottom: 640, height: 280 } };
+  assert.deepEqual(await drawn(cover), [["window", { top: 98, behavior: "smooth" }]]);
+  const tight = { vh: 568, "u2-map": { top: 40, bottom: 324, height: 284 }, "u2-map__bar": { top: 288, bottom: 568, height: 280 } };
+  assert.deepEqual(await drawn(tight), [["window", { top: 36, behavior: "smooth" }]], "蓋 36、上面有 40 → 捲 36");
+  const top = { vh: 568, "u2-map": { top: 10, bottom: 294, height: 284 }, "u2-map__bar": { top: 288, bottom: 568, height: 280 } };
+  assert.deepEqual(await drawn(top), [["window", { top: 6, behavior: "smooth" }]], "蓋 6、上面只有 10 → 捲 6");
+  const clear = { vh: 844, "u2-map": { top: 139, bottom: 561, height: 422 }, "u2-map__bar": { top: 574, bottom: 765, height: 191 } };
+  assert.deepEqual(await drawn(clear), [], "沒蓋到：不捲");
+  assert.deepEqual(await drawn(cover, true), [["window", { top: 98, behavior: "auto" }]]);
+});
+
 test("自己圈：第二根手指放上來就取消這一筆並說明；說明同一句 1 秒內不重念；重畫；只是點一下不算", { skip: NO_DOM }, async () => {
   const t = await mapEnv();
   const m = await t.built();
@@ -714,7 +737,7 @@ test("find-map.css：字 ≥17px、只用 token、覆寫 Leaflet 字級與底色
   assert.ok(css.includes(`:root[data-theme="dark"] .u2-map .leaflet-tile-pane { ${dark}; }`));
   assert.match(css, new RegExp(`@media \\(prefers-color-scheme: dark\\) \\{\\s*:root:not\\(\\[data-theme="light"\\]\\) \\.u2-map \\.leaflet-tile-pane \\{ ${dark.replace(/[().]/g, "\\$&")}; \\}`));
   assert.ok(css.includes(".u2-map .leaflet-tile-pane { filter: saturate(.94) contrast(1.12) brightness(.97) hue-rotate(-6deg); }"));
-  assert.match(css, /@media \(max-width: 359px\)/);
+  assert.match(css, /@media \(max-width: 359px\) \{\s*\.u2-map__acts \.u2-btn \{ flex: 1 1 0;/, "320 寬：圈完的兩顆按鈕並排（動作列少一排，不蓋地圖）");
   assert.match(css, /\.u2-map \.u2-map__ring \{[^}]*fill: var\(--u2-wood-500\)/);
   assert.match(css, /stroke: var\(--u2-wood\)/);
   assert.ok(!/@layer/.test(css), "不分層（要蓋過 Leaflet 沒分層的樣式）");

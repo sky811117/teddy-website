@@ -51,7 +51,7 @@
 .u2-map__acts { display: flex; flex-wrap: wrap; gap: .5rem; }
 .u2-map__acts .u2-btn { flex: 1 1 auto; max-width: 100%; white-space: normal; }
 @media (max-width: 359px) {
-  .u2-map__acts .u2-btn { flex-basis: 100%; }
+  .u2-map__acts .u2-btn { flex: 1 1 0; padding-inline: .5rem; }   /* 圈完的「用這一圈找／重畫」並排：動作列少一排，320×640 不蓋地圖 */
 }
 
 /* 畫的線與圈（Leaflet 的 SVG）：顏色走 token，JS 裡不寫顏色 */

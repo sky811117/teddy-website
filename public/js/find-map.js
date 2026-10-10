@@ -421,6 +421,15 @@ function finish(s, k) {
     : c.code === 'too_big' ? T.big : c.code === 'self_cross' ? T.messy : T.small;
   s.ring = root.L.polygon(c.ok ? c.poly : ll, { className: 'u2-map__ring' + (c.ok ? '' : ' u2-map__ring--bad'), interactive: false }).addTo(s.map);
   draw(s);
+  unhide(s);
+}
+/* 圈完：黏在底部的動作列變高、蓋到地圖下緣 → 網頁往下捲一點讓圈整個露出（地圖上面還有空間才捲，捲不完就捲到地圖頂） */
+function unhide(s) {
+  var r, b, d;
+  if (!s.el.getBoundingClientRect) return;
+  r = s.el.getBoundingClientRect(); b = s.bar.getBoundingClientRect();
+  d = Math.min(r.bottom - b.top, r.top);
+  if (d > 0) try { root.scrollBy({ top: d, behavior: reduced() ? 'auto' : 'smooth' }); } catch (e) { /* 捲不動就算了 */ }
 }
 function redo(s) {
   if (s.ring) { s.ring.remove(); s.ring = null; }
