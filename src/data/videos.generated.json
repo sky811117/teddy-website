@@ -1,11 +1,25 @@
 {
-  "generatedAt": "2026-10-09T20:19:18+08:00",
+  "generatedAt": "2026-10-10T20:11:48+08:00",
   "source": {
-    "registrySyncedAt": "2026-10-08 22:38",
+    "registrySyncedAt": "2026-10-09 22:38",
     "since": "2026-07-01"
   },
   "count": 36,
   "videos": [
+    {
+      "id": "yt--ePTnC2YADY",
+      "platform": "youtube",
+      "videoId": "-ePTnC2YADY",
+      "url": "https://www.youtube.com/shorts/-ePTnC2YADY",
+      "title": "台中西屯｜市政9號｜3房2廳3衛｜14200萬",
+      "category": "看屋開箱",
+      "district": "西屯區",
+      "community": "市政9號",
+      "pubDate": "2026-10-09",
+      "listingCodes": [
+        "0397187"
+      ]
+    },
     {
       "id": "yt-zkq2k6S5itg",
       "platform": "youtube",
@@ -364,20 +378,6 @@
       "pubDate": "2026-08-18",
       "listingCodes": [
         "1211276"
-      ]
-    },
-    {
-      "id": "yt-ipMtWh2iSUg",
-      "platform": "youtube",
-      "videoId": "ipMtWh2iSUg",
-      "url": "https://www.youtube.com/shorts/ipMtWh2iSUg",
-      "title": "台中太平｜長億十街透天｜4房3衛｜1880萬→1760萬",
-      "category": "看屋開箱",
-      "district": "太平區",
-      "community": "長億十街透天",
-      "pubDate": "2026-08-15",
-      "listingCodes": [
-        "1211364"
       ]
     },
     {
