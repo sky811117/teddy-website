@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-10T20:11:48+08:00",
+  "generatedAt": "2026-10-13T20:11:06+08:00",
   "source": {
-    "registrySyncedAt": "2026-10-09 22:38",
+    "registrySyncedAt": "2026-10-12 22:38",
     "since": "2026-07-01"
   },
-  "count": 36,
+  "count": 35,
   "videos": [
     {
       "id": "yt--ePTnC2YADY",
@@ -45,20 +45,6 @@
       "pubDate": "2026-10-06",
       "listingCodes": [
         "1228243"
-      ]
-    },
-    {
-      "id": "yt-FMOi-4havUc",
-      "platform": "youtube",
-      "videoId": "FMOi-4havUc",
-      "url": "https://www.youtube.com/shorts/FMOi-4havUc",
-      "title": "台中東區｜星境界｜2房2廳1衛｜1688萬",
-      "category": "看屋開箱",
-      "district": "東區",
-      "community": "星境界",
-      "pubDate": "2026-10-05",
-      "listingCodes": [
-        "1211333"
       ]
     },
     {
