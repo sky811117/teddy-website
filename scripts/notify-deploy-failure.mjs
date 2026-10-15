@@ -47,7 +47,6 @@ const MAX_ITEMS = 5;
 
 // 步驟名稱 → 白話。比對用「包含」，deploy.yml 改步驟名時這裡要跟著改（對不到就直接顯示原名）。
 const STEP_PLAIN = [
-  ["測試用", "這是測試用的假失敗，不用處理", false],
   ["leak denylist", "洩漏檢查用的禁字清單沒設好（要到 GitHub 設定補）", false],
   ["Content lint", "文章紅線檢查：有文章踩到禁寫規則", false],
   ["Property audit", "物件法規檢查：有物件內容踩到法規紅線", false],

@@ -8,12 +8,6 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      # ⚠️ 測試用（2026-10-15）：驗證 notify-failure 的 TG 通知，測完就拿掉（連同 deploy 裡的「測試用：故意失敗」步驟）
-      simulate_failure:
-        description: "測試用：故意讓部署失敗（驗證 TG 通知）"
-        type: boolean
-        default: false
   schedule:
     # 排程文的門檻是 pubDatetime − 15 分鐘（postFilter）：在門檻之前 push 的那次 build 不會包含它，
     # 要等下一次 push 或下面這兩條 cron 保底 rebuild 才上線。
@@ -45,13 +39,6 @@ jobs:
       contents: read
       deployments: write
     steps:
-      # ⚠️ 測試用（2026-10-15）：只有手動觸發並勾 simulate_failure 才會跑，push／排程一律略過。測完就拿掉。
-      - name: 測試用：故意失敗
-        if: ${{ inputs.simulate_failure }}
-        run: |
-          echo "::error::測試用的假失敗（驗證部署失敗 TG 通知）"
-          exit 1
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
