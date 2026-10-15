@@ -22,12 +22,14 @@
  *     11-14 連 draft 也檢查（草稿之後會發布），draft 降級為 warning
  * 17. unbuilt 未完工公共建設（藍線／巨蛋／輕軌／BC 標號／「規劃中…捷運」「未來…重劃」…）
  *     — 字表搬自 450_上架巡檢/staging_quality.py，跟三平台上架閘門擋同一份字。
- *     2026-10-03 先設 WARNING（posts 已發布、pages/components/areas.ts、properties），draft 關閉；
- *     全站清到 0 WARNING 後再由主對話改 ERROR。
- * 18. visitClaim 無法證實的「現場走訪／去看了幾趟／跟在地業務聊過」(WARNING)
+ *     2026-10-03 先設 WARNING；2026-10-15 全站清到 0 後 posts 已發布與 pages/components 改 ERROR（properties 照舊 WARNING），draft 關閉。
+ * 18. visitClaim 無法證實的「現場走訪／去看了幾趟／跟在地業務聊過」(2026-10-15 起 ERROR；draft 為 WARNING)
  * 19. prediction 無來源的房價預測（保值／抗跌／看好／會漲…；漲幅／上漲／增值要搭配未來式才算）(WARNING，只掃 posts)
+ *     — 刻意不升 ERROR：句意判斷會誤判，每日新聞產線推送前不跑 lint，升了會讓一篇誤判卡住整站部署
  * 20. timely-title 標題帶時效字（倒數／還剩／即將／到期…）且發布超過 60 天、沒有更新紀錄 (WARNING)
+ *     — 刻意不升 ERROR：條件跟著日期走，文章沒人動也會在第 61 天突然擋部署
  * 21. title-length 2026-10-04 起發布的文章 title 超過 34 字 (WARNING；跟 WebsiteRefill refill.py 硬上限一致，目標仍是 ≤32)
+ * 22. title／description 中文旁邊用半形 ? , : ; (WARNING，2026-10-15；修法 node scripts/fix-cjk-punct.mjs --write)
  *
  * 掃描範圍（2026-09-06 擴充）：
  *   A. src/content/posts/**\/*.md|mdx — 全部規則
@@ -328,11 +330,13 @@ const SELLER_BAD_KEYS_RE = /\bhasCredential\b|\btelephone\b/;
 //   (d) 該行有 markdown 出處連結 ](http…) → 視同引用數據跳過（同 12 條同業品牌的 isSourceLink）
 //   (e) 問句不算：命中詞後面同一句有「嗎／？」，或前面是「會不會」
 //   (f) 「看好」當「已挑好」用不算：看好房／看好幾間／看好某間／看好物件／已看好／房子看好
+// 22. title／description 中文旁邊的半形 ? , : ;（千分位、英數之間不算；跟 fix-cjk-punct.mjs 同一個判準的簡化版）
+const CJK_HALF_PUNCT_RE = /[㐀-鿿][?,:;]|[?,:;][㐀-鿿]/;
 const PREDICTION_DIRECT_RE = /增值潛力|保值|抗跌|(?<!已|已經|子)看好(?!房|幾|某|物件|的房)|會漲|看漲|起漲|翻倍/g;
 const PREDICTION_SOFT_RE = /漲幅|上漲|增值/g;
 const PREDICTION_FUTURE_CTX_RE = /未來|若|可能|預估|潛力|空間|突破|(?<!\d)\d{1,2} ?年/;
 const PREDICTION_SKIP_LINE_RE = /📌|資料來源|來源：|來源:|調查|指數|報告|稅|級距|公告現值|\]\(https?:/;
-const PREDICTION_NEGATION_RE = /不是|並非|不代表|別把|不預測/;
+const PREDICTION_NEGATION_RE = /不是|並非|不代表|別把|不要把|不建議|不預測/;  // 2026-10-15 補「不建議／不要把」：勸讀者別拿增值當理由的句子不是預測
 
 function predictionHits(whole) {
   const hits = new Set();
@@ -609,9 +613,10 @@ async function lintPosts(errors, warnings) {
       negotiation: level,
       appraisal: "warning",
       exaggerated: isDraft ? "off" : "warning",
-      // 17-19（2026-10-03 新增）：這輪先 WARNING，全站清到 0 之後再改 ERROR
-      unbuilt: isDraft ? "off" : "warning",
-      visitClaim: "warning",
+      // 17-18：2026-10-15 全站清到 0 後升 ERROR（擋部署）；draft 照舊降級
+      // 19 prediction 維持 WARNING：句意判斷誤判率高，每日新聞產線推送前不跑 lint，升 ERROR 會讓一篇誤判卡住整站部署
+      unbuilt: isDraft ? "off" : "error",
+      visitClaim: level,
       prediction: isDraft ? "off" : "warning",
     });
     for (const msg of r.errors) errors.push({ file: f, msg });
@@ -646,6 +651,9 @@ async function lintPosts(errors, warnings) {
       } else if (len > 65) {
         warnings.push({ file: f, msg: `title 太長 (${len} 字、Google SERP 會截斷 ~65)` });
       }
+      if (CJK_HALF_PUNCT_RE.test(meta.title)) {
+        warnings.push({ file: f, msg: "title 中文旁邊用了半形標點（? , : ;），請跑 node scripts/fix-cjk-punct.mjs --write" });
+      }
       // dedup title check
       if (titleMap.has(meta.title)) {
         warnings.push({
@@ -669,6 +677,10 @@ async function lintPosts(errors, warnings) {
       }
       // 開頭不應為標點
       const firstChar = meta.description[0];
+      // 22.（2026-10-15，台帳 F112）中文旁邊用半形 ? , : ; — 修法：node scripts/fix-cjk-punct.mjs --write
+      if (CJK_HALF_PUNCT_RE.test(meta.description)) {
+        warnings.push({ file: f, msg: "description 中文旁邊用了半形標點（? , : ;），請跑 node scripts/fix-cjk-punct.mjs --write" });
+      }
       if (/[、。，！？!?,\.;:]/.test(firstChar)) {
         warnings.push({ file: f, msg: `description 開頭是標點 "${firstChar}"` });
       }
@@ -765,8 +777,8 @@ async function lintSources(errors, warnings) {
       negotiation: "error",
       appraisal: "error", // 對外頁面用「估價」是法規紅線，pages/components 直接擋
       exaggerated: "warning",
-      unbuilt: "warning",    // 2026-10-03 新增，這輪先 WARNING
-      visitClaim: "warning",
+      unbuilt: "error",      // 2026-10-15 升 ERROR（全站已清到 0）
+      visitClaim: "error",
     });
     for (const msg of r.errors) errors.push({ file: label, msg });
     for (const msg of r.warnings) warnings.push({ file: label, msg });
