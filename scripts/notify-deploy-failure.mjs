@@ -221,10 +221,6 @@ function summary(line) {
 
 async function main() {
   if (!RUN_ID) throw new Error("沒有 run id（GITHUB_RUN_ID 或 --run-id）");
-  if (!DRY_RUN && (!TG_TOKEN || !TG_CHAT)) {
-    console.log("::error::GitHub Actions secrets TG_BOT_TOKEN／TG_CHAT_ID 沒設定，部署失敗通知送不出去。到 repo Settings → Secrets and variables → Actions 新增這兩個（值同工作站 .env）。");
-    process.exit(1);
-  }
   const runUrl = `${SERVER}/${REPO}/actions/runs/${RUN_ID}`;
 
   let run = null;
@@ -284,6 +280,13 @@ async function main() {
     console.log("----- 試跑，不送 TG -----");
     console.log(text);
     return;
+  }
+  if (!TG_TOKEN || !TG_CHAT) {
+    // 訊息內容只有 commit 標題、步驟、檔名、連結（紀錄裡本來就公開的東西），印出來方便對照
+    console.log("----- secrets 沒設，以下是本來要送的內容 -----");
+    console.log(text);
+    console.log("::error::GitHub Actions secrets TG_BOT_TOKEN／TG_CHAT_ID 沒設定，部署失敗通知送不出去。到 repo Settings → Secrets and variables → Actions 新增這兩個（值同工作站 .env；工作站 999_tools\\官網部署通知\\設定TG通知金鑰.py 可代勞）。");
+    process.exit(1);
   }
   const messageId = await sendTG(text);
   summary(`TG 通知：已送達（message_id ${messageId}）`);
