@@ -8,6 +8,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      # ⚠️ 測試用（2026-10-15）：驗證 notify-failure 的 TG 通知，測完就拿掉（連同 deploy 裡的「測試用：故意失敗」步驟）
+      simulate_failure:
+        description: "測試用：故意讓部署失敗（驗證 TG 通知）"
+        type: boolean
+        default: false
   schedule:
     # 排程文的門檻是 pubDatetime − 15 分鐘（postFilter）：在門檻之前 push 的那次 build 不會包含它，
     # 要等下一次 push 或下面這兩條 cron 保底 rebuild 才上線。
@@ -39,6 +45,13 @@ jobs:
       contents: read
       deployments: write
     steps:
+      # ⚠️ 測試用（2026-10-15）：只有手動觸發並勾 simulate_failure 才會跑，push／排程一律略過。測完就拿掉。
+      - name: 測試用：故意失敗
+        if: ${{ inputs.simulate_failure }}
+        run: |
+          echo "::error::測試用的假失敗（驗證部署失敗 TG 通知）"
+          exit 1
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -186,3 +199,33 @@ jobs:
         continue-on-error: true
         timeout-minutes: 3
         run: node scripts/indexnow-submit.mjs --old "$RUNNER_TEMP/indexnow-live-sitemap.json"
+
+  # 2026-10-15 補：部署失敗就推 TG「泰迪的小聲音」。上面的內容閘門（文章紅線、物件法規、洩漏檢查）一擋，
+  # 每晚物件同步／IG 圖卡／每日新聞這三條自動 push 的產線就整站卡在舊版，以前完全沒有通知。
+  # 寫成獨立 job、不是 deploy 裡的 if: failure() 步驟：deploy 跑完才讀得到完整紀錄（才知道是哪一篇被擋），
+  # 跑超過 timeout-minutes 被中止時也接得到。防洗版（同一個問題連續失敗只推第 1 次、每連續 5 次提醒一次）在腳本裡。
+  # secrets：TG_BOT_TOKEN、TG_CHAT_ID（跟工作站 .env 同名同值）。沒設的話這個 job 會紅，部署本身不受影響。
+  # 部署成功時這個 job 顯示「略過」，不會推任何東西。
+  notify-failure:
+    needs: deploy
+    if: ${{ failure() || cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read # 讀這次 run 的步驟結果、deploy job 紀錄、之前的部署紀錄
+    steps:
+      - name: Checkout (只拿通知腳本)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/notify-deploy-failure.mjs
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      # runner 內建的 Node 就有 fetch，腳本不吃 node_modules，不用 setup-node／pnpm install
+      - name: Notify TG (部署失敗通知)
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/notify-deploy-failure.mjs
