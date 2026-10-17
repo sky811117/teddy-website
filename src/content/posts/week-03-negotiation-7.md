@@ -74,7 +74,7 @@ timezone: Asia/Taipei
 
 同一筆成交，拆與不拆差了 2 萬多一坪。42 坪就是 90 萬的認知差距。
 
-延伸看：[實價登錄怎麼讀](/posts/term-13-actual-price-registration)、[坡道車位](/posts/term-09-ramp-parking)、[平面 vs 機械車位](/posts/term-07-flat-parking)。
+延伸看：[實價登錄怎麼讀](/posts/term-13-actual-price-registration/)、[坡道車位](/posts/term-09-ramp-parking/)、[平面 vs 機械車位](/posts/term-07-flat-parking/)。
 
 ---
 
@@ -99,7 +99,7 @@ timezone: Asia/Taipei
 
 這條差別很關鍵：**謄本乾淨 ≠ 房子沒問題**。謄本只證明「產權上沒有卡住」，房子本身的毛病要靠第 6 點的不動產說明書、現場看屋、加上你自己開口追問。
 
-延伸看：[謄本怎麼讀](/posts/term-15-transcript)。
+延伸看：[謄本怎麼讀](/posts/term-15-transcript/)。
 
 ---
 
@@ -120,7 +120,7 @@ timezone: Asia/Taipei
 - 管線（水電、給排水）有沒有換過
 - 有沒有明顯下陷、門窗變形卡住
 
-有疑慮就花錢請**結構技師**看一次。跟後面可能要花的修繕費比，這筆錢很便宜。延伸看：[老屋結構評估 5 個警訊](/posts/viewing-07-old-house-structure)。
+有疑慮就花錢請**結構技師**看一次。跟後面可能要花的修繕費比，這筆錢很便宜。延伸看：[老屋結構評估 5 個警訊](/posts/viewing-07-old-house-structure/)。
 
 ---
 
@@ -129,14 +129,14 @@ timezone: Asia/Taipei
 很多人預算算到「總價 + 頭期款」就停了。實際上簽約後還有一串：
 
 - **契稅** — 房屋評定現值 × 6%，由買方繳。⚠️ 是「房屋評定現值」的 6%，**不是成交價的 6%**，兩者差非常多。
-  📌 資料來源：契稅條例第 3 條（[詳細算法](/posts/faq-20-deed-tax)）
-- **印花稅** — 公契金額（土地公告現值 + 房屋評定現值）× 0.1%，由買方繳。
-  📌 資料來源：印花稅法第 7 條（[詳細算法](/posts/faq-19-stamp-duty)）
+  📌 資料來源：契稅條例第 3 條（[詳細算法](/posts/faq-20-deed-tax/)）
+- **印花稅** — [公契金額](/posts/faq-27-public-private-deed/)（土地公告現值 + 房屋評定現值）× 0.1%，由買方繳。
+  📌 資料來源：印花稅法第 7 條（[詳細算法](/posts/faq-19-stamp-duty/)）
 - **仲介費** — 法規規定買賣雙方**合計上限 6%**，其中買方端上限 2%。
   📌 資料來源：《不動產經紀業管理條例》授權訂定之不動產經紀業報酬計收標準
 - **地政士（代書）費** — 過戶、抵押權設定、實價登錄申報是分開計費的，請對方**書面**列出每一項金額，不要只聽一個總數。
 - **履約保證費** — 實務常見費率約成交總價萬分之 6、買賣雙方各半，實際以承辦的建經公司或銀行報價為準。
-  📌 資料來源：實務常見費率，非法定（[履保怎麼運作](/posts/faq-09-escrow-guarantee)）
+  📌 資料來源：實務常見費率，非法定（[履保怎麼運作](/posts/faq-09-escrow-guarantee/)）
 - **貸款相關** — 銀行開辦費、抵押權設定規費、火險 + 地震險保費。
 
 **該做的事**：簽約前直接請仲介或地政士開一張「買方費用明細」，一項一項寫上金額。願意白紙黑字給你的，通常也不會在別的地方含糊。
@@ -155,7 +155,7 @@ timezone: Asia/Taipei
 
 **該做的事**：出價之前先找 2–3 家銀行做初步詢問（不是正式送件），把成數與利率區間問出來。自備款也不是只有頭期款 — 要再留裝修費、第 4 點那一串費用，以及半年的生活備用金。
 
-延伸看：[自備款要準備多少](/posts/faq-02-down-payment)。
+延伸看：[自備款要準備多少](/posts/faq-02-down-payment/)。
 
 ---
 
@@ -175,7 +175,7 @@ timezone: Asia/Taipei
 
 ⚠️ 只要有欄位勾「不知道」「不確定」，就當場開口問，並要求**書面補充說明**。這一欄之後真的出事，書面就是你的依據。
 
-延伸看：[不動產說明書 30 個欄位](/posts/policy-04-disclosure-document)。
+延伸看：[不動產說明書 30 個欄位](/posts/policy-04-disclosure-document/)。
 
 ---
 
@@ -190,9 +190,9 @@ timezone: Asia/Taipei
 - **賣方負責的修繕**：修哪裡、修到什麼程度、什麼時候修完
 - **費用結算日**：水、電、瓦斯、管理費、地價稅、房屋稅算到哪一天
 - **貸款不足的處理**：成數沒到預期時，是補差額、是解約、還是另有安排
-- **漏水保固**：保多久、保哪些範圍（[保固條款怎麼寫](/posts/faq-15-leak-warranty)）
+- **漏水保固**：保多久、保哪些範圍（[保固條款怎麼寫](/posts/faq-15-leak-warranty/)）
 
-延伸看：[過戶要準備的文件清單](/posts/faq-16-transfer-documents)。
+延伸看：[過戶要準備的文件清單](/posts/faq-16-transfer-documents/)。
 
 ---
 
@@ -211,7 +211,7 @@ timezone: Asia/Taipei
 
 📌 資料來源：民法第 248、249 條；內政部「要約書」定型化契約應記載及不得記載事項
 
-換句話說：**在你心裡還有 1% 猶豫的時候，兩條都不要走**。延伸看：[斡旋金 vs 訂金](/posts/faq-25-earnest-vs-deposit)。
+換句話說：**在你心裡還有 1% 猶豫的時候，兩條都不要走**。延伸看：[斡旋金 vs 訂金](/posts/faq-25-earnest-vs-deposit/)。
 
 ---
 
@@ -251,12 +251,12 @@ timezone: Asia/Taipei
 ## 延伸閱讀
 
 **買賣房眉角：**
-- [台中買房 30 題 FAQ](/faq) — 契稅、印花稅、履約保證、斡旋金 vs 訂金
-- [台中 7 區買房指南](/areas) — 各區成交行情與生活機能
-- [4 大服務項目](/services) — 買 / 賣 / 投資 / 換屋
+- [台中買房 30 題 FAQ](/faq/) — 契稅、印花稅、履約保證、斡旋金 vs 訂金
+- [台中各區買房指南](/areas/) — 各區成交行情與生活機能
+- [4 大服務項目](/services/) — 買 / 賣 / 投資 / 換屋
 
 **同系列文章：**
-- [新青安 vs 一般房貸 30 年實算](/posts/week-02-new-housing-loan) — 貸款月付金怎麼算
-- [嫌惡設施 Google Map 10 大設施](/posts/week-04-undesirable-facilities) — 看屋前先用地圖掃一遍
+- [新青安 vs 一般房貸 30 年實算](/posts/week-02-new-housing-loan/) — 貸款月付金怎麼算
+- [嫌惡設施 Google Map 10 大設施](/posts/week-04-undesirable-facilities/) — 看屋前先用地圖掃一遍
 - [輸入地址查周邊嫌惡設施](/tools/undesirable-facilities/) — 台中地址，列出周邊 300／500／1000 公尺內的設施與距離
-- [不動產說明書 5 個含糊欄位](/posts/week-05-property-disclosure) — 說明書哪幾欄一定要追問
+- [不動產說明書 5 個含糊欄位](/posts/week-05-property-disclosure/) — 說明書哪幾欄一定要追問

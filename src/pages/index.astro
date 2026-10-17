@@ -231,7 +231,7 @@ const bigKanBanAccounts = [
 
           {/* 找房卡：同一張卡兩種找法。預設「白話找」；原本的下拉篩選與 data-hero-* 腳本原樣保留 */}
           <div class="u2-ask" id="ask">
-            <div class="u2-ask__tabs" role="tablist" aria-label="找房方式" data-js-only>
+            <div class="u2-ask__tabs" role="tablist" aria-label="找房方式">
               <button type="button" role="tab" id="tab-say" aria-selected="true" aria-controls="panel-say">白話找</button>
               <button type="button" role="tab" id="tab-filter" aria-selected="false" aria-controls="panel-filter" tabindex="-1">用條件篩選</button>
             </div>
@@ -253,7 +253,7 @@ const bigKanBanAccounts = [
               </div>
             </div>
 
-            <div role="tabpanel" id="panel-filter" aria-labelledby="tab-filter" data-filter-panel>
+            <div role="tabpanel" id="panel-filter" aria-labelledby="tab-filter" data-filter-panel hidden>
               <div class="u2-ask__grid">
                 <label class="u2-sr" for="hero-district">區域</label>
                 <select id="hero-district" data-hero-district class="u2-select">
@@ -686,14 +686,11 @@ const bigKanBanAccounts = [
 <script is:inline>
   /* 找房卡：分頁（左右鍵、Home、End；沒選中的分頁 tabindex=-1）＋「告訴小幫手」把那句話交給 /find/。
      那句話放在同分頁的暫存（sessionStorage），不放在網址、不經過任何伺服器；暫存不能用時退成網址片段（#q=，同樣不會送到伺服器）。
-     沒有 JavaScript 時：兩個面板都顯示，表單直接導到 /find/。 */
+     分頁列與「用條件篩選」面板的 hidden 在伺服器端就寫好，第一次繪製就是最後的樣子（原本載入後才由這支腳本改，會把面板往下推，CLS 0.028）。
+     沒有 JavaScript 時：ui2-home.css 的 @media (scripting: none) 把分頁列藏起來、兩個面板都顯示，表單直接導到 /find/。 */
   (function () {
     var tabs = [].slice.call(document.querySelectorAll(".u2-ask [role=tab]"));
     if (!tabs.length) return;
-    var tl = document.querySelector(".u2-ask__tabs");
-    if (tl) tl.removeAttribute("data-js-only");   // 沒有 JavaScript 時分頁按鈕按了沒反應，所以預設藏起來（兩個面板都顯示）
-    var fp = document.getElementById("panel-filter");
-    if (fp) fp.hidden = true;
     function pick(i, focus) {
       tabs.forEach(function (t, j) {
         var on = i === j;

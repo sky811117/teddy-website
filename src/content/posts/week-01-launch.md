@@ -22,7 +22,7 @@ timezone: "Asia/Taipei"
 
 ## 為什麼想弄個人網站
 
-說來有點慚愧。我在做 AI 自動化這件事已經不短了——幫 591 上架寫 skill、逆向 5168 廣告演算法、把攝影到刊登的流程全部塞進 Claude Code——但這些東西全部活在我自己的工作站裡，沒有對外說過一個字。
+說來有點慚愧。我在做 AI 自動化這件事已經不短了——幫 591 上架寫 skill、逆向 5168 廣告演算法、把攝影到刊登的流程全部塞進 Claude Code——但這些東西全部活在我自己的工作站裡，沒有對外說過一個字。（延伸閱讀：[讓 AI 每天早上自動幫你整理新聞 — 免費 5 分鐘設定（附 ChatGPT／Gemini 指令）](/posts/ai-daily-news-digest/)）
 
 想法很簡單：**把「把業務自動化的過程」公開出來**。不是教學，是公開記錄。我自己做了什麼、踩了什麼坑、目前跑得順不順，就這樣。
 
@@ -95,7 +95,7 @@ git push -u origin main
 
 **第一次就成功了。**
 
-網址是 `teddy-website.pages.dev`，直接開得起來。
+網址當時是 `teddy-website.pages.dev`，直接開得起來（2026-10-03 起已換成正式網域 teddy-house.tw）。
 
 說真的，我做過不少部署，Cloudflare Pages 這個流程是我用過最順的。它幫你把 CI/CD 全部接好，之後每次 push main，網站自動更新，完全不用管。
 
@@ -108,7 +108,7 @@ git push -u origin main
 - **框架**：Astro v5 + TailwindCSS
 - **部署**：Cloudflare Pages（自動 CI/CD）
 - **功能**：文章列表、標籤、全文搜尋、深色模式、動態 OG 圖
-- **域名**：目前先用 `teddy-website.pages.dev`，之後再掛自訂域名
+- **域名**：當時先用 `teddy-website.pages.dev`，2026-10-03 已掛上自訂域名 teddy-house.tw
 
 ---
 
@@ -118,11 +118,11 @@ git push -u origin main
 
 我平常給客戶的建議也是這樣——衝動的決定不一定是壞決定，但停一秒想清楚之後再動，通常結果都會比較好。
 
-下週繼續寫。
+這個系列後面接著寫的是 [Week 02：5168「完成」按鈕灰掉，但後端其實接受](/posts/week-02-5168-force-click/)。
 
 ---
 
-*下一篇預計寫：用 Claude Code 把 591 上架從 2 小時壓到 15 分鐘的過程。*
+*寫這篇時原本預計的下一篇：用 Claude Code 把 591 上架從 2 小時壓到 15 分鐘的過程。*
 
 ---
 

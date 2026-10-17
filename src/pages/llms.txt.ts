@@ -27,23 +27,93 @@ const withSlash = (href: string) => {
 };
 
 /**
- * 代表文章：從有 faqSchema 的社區評價文挑 15 篇（已發佈、台中各區分散）。
- * 事實句照搬原文 FAQ／內文的數字與資料來源，不另外新編；原文數字改了這裡要一起改。
+ * 代表文章分兩組：
+ * 1. KNOWLEDGE_POSTS（知識與工具，17 篇）：2026-10-17 依 GSC 曝光／生成式 AI 曝光補進來的
+ *    faq／term／viewing／tool 文章。fact 是一句話摘要（不照抄 description），數字與資料來源
+ *    以文章本文為準，原文數字改了這裡要一起改；數字句後面的括號是資料來源。
+ * 2. COMMUNITY_POSTS（社區評價，10 篇）：有 faqSchema 的社區評價文（已發佈、台中各區分散）。
+ *    事實句照搬原文 FAQ／內文的數字與資料來源，不另外新編。
  * ⛔ 不列 community-fuyu-world、community-shengxing-fengjing、2026-09-W01 BC11 那篇。
  * ⛔ 未完工的公共建設（捷運藍線與站名等）不准寫進事實句。
+ * ⛔ 不列 faq-10-second-home-loan（第二戶成數 9/18 已從 6 成再調到 7 成，那篇摘要還是 3 月的 6 成）。
  */
-const FEATURED_POSTS: Array<{ slug: string; fact: string }> = [
+type FeaturedPost = { slug: string; fact: string };
+
+const KNOWLEDGE_POSTS: FeaturedPost[] = [
+  {
+    slug: "faq-07-30-year-old-house",
+    fact: "稅務上 RC 房屋耐用年數 50 年，實際能住多久看結構、管線與社區維護（財政部固定資產耐用年數表）",
+  },
+  {
+    slug: "term-05-eaves",
+    fact: "屋簷是屋頂伸出牆外擋雨的一段，簷與檐兩種寫法都對；雨遮則裝在窗戶上方",
+  },
+  {
+    slug: "term-01-main-building",
+    fact: "主建物占比是主建物坪數除以權狀總坪數，18 坪／30 坪就是 60%",
+  },
+  {
+    slug: "faq-14-sea-sand-radiation",
+    fact: "海砂屋檢測費用約 5,000-15,000 元、報告約 7-10 個工作天（依採樣點數而定）",
+  },
+  {
+    slug: "viewing-04-sea-sand-radiation",
+    fact: "海砂屋高風險約 1986-1994 年，輻射屋集中在 1982-1984 年（年代只能初篩，以檢測為準）",
+  },
+  {
+    slug: "term-08-mechanical-parking",
+    fact: "台中坡道機械車位成交價約為坡道平面的一半，但要等、機器會壞（內政部實價登錄，2025 年第 3 季至 2026 年第 2 季）",
+  },
+  {
+    slug: "term-07-flat-parking",
+    fact: "台中坡道平面車位近一年成交中位數 100-200 萬，西區 200 萬最高（內政部實價登錄／2026-08）",
+  },
+  {
+    slug: "term-09-ramp-parking",
+    fact: "台中坡道平面車位中位數 100-200 萬、坡道機械 70-100 萬（內政部實價登錄／2026-08）",
+  },
+  {
+    slug: "term-10-independent-parking",
+    fact: "獨立產權車位有自己的建號與權狀，可單獨買賣與貸款；共有持分車位沒有",
+  },
+  {
+    slug: "term-06-terrace",
+    fact: "有產權的露台可照坪數轉售；約定專用或無產權的只有使用權，買方通常不照室內坪數算",
+  },
+  {
+    slug: "faq-06-common-area-ratio",
+    fact: "台中 10 年內電梯大樓公設比中位數 40%、30 年以上老大樓 34%（內政部實價登錄，2025 年第 3 季至 2026 年第 2 季）",
+  },
+  {
+    slug: "faq-27-public-private-deed",
+    fact: "公契用於報稅過戶、私契是實際成交價合約，兩份金額不同不違法",
+  },
+  {
+    slug: "tool-agent-fee",
+    fact: "買賣雙方仲介費合計不得超過成交價 6%，1,500 萬成交最多 90 萬（內政部報酬計收標準／2026-10）",
+  },
+  {
+    slug: "faq-09-escrow-guarantee",
+    fact: "履保費市場常見為成交價的萬分之 6，買賣雙方各付一半（臺北市政府地政局）",
+  },
+  {
+    slug: "viewing-02-haunted-house-check",
+    fact: "凶宅查詢有 4 個免費管道，一個下午可以跑完一戶",
+  },
+  {
+    slug: "faq-03-haunted-house-check",
+    fact: "法規認定的凶宅要同時符合：非自然死亡，且發生在該戶專有部分內",
+  },
+  {
+    slug: "tool-viewing-checklist",
+    fact: "看屋 60 多項檢查重點分成 7 大類，可印出來逐項打勾",
+  },
+];
+
+const COMMUNITY_POSTS: FeaturedPost[] = [
   {
     slug: "community-zongtai-juzuo",
     fact: "2025-09 至 2026-09 樂居收錄 18 筆成交，扣車位後房屋單價中位數 32.16 萬／坪，區間 27.83-40.75 萬／坪（資料來源：樂居實價登錄整理／2026-09）",
-  },
-  {
-    slug: "community-dacheng-april-bole",
-    fact: "2025-09 至 2026-09 共 7 筆成交，扣掉車位後的房屋單價中位數約 38.6 萬／坪，區間 30.6-43.6 萬（資料來源：樂居實價登錄整理／2026-09）",
-  },
-  {
-    slug: "community-dali-century-twins",
-    fact: "2025-09 到 2026-09 共 4 筆成交，扣掉車位後的房屋單價中位數 44.19 萬／坪，總價 1,540-2,200 萬（含車位）（資料來源：樂居實價登錄整理／2026-09）",
   },
   {
     slug: "community-runlong-vvs1",
@@ -58,20 +128,8 @@ const FEATURED_POSTS: Array<{ slug: string; fact: string }> = [
     fact: "2025-09 至 2026-09 收錄 5 筆成交，扣車位後房屋單價中位數 27.02 萬／坪，區間 25.34-29.62 萬／坪（資料來源：樂居實價登錄整理／2026-09）",
   },
   {
-    slug: "community-panda-tianxia",
-    fact: "2025-09 至 2026-09 收錄 4 筆成交，扣車位後房屋單價中位數 28.7 萬／坪，區間 20.61-29.2 萬／坪（資料來源：樂居實價登錄整理／2026-09）",
-  },
-  {
     slug: "community-guangsan-era",
     fact: "2025-09 到 2026-09 共 10 筆成交，扣掉車位後的房屋單價中位數 25.39 萬／坪，區間 20.26-28.77 萬（資料來源：樂居實價登錄整理／2026-09）",
-  },
-  {
-    slug: "community-changyi-lancui",
-    fact: "2025-09 至 2026-09 成交共 9 筆，扣掉車位後的房屋單價落在 20.74-26.19 萬／坪，中位數 23.0 萬／坪（資料來源：樂居實價登錄整理／2026-09）",
-  },
-  {
-    slug: "community-nan-tianwang",
-    fact: "2025-09 至 2026-09 收錄 6 筆成交，房屋坪都在 8.62-9.22 坪、全部是套房規格，扣車位單價中位數 24.1 萬／坪（資料來源：樂居實價登錄整理／2026-09）",
   },
   {
     slug: "community-jiamao-xueshi",
@@ -109,12 +167,21 @@ export const GET: APIRoute = async () => {
   const posts = (await getCollection("posts")).filter(postFilter);
   const bySlug = new Map(posts.map(p => [p.id.split("/").pop() ?? p.id, p]));
 
-  const featuredLines = FEATURED_POSTS.flatMap(({ slug, fact }) => {
-    const post = bySlug.get(slug);
-    if (!post) return [];
-    const href = withSlash(u(getPostUrl(post.id, post.filePath, config.site.lang)));
-    return [`- [${post.data.title}](${href})：${fact}`];
-  });
+  const toLines = (list: FeaturedPost[]) =>
+    list.flatMap(({ slug, fact }) => {
+      const post = bySlug.get(slug);
+      if (!post) return [];
+      const href = withSlash(u(getPostUrl(post.id, post.filePath, config.site.lang)));
+      return [`- [${post.data.title}](${href})：${fact}`];
+    });
+  const knowledgeLines = toLines(KNOWLEDGE_POSTS);
+  const communityLines = toLines(COMMUNITY_POSTS);
+
+  // 區域頁一句定位：吃 areas.ts 的 headline（頁面與 /areas/ 卡片同一句），不另外編
+  const areaLines = areas.map(
+    (a) =>
+      `- [${a.name}](${u(`/areas/${a.slug}/`)})：${a.headline || `${a.shortName}買房指南：在售物件、實價行情與生活機能整理`}`,
+  );
 
   const site = u("/");
 
@@ -159,12 +226,16 @@ export const GET: APIRoute = async () => {
 ## 台中各區與社區評價
 
 - [台中各區買房指南](${u("/areas/")})：一區一頁，寫行情、生活圈、熱門社區、適合誰買、要注意什麼，附該區在售物件與社區文章
-${areas.map((a) => `- [${a.name}](${u(`/areas/${a.slug}/`)})`).join("\n")}
+${areaLines.join("\n")}
 - [社區評價](${u("/tags/community-review/")})：台中個別社區的評價文章
 
-## 代表文章
+## 代表文章：買房賣房知識與工具
 
-${featuredLines.join("\n")}
+${knowledgeLines.join("\n")}
+
+## 代表文章：社區評價
+
+${communityLines.join("\n")}
 
 ## 買房賣房知識
 

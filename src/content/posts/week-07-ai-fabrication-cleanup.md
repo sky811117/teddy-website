@@ -19,7 +19,7 @@ description: "6 月我把 51 篇文章下架，因為 AI 幫我編了一堆我�
 timezone: "Asia/Taipei"
 ---
 
-我花了快一個月，建了一套讓 AI 幫我寫網站文章的流程。
+我花了快一個月，建了一套讓 AI 幫我寫網站文章的流程。（延伸閱讀：[讓 AI 每天早上自動幫你整理新聞 — 免費 5 分鐘設定（附 ChatGPT／Gemini 指令）](/posts/ai-daily-news-digest/)）
 
 6 月的時候，我把其中 **51 篇** 全部下架了。
 

@@ -27,7 +27,7 @@
  *      對到而且 status: active 才收；對到但全是 withdrawn／sold → 不收（官網已下架，不能再廣告）；
  *      對不到任何一筆 → 預設不收，試算時列成「待景泰確認」清單（在不在架、承辦人都沒驗證過）
  *   9. 排除名單：對到的物件委編在 EXCLUDE_LISTING_CODES，或社區名在 EXCLUDE_COMMUNITIES → 不收。
- *      委編名單 = 寫死的基本名單 ＋ 每次執行時唯讀列 NAS「26.汎汎」夾名裡的委編（沾到戴菲汎就不廣告）；
+ *      委編名單 = 寫死的基本名單 ＋ 每次執行時唯讀列指定來源夾名裡的委編（排除名單，見 FEIFAN_NAS_DIR）；
  *      NAS 連不到只用寫死名單並印 WARN
  *
  * 用法：
@@ -144,7 +144,7 @@ if (!properties.length) {
 }
 
 // ── 9. 排除名單 ──────────────────────────────────────────────────
-// 基本名單（2026-10-04 審查抓到）：日月觀學 UG1211190／UG1211227 放在 NAS 26.汎汎 銷售夾，且官網已 withdrawn
+// 基本名單（2026-10-04 審查抓到，官網已 withdrawn）
 const EXCLUDE_LISTING_CODES = new Set(["1211190", "1211227"]);
 const EXCLUDE_COMMUNITIES = ["日月觀學"];
 const FEIFAN_NAS_DIR = process.env.FEIFAN_NAS_DIR || String.raw`\\Hbnas\h&b共用\26.汎汎`;
@@ -169,7 +169,7 @@ if (feifanCodes === null) {
   console.warn(`[sync-videos] WARN 連不到 ${FEIFAN_NAS_DIR}，只用寫死的排除名單（${EXCLUDE_LISTING_CODES.size} 筆）`);
 } else {
   for (const c of feifanCodes) EXCLUDE_LISTING_CODES.add(c);
-  console.log(`[sync-videos] 排除名單：NAS 26.汎汎 委編 ${new Set(feifanCodes).size} 筆＋寫死名單，共 ${EXCLUDE_LISTING_CODES.size} 筆`);
+  console.log(`[sync-videos] 排除名單：來源夾委編 ${new Set(feifanCodes).size} 筆＋寫死名單，共 ${EXCLUDE_LISTING_CODES.size} 筆`);
 }
 
 const normName = s =>

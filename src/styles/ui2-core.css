@@ -281,6 +281,8 @@ html .ui2.u2-band--inverse {
 .u2-footer ul { display: grid; gap: .1rem; }
 .u2-footer a { display: inline-flex; align-items: center; min-height: 2.5rem; color: var(--u2-ink); text-decoration: none; }
 .u2-footer a:hover { color: var(--u2-wood); text-decoration: underline; text-underline-offset: .25em; }
+/* 頁尾的 LINE 按鈕：上面兩條 .u2-footer a（含 :hover）特異性比 .u2-btn--line 高，會把白字蓋成頁尾的米白（#f5f1eb 在 #0c8540 上只有 4.20）。這裡把按鈕字色還給 --u2-on-pine（白，4.72；hover 底 #0a7a38 為 5.45）。 */
+.u2-footer a.u2-btn--line, .u2-footer a.u2-btn--line:hover { color: var(--u2-on-pine); text-decoration: none; }
 .u2-footer__legal { padding-block: var(--u2-s5); border-top: 1px solid var(--u2-line); font-size: var(--u2-fs-0); color: var(--u2-ink-2); line-height: 1.7; }
 @media (min-width: 768px) { .u2-footer__grid { grid-template-columns: 1.4fr 1fr 1fr; } }
 

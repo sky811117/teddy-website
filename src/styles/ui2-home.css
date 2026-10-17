@@ -52,7 +52,8 @@ html[data-theme="dark"] .u2-arch { background: #efe6d6; }
 
 /* 找房卡：同一張卡兩種找法（預設白話） */
 .u2-ask{border:2px solid var(--u2-ink);border-radius:var(--u2-r-panel);background:var(--u2-vellum);box-shadow:var(--u2-sh-1);overflow:hidden}
-.u2-ask__tabs[data-js-only]{display:none}
+/* 分頁列與篩選面板的 hidden 由伺服器端 HTML 帶出（第一次繪製就定案，不再由 JS 事後改而位移）。沒有 JavaScript 時按鈕按了沒反應，所以退成兩個面板都顯示。 */
+@media (scripting: none){.ui2 .u2-ask__tabs{display:none}}
 .u2-ask__tabs{display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid var(--u2-ink)}
 .u2-ask__tabs button{min-height:3.25rem;padding:.4rem .75rem;border:0;background:var(--u2-sunken);color:var(--u2-ink-2);font-weight:700;cursor:pointer}
 .u2-ask__tabs button + button{border-left:2px solid var(--u2-ink)}
@@ -149,4 +150,10 @@ html[data-theme="dark"] .u2-arch { background: #efe6d6; }
 .u2-ask__go { margin-top: .8rem; }
 .u2-toc { max-width: 48rem; }
 .u2-band--inverse .u2-btn--primary { background: var(--u2-wood-600); color: var(--u2-on-wood); }
+}
+
+/* 沒有 JavaScript 時把「用條件篩選」面板的 hidden 還原成顯示。
+ * Tailwind 的 [hidden]{display:none !important} 在 base 層、而 !important 是「越早的層越贏」，所以這條必須也放 base 層（同層再比特異性）；放 components 層會輸。 */
+@layer base {
+  @media (scripting: none) { .ui2 #panel-filter[hidden] { display: block !important; } }
 }
