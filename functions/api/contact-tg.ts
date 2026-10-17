@@ -48,6 +48,11 @@ function defang(s: string): string {
   return normText(s).replace(/https?:\/\//gi, "hxxp://").replace(/\s+/g, " ").trim();
 }
 import { verifyTurnstile } from "../../src/lib/find/turnstile";
+// 路徑必須是小寫正式路徑：Pages Functions 路由不分大小寫，/API/... 也會進來，WAF 以路徑設的速率限制會被繞過（2026-10-17 線上驗證）
+const pathOk = (r: Request): boolean => {
+  const p = new URL(r.url).pathname;
+  return !(p !== "/api/contact-tg" && p.toLowerCase() === "/api/contact-tg"); // 只擋大小寫變體，其他路徑交給路由
+};
 
 interface Env {
   CONTACT_TG_TOKEN?: string;
@@ -166,7 +171,7 @@ export const onRequestGet = async ({
   request,
   env,
 }: EventContext): Promise<Response> => {
-  if (!hostAllowed(request)) return notFound();
+  if (!hostAllowed(request) || !pathOk(request)) return notFound();
   if (!sameOriginGet(request)) {
     return jsonResponse({ ok: false, error: "Forbidden origin" }, 403);
   }
@@ -177,7 +182,7 @@ export const onRequestPost = async ({
   request,
   env,
 }: EventContext): Promise<Response> => {
-  if (!hostAllowed(request)) return notFound();
+  if (!hostAllowed(request) || !pathOk(request)) return notFound();
   if (!originAllowed(request)) {
     return jsonResponse({ ok: false, error: "Forbidden origin" }, 403);
   }
@@ -358,7 +363,7 @@ export const onRequestPost = async ({
 export const onRequest = async ({
   request,
 }: EventContext): Promise<Response> => {
-  if (!hostAllowed(request)) return notFound();
+  if (!hostAllowed(request) || !pathOk(request)) return notFound();
   if (request.method === "POST" || request.method === "GET") {
     // 應該被 onRequestPost／onRequestGet 攔截、不會到這
     return jsonResponse({ ok: false, error: "Unexpected" }, 500);
