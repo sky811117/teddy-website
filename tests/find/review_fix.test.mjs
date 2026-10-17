@@ -250,7 +250,11 @@ test("Turnstile：回應的 hostname 不是官網、或 action 不符→fail（�
   assert.equal(await run({ success: false }), "fail");
   assert.equal(await T.verifyTurnstile({ secret: "  ", token: "t", fetchImpl: mk({ success: true }) }), "unavailable");
   // 沒指定預期 action 的呼叫端（目前沒有）不比對 action
-  assert.equal(await T.verifyTurnstile({ secret: "s", token: "t", fetchImpl: mk({ success: true }) }), "ok");
+  assert.equal(await T.verifyTurnstile({ secret: "s", token: "t", fetchImpl: mk({ success: true, hostname: "teddy-house.tw" }) }), "ok");
+  // 2026-10-17 資安自查第 12 項：hostname 也嚴格——回應沒帶 hostname（或不是字串）一律不過
+  assert.equal(await T.verifyTurnstile({ secret: "s", token: "t", fetchImpl: mk({ success: true }) }), "fail", "沒帶 hostname 不能通過");
+  assert.equal(await T.verifyTurnstile({ secret: "s", token: "t", fetchImpl: mk({ success: true, hostname: 1 }) }), "fail");
+  assert.equal(await run({ success: true, action: "find" }), "fail", "action 對但沒帶 hostname 也不過");
   const seen = [];
   await T.verifyTurnstile({ secret: "s", token: "t", remoteIp: "203.0.113.9", fetchImpl: async (u, init) => { seen.push(String(init.body)); return Response.json({ success: true }); } });
   assert.match(seen[0], /remoteip=203\.0\.113\.9/);

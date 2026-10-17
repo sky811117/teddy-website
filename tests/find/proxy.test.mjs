@@ -258,15 +258,26 @@ test("RT-18：resolveUpstreamUrl——解析後的第一段必須是合法代號
   }
 });
 
-test("RT-18：qa 推薦頁帶保守的內容安全政策（防嵌框、禁 object／base 改寫）；舊代號的頁面不帶（輸出不變）", async () => {
+// 2026-10-17 資安自查第 4 項：這組保守 CSP 從「只有 qa 頁」擴到所有代號的 HTML 回應（含上游 404、qa 過期頁），frame-ancestors 收緊成 'none'
+const SHARE_CSP = "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'";
+test("RT-18／2026-10-17：所有代號的推薦頁 HTML 都帶保守的內容安全政策（防嵌框、禁 object／base 改寫、表單只准送本站；不含 script-src）", async () => {
   await withNow(NOW, () => withFetch(() => new Response(PAGE, { headers: { "content-type": "text/html; charset=utf-8" } }), async () => {
-    const q = await call(NEW, qaId(TODAY + 3));
-    const csp = q.headers.get("content-security-policy") || "";
-    assert.match(csp, /frame-ancestors 'self'/);
-    assert.match(csp, /object-src 'none'/);
-    assert.match(csp, /base-uri 'self'/);
-    const old = await call(NEW, "ab12cd34");
-    assert.equal(old.headers.get("content-security-policy"), null);
+    for (const id of [qaId(TODAY + 3), "ab12cd34", "qsAbCd1234"]) {
+      const r = await call(NEW, id);
+      const csp = r.headers.get("content-security-policy") || "";
+      assert.equal(csp, SHARE_CSP, id);
+      assert.ok(!/script-src/.test(csp), "不鎖腳本（推薦頁有行內腳本，沒盤點前鎖了會壞）");
+    }
+  }));
+  await withNow(NOW, () => withFetch(() => new Response("<html><head></head><body>404</body></html>", { status: 404, headers: { "content-type": "text/html; charset=utf-8" } }), async () => {
+    const r = await call(NEW, "ab12cd34");
+    assert.equal(r.status, 404);
+    assert.equal(r.headers.get("content-security-policy"), SHARE_CSP, "上游 404 的 HTML 也帶");
+  }));
+  await withNow(NOW, () => withFetch(() => new Response(PAGE, { headers: { "content-type": "text/html; charset=utf-8" } }), async () => {
+    const expired = await call(NEW, qaId(TODAY - 1));
+    assert.equal(expired.status, 410);
+    assert.equal(expired.headers.get("content-security-policy"), SHARE_CSP, "qa 過期頁也帶");
   }));
 });
 
@@ -297,7 +308,7 @@ test("Pages 還沒發布（404）時，頁面本體改讀 repo 原始檔：200�
     const res = await call(NEW, "qsAbCd1234");
     assert.equal(res.status, 200);
     assert.equal(res.headers.get("content-type"), "text/html; charset=utf-8");
-    assert.equal(res.headers.get("content-security-policy"), null, "不轉出原始檔的 sandbox 標頭");
+    assert.equal(res.headers.get("content-security-policy"), SHARE_CSP, "不轉出原始檔的 sandbox 標頭（只帶我們自己的那組 CSP）");
     assert.equal(res.headers.get("x-robots-tag"), "noindex, nofollow");
     const html = await res.text();
     assert.ok(html.includes("<p>物件</p>"));

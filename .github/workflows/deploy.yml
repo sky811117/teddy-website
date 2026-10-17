@@ -174,7 +174,9 @@ jobs:
         run: node scripts/indexnow-submit.mjs --snapshot "$RUNNER_TEMP/indexnow-live-sitemap.json"
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
+        # 2026-10-17 資安自查第 12 項：這步拿得到 CF API token，釘死 commit（v3 標籤當下指向 v3.15.0 的這個 commit；
+        # 2026-10-17 用 gh api repos/cloudflare/wrangler-action/git/ref/tags/v3 與 git ls-remote 兩邊對過）。要升級就重查一次再改。
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

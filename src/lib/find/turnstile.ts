@@ -66,7 +66,9 @@ export async function verifyTurnstile(opts: {
       return "fail";
     }
     const o = j as { hostname?: unknown; action?: unknown };
-    if (typeof o.hostname === "string" && !TURNSTILE_HOSTS.includes(o.hostname.toLowerCase())) {
+    // 2026-10-17 資安自查第 12 項：hostname 也改成「嚴格」——回應沒帶 hostname（或不是字串）一律不過，
+    // 以前是「有帶才比對」，等於沒帶就放行。
+    if (typeof o.hostname !== "string" || !TURNSTILE_HOSTS.includes(o.hostname.toLowerCase())) {
       why("host");
       return "fail";
     }

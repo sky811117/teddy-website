@@ -29,7 +29,7 @@
  *     解析一次，取「解析後的第一段」重新做代號格式與到期檢查，兩者不一致就 404（不打上游）。
  *   - 到期判斷用小寫化的代號（QA…也當成 qa 看，不因大小寫繞過）。
  *   - qa 頁另外帶一個保守的內容安全政策（防嵌框、禁 object／base 改寫）；script-src 白名單要先盤點推薦頁產生器實際用到的外部來源，
- *     不能憑空鎖（會把頁面弄壞），列在待辦。
+ *     不能憑空鎖（會把頁面弄壞），列在待辦。2026-10-17 起這組 CSP（見 SHARE_HTML_CSP）擴到所有代號的 HTML 回應。
  */
 
 import config from "../../astro-paper.config";
@@ -84,8 +84,11 @@ const SHARE_FILE_EXT = new Set([
   "woff", "woff2",
 ]);
 const MAX_PATHNAME_LENGTH = 160;
-// qa 推薦頁的內容安全政策（保守版）。不含 script-src：推薦頁產生器有行內腳本與外部地圖／圖片，沒盤點前鎖了會弄壞頁面。
-const QA_CSP = "frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self'";
+// 推薦頁 HTML 的內容安全政策（保守版）。不含 script-src：推薦頁產生器有行內腳本與外部地圖／圖片，沒盤點前鎖了會弄壞頁面。
+// 2026-10-17 資安自查第 4 項：從「只有 qa 頁」擴到所有代號的 HTML 回應（含上游 404 頁、qa 過期頁）；
+// 站內沒有任何地方用 iframe 嵌推薦頁，frame-ancestors 收緊成 'none'。
+// （已查推薦頁產生器 teddy-share-app/api/index.py：輸出沒有 <base>／<form>／<object>／<embed>，這組不會弄壞頁面。）
+export const SHARE_HTML_CSP = "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'";
 // 上游若回這些狀態碼＝要我們去別的地方，一律不跟、當 502（redirect: "manual" 之下不會自動跟）
 const REDIRECT_STATUS = new Set([301, 302, 303, 307, 308]);
 
@@ -228,14 +231,14 @@ export const onRequest = async ({
   // 到期判斷「寬鬆」：QA…（大寫）也當成 qa 看，所以不能靠大小寫逃過；頁面行為（不注入 GA、揭露區塊）只對標準小寫代號生效。
   const qa = parseQa(route.id);
   const qaLoose = parseQa(route.id.toLowerCase());
-  if (qaLoose && isQaExpired(qaLoose.expDay, Date.now())) return expiredResponse();
+  if (qaLoose && isQaExpired(qaLoose.expDay, Date.now())) return expiredWithCsp();
 
   // 第二層（RT-18）：把要抓的上游網址組出來、用 URL 解析一次，取解析後的第一段，必須還是同一個代號。
   // 白名單已經擋掉 . .. %2e %2f ; 反斜線，這裡是「就算上面哪天放寬了也不會讓到期檢查與實際抓取的路徑分家」的保險。
   const upstreamUrl = resolveUpstreamUrl(route.upstreamPath);
   if (!upstreamUrl || upstreamUrl.first !== route.id) return plainResponse(404, "Not Found");
   const qaResolved = parseQa(upstreamUrl.first.toLowerCase());
-  if (qaResolved && isQaExpired(qaResolved.expDay, Date.now())) return expiredResponse();
+  if (qaResolved && isQaExpired(qaResolved.expDay, Date.now())) return expiredWithCsp();
 
   let upstream: Response;
   try {
@@ -364,8 +367,15 @@ export const onRequest = async ({
       "cache-control": qa || status < 200 || status > 299 ? "private, max-age=0, no-store" : "public, max-age=30",
       // nosniff／X-Frame-Options／no-referrer／noindex（雙保險，頁面 meta 也有 noindex）
       ...SHARE_BASE_HEADERS,
-      // qa 頁與主站同源：先把「不准被嵌框、不准改 base、不准 object／外部表單」鎖上（RT-18）
-      ...(qa ? { "content-security-policy": QA_CSP } : {}),
+      // 推薦頁與主站同源：「不准被嵌框、不准改 base、不准 object／外部表單」（RT-18 起 qa 頁有；2026-10-17 起所有代號都有）
+      "content-security-policy": SHARE_HTML_CSP,
     },
   });
 };
+
+// qa 過期頁（固定 HTML，shareqa.ts 產生）也補上同一組 CSP；其他標頭不變
+function expiredWithCsp(): Response {
+  const r = expiredResponse();
+  r.headers.set("content-security-policy", SHARE_HTML_CSP);
+  return r;
+}

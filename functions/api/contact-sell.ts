@@ -22,15 +22,40 @@
  *    （2026-10 資安加固 M-20：不再回 stored／notified——那會讓外人探出「Notion 有沒有寫成功、
  *    TG 有沒有推成功」這種內部狀態；前端也沒在讀。哪條成功只留在 Worker log。）
  *  - 兩條都失敗 → 回 200 { ok:false, degraded:true }，前端引導客戶改 LINE / 電話。
+ *  - 跨站來源／人機驗證沒過 → 403 { ok:false, error }；不是打在正式網域 → 404（前端一樣顯示備援面板）。
  *  - 永遠不回 500（500 會讓前端把客戶擋在外面、lead 直接掉）。
+ *
+ * 2026-10-17 資安自查（security_20261017/code_review.md 第 1～3、11、12 項）：
+ *  - 人機驗證（Cloudflare Turnstile，跟 /find/ 共用 TURNSTILE_SECRET_KEY／TURNSTILE_SITE_KEY 與 verifyTurnstile）：
+ *    欄位驗證、honeypot、太快送出之後，寫 Notion／推 TG 之前查驗。action 固定 "contact-sell"。
+ *    fail-closed：沒帶 token／驗證沒過 → 403；沒設金鑰或查驗服務連不上 → 不寫 Notion、不推 TG、回 degraded（前端顯示備援）。
+ *    token 走 JSON 的 `turnstile` 欄位（跟 /api/find/* 同名）。
+ *  - GET /api/contact-sell 回 { ok:true, turnstileSiteKey }（前端執行期取 site key）。
+ *  - 主機名鎖定：不是 teddy-house.tw／www（或本機測試位址）一律 404；Origin 檢查改用 find 的 originAllowed。
+ *  - TG 訊息裡客人打的字一律 defang → 跳脫 → <code>；Notion 寫入內容不變（原文照存）。
+ *  - TG 訊息的 Notion 狀態行依實際結果顯示（以前寫死「已寫入 Notion」）。
  */
+import { publicSiteKey } from "../../src/lib/find/handlers";
+import { hostAllowed, originAllowed, sameOriginGet } from "../../src/lib/find/origin";
+import { normText } from "../../src/lib/find/schema";
+// 只把網址去活化（https:// → hxxp://），不隱藏電話／LINE ID：客人留的聯絡方式不能丟
+// （買方表單沒有 Notion 原文可回查，2026-10-17）。<code> 裡 Telegram 不會自動連結，去活化是防複製貼上誤點。
+function defang(s: string): string {
+  return normText(s).replace(/https?:\/\//gi, "hxxp://").replace(/\s+/g, " ").trim();
+}
+import { verifyTurnstile } from "../../src/lib/find/turnstile";
 
 interface Env {
   NOTION_API_KEY?: string;
   NOTION_SELL_DB_ID?: string;
   CONTACT_TG_TOKEN?: string;
   CONTACT_TG_CHAT?: string;
+  TURNSTILE_SECRET_KEY?: string;
+  TURNSTILE_SITE_KEY?: string;
 }
+
+/** 前端 turnstile.render 帶的 action；伺服器端查驗嚴格比對 */
+const TS_ACTION = "contact-sell";
 
 type EventContext = {
   request: Request;
@@ -64,6 +89,36 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+// 客人打的字（不可信）放進 TG 的方式：defang（內含 normText）→ 跳脫 → 包進 <code>。
+// <code> 裡的字 Telegram 不會自動變成連結，視覺上也跟系統產生的粗體標籤分得開。
+function code(s: string): string {
+  return `<code>${escapeHtml(defang(s))}</code>`;
+}
+// 真的多行的欄位（備註）：逐行處理、保留換行，整段放在同一個 <code> 裡
+function codeLines(s: string): string {
+  const body = s
+    .split("\n")
+    .map(l => escapeHtml(defang(l)))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  return `<code>${body}</code>`;
+}
+// Email：格式規矩的才做成 mailto 連結；其他只當文字放進 <code>，不做連結也不隱藏
+const SAFE_EMAIL = /^[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/;
+function emailHtml(email: string): string {
+  return SAFE_EMAIL.test(email)
+    ? `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>`
+    : `<code>${escapeHtml(normText(email))}</code>`;
+}
+
+function notFound(): Response {
+  return new Response("Not Found", {
+    status: 404,
+    headers: { "cache-control": "no-store", "x-content-type-options": "nosniff" },
+  });
+}
+
 const MAX_BODY_BYTES = 10 * 1024;
 
 // 發送端全域上限（紅隊 RT-06）：整個 isolate 每分鐘最多推 TG_MAX_PER_MIN 則；超過的不推，只計數，
@@ -91,22 +146,9 @@ function takeTgSlot(now: number): { ok: boolean; suppressed: number } {
 
 // 只收自家正式網域（teddy-house.tw）與本機 wrangler dev。
 // 2026-10-06 紅隊修補（RT-05）：舊網址 pages.dev 與預覽網址不再收——functions/_middleware.ts 已讓這支端點只服務正式網域
-// （舊網址回 404，Cloudflare 對正式網域設的速率限制才有意義）；這裡再擋一次 Origin，兩層一致。
-const ALLOWED_ORIGIN = /^https:\/\/(www\.)?teddy-house\.tw$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
-
-function originAllowed(request: Request): boolean {
-  const origin = request.headers.get("origin");
-  if (origin) return ALLOWED_ORIGIN.test(origin);
-  const referer = request.headers.get("referer");
-  if (referer) {
-    try {
-      return ALLOWED_ORIGIN.test(new URL(referer).origin);
-    } catch {
-      return false;
-    }
-  }
-  return false;
-}
+// （舊網址回 404，Cloudflare 對正式網域設的速率限制才有意義）；這裡再擋一次，兩層一致。
+// 2026-10-17：主機名用 find 的 hostAllowed（不是正式網域／本機 → 404），Origin 用 find 的 originAllowed
+// （打在正式網域只收正式網域的 Origin、打在本機只收本機 Origin）。
 
 // 欄位長度上限（超過就截斷，不拒收 — 賣方 lead 寧可截也不要掉）
 const FIELD_MAX: Record<string, number> = {
@@ -137,6 +179,8 @@ function sanitize(payload: Payload): Payload {
   }
   if (typeof payload._gotcha === "string") out._gotcha = payload._gotcha;
   if (typeof payload._loaded_at === "string") out._loaded_at = payload._loaded_at;
+  // 人機驗證 token（只拿去查驗，不寫 Notion、不進 TG）
+  if (typeof payload.turnstile === "string") out.turnstile = payload.turnstile;
   return out;
 }
 
@@ -214,6 +258,7 @@ async function pushTG(
   payload: Payload,
   token: string,
   chatId: string,
+  notionOk: boolean,
   timeoutMs = 3000
 ): Promise<boolean> {
   const name = (payload["姓名"] || "").trim();
@@ -225,33 +270,38 @@ async function pushTG(
   const note = (payload["備註"] || "").trim();
   const source = (payload["來源頁"] || "").trim();
 
+  // 客人打的字一律 code()／codeLines()；粗體標籤、tel／mailto 連結、Notion 狀態行是系統產生的
   const lines: string[] = [
     `🏡 <b>新賣房委託詢價</b>`,
     "",
-    `<b>姓名</b>：${escapeHtml(name)}`,
+    `<b>姓名</b>：${code(name)}`,
   ];
   if (phone) {
     const phoneClean = phone.replace(/[^\d+]/g, "");
     lines.push(`<b>電話</b>：<a href="tel:${phoneClean}">${escapeHtml(phone)}</a>`);
   }
   if (email) {
-    lines.push(`<b>Email</b>：<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>`);
+    lines.push(`<b>Email</b>：${emailHtml(email)}`);
   }
-  lines.push(`<b>地址</b>：${escapeHtml(address)}`);
-  lines.push(`<b>坪數</b>：${ping ? `${escapeHtml(ping)} 坪` : "未填（先聽行情評估）"}`);
-  lines.push(`<b>期望</b>：${price ? `${escapeHtml(price)} 萬` : "未填（先聽行情評估）"}`);
+  lines.push(`<b>地址</b>：${code(address)}`);
+  lines.push(`<b>坪數</b>：${ping ? `${code(ping)} 坪` : "未填（先聽行情評估）"}`);
+  lines.push(`<b>期望</b>：${price ? `${code(price)} 萬` : "未填（先聽行情評估）"}`);
   if (note) {
     lines.push("");
-    lines.push(`<b>備註</b>：\n${escapeHtml(note)}`);
+    lines.push(`<b>備註</b>：\n${codeLines(note)}`);
   }
   if (source) {
     lines.push("");
-    lines.push(`<i>來源</i>：${escapeHtml(source)}`);
+    lines.push(`<i>來源</i>：${code(source)}`);
   }
   lines.push("");
-  lines.push("📝 已寫入 Notion「賣房客戶名單」");
+  lines.push(
+    notionOk
+      ? "📝 已寫入 Notion「賣房客戶名單」"
+      : "⚠️ Notion 寫入失敗（這筆只在 TG，請手動補進「賣房客戶名單」）"
+  );
 
-  // 發送端全域上限（RT-06）：超過就不推 TG（Notion 已另外寫入，賣方線索不會因此遺失）
+  // 發送端全域上限（RT-06）：超過就不推 TG（Notion 有寫成的話，賣方線索不會因此遺失）
   const slot = takeTgSlot(Date.now());
   if (!slot.ok) {
     console.warn("[contact-sell] tg budget exceeded");
@@ -291,10 +341,23 @@ async function pushTG(
   }
 }
 
+// 前端執行期取 Turnstile site key（跟 /api/find/config 同一個環境變數、同一道 publicSiteKey 過濾；格式不對就回 null）
+export const onRequestGet = async ({
+  request,
+  env,
+}: EventContext): Promise<Response> => {
+  if (!hostAllowed(request)) return notFound();
+  if (!sameOriginGet(request)) {
+    return jsonResponse({ ok: false, error: "Forbidden origin" }, 403);
+  }
+  return jsonResponse({ ok: true, turnstileSiteKey: publicSiteKey(env.TURNSTILE_SITE_KEY) });
+};
+
 export const onRequestPost = async ({
   request,
   env,
 }: EventContext): Promise<Response> => {
+  if (!hostAllowed(request)) return notFound();
   if (!originAllowed(request)) {
     return jsonResponse({ ok: false, error: "Forbidden origin" }, 403);
   }
@@ -355,13 +418,38 @@ export const onRequestPost = async ({
     }
   }
 
+  const notionKey = env.NOTION_API_KEY;
+  const notionDb = env.NOTION_SELL_DB_ID;
+  const tgToken = env.CONTACT_TG_TOKEN;
+  const tgChat = env.CONTACT_TG_CHAT;
+  // 兩條送達管道都沒設：照舊回 backend_not_configured（不必先去查驗人機 token）
+  if (!(notionKey && notionDb) && !(tgToken && tgChat)) {
+    console.error("[contact-sell] NOTION_* 與 CONTACT_TG_* 都未設定");
+    return jsonResponse({ ok: false, degraded: true, error: "backend_not_configured" });
+  }
+
+  // 人機驗證（2026-10-17）。沒過＝403；驗不了（沒設金鑰、查驗服務連不上）＝fail-closed：不寫 Notion、不推 TG、回 degraded。
+  // 日誌只記泛化代碼（human_no_token／human_action…），不記 token 與客人內容。
+  const vr = await verifyTurnstile({
+    secret: env.TURNSTILE_SECRET_KEY,
+    token: payload.turnstile || "",
+    fetchImpl: (...a) => fetch(...a),
+    action: TS_ACTION,
+    remoteIp: request.headers.get("cf-connecting-ip"),
+    onReason: r => console.warn(`[contact-sell] human_${r}`),
+  });
+  if (vr === "fail") {
+    return jsonResponse({ ok: false, error: "Verification failed" }, 403);
+  }
+  if (vr === "unavailable") {
+    return jsonResponse({ ok: false, degraded: true, error: "delivery_failed" });
+  }
+
   // === 容錯收件：Notion + TG 兩條送達管道，只要一條成功就算收到 lead ===
   // 設計目標：缺 NOTION env 或 Notion 失敗時，絕不能在 TG 推播前 return，
   // 否則賣方整筆 lead 遺失。所以不論 Notion 成敗都試 TG。
 
   // 1. 先試 Notion（僅在有 NOTION_API_KEY + NOTION_SELL_DB_ID 才試）
-  const notionKey = env.NOTION_API_KEY;
-  const notionDb = env.NOTION_SELL_DB_ID;
   let notionAttempted = false;
   let notionOk = false;
   if (notionKey && notionDb) {
@@ -372,12 +460,10 @@ export const onRequestPost = async ({
     console.error("[contact-sell] NOTION_API_KEY / NOTION_SELL_DB_ID 未設定");
   }
 
-  // 2. 不論 Notion 成敗都試 TG（僅在有 CONTACT_TG_TOKEN + CONTACT_TG_CHAT 才推）
-  const tgToken = env.CONTACT_TG_TOKEN;
-  const tgChat = env.CONTACT_TG_CHAT;
+  // 2. 不論 Notion 成敗都試 TG（僅在有 CONTACT_TG_TOKEN + CONTACT_TG_CHAT 才推）；訊息裡的 Notion 狀態行照實際結果寫
   let tgOk = false;
   if (tgToken && tgChat) {
-    tgOk = await pushTG(payload, tgToken, tgChat);
+    tgOk = await pushTG(payload, tgToken, tgChat, notionOk);
   } else {
     console.warn(
       "[contact-sell] CONTACT_TG_TOKEN / CONTACT_TG_CHAT 未設定、跳過 TG 通知"
@@ -398,7 +484,8 @@ export const onRequestPost = async ({
   });
 };
 
-// 非 POST 方法 fallback (POST 走 onRequestPost — Cloudflare Pages Functions 規範)
-export const onRequest = async (): Promise<Response> => {
+// 非 POST／GET 方法 fallback (POST 走 onRequestPost、GET 走 onRequestGet — Cloudflare Pages Functions 規範)
+export const onRequest = async ({ request }: EventContext): Promise<Response> => {
+  if (!hostAllowed(request)) return notFound();
   return jsonResponse({ ok: false, error: "Method not allowed" }, 405);
 };

@@ -28,6 +28,12 @@ const SECURITY_HEADERS = {
   "referrer-policy": "strict-origin-when-cross-origin",
 };
 
+// HTML 回應的內容安全政策（保守版，跟 /share/* 同一組；2026-10-17 資安自查第 4 項）。
+// 上游是 Vercel 的整頁 HTML、以 teddy-house.tw 同源回出去：先鎖「不准被嵌框、不准改 base、不准 object／外部表單」。
+// 不含 script-src（頁面有大量行內腳本，沒盤點前鎖了會弄壞）。已查上游 buyer-fee2/index.html：唯一的 <form>（同仁密碼框）
+// 沒有 action、由腳本攔下，不受 form-action 'self' 影響；站內沒有 iframe 嵌這個工具。
+export const BUYER_FEE_HTML_CSP = "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'";
+
 export const onRequest = async ({
   params,
   request,
@@ -85,6 +91,8 @@ export const onRequest = async ({
       "content-type": ct,
       "cache-control": isSw ? "no-cache" : isHtml ? "public, max-age=60" : "public, max-age=3600",
       ...SECURITY_HEADERS,
+      // 看上游實際回的 content-type（不是只看檔名）：任何 HTML 回應都帶
+      ...(isHtml || /text\/html/i.test(ct) ? { "content-security-policy": BUYER_FEE_HTML_CSP } : {}),
     },
   });
 };

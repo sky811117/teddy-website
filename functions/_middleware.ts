@@ -32,7 +32,9 @@ const KEEP_ON_OLD_HOST = [
   /^\/go\//,
 ];
 // 只服務正式網域的端點（會推 Telegram／轉送家用機）
-const PROD_ONLY = [/^\/api\/find(?:\/|$)/, /^\/api\/contact-/];
+// 2026-10-17 資安自查第 2 項：不分大小寫（/i）。Cloudflare 的路由比對可能不分大小寫，/API/contact-tg 也可能進到 handler，
+// 這裡若區分大小寫，舊網址上打大寫路徑就繞過 404。各 handler 另外也有 hostAllowed，兩層都擋。
+const PROD_ONLY = [/^\/api\/find(?:\/|$)/i, /^\/api\/contact-/i];
 
 // 跟其他 functions 一樣自己宣告最小型別（astro check 會檢查 functions/，沒有 @cloudflare/workers-types）
 type EventContext = {

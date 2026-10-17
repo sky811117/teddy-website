@@ -153,6 +153,10 @@ test("RT-05：_middleware——舊網址上的 /api/find/*、/api/contact-* 一�
   }
   const prev = await MW.onRequest(mk("https://abc123.teddy-website-blog.pages.dev/api/find/submit", "POST"));
   assert.equal(prev.status, 404, "預覽網址也擋");
+  // 2026-10-17 資安自查第 2 項：路由比對可能不分大小寫，大寫路徑也要擋
+  for (const p of ["/API/contact-tg", "/Api/Contact-Sell", "/API/FIND/submit", "/api/Find/config"]) {
+    assert.equal((await MW.onRequest(mk(OLD + p, "POST"))).status, 404, `大小寫 ${p}`);
+  }
   // 舊網址上的其他東西不受影響
   assert.equal((await MW.onRequest(mk(OLD + "/go/line?src=home"))).status, 200, "/go/line 兩個網域都要能用");
   assert.equal((await MW.onRequest(mk(OLD + "/share/ab12cd34/"))).status, 200);
@@ -200,16 +204,21 @@ test("RT-06：FIND_TG_TOKEN／FIND_TG_CHAT 兩個都有才用（找房線索改�
 test("RT-06：舊表單端點加了發送端上限——整個節點每分鐘最多 10 則 TG，超過回 degraded（前端顯示 LINE 備援），下一則附『另有 N 則被合併』", async () => {
   const realFetch = globalThis.fetch;
   const sent = [];
-  globalThis.fetch = async (_url, init) => { sent.push(JSON.parse(init.body).text); return Response.json({ ok: true }); };
+  // 2026-10-17：contact-tg 接了 Turnstile（fail-closed）——假的 siteverify 一律通過，這裡只量 TG 的發送端上限
+  globalThis.fetch = async (url, init) => {
+    if (String(url).startsWith("https://challenges.cloudflare.com/")) return Response.json({ success: true, hostname: "teddy-house.tw", action: "contact-buy" });
+    sent.push(JSON.parse(init.body).text);
+    return Response.json({ ok: true });
+  };
   const realNow = Date.now;
   let t = 1_800_000_000_000;
   Date.now = () => t;
   try {
     const mk = i => new Request("https://teddy-house.tw/api/contact-tg", {
       method: "POST", headers: { "content-type": "application/json", origin: "https://teddy-house.tw" },
-      body: JSON.stringify({ 姓名: "王" + i, 手機: "0912345678", 我想: "買房", _loaded_at: String(t - 60000) }),
+      body: JSON.stringify({ 姓名: "王" + i, 手機: "0912345678", 我想: "買房", _loaded_at: String(t - 60000), turnstile: "tok" }),
     });
-    const env = { CONTACT_TG_TOKEN: "x", CONTACT_TG_CHAT: "1" };
+    const env = { CONTACT_TG_TOKEN: "x", CONTACT_TG_CHAT: "1", TURNSTILE_SECRET_KEY: "ts-secret" };
     const out = [];
     for (let i = 0; i < 14; i++) out.push(await (await TGF.onRequestPost({ request: mk(i), env })).json());
     assert.equal(out.filter(j => j.ok === true).length, 10);

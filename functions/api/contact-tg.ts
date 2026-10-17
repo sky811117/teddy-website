@@ -11,7 +11,9 @@
  * 回應約定（前端 ContactForm.astro 依此決定導 thank-you 或原地備援）：
  * - 200 { ok:true }                       → 已推到 TG
  * - 200 { ok:false, degraded:true, ... }  → 沒設環境變數 / TG 送失敗；前端顯示 LINE + 複製訊息備援
- * - 400 { ok:false, error }               → 必填缺 / JSON 壞 / 跨站來源
+ * - 400 { ok:false, error }               → 必填缺 / JSON 壞
+ * - 403 { ok:false, error }               → 跨站來源 / 人機驗證沒過（前端顯示備援面板、重置驗證框）
+ * - 404 純文字                             → 不是打在正式網域（舊 pages.dev、預覽網址）
  * 永遠不回 500：500 只會讓前端把客戶擋在外面。
  *
  * 2026-10 資安加固（M-20）：回應不再洩漏內部狀態——
@@ -25,12 +27,37 @@
  *
  * 防護：honeypot + 3 秒偵測（client 自報，擋笨 bot）、Origin/Referer 白名單
  * （擋跨站 simple request 灌 TG）、欄位長度上限、body 10KB 上限。
+ *
+ * 2026-10-17 資安自查（security_20261017/code_review.md 第 1～3、12 項）：
+ *   - 人機驗證（Cloudflare Turnstile，跟 /find/ 共用 TURNSTILE_SECRET_KEY／TURNSTILE_SITE_KEY 與 verifyTurnstile）：
+ *     欄位驗證、honeypot、太快送出之後，推 TG 之前查驗。action 固定 "contact-buy"（別張表單的 token 不能拿來用）。
+ *     fail-closed：沒帶 token／驗證沒過 → 403；沒設金鑰或查驗服務連不上 → 不推 TG、回 degraded（前端顯示 LINE 與複製訊息備援）。
+ *     token 走 JSON 的 `turnstile` 欄位（跟 /api/find/* 同名）。
+ *   - GET /api/contact-tg 回 { ok:true, turnstileSiteKey }（同一個 TURNSTILE_SITE_KEY，經 publicSiteKey 過濾），給前端執行期取 site key。
+ *   - 主機名鎖定：請求不是打在 teddy-house.tw／www（或本機測試位址）一律 404（_middleware 之外再擋一次，不怕路由大小寫）；
+ *     Origin 檢查改用 find 的 originAllowed（正式網域不再收 http://localhost 的 Origin）。
+ *   - TG 訊息裡客人打的每一段字都先過 defang（normText＋https:// 換成 hxxp://，電話與 LINE ID 保留）再跳脫、包進 <code>，
+ *     Telegram 不會把它變成可點連結，也偽造不出系統格式的假通知。
  */
+import { publicSiteKey } from "../../src/lib/find/handlers";
+import { hostAllowed, originAllowed, sameOriginGet } from "../../src/lib/find/origin";
+import { normText } from "../../src/lib/find/schema";
+// 只把網址去活化（https:// → hxxp://），不隱藏電話／LINE ID：客人留的聯絡方式不能丟
+// （買方表單沒有 Notion 原文可回查，2026-10-17）。<code> 裡 Telegram 不會自動連結，去活化是防複製貼上誤點。
+function defang(s: string): string {
+  return normText(s).replace(/https?:\/\//gi, "hxxp://").replace(/\s+/g, " ").trim();
+}
+import { verifyTurnstile } from "../../src/lib/find/turnstile";
 
 interface Env {
   CONTACT_TG_TOKEN?: string;
   CONTACT_TG_CHAT?: string;
+  TURNSTILE_SECRET_KEY?: string;
+  TURNSTILE_SITE_KEY?: string;
 }
+
+/** 前端 turnstile.render 帶的 action；伺服器端查驗嚴格比對 */
+const TS_ACTION = "contact-buy";
 
 type EventContext = {
   request: Request;
@@ -66,22 +93,14 @@ function takeTgSlot(now: number): { ok: boolean; suppressed: number } {
 
 // 只收自家正式網域（teddy-house.tw）與本機 wrangler dev。
 // 2026-10-06 紅隊修補（RT-05）：舊網址 pages.dev 與預覽網址不再收——functions/_middleware.ts 已讓這支端點只服務正式網域
-// （舊網址回 404，Cloudflare 對正式網域設的速率限制才有意義）；這裡再擋一次 Origin，兩層一致。
-const ALLOWED_ORIGIN = /^https:\/\/(www\.)?teddy-house\.tw$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
-
-function originAllowed(request: Request): boolean {
-  const origin = request.headers.get("origin");
-  if (origin) return ALLOWED_ORIGIN.test(origin);
-  const referer = request.headers.get("referer");
-  if (referer) {
-    try {
-      return ALLOWED_ORIGIN.test(new URL(referer).origin);
-    } catch {
-      return false;
-    }
-  }
-  // 瀏覽器 fetch POST 一定帶 Origin；兩個都沒有的通常是 script
-  return false;
+// （舊網址回 404，Cloudflare 對正式網域設的速率限制才有意義）；這裡再擋一次，兩層一致。
+// 2026-10-17：主機名用 find 的 hostAllowed（不是正式網域／本機 → 404），Origin 用 find 的 originAllowed
+// （打在正式網域只收正式網域的 Origin、打在本機只收本機 Origin；瀏覽器 fetch POST 一定帶 Origin，兩個都沒有的通常是 script）。
+function notFound(): Response {
+  return new Response("Not Found", {
+    status: 404,
+    headers: { "cache-control": "no-store", "x-content-type-options": "nosniff" },
+  });
 }
 
 function escapeHtml(s: string): string {
@@ -90,6 +109,29 @@ function escapeHtml(s: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+// 客人打的字（不可信）放進 TG 的方式：defang（內含 normText）→ 跳脫 → 包進 <code>。
+// <code> 裡的字 Telegram 不會自動變成連結，視覺上也跟系統產生的粗體標籤分得開。
+function code(s: string): string {
+  return `<code>${escapeHtml(defang(s))}</code>`;
+}
+// 真的多行的欄位（訊息）：逐行處理、保留換行，整段放在同一個 <code> 裡
+function codeLines(s: string): string {
+  const body = s
+    .split("\n")
+    .map(l => escapeHtml(defang(l)))
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  return `<code>${body}</code>`;
+}
+// Email：格式規矩的才做成 mailto 連結；其他（驗證放得比較寬，例如含 / 或中文）只當文字放進 <code>，不做連結也不隱藏
+const SAFE_EMAIL = /^[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/;
+function emailHtml(email: string): string {
+  return SAFE_EMAIL.test(email)
+    ? `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>`
+    : `<code>${escapeHtml(normText(email))}</code>`;
 }
 
 // 取欄位：去頭尾空白、砍控制字元、限長。
@@ -119,10 +161,23 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
+// 前端執行期取 Turnstile site key（跟 /api/find/config 同一個環境變數、同一道 publicSiteKey 過濾；格式不對就回 null）
+export const onRequestGet = async ({
+  request,
+  env,
+}: EventContext): Promise<Response> => {
+  if (!hostAllowed(request)) return notFound();
+  if (!sameOriginGet(request)) {
+    return jsonResponse({ ok: false, error: "Forbidden origin" }, 403);
+  }
+  return jsonResponse({ ok: true, turnstileSiteKey: publicSiteKey(env.TURNSTILE_SITE_KEY) });
+};
+
 export const onRequestPost = async ({
   request,
   env,
 }: EventContext): Promise<Response> => {
+  if (!hostAllowed(request)) return notFound();
   if (!originAllowed(request)) {
     return jsonResponse({ ok: false, error: "Forbidden origin" }, 403);
   }
@@ -197,7 +252,24 @@ export const onRequestPost = async ({
     });
   }
 
-  // 5. 組訊息
+  // 5. 人機驗證（2026-10-17）。沒過＝403；驗不了（沒設金鑰、查驗服務連不上）＝fail-closed：不推 TG、回 degraded。
+  //    日誌只記泛化代碼（human_no_token／human_action…），不記 token 與客人內容。
+  const vr = await verifyTurnstile({
+    secret: env.TURNSTILE_SECRET_KEY,
+    token: typeof payload.turnstile === "string" ? payload.turnstile : "",
+    fetchImpl: (...a) => fetch(...a),
+    action: TS_ACTION,
+    remoteIp: request.headers.get("cf-connecting-ip"),
+    onReason: r => console.warn(`[contact-tg] human_${r}`),
+  });
+  if (vr === "fail") {
+    return jsonResponse({ ok: false, error: "Verification failed" }, 403);
+  }
+  if (vr === "unavailable") {
+    return jsonResponse({ ok: false, degraded: true, error: "delivery_failed" });
+  }
+
+  // 6. 組訊息（客人打的字一律 code()／codeLines()；粗體標籤、tel／mailto 連結是系統產生的）
   const budget = field(payload, "預算", 30);
   const propId = field(payload, "物件編號", 30);
   const propTitle = field(payload, "物件標題", 120);
@@ -207,33 +279,33 @@ export const onRequestPost = async ({
   const source = field(payload, "來源頁", 200);
 
   const lines: string[] = [
-    `🔔 <b>新詢價</b>｜${escapeHtml(intent)}`,
+    `🔔 <b>新詢價</b>｜${code(intent)}`,
     "",
-    `<b>姓名</b>：${escapeHtml(name)}`,
+    `<b>姓名</b>：${code(name)}`,
   ];
   if (phone) {
     const phoneClean = phone.replace(/[^\d+]/g, "");
     lines.push(`<b>手機</b>：<a href="tel:${phoneClean}">${escapeHtml(phone)}</a>`);
   }
   if (email) {
-    lines.push(`<b>Email</b>：<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>`);
+    lines.push(`<b>Email</b>：${emailHtml(email)}`);
   }
-  if (budget) lines.push(`<b>預算</b>：${escapeHtml(budget)}`);
+  if (budget) lines.push(`<b>預算</b>：${code(budget)}`);
   if (propId) {
     const propLine = propTitle
       ? `${propId} (${propTitle})`
       : propId;
-    lines.push(`<b>物件</b>：${escapeHtml(propLine)}`);
+    lines.push(`<b>物件</b>：${code(propLine)}`);
   }
-  if (listingDesc) lines.push(`<b>物件描述</b>：${escapeHtml(listingDesc)}`);
-  if (areas) lines.push(`<b>區域</b>：${escapeHtml(areas)}`);
+  if (listingDesc) lines.push(`<b>物件描述</b>：${code(listingDesc)}`);
+  if (areas) lines.push(`<b>區域</b>：${code(areas)}`);
   if (message) {
     lines.push("");
-    lines.push(`<b>訊息</b>：\n${escapeHtml(message)}`);
+    lines.push(`<b>訊息</b>：\n${codeLines(message)}`);
   }
   if (source) {
     lines.push("");
-    lines.push(`<i>來源</i>：${escapeHtml(source)}`);
+    lines.push(`<i>來源</i>：${code(source)}`);
   }
 
   // 發送端全域上限（RT-06）：超過就不推，回 degraded（前端會顯示 LINE 與複製訊息的備援），不是靜默吞掉
@@ -245,7 +317,7 @@ export const onRequestPost = async ({
   if (slot.suppressed > 0) lines.push("", `<i>（上一分鐘另有 ${slot.suppressed} 則因為太密集被合併，疑似洗版）</i>`);
   const text = lines.join("\n");
 
-  // 6. 推 TG (TG no-silent push rule: disable_notification 必須 false)
+  // 7. 推 TG (TG no-silent push rule: disable_notification 必須 false)
   const tgUrl = `https://api.telegram.org/bot${token}/sendMessage`;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -286,8 +358,9 @@ export const onRequestPost = async ({
 export const onRequest = async ({
   request,
 }: EventContext): Promise<Response> => {
-  if (request.method === "POST") {
-    // 應該被 onRequestPost 攔截、不會到這
+  if (!hostAllowed(request)) return notFound();
+  if (request.method === "POST" || request.method === "GET") {
+    // 應該被 onRequestPost／onRequestGet 攔截、不會到這
     return jsonResponse({ ok: false, error: "Unexpected" }, 500);
   }
   return jsonResponse({ ok: false, error: "Method not allowed" }, 405);

@@ -333,6 +333,8 @@ const defaultDescription = propertyId
 
     {/* === 提交按鈕 + 狀態訊息 === */}
     <div class="border-border border-t pt-5">
+      {/* 人機驗證（Cloudflare Turnstile，interaction-only：平常看不到，需要時才出現勾選框）；客人開始填表才載入 */}
+      <div data-ts-box></div>
       <button
         type="submit"
         data-submit-btn
@@ -419,6 +421,11 @@ const defaultDescription = propertyId
 </section>
 
 <script>
+  import {
+    setupContactTurnstile,
+    turnstileHint,
+  } from "@/scripts/contact-turnstile";
+
   function initContactForm() {
     const formRaw = document.querySelector<HTMLFormElement>(
       "[data-contact-form]"
@@ -426,6 +433,21 @@ const defaultDescription = propertyId
     if (!formRaw || formRaw.dataset.initialized === "true") return;
     formRaw.dataset.initialized = "true";
     const form: HTMLFormElement = formRaw;
+
+    // 人機驗證（2026-10-17）：後端 /api/contact-tg 沒有 token 一律不推 TG。
+    // 客人一開始填表（focus／點擊／輸入）才去取 site key、載入 Cloudflare 驗證程式，不拖慢頁面。
+    const tsBox =
+      form.querySelector<HTMLElement>("[data-ts-box]") ||
+      form.appendChild(document.createElement("div"));
+    const turnstile = setupContactTurnstile({
+      box: tsBox,
+      endpoint: "/api/contact-tg",
+      action: "contact-buy",
+    });
+    const warmUp = () => turnstile.prepare();
+    for (const ev of ["focusin", "pointerdown", "input"]) {
+      form.addEventListener(ev, warmUp, { once: true, passive: true });
+    }
 
     const formspreeId = form.dataset.formspreeId || "";
     const submitBtn = form.querySelector<HTMLButtonElement>(
@@ -700,14 +722,36 @@ const defaultDescription = propertyId
       // disable 按鈕
       if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = "送出中...";
+        submitBtn.textContent = "安全驗證中...";
       }
 
-      // 1. 主管道：TG（一律送）
+      // 0. 人機驗證 token（最多等 10 秒）。拿不到就不送：明講原因；載入失敗時另外打開備援面板（LINE／複製訊息／電話）
+      const ts = await turnstile.getToken(10000);
+      if (!ts.token) {
+        track("lead_submit", {
+          status: ts.needsClick ? "human_pending" : "human_unavailable",
+          form: "contact",
+          intent: String(payload["我想"] || ""),
+        });
+        showFormError(turnstileHint(ts));
+        if (ts.needsClick) {
+          resetSubmitBtn();
+        } else {
+          showFallback(payload);
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "再送一次";
+          }
+        }
+        return;
+      }
+      if (submitBtn) submitBtn.textContent = "送出中...";
+
+      // 1. 主管道：TG（一律送）。token 只給自家後端，不送去 Formspree
       const tgTask: Promise<boolean> = fetch("/api/contact-tg", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, turnstile: ts.token }),
       })
         .then(async res => {
           if (!res.ok) return false;
@@ -735,6 +779,8 @@ const defaultDescription = propertyId
         : Promise.resolve(false);
 
       const [tgOk, formspreeOk] = await Promise.all([tgTask, formspreeTask]);
+      // token 已經被後端查驗用掉（不論成敗）：重置驗證框，「再送一次」會拿新的
+      turnstile.reset();
       const intent = String(payload["我想"] || "");
 
       if (tgOk || formspreeOk) {

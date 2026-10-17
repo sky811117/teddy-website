@@ -227,6 +227,8 @@ const {
 
     {/* === 送出 === */}
     <div class="border-border border-t pt-5">
+      {/* 人機驗證（Cloudflare Turnstile，interaction-only：平常看不到，需要時才出現勾選框）；客人開始填表才載入 */}
+      <div data-ts-box></div>
       <button
         type="submit"
         data-submit-btn
@@ -313,11 +315,31 @@ const {
 </section>
 
 <script>
+  import {
+    setupContactTurnstile,
+    turnstileHint,
+  } from "@/scripts/contact-turnstile";
+
   function initSellForm() {
     const formRaw = document.querySelector<HTMLFormElement>("[data-sell-form]");
     if (!formRaw || formRaw.dataset.initialized === "true") return;
     formRaw.dataset.initialized = "true";
     const form: HTMLFormElement = formRaw;
+
+    // 人機驗證（2026-10-17）：後端 /api/contact-sell 沒有 token 一律不寫 Notion、不推 TG。
+    // 客人一開始填表（focus／點擊／輸入）才去取 site key、載入 Cloudflare 驗證程式，不拖慢頁面。
+    const tsBox =
+      form.querySelector<HTMLElement>("[data-ts-box]") ||
+      form.appendChild(document.createElement("div"));
+    const turnstile = setupContactTurnstile({
+      box: tsBox,
+      endpoint: "/api/contact-sell",
+      action: "contact-sell",
+    });
+    const warmUp = () => turnstile.prepare();
+    for (const ev of ["focusin", "pointerdown", "input"]) {
+      form.addEventListener(ev, warmUp, { once: true, passive: true });
+    }
 
     const submitBtn = form.querySelector<HTMLButtonElement>("[data-submit-btn]");
     const submitLabel = submitBtn?.textContent?.trim() || "送出 → 24 小時內回你";
@@ -538,15 +560,34 @@ const {
 
       if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = "送出中...";
+        submitBtn.textContent = "安全驗證中...";
       }
+
+      // 人機驗證 token（最多等 10 秒）。拿不到就不送：明講原因；載入失敗時另外打開備援面板（LINE／複製訊息／電話）
+      const ts = await turnstile.getToken(10000);
+      if (!ts.token) {
+        track("lead_submit", {
+          status: ts.needsClick ? "human_pending" : "human_unavailable",
+          form: "sell",
+          intent: "賣房",
+        });
+        showFormError(turnstileHint(ts));
+        if (ts.needsClick) {
+          resetSubmitBtn();
+        } else {
+          showFallback(payload);
+          resetSubmitBtn("再送一次");
+        }
+        return;
+      }
+      if (submitBtn) submitBtn.textContent = "送出中...";
 
       let ok = false;
       try {
         const res = await fetch("/api/contact-sell", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ ...payload, turnstile: ts.token }),
         });
         if (res.ok) {
           try {
@@ -559,6 +600,8 @@ const {
       } catch {
         ok = false;
       }
+      // token 已經被後端查驗用掉（不論成敗）：重置驗證框，「再送一次」會拿新的
+      turnstile.reset();
 
       if (ok) {
         track("lead_submit", { status: "ok", form: "sell", intent: "賣房" });
