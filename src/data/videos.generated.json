@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-13T20:11:06+08:00",
+  "generatedAt": "2026-10-19T20:09:01+08:00",
   "source": {
-    "registrySyncedAt": "2026-10-12 22:38",
+    "registrySyncedAt": "2026-10-16 22:38",
     "since": "2026-07-01"
   },
-  "count": 35,
+  "count": 34,
   "videos": [
     {
       "id": "yt--ePTnC2YADY",
@@ -238,20 +238,6 @@
       "pubDate": "2026-09-06",
       "listingCodes": [
         "0397186"
-      ]
-    },
-    {
-      "id": "yt-QACHHjQ8kEA",
-      "platform": "youtube",
-      "videoId": "QACHHjQ8kEA",
-      "url": "https://www.youtube.com/shorts/QACHHjQ8kEA",
-      "title": "台中北屯｜佳福謙邑｜3房2廳2衛｜1398萬",
-      "category": "看屋開箱",
-      "district": "北屯區",
-      "community": "佳福謙邑",
-      "pubDate": "2026-09-05",
-      "listingCodes": [
-        "1195705"
       ]
     },
     {
