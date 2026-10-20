@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-19T20:09:01+08:00",
+  "generatedAt": "2026-10-20T20:23:02+08:00",
   "source": {
     "registrySyncedAt": "2026-10-16 22:38",
     "since": "2026-07-01"
   },
-  "count": 34,
+  "count": 33,
   "videos": [
     {
       "id": "yt--ePTnC2YADY",
@@ -392,20 +392,6 @@
       "pubDate": "2026-08-02",
       "listingCodes": [
         "1211232"
-      ]
-    },
-    {
-      "id": "yt-nYHE1L9YU48",
-      "platform": "youtube",
-      "videoId": "nYHE1L9YU48",
-      "url": "https://www.youtube.com/shorts/nYHE1L9YU48",
-      "title": "台中北區｜澄亦實築｜3房2廳3衛｜2480萬→2380萬",
-      "category": "看屋開箱",
-      "district": "北區",
-      "community": "澄亦實築",
-      "pubDate": "2026-07-29",
-      "listingCodes": [
-        "1211237"
       ]
     },
     {
