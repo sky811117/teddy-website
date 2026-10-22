@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-20T20:23:02+08:00",
+  "generatedAt": "2026-10-22T20:25:17+08:00",
   "source": {
     "registrySyncedAt": "2026-10-16 22:38",
     "since": "2026-07-01"
   },
-  "count": 33,
+  "count": 32,
   "videos": [
     {
       "id": "yt--ePTnC2YADY",
@@ -101,20 +101,6 @@
       "pubDate": "2026-10-01",
       "listingCodes": [
         "1228223"
-      ]
-    },
-    {
-      "id": "yt-NehazSgNtRE",
-      "platform": "youtube",
-      "videoId": "NehazSgNtRE",
-      "url": "https://www.youtube.com/shorts/NehazSgNtRE",
-      "title": "台中太平｜贊騰有容｜5房3廳6衛｜3698萬",
-      "category": "看屋開箱",
-      "district": "太平區",
-      "community": "贊騰有容",
-      "pubDate": "2026-09-29",
-      "listingCodes": [
-        "1211326"
       ]
     },
     {

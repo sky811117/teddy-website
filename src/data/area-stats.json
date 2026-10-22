@@ -1,6 +1,6 @@
 {
   "_comment": "由 scripts/build-area-stats.py 從 lvr_buildings.db 產生，勿手改；口徑見 method",
-  "generatedAt": "2026-10-12",
+  "generatedAt": "2026-10-22",
   "period": {
     "label": "2025 Q3–2026 Q2",
     "rocLabel": "114 年第 3 季～115 年第 2 季",
@@ -13,8 +13,8 @@
       "2026 Q2"
     ]
   },
-  "dbMaxDealDate": "2026-09-11",
-  "dbRobustMaxDealDate": "2026-09-03",
+  "dbMaxDealDate": "2026-09-30",
+  "dbRobustMaxDealDate": "2026-09-07",
   "source": "內政部不動產實價登錄（成屋買賣）",
   "method": "站方逐筆統計：成交日落在期間內的住家用成屋買賣，單價＝(總價−車位價)÷(建物面積−車位面積)，取中位數；車位價未拆分的交易，以同區同類車位期間內有拆分成交的每位中位數乘車位個數扣除；剔除親友等特殊關係交易、成交日晚於統計日的資料與極端值；最近 3 個月的成交尚未登錄完整，不列入。新成屋大樓＝屋齡未滿 3 年或預售屋交屋登記，中古大樓＝屋齡 3 年以上。",
   "filters": {
@@ -33,13 +33,13 @@
     "futureRowsInDb": 1
   },
   "counters": {
-    "window_rows": 16732,
+    "window_rows": 16751,
     "non_residential": 2593,
     "special_note": 1286,
-    "parking_imputed": 4013,
+    "parking_imputed": 4017,
     "other_type": 0,
     "outlier": 396,
-    "kept": 12457
+    "kept": 12476
   },
   "districts": {
     "中區": {
@@ -267,16 +267,16 @@
       ]
     },
     "南屯區": {
-      "n": 1021,
+      "n": 1022,
       "under5mShare": 7,
       "segments": [
         {
           "key": "tower_resale",
           "label": "中古大樓（屋齡 3 年以上）",
-          "n": 605,
-          "median": 34.6,
+          "n": 606,
+          "median": 34.7,
           "p25": 29.3,
-          "p75": 43.3,
+          "p75": 43.4,
           "smallSample": false,
           "imputedShare": 49
         },
@@ -323,16 +323,16 @@
       ]
     },
     "后里區": {
-      "n": 125,
+      "n": 126,
       "under5mShare": 4,
       "segments": [
         {
           "key": "midrise",
           "label": "華廈",
-          "n": 51,
+          "n": 52,
           "median": 29.7,
           "p25": 27.1,
-          "p75": 31.8,
+          "p75": 31.9,
           "smallSample": false,
           "imputedShare": 33
         },
@@ -391,7 +391,7 @@
       ]
     },
     "大甲區": {
-      "n": 144,
+      "n": 145,
       "under5mShare": 10,
       "segments": [
         {
@@ -427,10 +427,10 @@
         {
           "key": "townhouse",
           "label": "透天厝",
-          "n": 59,
-          "median": 23.5,
-          "p25": 17.7,
-          "p75": 27.0,
+          "n": 60,
+          "median": 23.8,
+          "p25": 17.8,
+          "p75": 27.2,
           "smallSample": false,
           "imputedShare": 0
         }
@@ -595,28 +595,28 @@
       ]
     },
     "太平區": {
-      "n": 904,
+      "n": 911,
       "under5mShare": 7,
       "segments": [
         {
           "key": "tower_resale",
           "label": "中古大樓（屋齡 3 年以上）",
-          "n": 293,
+          "n": 294,
           "median": 30.5,
-          "p25": 24.9,
+          "p25": 25.0,
           "p75": 34.0,
           "smallSample": false,
-          "imputedShare": 61
+          "imputedShare": 62
         },
         {
           "key": "tower_new",
           "label": "新成屋大樓（屋齡未滿 3 年）",
-          "n": 235,
+          "n": 237,
           "median": 35.5,
           "p25": 33.0,
           "p75": 38.8,
           "smallSample": false,
-          "imputedShare": 63
+          "imputedShare": 62
         },
         {
           "key": "midrise",
@@ -633,7 +633,7 @@
           "label": "公寓",
           "n": 29,
           "median": 17.8,
-          "p25": 13.9,
+          "p25": 14.0,
           "p75": 22.4,
           "smallSample": false,
           "imputedShare": 3
@@ -641,10 +641,10 @@
         {
           "key": "townhouse",
           "label": "透天厝",
-          "n": 259,
-          "median": 34.9,
-          "p25": 26.8,
-          "p75": 41.2,
+          "n": 263,
+          "median": 35.0,
+          "p25": 27.2,
+          "p75": 41.5,
           "smallSample": false,
           "imputedShare": 0
         }
@@ -973,36 +973,36 @@
       ]
     },
     "烏日區": {
-      "n": 324,
+      "n": 327,
       "under5mShare": 2,
       "segments": [
         {
           "key": "tower_resale",
           "label": "中古大樓（屋齡 3 年以上）",
-          "n": 211,
-          "median": 35.7,
-          "p25": 31.5,
-          "p75": 40.8,
+          "n": 212,
+          "median": 36.7,
+          "p25": 32.6,
+          "p75": 41.7,
           "smallSample": false,
           "imputedShare": 86
         },
         {
           "key": "tower_new",
           "label": "新成屋大樓（屋齡未滿 3 年）",
-          "n": 41,
-          "median": 41.6,
-          "p25": 37.7,
-          "p75": 43.8,
+          "n": 43,
+          "median": 42.7,
+          "p25": 39.1,
+          "p75": 46.8,
           "smallSample": false,
-          "imputedShare": 98
+          "imputedShare": 93
         },
         {
           "key": "midrise",
           "label": "華廈",
           "n": 23,
-          "median": 24.7,
+          "median": 25.6,
           "p25": 21.9,
-          "p75": 28.9,
+          "p75": 29.4,
           "smallSample": false,
           "imputedShare": 35
         },
@@ -1117,7 +1117,7 @@
       ]
     },
     "西屯區": {
-      "n": 1528,
+      "n": 1532,
       "under5mShare": 12,
       "segments": [
         {
@@ -1133,17 +1133,17 @@
         {
           "key": "tower_new",
           "label": "新成屋大樓（屋齡未滿 3 年）",
-          "n": 220,
+          "n": 221,
           "median": 54.3,
           "p25": 49.3,
           "p75": 61.1,
           "smallSample": false,
-          "imputedShare": 55
+          "imputedShare": 56
         },
         {
           "key": "midrise",
           "label": "華廈",
-          "n": 301,
+          "n": 302,
           "median": 27.6,
           "p25": 23.8,
           "p75": 33.7,
@@ -1163,17 +1163,17 @@
         {
           "key": "townhouse",
           "label": "透天厝",
-          "n": 99,
-          "median": 43.6,
-          "p25": 36.4,
-          "p75": 55.9,
+          "n": 101,
+          "median": 44.1,
+          "p25": 36.6,
+          "p75": 57.9,
           "smallSample": false,
           "imputedShare": 4
         }
       ]
     },
     "豐原區": {
-      "n": 388,
+      "n": 389,
       "under5mShare": 13,
       "segments": [
         {
@@ -1219,17 +1219,17 @@
         {
           "key": "townhouse",
           "label": "透天厝",
-          "n": 138,
-          "median": 32.8,
+          "n": 139,
+          "median": 32.9,
           "p25": 25.6,
-          "p75": 38.4,
+          "p75": 38.2,
           "smallSample": false,
           "imputedShare": 0
         }
       ]
     },
     "霧峰區": {
-      "n": 152,
+      "n": 153,
       "under5mShare": 12,
       "segments": [
         {
@@ -1265,10 +1265,10 @@
         {
           "key": "townhouse",
           "label": "透天厝",
-          "n": 88,
-          "median": 27.7,
-          "p25": 21.0,
-          "p75": 32.6,
+          "n": 89,
+          "median": 27.8,
+          "p25": 21.1,
+          "p75": 32.8,
           "smallSample": false,
           "imputedShare": 0
         }
