@@ -734,6 +734,15 @@ test("重整後接著等：同分頁、工作編號有效就回到等待；已�
   assert.equal(app3.state(), "s0");
 });
 
+test("結果頁筆數：放滿 30 間說「先挑出」，沒放滿照實說幾間", { skip: SKIP }, async () => {
+  for (const [n, re] of [[30, /^這是依你的條件先挑出的 30 間。$/], [29, /^這是依你的條件挑出的 29 間。$/], [7, /^這是依你的條件挑出的 7 間。$/]]) {
+    const done = JSON.stringify({ sid: "Qw3kT9xLm2PzR8aVb5NcDe", idem: "x", jobId: JOB, step: "s7", fields: { districts: ["北屯區"] }, context: {}, res: { shareUrl: SHARE, count: n } });
+    const app = await boot({ session: { "find.v1": done } });
+    assert.equal(app.state(), "s7");
+    assert.match(app.text("#res-count").trim(), re);
+  }
+});
+
 test("清除我輸入的內容：回到開場、暫存清掉", { skip: SKIP }, async () => {
   const app = await boot();
   await sayAndContinue(app, "北屯三房，兩千萬內");

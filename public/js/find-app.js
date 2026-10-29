@@ -1140,8 +1140,9 @@ function destroyGame() {
 function showResult() {
   destroyGame();
   var r = S.res || {};
-  var cnt = byId('res-count');
-  if (cnt) cnt.textContent = r.count ? '這是依你的條件挑出的 ' + r.count + ' 間。' : '這是依你的條件挑出的幾間。';
+  var n = byId('res-n'), f = byId('res-first');   // 句子本身寫在頁面上（#res-count），這裡只填間數
+  if (n) n.textContent = r.count ? ' ' + r.count + ' ' : '幾';
+  if (f) f.textContent = r.count >= 30 ? '先' : '';   // 30＝推薦頁上限：放滿＝可能還有
   var link = byId('open-link');
   if (link && r.shareUrl) link.setAttribute('href', shareLink(r.shareUrl, S.fields, S.context));
   tagsInto(byId('res-tags'), condTags(S.fields));
