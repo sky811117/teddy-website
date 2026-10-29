@@ -45,6 +45,7 @@ const vBoard = fileVer("public/js/wait-board.js");
 const vScope = fileVer("public/js/find-scope.js");
 const vMap = fileVer("public/js/find-map.js");
 const vMapCss = fileVer("public/js/find-map.css");
+const vAi = fileVer("public/js/find-ai.js");
 
 const title = `找房小幫手｜打一句話，先看幾間 | ${config.site.title}`;
 const description =
@@ -139,13 +140,15 @@ const concernHelp = "這幾項只會讓景泰知道從哪聊起，不會拿去�
               </div>
             </div>
 
-            <div id="s0-live">
+            <!-- 那句話先交給 AI 讀（2026-10-29）：家用機回報 ai 才由 find-app.js 在客人開始打字時載入 find-ai.js -->
+            <div id="s0-live" data-src={`/js/find-ai.js?v=${vAi}`}>
               <form class="u2-composer" id="free-form" action="#" novalidate>
                 <label class="u2-sr" for="free-text">你想找什麼樣的房子？一句話就好</label>
                 <textarea id="free-text" class="u2-textarea" rows="2" maxlength="300" placeholder="例：北屯三房，兩千萬內，要有車位" aria-describedby="free-help"></textarea>
                 <button class="u2-btn u2-btn--primary" type="submit"><svg class="u2-ico" aria-hidden="true"><use href="#i-send"></use></svg>送出</button>
                 <p class="u2-composer__count" id="free-help">最多 300 字，不需要寫電話或姓名</p>
               </form>
+              <p class="u2-small" id="ai-wait" role="status" hidden>正在讀你的需求，等我幾秒。</p>
               <div class="u2-s0-tags">
                 <p class="u2-cap">不知道怎麼寫？點一個試試，可以再改：</p>
                 <div class="u2-tags">
@@ -184,7 +187,7 @@ const concernHelp = "這幾項只會讓景泰知道從哪聊起，不會拿去�
               <div class="u2-details__body">
                 <ul class="u2-promise">
                   <li><svg class="u2-ico" aria-hidden="true"><use href="#i-check"></use></svg><span>交給搜尋的，只有區域、預算、房數、社區名這類物件條件；你在地圖上選的範圍座標不會交出去。</span></li>
-                  <li><svg class="u2-ico" aria-hidden="true"><use href="#i-lock"></use></svg><span>你的姓名、聯絡方式、在意的事、你打的那句話，不會交出去。</span></li>
+                  <li><svg class="u2-ico" aria-hidden="true"><use href="#i-lock"></use></svg><span>你打的那句話會交給 AI 整理成找房條件，交出去前會先拿掉電話、LINE 這類聯絡資料。你的姓名、聯絡方式、在意的事，不會交出去。</span></li>
                   <li><svg class="u2-ico" aria-hidden="true"><use href="#i-info"></use></svg><span>你打的字、聯絡方式、你在地圖上選的範圍最多保存 30 天，條件只留匿名的粗略分級。完整說明在<a class="u2-link" href="/privacy/">隱私權政策</a>。</span></li>
                 </ul>
               </div>
@@ -568,7 +571,7 @@ const concernHelp = "這幾項只會讓景泰知道從哪聊起，不會拿去�
             <h2>資料怎麼用</h2>
             <ul class="u2-promise">
               <li><svg class="u2-ico" aria-hidden="true"><use href="#i-check"></use></svg><span>交給搜尋的，只有區域、預算、房數、社區名這類物件條件；你在地圖上選的範圍座標不會交出去。</span></li>
-              <li><svg class="u2-ico" aria-hidden="true"><use href="#i-lock"></use></svg><span>你的姓名、聯絡方式、在意的事、你打的那句話，不會交出去。</span></li>
+              <li><svg class="u2-ico" aria-hidden="true"><use href="#i-lock"></use></svg><span>你打的那句話會交給 AI 整理成找房條件，交出去前會先拿掉電話、LINE 這類聯絡資料。你的姓名、聯絡方式、在意的事，不會交出去。</span></li>
               <li><svg class="u2-ico" aria-hidden="true"><use href="#i-info"></use></svg><span>你打的字、聯絡方式、你在地圖上選的範圍最多保存 30 天，條件只留匿名的粗略分級。完整說明在<a class="u2-link" href="/privacy/">隱私權政策</a>。</span></li>
             </ul>
           </div>
@@ -578,6 +581,17 @@ const concernHelp = "這幾項只會讓景泰知道從哪聊起，不會拿去�
           </div>
         </aside>
       </div>
+    </div>
+    <!-- 追問的題目（字）與說明（data-h）：find-app.js 讀這裡（2026-10-29 從 JS 搬到頁面，省首載 JS）。放在對話區外面：藏著的字不算對話內容 -->
+    <div id="qcopy" hidden>
+      <p data-q="q_district" data-h="最多選 2 個，之後可以再換。不選也可以，我會先找整個台中。">想找哪一區？</p>
+      <p data-q="q_budget" data-h="先抓個範圍就好，之後可以調。不確定也沒關係，選「還不確定」，我會用比較寬的範圍先找。">預算上限大概多少？</p>
+      <p data-q="q_rooms" data-h="可以複選，相鄰的會當成一個範圍。">想要幾房？</p>
+      <p data-q="q_concerns" data-h="不影響找到的房子，只讓景泰之後更懂你。沒有標準答案，也可以直接略過。">（選填）買房這件事，你最在意或擔心什麼？</p>
+      <p data-q="q_parking" data-h="車位型式會影響每天好不好停，先選你的底線就好。">車位呢？</p>
+      <p data-q="q_age" data-h="選一個上限就好。">屋齡有想避開的嗎？</p>
+      <p data-q="q_stage" data-h="不影響找到的房子，只是讓景泰知道從哪聊起。">（選填）你現在比較像哪一種？</p>
+      <p data-q="q_timeline" data-h="不影響找到的房子。沒有標準答案，不會有人因為這題催你。">（選填）大概什麼時候想有結果？</p>
     </div>
   </main>
 

@@ -345,6 +345,8 @@ export type Fields = {
   community?: string;
   zone?: string;
   geo?: number[][];
+  /** 2026-10-29 每區要幾間（1～30；只選一區或沒選區＝要幾間）。例：「西屯、南屯各 10 間」 */
+  per_district?: number;
 };
 export type Context = { stage?: string; timeline?: string; special?: string[]; concerns?: string[] };
 
@@ -483,6 +485,11 @@ export function normalizeFields(raw: unknown): { fields: Fields; issues: string[
     if (n === null) issues.push("floor_min:invalid");
     else out.floor_min = n;
   }
+  if (!nul(raw.per_district)) {
+    const n = intIn(raw.per_district, 1, 30);
+    if (n === null) issues.push("per_district:invalid");
+    else out.per_district = n;
+  }
   return { fields: out, issues };
 }
 
@@ -609,6 +616,15 @@ export function validateSubmit(body: unknown): { out: SubmitClean | null; err: E
       hp: typeof body.hp === "string" ? body.hp : body.hp ? "x" : "",
     },
   };
+}
+
+/* ---------- 一句話先交給家用機的 AI 讀（2026-10-29 /api/find/understand） ---------- */
+export type UnderstandClean = { text: string; turnstile: string };
+export function validateUnderstand(body: unknown): UnderstandClean | null {
+  if (!isObj(body) || body.v !== SCHEMA_V || typeof body.text !== "string") return null;
+  const text = normText(body.text).trim();
+  if (!text || cpLen(text) > FREE_TEXT_MAX) return null;
+  return { text, turnstile: typeof body.turnstile === "string" && body.turnstile.length <= 2048 ? body.turnstile : "" };
 }
 
 /* ---------- 事後補留聯絡方式 ---------- */

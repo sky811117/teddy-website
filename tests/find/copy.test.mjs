@@ -85,8 +85,20 @@ test("隱私聲明與頁面承諾一致：30 天、180 天、不交給外部的�
   assert.match(page, /最多保存 30 天/);
   assert.match(priv, /保存 30 天後刪除/);
   assert.match(priv, /180 天/);
-  assert.match(priv, /姓名、聯絡方式、在意的事與你打的那一句話不會交出去/);
-  assert.match(priv, /updatedAt = "2026-10-09"/);
+  assert.match(priv, /姓名、聯絡方式、在意的事與你打的那一句話不會交給這個搜尋服務/);
+  assert.match(priv, /updatedAt = "2026-10-29"/);
+  // 2026-10-29 景泰「AI在輸入需求那邊就要介入了」→「照兩步做」：開場打的那一句話都先交給 Anthropic 的模型整理成條件（/api/find/understand）。
+  // 交給誰、交出去前先拿掉什麼、拿不乾淨的要老實講；政策兩段與找房頁兩處都要寫，而且不能再說「那句話不會交出去」
+  assert.match(priv, /會交給 AI 服務商 Anthropic 的模型整理成「區域、預算、房數」這類條件/);
+  assert.match(priv, /交給 AI 服務商 Anthropic 的模型整理成找房條件/);
+  assert.equal((priv.match(/程式會先拿掉它認得出來的電話、Email、LINE、門牌和稱呼/g) || []).length, 2);
+  assert.match(priv, /認不出來的寫法可能留著，所以那句話請只寫找房條件/);
+  assert.match(priv, /模型只回條件，不會跟你對話/);
+  assert.match(priv, /服務商（Cloudflare、Telegram、Notion、Google、Anthropic）伺服器在台灣以外的地區/);
+  assert.equal((page.match(/你打的那句話會交給 AI 整理成找房條件，交出去前會先拿掉電話、LINE 這類聯絡資料。你的姓名、聯絡方式、在意的事，不會交出去。/g) || []).length, 2, "手機版與桌機右欄兩處");
+  assert.ok(!/你打的那句話，不會交出去/.test(page), "舊承諾（那句話不會交出去）已不成立，不能留在頁面上");
+  assert.ok(!/在意的事、你打的那一句話都不會交出去/.test(priv), "同上：政策裡的舊句子");
+  assert.ok(!/會先在你的瀏覽器裡整理；按「開始找」才送出/.test(priv), "同上：那句話現在按「送出」就會交給 AI");
   // 2026-10-07 等待小遊戲排行榜（審查 LB-P1）：暱稱與層數公開顯示、跟需求連在一起、保存 180 天，都要寫出來
   assert.match(priv, /暱稱和層數會公開顯示/);
   assert.match(priv, /跟你這次的需求連在一起保存/);

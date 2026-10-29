@@ -867,6 +867,7 @@ function normalizeFields(raw) {
   }
   if (!nul(raw.exclude_top)) { if (typeof raw.exclude_top === 'boolean') { if (raw.exclude_top) out.exclude_top = true; } else issues.push('exclude_top:invalid'); }
   one(raw, out, issues, 'floor_min', int60);
+  one(raw, out, issues, 'per_district', x => intIn(x, 1, 30)); // 每區要幾間（2026-10-29；只有 AI 讀得出來，規則式不抽）
   return { fields: out, issues: issues };
 }
 
@@ -947,7 +948,7 @@ function extract(text) {
 /* ---------- 推薦頁片段（#k=）：條件與在意的事只在客人的瀏覽器裡，不進網址以外的任何地方 ---------- */
 var FRAG_MAX = 600;
 // 片段裡的短鍵 ↔ 欄位名（順序＝輸出順序；與伺服器端 token 逐字相同）
-var FRAG_F = { d: 'districts', cm: 'community', z: 'zone', pmax: 'price_max_wan', pmin: 'price_min_wan', r: 'rooms', t: 'types', a: 'age_max', pk: 'parking', fx: 'floor_exclude', top: 'exclude_top' };
+var FRAG_F = { d: 'districts', cm: 'community', z: 'zone', pmax: 'price_max_wan', pmin: 'price_min_wan', r: 'rooms', t: 'types', a: 'age_max', pk: 'parking', fx: 'floor_exclude', top: 'exclude_top', pd: 'per_district' };
 var FRAG_C = { c: 'concerns', s: 'special', st: 'stage', tl: 'timeline' };
 function b64u(bytes) {
   return btoa(String.fromCharCode.apply(null, bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');

@@ -13,8 +13,8 @@ import type { DegradeKind, ErrCode } from "./errors";
 import { formatContactLead, formatLead } from "./leadfmt";
 import { originAllowed, sameOriginGet } from "./origin";
 import {
-  CONSENT_V, DEGRADE_KINDS, HINTS, JOB_ID_RE, MISSING_CODES, QUESTION_IDS, SHARE_URL_RE, isObj, validateContactBody,
-  validateEventBatch, validateFeedback, validateSubmit,
+  CONSENT_V, DEGRADE_KINDS, HINTS, JOB_ID_RE, MISSING_CODES, QUESTION_IDS, SHARE_URL_RE, isObj, normalizeFields, validateContactBody,
+  validateEventBatch, validateFeedback, validateSubmit, validateUnderstand,
 } from "./schema";
 import type { SubmitClean } from "./schema";
 import { MemWindow, SCORE_MAX_BYTES, sanitizeTop, validateScore } from "./score";
@@ -51,6 +51,7 @@ export const RESPONSE_KEYS = [
   "diag",   // 2026-10-07：送不出去時的失敗種類短代碼（例如 tg-h403），只由本檔產生，不轉傳上游的任何東西
   "week", "all", "me",   // 2026-10-07：小遊戲排行榜（/api/find/top）；內容由 score.ts 的 sanitizeTop 逐欄重組
   "caps",   // 2026-10-09：家用機支援哪幾種範圍找法（community／zone／geo），只收 SCOPE_CAPS 白名單裡的值
+  "fields", "src",   // 2026-10-29：/api/find/understand 讀到的條件（過 normalizeFields 白名單重組）與來源代碼（ai／rules）
 ] as const;
 const KEYSET = new Set<string>(RESPONSE_KEYS);
 
@@ -414,6 +415,45 @@ export async function handleSubmit(ctx: FindCtx, deps: Deps = realDeps()): Promi
   return jsonRes(mapped.body, mapped.http);
 }
 
+/* ---------- understand（2026-10-29 景泰「AI在輸入需求那邊就要介入了」）----------
+ * 客人在開場打的那句話，先交給家用機讀成條件（家用機那邊是 AI 先讀、規則補洞；AI 不能用時就只用規則），
+ * 前端拿回來直接進「我聽到的」。這裡跟 submit 一樣：同源、大小、格式、人機驗證都過了才轉送；
+ * 家用機回來的條件再過一次 normalizeFields 白名單重組，只回 fields 與 src，任何上游文字都不轉回去。
+ * 任何不成功一律回 ok:false（前端照瀏覽器裡的規則讀，客人感覺不到），不推 TG、不降級收件（這一步還沒有要送出需求）。
+ */
+export const UNDERSTAND_TIMEOUT_MS = 8000;
+
+export async function handleUnderstand(ctx: FindCtx, deps: Deps = realDeps()): Promise<Response> {
+  const { request, env } = ctx;
+  if (request.method !== "POST") return methodNotAllowed();
+  if (!originAllowed(request)) return errRes("E_ORIGIN");
+  const rd = await readJson(request, 6 * 1024);
+  if (rd.err) return errRes(rd.err);
+  const u = validateUnderstand(rd.value);
+  if (!u) return errRes("E_BAD_REQUEST");
+  const no = (code: ErrCode) => jsonRes({ ok: false, v: 1, code });
+  if (!liveReady(env)) return no("E_FORWARD");
+  // 人機驗證沒過、驗不了：不轉送（這條路會用到家用機的 AI 額度，沒驗證就是任何人都能刷的口子）
+  const vr = await verifyTurnstile({
+    secret: env.TURNSTILE_SECRET_KEY, token: u.turnstile, fetchImpl: deps.fetch, action: TS_ACTION, remoteIp: request.headers.get("cf-connecting-ip"),
+    onReason: r => logFail("understand", `human_${r}`),
+  });
+  if (vr !== "ok") return no("E_HUMAN");
+  const ip = await ipHash(env.FIND_IP_SALT, request.headers.get("cf-connecting-ip"), deps.now());
+  const f = await forward(env, deps, "POST", "/aif/v1/understand", { v: 1, text: u.text, client: { ip_h: ip, turnstile: "ok" } }, UNDERSTAND_TIMEOUT_MS);
+  if (f.kind === "down") {
+    logFail("understand", f.cls);
+    return no("E_FORWARD");
+  }
+  if (f.status === 429 || (isObj(f.json) && f.json.code === "rate")) return no("E_RATE");
+  const j = f.json;
+  if (f.status !== 200 || !isObj(j) || j.ok !== true || !isObj(j.fields)) {
+    if (!(isObj(j) && j.ok === false)) logFail("understand", f.status === 401 ? "auth" : "unexpected");
+    return no("E_FORWARD");
+  }
+  return jsonRes({ ok: true, v: 1, fields: normalizeFields(j.fields).fields, src: j.src === "ai" ? "ai" : "rules" });
+}
+
 /* ---------- status ---------- */
 const STATUSES = ["queued", "searching", "building", "done", "empty", "degraded", "expired"];
 
@@ -599,9 +639,11 @@ export async function handleFeedback(ctx: FindCtx, deps: Deps = realDeps()): Pro
 /* ---------- config（執行期設定；Turnstile 的 site key 由這裡回傳，免去重新建置） ---------- */
 /** 範圍找法的代碼（家用機 health 的 caps）：家用機說支援才打開前端入口，舊家用機不會收到看不懂的欄位 */
 export const SCOPE_CAPS = ["community", "zone", "geo"] as const;
+/** 2026-10-29：家用機開了「AI 先讀那句話」（/aif/v1/understand）才回報 ai；前端看到 ai 才去問，沒開就照瀏覽器裡的規則讀 */
+export const CAPS = [...SCOPE_CAPS, "ai"] as const;
 export function capsOf(v: unknown): string[] {
   if (!Array.isArray(v)) return [];
-  return SCOPE_CAPS.filter(c => v.includes(c));
+  return CAPS.filter(c => v.includes(c));
 }
 let healthCache: { at: number; mode: "live" | "intake"; caps: string[] } | null = null;
 export function resetConfigCache(): void {
