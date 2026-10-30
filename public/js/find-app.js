@@ -104,7 +104,7 @@ function sheetRows(f) {
   rows.push(['rooms', '房數', roomsText(f) || '不限']);
   if (f.types && f.types.length) rows.push(['type', '型態', f.types.map(function (t) { return labelOf(TYPE_OPTS, t); }).join('、')]);
   if (f.parking) rows.push(['parking', '車位', PK_LABEL[f.parking] || '']);
-  if (has(f.age_max)) rows.push(['age', '屋齡', f.age_max + ' 年內']);
+  if (NE.ageText(f)) rows.push(['age', '屋齡', NE.ageText(f)]);
   var fl = floorText(f);
   if (fl) rows.push(['floor', '樓層', fl]);
   var ar = areaText(f);
@@ -121,7 +121,7 @@ function condTags(f, u) {
   add('rooms', roomsText(f));
   add('type', f.types && f.types.length ? f.types.map(function (x) { return labelOf(TYPE_OPTS, x); }).join('、') : '');
   add('price', priceText(f));
-  add('age', has(f.age_max) ? f.age_max + ' 年內' : '');
+  add('age', NE.ageText(f));
   add('parking', f.parking ? PK_LABEL[f.parking] : '');
   add('floor', floorText(f));
   add('area', areaText(f));
@@ -174,7 +174,7 @@ function applyAnswer(fields, context, qid, val) {
   }
   else if (qid === 'q_concerns') { if (val && val.length) c.concerns = val.slice(); else del(c, 'concerns'); }
   else if (qid === 'q_parking') { if (val) f.parking = val; else del(f, 'parking'); }
-  else if (qid === 'q_age') { if (val) f.age_max = val; else del(f, 'age_max'); }
+  else if (qid === 'q_age') { del(f, 'age_max', 'age_min'); if (val) f.age_max = val; }
   else if (qid === 'q_stage') { if (val) c.stage = val; else del(c, 'stage'); }
   else if (qid === 'q_timeline') { if (val) c.timeline = val; else del(c, 'timeline'); }
   return { fields: NE.normalizeFields(f).fields, context: NE.normalizeContext(c).context };
@@ -215,7 +215,7 @@ function hintFix(f, c, hint) {
   var g = clone(f);
   if (hint === 'loosen_price' && has(g.price_max_wan)) g.price_max_wan = Math.min(100000, Math.round(g.price_max_wan * 1.1 / 50) * 50);
   else if (hint === 'loosen_rooms') { delete g.rooms_min; delete g.rooms_max; }
-  else if (hint === 'loosen_age') delete g.age_max;
+  else if (hint === 'loosen_age') del(g, 'age_max', 'age_min');
   else if (hint === 'drop_parking') delete g.parking;
   else if (hint === 'drop_floor') { delete g.floor_exclude; delete g.exclude_top; delete g.floor_min; }
   return NE.normalizeFields(g).fields;
@@ -224,7 +224,7 @@ function hintDetail(f, hint) {
   if (hint === 'loosen_price' && has(f.price_max_wan)) return f.price_max_wan + ' 萬以內，改成 ' + Math.round(f.price_max_wan * 1.1 / 50) * 50 + ' 萬以內';
   if (hint === 'loosen_district') return (f.districts || []).join('、') + '，再加一個區';
   if (hint === 'loosen_rooms') return '現在是 ' + roomsText(f);
-  if (hint === 'loosen_age') return '現在是 ' + f.age_max + ' 年內';
+  if (hint === 'loosen_age') return '現在是 ' + NE.ageText(f);
   if (hint === 'drop_parking') return '現在是' + (PK_LABEL[f.parking] || '');
   if (hint === 'drop_floor') return '現在是 ' + floorText(f);
   return '';

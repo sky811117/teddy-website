@@ -334,6 +334,8 @@ export type Fields = {
   rooms_min?: number;
   rooms_max?: number;
   types?: string[];
+  /** 2026-10-30 屋齡下限（「屋齡10～20年」） */
+  age_min?: number;
   age_max?: number;
   parking?: string;
   floor_exclude?: number[];
@@ -422,6 +424,7 @@ export function normalizeFields(raw: unknown): { fields: Fields; issues: string[
     ["price_min_wan", "price_max_wan", 100, 100000],
     ["rooms_min", "rooms_max", 1, 6],
     ["area_min_ping", "area_max_ping", 5, 300],
+    ["age_min", "age_max", 1, 60],
   ];
   for (const [loK, hiK, lo, hi] of ranges) {
     const a = raw[loK];
@@ -447,11 +450,6 @@ export function normalizeFields(raw: unknown): { fields: Fields; issues: string[
     const ts = enumList(raw.types, TYPES, 2, true);
     if (ts === null) issues.push("types:invalid");
     else if (ts.length) out.types = ts;
-  }
-  if (!nul(raw.age_max)) {
-    const n = intIn(raw.age_max, 1, 60);
-    if (n === null) issues.push("age_max:invalid");
-    else out.age_max = n;
   }
   if (!nul(raw.parking)) {
     if (typeof raw.parking === "string" && (PARKING as readonly string[]).includes(raw.parking)) out.parking = raw.parking;

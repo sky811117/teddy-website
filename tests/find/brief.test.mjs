@@ -72,7 +72,7 @@ test("嚴格驗證：壞片段、過大、未知版本、非列舉值、數值�
   const b64 = o => Buffer.from(JSON.stringify(o)).toString("base64url");
   for (const t of [null, 123, "", "!!!", "A".repeat(901), "=".repeat(10), "北屯", b64({ v: 2, f: {} }), b64([1, 2]), b64("x"), "AAAA"]) assert.equal(FB.parse(t), null, String(t));
   const odd = FB.parse(b64({ v: 1, f: { d: ["北京區", "北屯區"], pmax: 99999999, pmin: "5", r: [0, 9], t: ["houseboat"], a: 0, pk: "valet", fx: ["a"], top: 2, evil: "x" }, c: ["loan", "bogus"], s: ["school"], st: "rich", tl: "tomorrow", extra: 1 }));
-  assert.deepEqual(plain(odd), { d: [], cm: null, z: null, pmax: null, pmin: null, r: null, t: [], a: null, pk: null, fx: [], top: false, c: [], s: ["school"], st: null, tl: null });
+  assert.deepEqual(plain(odd), { d: [], cm: null, z: null, pmax: null, pmin: null, r: null, t: [], a: null, am: null, pk: null, fx: [], top: false, c: [], s: ["school"], st: null, tl: null });
   const ok = FB.parse(b64({ v: 1, f: { d: ["北屯區"], pmax: 2000, r: [null, 3], fx: [2, 2, 5] }, c: ["loan"] }));
   assert.deepEqual(plain({ d: ok.d, pmax: ok.pmax, r: ok.r, fx: ok.fx, c: ok.c }), { d: ["北屯區"], pmax: 2000, r: [null, 3], fx: [2, 5], c: ["loan"] });
   // 超過 600 位元組

@@ -201,9 +201,9 @@ var FLOOR_MIN = /(\d{1,2}|[一二三四五六七八九十]{1,3})\s*樓\s*(?:或|
 
 var AREA_RANGE = R('(' + NUM + ')\\s*' + SEP + '\\s*(' + NUM + ')\\s*坪', 'g');
 var AREA = R('(?<!每)(' + NUM + ')\\s*坪\\s*(以上|起|以內|以下|之內|內|左右|上下|前後|大概)?', 'g');
-var AGE_RANGE = R('屋齡\\s*(' + NUM + ')\\s*' + SEP + '\\s*(' + NUM + ')\\s*年', 'g');
+var AGE_RANGE = R('屋齡\\s*(?:在|約|大概|大約)?\\s*(' + NUM + ')\\s*年?\\s*' + SEP + '\\s*(' + NUM + ')\\s*年', 'g');
 var AGE_MAX = R('(?:屋齡\\s*(?:約|大概|大約)?\\s*)?(' + NUM + ')\\s*年\\s*(?:以內|之內|以下|內)', 'g');
-var AGE_BARE = R('屋齡\\s*(?:約|大概|大約)?\\s*(' + NUM + ')\\s*年(?!\\s*(?:以上|起))', 'g');
+var AGE_BARE = R('屋齡\\s*(?:(至少|最少|超過)|約|大概|大約)?\\s*(' + NUM + ')\\s*年(\\s*(?:以上|起))?', 'g');
 var AGE_NEW = /新大樓|新成屋|新屋(?!區)/;
 
 var RN = '(?:[1-6]|[一二兩三四五六])';
@@ -421,12 +421,18 @@ function extArea(t, raw, inferred) {
 }
 
 function extAge(t, raw, inferred) {
-  function put(n, tag) {
-    if (typeof n === 'number' && n >= 1 && n <= 60 && !('age_max' in raw)) { raw.age_max = Math.trunc(n); if (tag) inferred.push(tag); }
+  function put(n, tag, k) {
+    k = k || 'age_max';
+    if (typeof n === 'number' && n >= 1 && n <= 60 && !(k in raw)) { raw[k] = Math.trunc(n); if (tag) inferred.push(tag); }
   }
-  all(AGE_RANGE, t).forEach(m => { put(cnToNum(m[2])); t = mask(t, m.index, m.index + m[0].length); });
+  all(AGE_RANGE, t).forEach(m => {
+    var a = cnToNum(m[1]), b = cnToNum(m[2]), x;
+    if (a > b) { x = a; a = b; b = x; }
+    if (!('age_max' in raw)) { put(b); if (a < b) put(a, 0, 'age_min'); }
+    t = mask(t, m.index, m.index + m[0].length);
+  });
   all(AGE_MAX, t).forEach(m => { put(cnToNum(m[1])); t = mask(t, m.index, m.index + m[0].length); });
-  all(AGE_BARE, t).forEach(m => { put(cnToNum(m[1]), 'age_dir'); t = mask(t, m.index, m.index + m[0].length); });
+  all(AGE_BARE, t).forEach(m => { var lo = m[1] || m[3]; put(cnToNum(m[2]), lo ? 0 : 'age_dir', lo && 'age_min'); t = mask(t, m.index, m.index + m[0].length); });
   if (!('age_max' in raw) && AGE_NEW.test(t)) { raw.age_max = 5; inferred.push('age_new'); }
   return t;
 }
@@ -848,7 +854,7 @@ function normalizeFields(raw) {
   if (out.community) { drop('zone', 'scope'); drop('geo', 'scope'); drop('road', 'scope'); }
   else if (out.geo) { drop('zone', 'scope'); drop('districts', 'scope'); drop('road', 'scope'); }
   else if (out.zone) { if ((out.districts || []).some(d => R74.indexOf(d) < 0)) drop('zone', 'conflict'); else drop('road', 'scope'); }
-  [['price_min_wan', 'price_max_wan', 100, 100000], ['rooms_min', 'rooms_max', 1, 6], ['area_min_ping', 'area_max_ping', 5, 300]].forEach(g => {
+  [['price_min_wan', 'price_max_wan', 100, 100000], ['rooms_min', 'rooms_max', 1, 6], ['area_min_ping', 'area_max_ping', 5, 300], ['age_min', 'age_max', 1, 60]].forEach(g => {
     var a = raw[g[0]], b = raw[g[1]], av = null, bv = null;
     if (!nul(a)) { av = intIn(a, g[2], g[3]); if (av === null) issues.push(g[0] + ':invalid'); }
     if (!nul(b)) { bv = intIn(b, g[2], g[3]); if (bv === null) issues.push(g[1] + ':invalid'); }
@@ -857,7 +863,6 @@ function normalizeFields(raw) {
     if (bv !== null) out[g[1]] = bv;
   });
   many(raw, out, issues, 'types', TYPES, 2, true);
-  one(raw, out, issues, 'age_max', int60);
   one(raw, out, issues, 'parking', pick(PARKING));
   v = raw.floor_exclude;
   if (v && v.length !== 0) {
@@ -910,7 +915,7 @@ function nextQuestions(fields, context, answered, skipped, maxN, skip) {
     if (!hasPrice(f)) out.push('q_budget');
     if (!hasRooms(f) && !onlyStudio(f)) out.push('q_rooms');
     if (nul(f.parking) && !onlyStudio(f)) out.push('q_parking');
-    if (nul(f.age_max)) out.push('q_age');
+    if (nul(f.age_max) && nul(f.age_min)) out.push('q_age');
   }
   if (!(c.concerns && c.concerns.length)) out.push('q_concerns');
   if (!c.stage) out.push('q_stage');
@@ -919,6 +924,9 @@ function nextQuestions(fields, context, answered, skipped, maxN, skip) {
   var n = maxN === undefined ? 4 : Math.max(0, Math.min(parseInt(maxN, 10) || 0, 4));
   return out.slice(0, n);
 }
+
+// 屋齡（10-30 加下限 age_min，同 mp_aif_need）
+function ageText(f) { var a = f.age_min, b = f.age_max; return !nul(a) ? a + (!nul(b) ? '～' + b + ' 年' : ' 年以上') : !nul(b) ? b + ' 年內' : ''; }
 
 /* ---------- 一句話 → 條件 ---------- */
 function extract(text) {
@@ -948,7 +956,7 @@ function extract(text) {
 /* ---------- 推薦頁片段（#k=）：條件與在意的事只在客人的瀏覽器裡，不進網址以外的任何地方 ---------- */
 var FRAG_MAX = 600;
 // 片段裡的短鍵 ↔ 欄位名（順序＝輸出順序；與伺服器端 token 逐字相同）
-var FRAG_F = { d: 'districts', cm: 'community', z: 'zone', pmax: 'price_max_wan', pmin: 'price_min_wan', r: 'rooms', t: 'types', a: 'age_max', pk: 'parking', fx: 'floor_exclude', top: 'exclude_top', pd: 'per_district' };
+var FRAG_F = { d: 'districts', cm: 'community', z: 'zone', pmax: 'price_max_wan', pmin: 'price_min_wan', r: 'rooms', t: 'types', a: 'age_max', am: 'age_min', pk: 'parking', fx: 'floor_exclude', top: 'exclude_top', pd: 'per_district' };
 var FRAG_C = { c: 'concerns', s: 'special', st: 'stage', tl: 'timeline' };
 function b64u(bytes) {
   return btoa(String.fromCharCode.apply(null, bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -1004,7 +1012,7 @@ function validateContact(c) {
 
 var api = {
   extract: extract, assess: assess, nextQuestions: nextQuestions, scrub: scrub, cnToNum: cnToNum,
-  normalizeFields: normalizeFields, normalizeContext: normalizeContext, fragEncode: fragEncode, fragDecode: fragDecode,
+  normalizeFields: normalizeFields, normalizeContext: normalizeContext, ageText: ageText, fragEncode: fragEncode, fragDecode: fragDecode,
   validateContact: validateContact, normText: normText,
   ENUM: { DISTRICTS: D, TYPES: TYPES, PARKING: PARKING, STAGES: STAGES, TIMELINES: TIMELINES, SPECIALS: SPECIALS, CONCERNS: CONCERNS }, CONSENT_V: CONSENT_V
 };

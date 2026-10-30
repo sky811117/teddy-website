@@ -49,7 +49,9 @@ export function condParts(f: Fields): string[] {
   if (f.price_min_wan !== undefined && f.price_max_wan !== undefined) p.push(`${f.price_min_wan}～${f.price_max_wan} 萬`);
   else if (f.price_max_wan !== undefined) p.push(`${f.price_max_wan} 萬以內`);
   else if (f.price_min_wan !== undefined) p.push(`${f.price_min_wan} 萬以上`);
-  if (f.age_max !== undefined) p.push(`屋齡 ${f.age_max} 年內`);
+  if (f.age_min !== undefined && f.age_max !== undefined) p.push(`屋齡 ${f.age_min}～${f.age_max} 年`);
+  else if (f.age_max !== undefined) p.push(`屋齡 ${f.age_max} 年內`);
+  else if (f.age_min !== undefined) p.push(`屋齡 ${f.age_min} 年以上`);
   if (f.parking) p.push(PARKING_LABEL[f.parking] ?? f.parking);
   const fl: string[] = [];
   if (f.floor_exclude?.length) fl.push(`排除 ${f.floor_exclude.join("、")} 樓`);
