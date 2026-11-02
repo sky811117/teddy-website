@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-10-22T20:25:17+08:00",
+  "generatedAt": "2026-11-02T20:29:01+08:00",
   "source": {
     "registrySyncedAt": "2026-10-16 22:38",
     "since": "2026-07-01"
   },
-  "count": 32,
+  "count": 30,
   "videos": [
     {
       "id": "yt--ePTnC2YADY",
@@ -117,19 +117,6 @@
       ]
     },
     {
-      "id": "yt-XTVPW9sOyus",
-      "platform": "youtube",
-      "videoId": "XTVPW9sOyus",
-      "url": "https://www.youtube.com/shorts/XTVPW9sOyus",
-      "title": "台中大里｜3房2廳2衛｜758萬",
-      "category": "看屋開箱",
-      "district": "大里區",
-      "pubDate": "2026-09-24",
-      "listingCodes": [
-        "1211187"
-      ]
-    },
-    {
       "id": "yt-9bqjNW0uviw",
       "platform": "youtube",
       "videoId": "9bqjNW0uviw",
@@ -155,20 +142,6 @@
       "pubDate": "2026-09-21",
       "listingCodes": [
         "0397203"
-      ]
-    },
-    {
-      "id": "yt-Bt8gXMZesWw",
-      "platform": "youtube",
-      "videoId": "Bt8gXMZesWw",
-      "url": "https://www.youtube.com/shorts/Bt8gXMZesWw",
-      "title": "台中北屯｜國強街樓店｜2房2廳2衛｜958萬",
-      "category": "看屋開箱",
-      "district": "北屯區",
-      "community": "國強街樓店",
-      "pubDate": "2026-09-20",
-      "listingCodes": [
-        "1211345"
       ]
     },
     {
