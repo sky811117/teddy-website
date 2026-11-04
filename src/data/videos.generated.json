@@ -1,11 +1,65 @@
 {
-  "generatedAt": "2026-11-03T20:16:11+08:00",
+  "generatedAt": "2026-11-04T20:07:20+08:00",
   "source": {
-    "registrySyncedAt": "2026-11-03 17:32",
+    "registrySyncedAt": "2026-11-03 22:36",
     "since": "2026-07-01"
   },
-  "count": 52,
+  "count": 57,
   "videos": [
+    {
+      "id": "yt-Y9gE-ikVYPE",
+      "platform": "youtube",
+      "videoId": "Y9gE-ikVYPE",
+      "url": "https://www.youtube.com/shorts/Y9gE-ikVYPE",
+      "title": "台中南屯｜蔚藍海岸｜4房2廳2衛｜1180萬",
+      "category": "看屋開箱",
+      "district": "南屯區",
+      "community": "蔚藍海岸",
+      "pubDate": "2026-11-03",
+      "listingCodes": [
+        "1211328"
+      ]
+    },
+    {
+      "id": "yt-aOjDOLH9PWE",
+      "platform": "youtube",
+      "videoId": "aOjDOLH9PWE",
+      "url": "https://www.youtube.com/shorts/aOjDOLH9PWE",
+      "title": "台中西區｜3房2廳2衛｜1388萬",
+      "category": "看屋開箱",
+      "district": "西區",
+      "pubDate": "2026-11-03",
+      "listingCodes": [
+        "1195711"
+      ]
+    },
+    {
+      "id": "yt-fL0gZuPH7rw",
+      "platform": "youtube",
+      "videoId": "fL0gZuPH7rw",
+      "url": "https://www.youtube.com/shorts/fL0gZuPH7rw",
+      "title": "台中西屯｜3房2廳2衛｜1298萬",
+      "category": "看屋開箱",
+      "district": "西屯區",
+      "pubDate": "2026-11-03",
+      "listingCodes": [
+        "1139908",
+        "1153173"
+      ]
+    },
+    {
+      "id": "yt-9mh1TkwlIkY",
+      "platform": "youtube",
+      "videoId": "9mh1TkwlIkY",
+      "url": "https://www.youtube.com/shorts/9mh1TkwlIkY",
+      "title": "台中南屯｜3房2廳2衛｜998萬",
+      "category": "看屋開箱",
+      "district": "南屯區",
+      "pubDate": "2026-11-03",
+      "listingCodes": [
+        "1228251"
+      ]
+    },
     {
       "id": "yt-BB6f1YjytMY",
       "platform": "youtube",
@@ -404,6 +458,20 @@
       "pubDate": "2026-09-21",
       "listingCodes": [
         "0397203"
+      ]
+    },
+    {
+      "id": "yt-Bt8gXMZesWw",
+      "platform": "youtube",
+      "videoId": "Bt8gXMZesWw",
+      "url": "https://www.youtube.com/shorts/Bt8gXMZesWw",
+      "title": "台中北屯｜國強街樓店｜2房2廳2衛｜958萬",
+      "category": "看屋開箱",
+      "district": "北屯區",
+      "community": "國強街樓店",
+      "pubDate": "2026-09-20",
+      "listingCodes": [
+        "1211345"
       ]
     },
     {
