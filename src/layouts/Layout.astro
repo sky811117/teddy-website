@@ -8,6 +8,7 @@ import { resolveDefaultOgImagePath } from "@/utils/resolveDefaultOgImagePath";
 import { getAssetPath } from "@/utils/withBase";
 import { safeJsonLd } from "@/utils/safeJsonLd";
 import FloatingCTA from "@/components/FloatingCTA.astro";
+import PartnerBar from "@/components/PartnerBar.astro";
 import Analytics from "@/components/Analytics.astro";
 import config from "@/config";
 import { YT_CHANNEL_URL } from "@/astro-paper.config";
@@ -438,6 +439,7 @@ const rssHref = getRelativeLocaleUrl(
   >
     <slot />
     {showFloatingCTA && <FloatingCTA />}
+    <PartnerBar />
     <script>
       import "@/scripts/theme";
     </script>

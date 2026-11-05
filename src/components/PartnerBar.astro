@@ -1,0 +1,237 @@
+---
+/**
+ * 蝦皮分潤小框（全站，Layout 掛載）
+ * 進頁面約 0.8 秒滑出；只有按「前往蝦皮」才會連過去。
+ * ⛔ 蝦皮聯盟條款 5.5：不得不經點擊就把人導去蝦皮、不得做誤導性點擊 →
+ *    整個框不是連結、只有按鈕是，關閉鈕跟按鈕分在對角；不要改成「點哪裡都開」或自動開新頁。
+ * ⛔ 條款 2.2／5.4(p)：不放蝦皮 logo、不用蝦皮橘，不要做得像蝦皮官方。
+ * 版面：手機貼底全寬、桌機左下角小卡；高度不超過畫面 30%（Google 行動版 large sticky ad 的門檻），
+ *       手機橫向這類矮螢幕不顯示。
+ * 讓位：--partner-h 讓 LINE 浮動鈕、回頂部鈕往上；物件頁與工具頁底部的固定列不動，
+ *       小框疊在它們上面（--partner-offset）。
+ * 關閉後 24 小時、按過後 7 天不再出現（存在訪客瀏覽器）。改資料流要同步改 privacy.astro。
+ */
+const SHOPEE_URL = "https://s.shopee.tw/2gCSTkWS9d";
+---
+
+<template id="partner-bar-tpl">
+  <aside id="partner-bar" aria-label="廣告" data-entering>
+    <p class="partner-title">
+      <span class="partner-tag">廣告</span>本來就要上蝦皮買東西？
+    </p>
+    <div class="partner-row">
+      <a
+        id="partner-bar-link"
+        class="partner-link"
+        href={SHOPEE_URL}
+        target="_blank"
+        rel="sponsored nofollow noopener">前往蝦皮</a
+      >
+      <p class="partner-note">從這裡下單，我可能拿到一點分潤。</p>
+    </div>
+    <button
+      type="button"
+      id="partner-bar-close"
+      class="partner-close"
+      aria-label="關閉廣告"
+    >
+      ×
+    </button>
+  </aside>
+</template>
+
+<script is:inline>
+  (function () {
+    const KEY = "partner_bar_hide_until";
+    const HOUR = 3600000;
+    try {
+      if (Number(localStorage.getItem(KEY)) > Date.now()) return;
+    } catch (e) {}
+
+    const track = name => {
+      if (window.__gaMeasure === true && window.gtag) {
+        window.gtag("event", name, { page_path: location.pathname });
+      }
+    };
+
+    function show() {
+      const tpl = document.getElementById("partner-bar-tpl");
+      if (!tpl) return;
+      const root = document.documentElement;
+      document.body.appendChild(tpl.content.cloneNode(true));
+      const bar = document.getElementById("partner-bar");
+      const fixedBars = document.querySelectorAll(
+        "[data-property-mobile-cta],[data-property-sticky],#sticky"
+      );
+
+      function sync() {
+        let offset = 0;
+        fixedBars.forEach(el => {
+          offset = Math.max(offset, el.offsetHeight);
+        });
+        const full = !window.matchMedia("(min-width:640px)").matches;
+        const h = bar.offsetHeight;
+        root.style.setProperty("--partner-offset", offset + "px");
+        root.style.setProperty("--partner-h", (full && h ? h + offset : 0) + "px");
+        root.style.setProperty("--partner-pad", (h ? h + (full ? 0 : 24) : 0) + "px");
+      }
+
+      const ro = "ResizeObserver" in window ? new ResizeObserver(sync) : null;
+      if (ro) {
+        ro.observe(bar);
+        fixedBars.forEach(el => ro.observe(el));
+      }
+      window.addEventListener("resize", sync);
+
+      function close(hideMs) {
+        try {
+          localStorage.setItem(KEY, String(Date.now() + hideMs));
+        } catch (e) {}
+        if (ro) ro.disconnect();
+        window.removeEventListener("resize", sync);
+        bar.remove();
+        root.removeAttribute("data-partner-open");
+        ["--partner-h", "--partner-offset", "--partner-pad"].forEach(v =>
+          root.style.removeProperty(v)
+        );
+      }
+
+      document.getElementById("partner-bar-close").addEventListener("click", () => {
+        track("partner_bar_close");
+        close(24 * HOUR);
+      });
+      document.getElementById("partner-bar-link").addEventListener("click", () => {
+        track("partner_bar_click");
+        // 等瀏覽器開完連結再收框，避免連結還沒開就被移除
+        setTimeout(() => close(7 * 24 * HOUR), 0);
+      });
+
+      root.setAttribute("data-partner-open", "1");
+      sync();
+      // sync() 讀過高度，瀏覽器已算好起始位置，這裡拿掉屬性就會滑出來
+      bar.removeAttribute("data-entering");
+      if (bar.offsetHeight) track("partner_bar_view");
+    }
+
+    setTimeout(show, 800);
+  })();
+</script>
+
+<style>
+  #partner-bar {
+    position: fixed;
+    inset-inline: 0;
+    bottom: calc(var(--consent-h, 0px) + var(--partner-offset, 0px));
+    /* 高於 cookie 橫幅（30）、低於 LINE 鈕與物件頁 CTA（40） */
+    z-index: 35;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+    background: var(--card);
+    color: var(--foreground);
+    box-shadow: 0 -2px 12px rgb(0 0 0 / 0.1);
+    transition: transform 0.25s ease-out;
+  }
+
+  #partner-bar[data-entering] {
+    transform: translateY(110%);
+  }
+
+  .partner-title {
+    margin: 0;
+    padding-inline-end: 34px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  .partner-tag {
+    display: inline-block;
+    margin-inline-end: 6px;
+    padding: 0 6px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted-foreground);
+    font-size: 12px;
+    font-weight: 500;
+    vertical-align: 1px;
+  }
+
+  .partner-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .partner-link {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 14px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: var(--accent-foreground);
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .partner-note {
+    margin: 0;
+    color: var(--muted-foreground);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .partner-close {
+    position: absolute;
+    top: 0;
+    inset-inline-end: 0;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: none;
+    color: var(--muted-foreground);
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  /* 文末不被小框蓋住：疊兩次屬性提高權重，cookie 橫幅的 body 留白規則晚載入也蓋不掉 */
+  :global(html[data-partner-open][data-partner-open] body) {
+    padding-bottom: calc(
+      max(var(--consent-h, 0px), var(--consent-card-h, 0px)) +
+        var(--partner-pad, 0px)
+    );
+  }
+
+  @media (min-width: 640px) {
+    #partner-bar {
+      inset-inline: 16px auto;
+      bottom: calc(16px + var(--partner-offset, 0px));
+      width: 340px;
+      padding-bottom: 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgb(0 0 0 / 0.14);
+    }
+
+    /* cookie 小卡在右下（最寬 380），兩張卡不重疊 */
+    :global(html[data-consent-open]) #partner-bar {
+      width: min(340px, calc(100vw - 428px));
+    }
+  }
+
+  @media (max-height: 500px), print {
+    #partner-bar {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #partner-bar {
+      transition: none;
+    }
+  }
+</style>
