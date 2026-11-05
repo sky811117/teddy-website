@@ -1,11 +1,90 @@
 {
-  "generatedAt": "2026-11-04T20:07:20+08:00",
+  "generatedAt": "2026-11-05T20:24:51+08:00",
   "source": {
-    "registrySyncedAt": "2026-11-03 22:36",
+    "registrySyncedAt": "2026-11-04 22:36",
     "since": "2026-07-01"
   },
-  "count": 57,
+  "count": 63,
   "videos": [
+    {
+      "id": "yt-H77NNQQdi4M",
+      "platform": "youtube",
+      "videoId": "H77NNQQdi4M",
+      "url": "https://www.youtube.com/shorts/H77NNQQdi4M",
+      "title": "台中大里｜5房3廳4衛｜2780萬",
+      "category": "看屋開箱",
+      "district": "大里區",
+      "pubDate": "2026-11-04",
+      "listingCodes": [
+        "1228240"
+      ]
+    },
+    {
+      "id": "yt-3U1YJRQewsQ",
+      "platform": "youtube",
+      "videoId": "3U1YJRQewsQ",
+      "url": "https://www.youtube.com/shorts/3U1YJRQewsQ",
+      "title": "台中北屯｜3房2廳2衛｜1388萬",
+      "category": "看屋開箱",
+      "district": "北屯區",
+      "pubDate": "2026-11-04",
+      "listingCodes": [
+        "1211351"
+      ]
+    },
+    {
+      "id": "yt-Ac5HxpSItzM",
+      "platform": "youtube",
+      "videoId": "Ac5HxpSItzM",
+      "url": "https://www.youtube.com/shorts/Ac5HxpSItzM",
+      "title": "台中西屯｜1房1廳1衛｜1118萬",
+      "category": "看屋開箱",
+      "district": "西屯區",
+      "pubDate": "2026-11-04",
+      "listingCodes": [
+        "0348045"
+      ]
+    },
+    {
+      "id": "yt-hoeiLxSoAtI",
+      "platform": "youtube",
+      "videoId": "hoeiLxSoAtI",
+      "url": "https://www.youtube.com/shorts/hoeiLxSoAtI",
+      "title": "台中大肚｜2房2廳1衛｜1398萬",
+      "category": "看屋開箱",
+      "district": "大肚區",
+      "pubDate": "2026-11-04",
+      "listingCodes": [
+        "1071186"
+      ]
+    },
+    {
+      "id": "yt-vrfwC7JHoxo",
+      "platform": "youtube",
+      "videoId": "vrfwC7JHoxo",
+      "url": "https://www.youtube.com/shorts/vrfwC7JHoxo",
+      "title": "台中大肚｜允將青曦｜2房2廳2衛｜1438萬",
+      "category": "看屋開箱",
+      "district": "大肚區",
+      "community": "允將青曦",
+      "pubDate": "2026-11-04",
+      "listingCodes": [
+        "1211260"
+      ]
+    },
+    {
+      "id": "yt-DoO_l7zQ0bA",
+      "platform": "youtube",
+      "videoId": "DoO_l7zQ0bA",
+      "url": "https://www.youtube.com/shorts/DoO_l7zQ0bA",
+      "title": "台中太平｜3房2廳2衛｜1688萬",
+      "category": "看屋開箱",
+      "district": "太平區",
+      "pubDate": "2026-11-04",
+      "listingCodes": [
+        "1172061"
+      ]
+    },
     {
       "id": "yt-Y9gE-ikVYPE",
       "platform": "youtube",
