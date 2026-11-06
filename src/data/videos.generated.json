@@ -1,11 +1,106 @@
 {
-  "generatedAt": "2026-11-05T20:24:51+08:00",
+  "generatedAt": "2026-11-06T20:05:19+08:00",
   "source": {
-    "registrySyncedAt": "2026-11-04 22:36",
+    "registrySyncedAt": "2026-11-05 22:39",
     "since": "2026-07-01"
   },
-  "count": 63,
+  "count": 71,
   "videos": [
+    {
+      "id": "yt-ApHAiRjzlmI",
+      "platform": "youtube",
+      "videoId": "ApHAiRjzlmI",
+      "url": "https://www.youtube.com/shorts/ApHAiRjzlmI",
+      "title": "台中大里｜麗富金城園邸｜3房2廳2衛｜1038萬→980萬",
+      "category": "看屋開箱",
+      "district": "大里區",
+      "community": "麗富金城園邸",
+      "pubDate": "2026-11-05",
+      "listingCodes": [
+        "1211280"
+      ]
+    },
+    {
+      "id": "yt-s_CXw-cDOTY",
+      "platform": "youtube",
+      "videoId": "s_CXw-cDOTY",
+      "url": "https://www.youtube.com/shorts/s_CXw-cDOTY",
+      "title": "台中南區｜1房1廳1衛｜798萬",
+      "category": "看屋開箱",
+      "district": "南區",
+      "pubDate": "2026-11-05",
+      "listingCodes": [
+        "1228275"
+      ]
+    },
+    {
+      "id": "yt-p2DZwoWp6-M",
+      "platform": "youtube",
+      "videoId": "p2DZwoWp6-M",
+      "url": "https://www.youtube.com/shorts/p2DZwoWp6-M",
+      "title": "台中大里｜立倉璽悅｜2房2廳2衛｜1098萬",
+      "category": "看屋開箱",
+      "district": "大里區",
+      "community": "立倉璽悅",
+      "pubDate": "2026-11-05",
+      "listingCodes": [
+        "1211359"
+      ]
+    },
+    {
+      "id": "yt-25TsnbSOnlU",
+      "platform": "youtube",
+      "videoId": "25TsnbSOnlU",
+      "url": "https://www.youtube.com/shorts/25TsnbSOnlU",
+      "title": "台中梧棲｜3房2廳2衛｜1250萬",
+      "category": "看屋開箱",
+      "district": "梧棲區",
+      "pubDate": "2026-11-05",
+      "listingCodes": [
+        "0391462"
+      ]
+    },
+    {
+      "id": "yt-giTm8fZbFM8",
+      "platform": "youtube",
+      "videoId": "giTm8fZbFM8",
+      "url": "https://www.youtube.com/shorts/giTm8fZbFM8",
+      "title": "台中大里｜沅林築青｜2房2廳1衛｜1358萬",
+      "category": "看屋開箱",
+      "district": "大里區",
+      "community": "沅林築青",
+      "pubDate": "2026-11-05",
+      "listingCodes": [
+        "0397188"
+      ]
+    },
+    {
+      "id": "yt-vfiYO5ehC7k",
+      "platform": "youtube",
+      "videoId": "vfiYO5ehC7k",
+      "url": "https://www.youtube.com/shorts/vfiYO5ehC7k",
+      "title": "台中大里｜大里陽光｜3房2廳2衛｜758萬",
+      "category": "看屋開箱",
+      "district": "大里區",
+      "community": "大里陽光",
+      "pubDate": "2026-11-05",
+      "listingCodes": [
+        "1211187"
+      ]
+    },
+    {
+      "id": "yt-xVDQ9DkYNr8",
+      "platform": "youtube",
+      "videoId": "xVDQ9DkYNr8",
+      "url": "https://www.youtube.com/shorts/xVDQ9DkYNr8",
+      "title": "台中北區｜2房2廳1衛｜1080萬",
+      "category": "看屋開箱",
+      "district": "北區",
+      "pubDate": "2026-11-05",
+      "listingCodes": [
+        "1228294"
+      ]
+    },
     {
       "id": "yt-H77NNQQdi4M",
       "platform": "youtube",
@@ -181,10 +276,10 @@
       ]
     },
     {
-      "id": "yt-_d2MUSQ-uU4",
+      "id": "yt-a7b5ZEok-C8",
       "platform": "youtube",
-      "videoId": "_d2MUSQ-uU4",
-      "url": "https://www.youtube.com/shorts/_d2MUSQ-uU4",
+      "videoId": "a7b5ZEok-C8",
+      "url": "https://www.youtube.com/shorts/a7b5ZEok-C8",
       "title": "台中南屯｜3房2廳2衛｜1246萬",
       "category": "看屋開箱",
       "district": "南屯區",
@@ -483,6 +578,19 @@
       "pubDate": "2026-09-25",
       "listingCodes": [
         "1211369"
+      ]
+    },
+    {
+      "id": "yt-XTVPW9sOyus",
+      "platform": "youtube",
+      "videoId": "XTVPW9sOyus",
+      "url": "https://www.youtube.com/shorts/XTVPW9sOyus",
+      "title": "台中大里｜3房2廳2衛｜758萬",
+      "category": "看屋開箱",
+      "district": "大里區",
+      "pubDate": "2026-09-24",
+      "listingCodes": [
+        "1211187"
       ]
     },
     {
