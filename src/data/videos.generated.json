@@ -1,11 +1,107 @@
 {
-  "generatedAt": "2026-11-06T20:05:19+08:00",
+  "generatedAt": "2026-11-06T22:58:48+08:00",
   "source": {
-    "registrySyncedAt": "2026-11-05 22:39",
+    "registrySyncedAt": "2026-11-06 22:37",
     "since": "2026-07-01"
   },
-  "count": 71,
+  "count": 76,
   "videos": [
+    {
+      "id": "yt-TUmKS9CKy9Q",
+      "platform": "youtube",
+      "videoId": "TUmKS9CKy9Q",
+      "url": "https://www.youtube.com/shorts/TUmKS9CKy9Q",
+      "title": "台中太平｜2房2廳1衛｜1238萬",
+      "category": "看屋開箱",
+      "district": "太平區",
+      "pubDate": "2026-11-06",
+      "listingCodes": [
+        "1211363"
+      ]
+    },
+    {
+      "id": "yt-xVoy1o9gm8Y",
+      "platform": "youtube",
+      "videoId": "xVoy1o9gm8Y",
+      "url": "https://www.youtube.com/shorts/xVoy1o9gm8Y",
+      "title": "台中新社｜新社之星｜4房2廳5衛｜1780萬",
+      "category": "看屋開箱",
+      "district": "新社區",
+      "community": "新社之星",
+      "pubDate": "2026-11-06",
+      "listingCodes": [
+        "1211297"
+      ]
+    },
+    {
+      "id": "yt-F_2eGV243zg",
+      "platform": "youtube",
+      "videoId": "F_2eGV243zg",
+      "url": "https://www.youtube.com/shorts/F_2eGV243zg",
+      "title": "台中南屯｜4房3廳6衛｜5300萬",
+      "category": "看屋開箱",
+      "district": "南屯區",
+      "pubDate": "2026-11-06",
+      "listingCodes": [
+        "1211298"
+      ]
+    },
+    {
+      "id": "yt-hf-vgpk8AcI",
+      "platform": "youtube",
+      "videoId": "hf-vgpk8AcI",
+      "url": "https://www.youtube.com/shorts/hf-vgpk8AcI",
+      "title": "台中新社｜心中的日月｜3房2廳2衛｜1988萬",
+      "category": "看屋開箱",
+      "district": "新社區",
+      "community": "心中的日月",
+      "pubDate": "2026-11-06",
+      "listingCodes": [
+        "1211302"
+      ]
+    },
+    {
+      "id": "yt-A3QBBlcyWRc",
+      "platform": "youtube",
+      "videoId": "A3QBBlcyWRc",
+      "url": "https://www.youtube.com/shorts/A3QBBlcyWRc",
+      "title": "台中太平｜2房2廳1衛｜1398萬",
+      "category": "看屋開箱",
+      "district": "太平區",
+      "pubDate": "2026-11-06",
+      "listingCodes": [
+        "1228272",
+        "UG1153110"
+      ]
+    },
+    {
+      "id": "yt-G6qB0Fo10oo",
+      "platform": "youtube",
+      "videoId": "G6qB0Fo10oo",
+      "url": "https://www.youtube.com/shorts/G6qB0Fo10oo",
+      "title": "台中清水｜3房2廳2衛｜1398萬",
+      "category": "看屋開箱",
+      "district": "清水區",
+      "pubDate": "2026-11-06",
+      "listingCodes": [
+        "0397207",
+        "1228279"
+      ]
+    },
+    {
+      "id": "yt-bE27dRBZTy0",
+      "platform": "youtube",
+      "videoId": "bE27dRBZTy0",
+      "url": "https://www.youtube.com/shorts/bE27dRBZTy0",
+      "title": "台中太平｜慶吉公園大地｜兩間三房｜738萬~1088萬",
+      "category": "看屋開箱",
+      "district": "太平區",
+      "community": "慶吉公園大地",
+      "pubDate": "2026-11-05",
+      "listingCodes": [
+        "1195702"
+      ]
+    },
     {
       "id": "yt-ApHAiRjzlmI",
       "platform": "youtube",
@@ -102,10 +198,10 @@
       ]
     },
     {
-      "id": "yt-H77NNQQdi4M",
+      "id": "yt-ugC4B0beSq4",
       "platform": "youtube",
-      "videoId": "H77NNQQdi4M",
-      "url": "https://www.youtube.com/shorts/H77NNQQdi4M",
+      "videoId": "ugC4B0beSq4",
+      "url": "https://www.youtube.com/shorts/ugC4B0beSq4",
       "title": "台中大里｜5房3廳4衛｜2780萬",
       "category": "看屋開箱",
       "district": "大里區",
@@ -355,20 +451,6 @@
       "pubDate": "2026-11-01",
       "listingCodes": [
         "1211282"
-      ]
-    },
-    {
-      "id": "yt-I-l4ssTKsZQ",
-      "platform": "youtube",
-      "videoId": "I-l4ssTKsZQ",
-      "url": "https://www.youtube.com/shorts/I-l4ssTKsZQ",
-      "title": "台中北屯｜總太心之所向｜2房2廳1衛｜1158萬→1098萬",
-      "category": "看屋開箱",
-      "district": "北屯區",
-      "community": "總太心之所向",
-      "pubDate": "2026-11-01",
-      "listingCodes": [
-        "1228239"
       ]
     },
     {
@@ -673,20 +755,6 @@
       "pubDate": "2026-09-16",
       "listingCodes": [
         "1211253"
-      ]
-    },
-    {
-      "id": "yt-YXa0URnLI9A",
-      "platform": "youtube",
-      "videoId": "YXa0URnLI9A",
-      "url": "https://www.youtube.com/shorts/YXa0URnLI9A",
-      "title": "台中西屯｜泰御天鑄2｜2房2廳2衛｜1968萬",
-      "category": "看屋開箱",
-      "district": "西屯區",
-      "community": "泰御天鑄2",
-      "pubDate": "2026-09-15",
-      "listingCodes": [
-        "0397194"
       ]
     },
     {
