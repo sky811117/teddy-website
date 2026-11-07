@@ -53,7 +53,10 @@ function parseScalarFrontmatter(fm) {
     const km = line.match(/^([a-zA-Z_][a-zA-Z0-9_]*):\s*(.*)$/);
     if (!km) continue;
     const key = km[1];
-    const v = km[2].trim();
+    let v = km[2].trim();
+    // 2026-11-07：去掉行尾註解（例 `draft: true  # 2026-10-03 裁決下架`），不然讀成 "true  # …" 不等於 "true"，
+    // 下架文被當成已發布、標籤頁多算一篇進 sitemap（/tags/沙鹿區/ 是 noindex 卻被列進去）。引號內的 # 不動。
+    if (!/^["']/.test(v)) v = v.replace(/\s+#.*$/, "").trim();
     if (v === "") continue; // 後續是 list / 縮排 scalar，這裡用不到
     meta[key] = stripQuotes(v);
   }

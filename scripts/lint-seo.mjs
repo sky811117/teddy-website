@@ -55,11 +55,13 @@
  *   1 = has errors
  */
 import { readdir, readFile, stat } from "node:fs/promises";
+import { existsSync } from "node:fs";
 // 未完工建設字表：物件 audit 那一份（2026-10-04；import 時 audit-properties.mjs 不會跑掃描）
 import { UNBUILT_SOURCE } from "./audit-properties.mjs";
 
 const POSTS_DIR = new URL("../src/content/posts/", import.meta.url);
 const PROPERTIES_DIR = new URL("../src/content/properties/", import.meta.url);
+const PUBLIC_DIR = new URL("../public/", import.meta.url);
 const SOURCE_DIRS = [
   new URL("../src/pages/", import.meta.url),
   new URL("../src/components/", import.meta.url),
@@ -738,6 +740,10 @@ async function lintPosts(errors, warnings) {
       // 2026-09-05 查核：一篇指到 /covers/ 的 1.1MB PNG，ogThumb() 只處理 /og/ 路徑，
       // 列表縮圖與 LINE/FB 預覽都會吃整張大圖。供文管線請一律產到 /og/。
       warnings.push({ file: f, msg: `ogImage 不在 /og/ 底下 (${meta.ogImage})：縮圖管線只處理 /og/，請轉成 /og/<slug>.jpg` });
+    } else if (!existsSync(new URL("." + String(meta.ogImage).split("?")[0], PUBLIC_DIR))) {
+      // 2026-11-07 週檢：三篇文章的 ogImage 指到 public/og/ 沒有的檔（發佈 commit 漏 add 圖），首圖 fetchpriority=high 卻 404、社群預覽也空。
+      // 有 ogImage 就一定要有檔；沒圖請拿掉 ogImage 走 dynamic OG fallback，不要留壞路徑。
+      errors.push({ file: f, msg: `ogImage 指到不存在的檔 (${meta.ogImage})：補 public${meta.ogImage} 或拿掉 ogImage 這行` });
     }
 
     // 16. 內文寫了「本文更新於」但 frontmatter 沒 modDatetime → Google 看不到 dateModified、頁面也不顯示「更新於」

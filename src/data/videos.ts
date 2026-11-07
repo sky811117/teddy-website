@@ -18,7 +18,6 @@ export type VideoCategory =
   | "政策快訊"
   | "議價心法"
   | "客戶見證"
-  | "AI 工作流"
   | "其他";
 
 /**
@@ -281,10 +280,6 @@ export const categoryInfo: Record<
     icon: "🤝",
     tagline: "成交後、客戶自己想說的話",
   },
-  "AI 工作流": {
-    icon: "🤖",
-    tagline: "房仲工作怎麼用 AI 整理資料、核對文案",
-  },
   其他: {
     icon: "🎬",
     tagline: "工作雜記、從廚師轉行房仲的過程",
@@ -296,7 +291,6 @@ export const categories: VideoCategory[] = [
   "政策快訊",
   "議價心法",
   "客戶見證",
-  "AI 工作流",
   "其他",
 ];
 

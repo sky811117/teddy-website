@@ -29,7 +29,6 @@ const categoryCount: Record<VideoCategory, number> = {
   政策快訊: 0,
   議價心法: 0,
   客戶見證: 0,
-  "AI 工作流": 0,
   其他: 0,
 };
 sortedVideos.forEach(v => {
@@ -52,7 +51,7 @@ const hasVideos = sortedVideos.length > 0 || latestShown.length > 0;
 // 「議價心法」「客戶見證」「其他」目前 0 支影片：
 // 沒有真實素材（真實客戶授權 / 真實出價案例）前不在頁面上宣稱，
 // 有影片進來才自動顯示。分類定義本身在 src/data/videos.ts，這裡只控制顯示。
-// 「AI 工作流」先保留：meta description 有寫（10/3 改過，30 天內不動），凍結期過了再決定要不要一起拿掉。
+// 「AI 工作流」分類 2026-11-07 拿掉（10/3 的 30 天凍結已過、一直 0 支影片，台帳待辦）。
 const HIDE_WHEN_EMPTY: readonly string[] = ["議價心法", "客戶見證", "其他"];
 const shownCategories = categories.filter(
   c => !(HIDE_WHEN_EMPTY.includes(c) && topicCount[c] === 0)
@@ -70,7 +69,7 @@ const collectionSchema = {
   url: canonicalURL,
   name: "景泰的房仲短影音",
   description:
-    "景泰跨 YouTube / TikTok / Instagram 三平台的房仲短影音作品集 — 看屋開箱、政策快訊、AI 工作流。",
+    "景泰跨 YouTube / TikTok / Instagram 三平台的房仲短影音作品集 — 看屋開箱、政策快訊。",
   // 本頁主體是影片清單（ItemList），頁面主題人物放 about
   mainEntity: {
     "@type": "ItemList",
@@ -116,7 +115,7 @@ function formatDate(d: Date): string {
 
 <Layout
   title={`短影音作品集 | ${config.site.title}`}
-  description="景泰跨 YouTube / TikTok / Instagram 三平台房仲短影音 — 看屋開箱、政策快訊、AI 工作流。台中買賣房，看影片比讀文章快。"
+  description="景泰跨 YouTube / TikTok / Instagram 三平台房仲短影音 — 看屋開箱、政策快訊。台中買賣房，看影片比讀文章快。"
   canonicalURL={canonicalURL}
 >
   <Fragment slot="head">
