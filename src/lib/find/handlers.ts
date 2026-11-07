@@ -601,7 +601,8 @@ export async function handleEvent(ctx: FindCtx, deps: Deps = realDeps()): Promis
   if (envelope.events.length && liveReady(env) && (await checkEvtToken(env, et, deps.now()))) {
     const job = (async () => {
       const ip = await ipHash(env.FIND_IP_SALT, request.headers.get("cf-connecting-ip"), deps.now());
-      const f = await forward(env, deps, "POST", "/aif/v1/event", { ...envelope, ip_h: ip, ua: uaKind(request.headers.get("user-agent")) }, 3000);
+      // 在 waitUntil 裡送、不卡客人；Funnel 慢的時候 3 秒常不夠（同 handleConfig 那段量測），放寬到 6 秒
+      const f = await forward(env, deps, "POST", "/aif/v1/event", { ...envelope, ip_h: ip, ua: uaKind(request.headers.get("user-agent")) }, 6000);
       if (f.kind === "down") logFail("event", f.cls);
     })();
     if (ctx.waitUntil) ctx.waitUntil(job);
@@ -663,7 +664,9 @@ export async function handleConfig(ctx: FindCtx, deps: Deps = realDeps()): Promi
     const now = deps.now();
     if (healthCache && now - healthCache.at < 15000) ({ mode, caps } = healthCache);
     else {
-      const f = await forward(env, deps, "GET", "/aif/v1/health", null, 3000);
+      // 2026-11-07：從外面走 Funnel 量 24 次，TLS 交握 0.5～5 秒、整趟 0.65～6 秒（3 次超過 3 秒）；原本只等 3 秒，
+      // 剛開的執行個體沒有上一次結果可沿用，一逾時整頁就翻成收件模式（實測 20 次有 3 次），客人送的需求只變成 TG 線索。
+      const f = await forward(env, deps, "GET", "/aif/v1/health", null, 6500);
       if (f.kind === "ok" && isObj(f.json) && f.json.ok === true) {
         mode = f.json.mode === "live" ? "live" : "intake";
         caps = mode === "live" ? capsOf(f.json.caps) : [];   // 收件模式不開任何範圍入口

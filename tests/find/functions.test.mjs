@@ -686,3 +686,12 @@ test("事件去識別化：任何字串值都必須是列舉或 ^[A-Za-z0-9_.:\\
     walk(got);
   }
 });
+
+test("家用機健康檢查至少等 6 秒、使用事件至少 6 秒（2026-11-07：走 Funnel 的 TLS 交握常 2～5 秒，等 3 秒會讓剛開的執行個體把整頁翻成收件模式）", async () => {
+  const fs = await import("node:fs");
+  const { ROOT } = await import("./_helpers.mjs");
+  const src = fs.readFileSync(ROOT + "/src/lib/find/handlers.ts", "utf8");
+  const ms = re => Number((src.match(re) || [])[1]);
+  assert.ok(ms(/forward\(env, deps, "GET", "\/aif\/v1\/health", null, (\d+)\)/) >= 6000, "health");
+  assert.ok(ms(/"\/aif\/v1\/event", \{[^}]*\}, (\d+)\)/) >= 6000, "event");
+});
