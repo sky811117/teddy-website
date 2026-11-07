@@ -649,7 +649,7 @@ function extRoad(t, raw) {
 }
 
 /* ---------- 範圍：指定社區、74環內、地圖範圍（2026-10-09；與伺服器端同一張表） ----------
- * community：社區名（2–20 字，不能是區名、泛稱、口語字；名冊比對在家用機）。zone：'r74'。
+ * community：社區名（2–20 字，不能是區名、泛稱、口語字；名冊比對在家用機）。zone：'r74' 或七期這類地名（只看形狀）。
  * geo：[[緯度,經度],…]，這裡只看點數；其餘在伺服器端與地圖模組擋。 */
 var R74 = D.slice(0, 9).concat('潭子區');   // 跟台74 環有交集的 10 區
 var CM_C = '[\\u4e00-\\u9fffA-Za-z0-9+&·‧]|(?<=[\\u4e00-\\u9fffA-Za-z0-9]) (?=[\\u4e00-\\u9fffA-Za-z0-9])|(?<=[A-Za-z0-9])[.\\-](?=[A-Za-z0-9])';
@@ -847,13 +847,13 @@ function normalizeFields(raw) {
     else out.road = road;
   }
   one(raw, out, issues, 'community', commOk);
-  one(raw, out, issues, 'zone', pick(['r74']));
+  one(raw, out, issues, 'zone', z => z === 'r74' || typeof z == 'string' && /^[\u4e00-\u9fff()\/、]{2,40}$/.test(z) ? z : null);   // 地名同 schema.ts AREA_ZONE_RE
   one(raw, out, issues, 'geo', geoOk);
   // 範圍互斥（社區 ＞ 地圖 ＞ 74環）：社區留區（家用機拿來挑同名社區）；地圖不留區與路段；74環碰到環外的區就不算，留下來時不帶路段
   function drop(k, why) { if (k in out) { delete out[k]; issues.push(k + ':' + why); } }
   if (out.community) { drop('zone', 'scope'); drop('geo', 'scope'); drop('road', 'scope'); }
   else if (out.geo) { drop('zone', 'scope'); drop('districts', 'scope'); drop('road', 'scope'); }
-  else if (out.zone) { if ((out.districts || []).some(d => R74.indexOf(d) < 0)) drop('zone', 'conflict'); else drop('road', 'scope'); }
+  else if (out.zone) { if (out.zone == 'r74' && (out.districts || []).some(d => R74.indexOf(d) < 0)) drop('zone', 'conflict'); else drop('road', 'scope'); }
   [['price_min_wan', 'price_max_wan', 100, 100000], ['rooms_min', 'rooms_max', 1, 6], ['area_min_ping', 'area_max_ping', 5, 300], ['age_min', 'age_max', 1, 60]].forEach(g => {
     var a = raw[g[0]], b = raw[g[1]], av = null, bv = null;
     if (!nul(a)) { av = intIn(a, g[2], g[3]); if (av === null) issues.push(g[0] + ':invalid'); }

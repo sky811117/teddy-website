@@ -148,3 +148,21 @@ test("審查 SEC-01：伺服器 commOk 不收 5 位以上連續數字（電話�
   assert.equal(plain(S.normalizeFields({ community: "0912345678 文華匯", rooms_min: 3 }).fields).community, undefined);
   assert.equal(NE.normalizeFields({ community: "文華匯12345" }).fields.community, "文華匯12345", "首載不加（預算）；送出時伺服器會擋");
 });
+
+test("區域範圍（2026-11-07 七期）：zone 收地名顯示名（只看形狀）、點名的區不在這裡判、#k 片段帶得過去", () => {
+  for (const v of ["七期", "十四期", "逢甲附近", "七期、八期", "水湳(南)", "北勢頭/靜宜附近"]) {
+    assert.deepEqual(plain(NE.normalizeFields({ zone: v, rooms_min: 3 }).fields), { zone: v, rooms_min: 3 }, v);
+    assert.deepEqual(plain(S.normalizeFields({ zone: v, rooms_min: 3 }).fields), { zone: v, rooms_min: 3 }, v);
+  }
+  for (const v of ["七", "abc", "<b>七期</b>", "七期 三房", "七".repeat(41), ["七期"], 7, ""]) {
+    assert.equal(NE.normalizeFields({ zone: v }).fields.zone, undefined, String(v));
+    assert.equal(S.normalizeFields({ zone: v }).fields.zone, undefined, String(v));
+  }
+  // 點名的區是不是那塊碰到的區：瀏覽器與官網不知道範圍資料，交給家用機（74環照舊在這裡判）
+  assert.deepEqual(plain(S.normalizeFields({ zone: "七期", districts: ["南屯區"], road: "大墩路" }).fields), { districts: ["南屯區"], zone: "七期" });
+  assert.deepEqual(plain(NE.normalizeFields({ zone: "七期", districts: ["大里區"] }).fields), { districts: ["大里區"], zone: "七期" });
+  assert.deepEqual(S.normalizeFields({ zone: "r74", districts: ["大里區"] }).issues, ["zone:conflict"]);
+  assert.deepEqual(plain(NE.fragDecode(NE.fragEncode({ zone: "七期", rooms_min: 3, rooms_max: 3 }, {})).f), { zone: "七期", rooms_min: 3, rooms_max: 3 });
+  assert.deepEqual(NE.assess({ zone: "七期", rooms_min: 3, price_max_wan: 2000 }).missing, []);
+  assert.ok(!NE.nextQuestions({ zone: "七期" }, {}, [], [], 4, false).includes("q_district"));
+});

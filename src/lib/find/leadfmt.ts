@@ -37,7 +37,7 @@ const PREF_LABEL: Record<string, string> = { line: "LINE", phone: "電話", emai
 /** 條件（系統固定文字，還沒跳脫）。社區名是客人打的字，不在這裡：formatLead 另外包 <code>；地圖範圍只寫點數，不寫座標 */
 export function condParts(f: Fields): string[] {
   const p: string[] = [];
-  if (f.zone) p.push("74環內");
+  if (f.zone) p.push(f.zone === "r74" ? "74環內" : f.zone);   // 2026-11-07 區域範圍：七期這類顯示名（schema 只收中文與括號、斜線）
   if (f.geo?.length) p.push(`地圖範圍（${f.geo.length} 個點）`);
   if (f.districts?.length) p.push(f.districts.join("、") + (f.road ?? ""));
   if (f.rooms_min !== undefined || f.rooms_max !== undefined) {

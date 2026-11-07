@@ -168,3 +168,8 @@ test("審查 SEC-01：收件線索的社區名再過 hideLinks（像網址、@�
   assert.match(t, /^條件：<code>[^<]*<\/code>社區｜3 房$/m);
   assert.match(lead({ community: "文華匯" }), /^條件：<code>文華匯<\/code>社區$/m, "正常的社區名不受影響");
 });
+
+test("收件線索：區域範圍（2026-11-07 七期）照地名寫", () => {
+  assert.match(lead({ zone: "七期", rooms_min: 3, rooms_max: 3 }), /^條件：七期｜3 房$/m);
+  assert.match(lead({ zone: "七期", districts: ["南屯區"] }), /^條件：七期｜南屯區$/m);
+});

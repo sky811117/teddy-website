@@ -71,6 +71,14 @@ let roadSet: Set<string> | null = null;
 /** 跟台74 環有交集的 10 區（只用在驗證：74環內＋環外的區＝客人講的是那一區，不算 74環內） */
 export const R74_DISTRICTS = ["中區", "東區", "南區", "西區", "北區", "北屯區", "西屯區", "南屯區", "太平區", "潭子區"] as const;
 export const ZONES = ["r74"] as const;
+/**
+ * 2026-11-07 區域範圍（景泰：「為啥還不能過濾七期⋯」）：zone 除了 r74，也可以是七期、十四期、逢甲附近這類地名的顯示名
+ * （家用機 mp_aif_area 用需求卡那份官方範圍讀出來的字；幾塊一起用頓號，最多 40 字）。這裡只看形狀（中文、括號、斜線、頓號），
+ * 認不認得、點名的區是不是那塊碰到的區，由家用機對範圍資料判（認不得就拿掉）。瀏覽器 need-extract.js 的 AZ 同一條。
+ */
+export const AREA_ZONE_RE = /^[\u4e00-\u9fff()\/、]{2,40}$/;
+export const zoneOk = (v: unknown): v is string =>
+  typeof v === "string" && ((ZONES as readonly string[]).includes(v) || AREA_ZONE_RE.test(v));
 /** 台中市框（南、西、北、東） */
 export const GEO_BOX = [23.99, 120.45, 24.45, 121.45] as const;
 export const GEO_MIN_KM2 = 0.05;
@@ -393,7 +401,7 @@ export function normalizeFields(raw: unknown): { fields: Fields; issues: string[
     else out.community = c;
   }
   if (!nul(raw.zone)) {
-    if (typeof raw.zone === "string" && (ZONES as readonly string[]).includes(raw.zone)) out.zone = raw.zone;
+    if (zoneOk(raw.zone)) out.zone = raw.zone;
     else issues.push("zone:invalid");
   }
   if (!nul(raw.geo)) {
@@ -417,7 +425,8 @@ export function normalizeFields(raw: unknown): { fields: Fields; issues: string[
     drop("districts", "scope");
     drop("road", "scope");
   } else if (out.zone) {
-    if ((out.districts ?? []).some(d => !(R74_DISTRICTS as readonly string[]).includes(d))) drop("zone", "conflict");
+    // 區域範圍（七期…）點名的區是不是那塊碰到的區，這裡不知道範圍資料，交給家用機判
+    if (out.zone === "r74" && (out.districts ?? []).some(d => !(R74_DISTRICTS as readonly string[]).includes(d))) drop("zone", "conflict");
     else drop("road", "scope");
   }
   const ranges: [keyof Fields, keyof Fields, number, number][] = [

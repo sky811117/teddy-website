@@ -180,7 +180,9 @@ test("檔案大小在預算內、零網路與零儲存呼叫", async () => {
   //（量測：原始檔 66,637（LF）、gzip 17,316）。原始檔以 repo 內的 LF 版本計（Windows 簽出可能變 CRLF，每行多 1 位元組）。
   const min = transformSync(src, { minify: true, loader: "js", charset: "utf8", legalComments: "none" }).code;
   const lf = Buffer.byteLength(src.replace(/\r\n/g, "\n"));
-  assert.ok(lf <= 66 * 1024, `原始檔 ${lf}`);
+  // 2026-11-07 區域範圍（景泰：「為啥還不能過濾七期⋯」）：zone 白名單接受七期這類地名，只放寬 192（量測 67,743）。
+  // 客人載到的是部署時壓縮過的 dist/js（首載 brotli 合計在 find_app.test.mjs 守著、沒放寬），原始檔這條只是成長護欄。
+  assert.ok(lf <= 66 * 1024 + 192, `原始檔 ${lf}`);
   assert.ok(zlib.gzipSync(min).length <= 17.5 * 1024, `gzip ${zlib.gzipSync(min).length}`);
   assert.ok(!/\b(fetch|XMLHttpRequest|sendBeacon|WebSocket|localStorage|sessionStorage|eval|document\.cookie)\b/.test(src));
   assert.ok(!/new Function\(/.test(src));

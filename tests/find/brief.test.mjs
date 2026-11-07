@@ -199,3 +199,10 @@ test("畫面：社區標籤只在推薦頁本身寫了「{名字}社區」時出
   assert.deepEqual(mk("找房需求：文華匯社區（西屯區）"), ["文華匯社區", "西屯區"]);
   assert.deepEqual(mk("找房需求：西屯區"), ["西屯區"]);
 });
+
+test("區域範圍（2026-11-07 七期）：推薦頁標籤照地名寫；亂塞的字不收", () => {
+  assert.deepEqual(plain(FB.model(tok({ zone: "七期", rooms_min: 3, rooms_max: 3 }, {})).tags), ["七期", "3 房"]);
+  assert.deepEqual(plain(FB.model(tok({ zone: "七期", districts: ["南屯區"] }, {})).tags), ["七期", "南屯區"]);
+  const bad = Buffer.from(JSON.stringify({ v: 1, f: { zone: "x", z: "<b>七期</b>" } })).toString("base64url");
+  assert.ok(!plain(FB.model(bad) || { tags: [] }).tags.some(t => /七期/.test(t)));
+});

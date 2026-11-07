@@ -89,7 +89,7 @@ function floorText(f) {
 function countText(f) { return has(f.per_district) ? ((f.districts || []).length > 1 ? '各 ' : '') + f.per_district + ' 間' : ''; }
 /* 範圍（指定社區／74環內／地圖）：家用機回報支援（config 的 caps）才開入口；畫面在 find-scope.js（延遲載入） */
 var SCOPES = ['community', 'zone', 'geo'];
-function scopeText(f) { return f.community ? f.community + '社區' : f.zone ? '74環內' : f.geo ? '地圖上選的範圍' : ''; }
+function scopeText(f) { return f.community ? f.community + '社區' : f.zone ? f.zone == 'r74' ? '74環內' : f.zone : f.geo ? '地圖上選的範圍' : ''; }
 /* 家用機沒說支援的範圍欄位拿掉（設定已載入、而且是 live 才做；收件模式不剝）。有拿掉就記 s.cg，s2 會說明 */
 function capGate(f, s) {
   var g = clone(f);

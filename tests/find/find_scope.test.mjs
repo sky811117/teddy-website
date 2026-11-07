@@ -863,3 +863,10 @@ test("審查 W8：名冊找不到的說法跟按鈕一致（沒有地圖就不�
   assert.ok(!/留意這個社區有沒有新的/.test(p1.t + p2.t));
   assert.ok(!/[『』]LINE/.test(JSON.stringify(FSC.T)), "LINE 問景泰的引號統一用「」");
 });
+
+test("區域範圍（2026-11-07 七期）：找不到時照地名說；74環照舊", () => {
+  const FSC = (() => { const m = { exports: {} }; vm.runInThisContext(`(function(module){${SCOPE_SRC}\n})`)(m); return m.exports; })();
+  assert.equal(FSC.emptyPlan({ zone: "七期", rooms_min: 3 }, [], 0, ["zone"]).t, "七期這次沒有找到符合條件的物件。");
+  assert.equal(FSC.emptyPlan({ zone: "七期" }, [], 1, ["zone"]).t, "七期這次沒有找到符合條件的物件。放寬一點再試試？");
+  assert.equal(FSC.emptyPlan({ zone: "r74" }, [], 0, ["zone"]).t, "74環內這次沒有找到符合條件的物件。");
+});

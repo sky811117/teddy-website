@@ -18,6 +18,7 @@ var T = {
   cline: '想請景泰幫你留意這個社區有沒有新的，可以按下面的「LINE 問景泰」。',
   cask: '也可以直接 LINE 問景泰。',
   zone: '74環內這次沒有找到符合條件的物件。',
+  zarea: function (z) { return z + '這次沒有找到符合條件的物件。'; },   // 2026-11-07 七期這類地名（zone 放顯示名）
   loosen: '放寬一點再試試？',
   gsmall: '這個範圍跨了太多區，一次找不完。範圍小一點再試試？',
   gout: '這個範圍不在台中市。換到台中市內再試試？',
@@ -64,7 +65,7 @@ function emptyPlan(f, hints, loosen, caps) {
     if (!loosen && only) return { t: T.cnone(n), b: ['line', 'sc-comm-new', 'sc-pick'] };
     return { t: T.cless(n) + sfx + T.cline, b: ['sc-pick'] };
   }
-  if (k === 'zone') return { t: T.zone + sfx, b: ['sc-pick'] };
+  if (k === 'zone') return { t: (f.zone == 'r74' ? T.zone : T.zarea(f.zone)) + sfx, b: ['sc-pick'] };
   if (h('geo_smaller')) return { t: T.gsmall, b: ['sc-shrink'] };
   if (h('geo_out')) return { t: T.gout, b: ['sc-redo'] };
   if (h('geo_partial')) return { t: T.gpart, b: ['sc-pick', 'sc-redo'] };
@@ -129,7 +130,9 @@ function open(kind) {
 }
 /* 從確認畫面（s4）的「範圍｜改」進來：開目前的範圍那一個面板 */
 function edit() {
-  var s = S(), k = kindOf(s.fields) || (s.caps || [])[0];
+  var s = S(), caps = s.caps || [], k = kindOf(s.fields) || caps[0];
+  // 七期這類地名（2026-11-07）沒有自己的面板，不開 74環那一面：先開地圖（圈了就換成地圖範圍），沒有地圖就開第一個
+  if (k === 'zone' && s.fields.zone != 'r74') k = caps.indexOf('geo') >= 0 ? 'geo' : caps[0];
   s.scopeFrom = 's4';
   panel(k);
 }

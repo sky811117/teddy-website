@@ -248,3 +248,24 @@ test("頁面：#s0-live 帶 find-ai.js 的版本網址、#ai-wait 預設藏著�
     assert.match(PAGE_SRC, new RegExp(`<p data-q="${q}" data-h="[^"]+">[^<]+</p>`), q);
   }
 });
+
+test("區域範圍（2026-11-07 七期）：家用機讀到七期 → 我聽到的、需求單照地名寫；送出時帶 zone", { skip: SKIP }, async () => {
+  const net = fakeNet({
+    config: () => ({ ...CONFIG, caps: ["community", "zone", "geo", "ai"] }),
+    understand: () => ({ ok: true, v: 1, fields: { zone: "七期", rooms_min: 3, rooms_max: 3, price_max_wan: 2000 }, src: "rules" }),
+  });
+  const app = await boot({ net });
+  type(app.$("#free-text"), "七期三房，兩千萬內");
+  await app.loadAi();
+  await say(app);
+  assert.deepEqual(tags(app), ["七期", "3 房", "2000 萬以內"]);
+  click(app.$('[data-act="go-now"]'));
+  await flush();
+  const row = app.$$("#sheet-rows .u2-sheet__row").find(r => r.querySelector("dt").textContent === "範圍");
+  assert.ok(row, "需求單第一列是範圍");
+  assert.equal(row.querySelector("dd").textContent, "七期");
+  await app.clock.advance(6000);
+  click(app.$("#go-btn"));
+  await flush();
+  assert.equal(app.net.by("submit")[0].body.fields.zone, "七期");
+});

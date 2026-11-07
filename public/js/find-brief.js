@@ -75,7 +75,7 @@ function parse(token) {
   } catch (e) { return null; }
   if (!obj || typeof obj !== 'object' || Array.isArray(obj) || obj.v !== 1) return null;
   var f = obj.f && typeof obj.f === 'object' && !Array.isArray(obj.f) ? obj.f : {};
-  var out = { d: list(f.d, DIST, 2), cm: commOk(f.cm), z: f.z === 'r74' ? 'r74' : null, pmax: isInt(f.pmax, 100, 100000) ? f.pmax : null, pmin: isInt(f.pmin, 100, 100000) ? f.pmin : null, r: null, t: list(f.t, Object.keys(TYPES), 2), a: isInt(f.a, 1, 60) ? f.a : null, am: isInt(f.am, 1, 60) ? f.am : null, pk: (typeof f.pk === 'string' && Object.prototype.hasOwnProperty.call(PK, f.pk)) ? f.pk : null, fx: [], top: f.top === 1 };
+  var out = { d: list(f.d, DIST, 2), cm: commOk(f.cm), z: f.z === 'r74' || typeof f.z == 'string' && /^[\u4e00-\u9fff()\/、]{2,40}$/.test(f.z) ? f.z : null, pmax: isInt(f.pmax, 100, 100000) ? f.pmax : null, pmin: isInt(f.pmin, 100, 100000) ? f.pmin : null, r: null, t: list(f.t, Object.keys(TYPES), 2), a: isInt(f.a, 1, 60) ? f.a : null, am: isInt(f.am, 1, 60) ? f.am : null, pk: (typeof f.pk === 'string' && Object.prototype.hasOwnProperty.call(PK, f.pk)) ? f.pk : null, fx: [], top: f.top === 1 };
   if (Array.isArray(f.r) && f.r.length === 2) {
     var lo = isInt(f.r[0], 1, 6) ? f.r[0] : null, hi = isInt(f.r[1], 1, 6) ? f.r[1] : null;
     if (lo !== null || hi !== null) out.r = [lo, hi];
@@ -91,7 +91,7 @@ function parse(token) {
 function tags(m) {
   var t = [];
   if (m.cm) t.push(m.cm + '社區');
-  else if (m.z) t.push('74環內');
+  else if (m.z) t.push(m.z == 'r74' ? '74環內' : m.z);   // 2026-11-07 七期這類地名照原字
   if (m.d.length) t.push(m.d.join('、'));
   if (m.r) t.push(m.r[0] !== null && m.r[1] !== null ? (m.r[0] === m.r[1] ? m.r[0] + ' 房' : m.r[0] + '～' + m.r[1] + ' 房') : m.r[0] !== null ? m.r[0] + ' 房以上' : m.r[1] + ' 房以內');
   if (m.t.length) t.push(m.t.map(function (k) { return TYPES[k]; }).join('、'));
