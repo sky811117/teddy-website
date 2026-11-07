@@ -42,7 +42,7 @@ var DEGRADE_MSG_CONTACT = {
 var NC_TAIL = '你選了不想被追問，所以我不會要你留資料；想問的時候，直接 LINE 景泰就好。';
 var DEGRADE_MSG_NOCHASE = { general: '需求記下來了。' + NC_TAIL, busy: '現在比較多人，需求先記下來了。' + NC_TAIL, night: '現在是深夜，需求先記下來了。' + NC_TAIL };
 var INTAKE_TEXT = '目前我還不能自動找：你的需求會交給景泰看過。想讓他回你的話，可以留 LINE 或電話（選填）。';
-var TS_RETRY_HINT = '還沒完成人機驗證。請先完成上面的驗證，再按一次。';
+var TS_RETRY_HINT = '還沒完成人機驗證。請先完成下面的驗證，再按一次。';
 var CFG_RETRY_HINT = '頁面沒有載入完整，沒辦法確認是真人。請重新整理這一頁再試一次。';
 var HINT_COPY = {
   loosen_price: '預算放寬一點', loosen_district: '多看一個區', loosen_rooms: '房數不限', loosen_age: '屋齡不限',

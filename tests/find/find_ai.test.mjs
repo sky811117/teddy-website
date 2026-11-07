@@ -269,3 +269,16 @@ test("區域範圍（2026-11-07 七期）：家用機讀到七期 → 我聽到�
   await flush();
   assert.equal(app.net.by("submit")[0].body.fields.zone, "七期");
 });
+
+test("人機驗證框不在任何畫面裡、上層沒有隱藏：開場那句話送去先問 AI 時拿得到驗證（2026-11-07：放在確認畫面裡＝display:none，先問 AI 上線後一次都沒跑成）", { skip: SKIP }, async () => {
+  const app = await boot();
+  assert.equal(app.state(), "s0");
+  const box = app.$("#ts-box");
+  assert.ok(box, "要有驗證框");
+  for (let n = box.parentNode; n && n.getAttribute; n = n.parentNode) {
+    assert.equal(n.getAttribute("data-s"), null, "驗證框不能放在畫面 " + n.getAttribute("data-s") + " 裡");
+    assert.equal(n.getAttribute("hidden"), null, "驗證框的上層不能是隱藏的");
+  }
+  assert.match(PAGE_SRC, /請先完成下面的驗證/);
+  assert.match(APP_SRC, /請先完成下面的驗證/);
+});

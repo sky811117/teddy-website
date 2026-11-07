@@ -316,8 +316,7 @@ const concernHelp = "這幾項只會讓景泰知道從哪聊起，不會拿去�
               <p class="u2-error" role="alert" id="ci-err" hidden></p>
             </section>
             <div>
-              <p class="u2-small u2-bold" id="ts-hint" role="alert" hidden>還沒完成人機驗證。請先完成上面的驗證，再按一次。</p>
-              <div id="ts-box" class="u2-ts" aria-live="polite"></div>
+              <p class="u2-small u2-bold" id="ts-hint" role="alert" hidden>還沒完成人機驗證。請先完成下面的驗證，再按一次。</p>
               <button class="u2-btn u2-btn--primary u2-btn--lg u2-btn--block" type="button" id="go-btn">開始找</button>
               <p class="u2-cap u2-center" id="go-note">通常 1～2 分鐘。</p>
             </div>
@@ -540,6 +539,11 @@ const concernHelp = "這幾項只會讓景泰知道從哪聊起，不會拿去�
               <a class="u2-btn u2-btn--line u2-btn--sm" href="/go/line?src=find-error" data-lineq><svg class="u2-ico" aria-hidden="true"><use href="#i-chat"></use></svg>LINE 問景泰</a>
             </div>
           </div>
+
+          {/* 人機驗證框（2026-11-07 從確認畫面搬出來）：開場那句話送去「先問 AI」就要用到驗證，原本放在還沒顯示的確認畫面裡（display:none）
+              拿不到，「先問 AI」10-29 上線後一次都沒跑成。放在每個畫面內容的最下面、一直顯示；平常看不到，要客人勾的時候才出現
+              （確認畫面就在「開始找」正下方，ts-hint 跟 find-app 的 TS_RETRY_HINT 都寫「下面」） */}
+          <div id="ts-box" class="u2-ts" aria-live="polite"></div>
 
           <!-- ===== 頁底：常見問答（靜態，沒有 JS 也看得到）與揭露 ===== -->
           <section class="u2-faq" aria-labelledby="faq-h">
