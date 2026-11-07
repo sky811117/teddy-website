@@ -445,6 +445,8 @@ const concernHelp = "這幾項只會讓景泰知道從哪聊起，不會拿去�
               <div class="u2-sheet__head"><span>這次用的條件</span><button class="u2-btn u2-btn--text" type="button" data-act="refine">補充條件再找一次</button></div>
               <div class="u2-sheet__row u2-sheet__row--one"><p class="u2-tags u2-tags--tight" id="res-tags"></p></div>
             </div>
+            {/* 2026-11-07 景泰「我要重新搜尋 是沒辦法的」：重整會還原上一個結果，重新開始只在頁尾小字；這裡放一顆看得到的（接 find-app 的 restart，不加程式；用 Astro 註解，不輸出到網頁） */}
+            <div class="u2-row"><button class="u2-btn u2-btn--ghost" type="button" data-act="restart">換個條件，重新找</button></div>
 
             <section class="u2-fb" aria-labelledby="fb-h" id="fb-box">
               <p class="u2-h3 u2-fb__h" id="fb-h">這幾間準不準？</p>

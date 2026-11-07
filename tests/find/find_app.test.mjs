@@ -1062,3 +1062,19 @@ test("RT-12：config 發的事件憑證會跟著事件批次送回（et），其
   await app2.clock.advance(7000);
   for (const b of app2.net.by("event")) assert.ok(!("et" in b.body) || b.body.et === undefined);
 });
+
+test("結果頁有一顆看得到的「換個條件，重新找」：清掉這次的結果、回開場打新的一句（2026-11-07 景泰：重整會還原上一個結果）", { skip: SKIP }, async () => {
+  const done = JSON.stringify({ sid: "Qw3kT9xLm2PzR8aVb5NcDe", idem: "x", jobId: JOB, step: "s7", fields: { zone: "七期", rooms_min: 3, rooms_max: 3 }, context: {}, freeText: "七期三房", res: { shareUrl: SHARE, count: 9 } });
+  const app = await boot({ session: { "find.v1": done } });
+  assert.equal(app.state(), "s7", "重整還原上一個結果（舊行為不變）");
+  const btn = app.$$('[data-s="s7"] [data-act="restart"]').find(b => b.textContent.trim() === "換個條件，重新找");
+  assert.ok(btn, "結果頁要有重新找的按鈕");
+  click(btn);
+  await flush();
+  assert.equal(app.state(), "s0");
+  assert.equal(app.$("#free-text").value, "");
+  type(app.$("#free-text"), "十四期兩房");
+  submit(app.$("#free-form"));
+  await flush();
+  assert.equal(app.state(), "s2", "可以打新的一句");
+});
