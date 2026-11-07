@@ -282,3 +282,22 @@ test("人機驗證框不在任何畫面裡、上層沒有隱藏：開場那句�
   assert.match(PAGE_SRC, /請先完成下面的驗證/);
   assert.match(APP_SRC, /請先完成下面的驗證/);
 });
+
+test("重新開始之後再打一句：照樣先問 AI、事件照樣帶憑證（2026-11-07：重建狀態沒帶 ai／evt，按過重新開始就不再問 AI、事件被官網丟掉）", { skip: SKIP }, async () => {
+  const ET = "5c9e.91d37467d98d9e798f93";
+  const app = await boot({ net: fakeNet({ config: () => ({ ...CONFIG, evt: ET }) }) });
+  type(app.$("#free-text"), "北屯三房");
+  await app.loadAi();
+  await say(app);
+  assert.equal(app.net.by("understand").length, 1);
+  click(app.$("#clear-btn"));
+  await flush();
+  assert.equal(app.state(), "s0");
+  type(app.$("#free-text"), "七期三房，兩千萬內");
+  await say(app);
+  assert.equal(app.net.by("understand").length, 2, "重新開始後照樣先問 AI");
+  await app.clock.advance(7000);
+  const ev = app.net.by("event");
+  assert.ok(ev.length > 0);
+  assert.equal(ev[ev.length - 1].body.et, ET, "重新開始後送的事件也帶憑證");
+});

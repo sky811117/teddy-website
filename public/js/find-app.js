@@ -327,7 +327,7 @@ function nowMs() { return ((root.performance && root.performance.now) ? root.per
 function freshS(o) {
   return {
     sid: o.sid, idem: '', jobId: null, step: 's0', fields: {}, context: {}, hints: [], freeText: '', skip: false, refineOf: null,
-    plan: [], planIdx: 0, answered: [], skipped: [], nudged: false, returnTo: null, from: o.from, mode: o.mode, siteKey: o.siteKey, cfgOk: o.cfgOk, evt: '', caps: o.caps || [],
+    plan: [], planIdx: 0, answered: [], skipped: [], nudged: false, returnTo: null, from: o.from, mode: o.mode, siteKey: o.siteKey, cfgOk: o.cfgOk, ai: o.ai, evt: o.evt, caps: o.caps || [],
     consentV: o.consentV, startTs: 0, lastLvl: 'empty', extractMeta: null, res: null, answeredCount: 0, polls: 0, qaStart: 0,
     waitStart: 0, fatigueDone: false, contactSent: false, unsure: []
   };
