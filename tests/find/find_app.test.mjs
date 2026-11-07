@@ -250,6 +250,26 @@ test("條件太模糊：直接開始找→只提示一次→補預算；『不�
   void evs;
 });
 
+test("條件不完整、一題一題略過走到確認畫面：按開始找就照這些條件找（帶 skip），不會被退回再問而繞圈（2026-11-07）", { skip: SKIP }, async () => {
+  // 以前只有「直接開始找」會帶 skip；一題一題按「略過」走到確認畫面的不帶 → 家用機回 need_more → 又問同幾題 → 再略過又被退回，
+  // 永遠出不去（11-07 景泰實測，官網 11-05 起零筆工作）。find-app.js 原始檔只剩幾十位元組，說明寫在這裡、程式那邊只留一行。
+  const app = await boot();
+  await sayAndContinue(app, "七期三房，兩千萬內");          // 七期不是行政區：只聽到三房、兩千萬內，沒有區
+  assert.equal(app.state(), "s2");
+  clickAct(app, "continue");
+  assert.equal(trayQ(app), "想找哪一區？");
+  for (let i = 0; i < 6 && app.state() === "s3"; i++) click(app.$('[data-act="q-skip"]'));
+  assert.equal(app.state(), "s4");
+  await app.clock.advance(6000);
+  click(app.$("#go-btn"));
+  await flush();
+  const sub = app.net.by("submit");
+  assert.equal(sub.length, 1);
+  assert.equal(sub[0].body.skip, true);
+  assert.equal(sub[0].body.fields.districts, undefined);
+  assert.equal(sub[0].body.fields.price_max_wan, 2000);
+});
+
 test("用選的就好：從必問題開始；其他區可展開；最多選 2 區；『還不確定』也算答案", { skip: SKIP }, async () => {
   const app = await boot();
   click(app.$("#pick-btn"));

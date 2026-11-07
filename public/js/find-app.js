@@ -901,6 +901,7 @@ function submit() {
   }
   var ic = readIntakeContact();
   if (ic === null) return;                          // 收件模式要先有聯絡方式：留在確認畫面、提示已經顯示
+  if (a.level === 'vague') S.skip = true;
   if (!S.cfgOk) {
     // 設定（人機驗證 site key）一直沒抓到：先再抓一次；還是抓不到就請客人重新整理，不送出一個一定會被擋掉的請求（紅隊 RT-04）
     setBusy(true);
