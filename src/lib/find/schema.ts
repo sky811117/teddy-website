@@ -629,7 +629,9 @@ export function validateSubmit(body: unknown): { out: SubmitClean | null; err: E
 export type UnderstandClean = { text: string; turnstile: string };
 export function validateUnderstand(body: unknown): UnderstandClean | null {
   if (!isObj(body) || body.v !== SCHEMA_V || typeof body.text !== "string") return null;
-  const text = normText(body.text).trim();
+  // 2026-11-07 資安稽核 N1：官網這層也先去識別化（電話／LINE／Email／門牌／姓名）再轉送，跟 validateFeedback 同一套；
+  // 家用機 prepare_text 送模型前還會再 scrub 一次，這裡是第二道、不是取代。scrub 內含 normText 與頭尾修剪。
+  const text = scrub(body.text).clean;
   if (!text || cpLen(text) > FREE_TEXT_MAX) return null;
   return { text, turnstile: typeof body.turnstile === "string" && body.turnstile.length <= 2048 ? body.turnstile : "" };
 }

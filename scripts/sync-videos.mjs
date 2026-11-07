@@ -34,7 +34,7 @@
  *   node scripts/sync-videos.mjs              # 試算：印出會收哪些、排除哪些，不寫檔
  *   node scripts/sync-videos.mjs --write      # 寫 src/data/videos.generated.json
  *   node scripts/sync-videos.mjs --since 2026-08-01
- *   環境變數 VIDEO_REGISTRY / VIDEO_SCHEDULE 可指定來源路徑
+ *   環境變數 VIDEO_REGISTRY / VIDEO_SCHEDULE 可指定來源路徑；FEIFAN_NAS_DIR＝排除名單來源夾（不給就只用寫死名單）
  */
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -147,7 +147,9 @@ if (!properties.length) {
 // 基本名單（2026-10-04 審查抓到，官網已 withdrawn）
 const EXCLUDE_LISTING_CODES = new Set(["1211190", "1211227"]);
 const EXCLUDE_COMMUNITIES = ["日月觀學"];
-const FEIFAN_NAS_DIR = process.env.FEIFAN_NAS_DIR || String.raw`\\Hbnas\h&b共用\26.汎汎`;
+// 來源夾只從環境變數拿（FEIFAN_NAS_DIR＝完整路徑，由夜間同步在公司機上現查後帶進來；那一格的編號會變，所以不在這裡寫死）。
+// 2026-11-07 資安稽核：這是公開 repo，不放公司內網路徑、格號與同事名；沒給就只用寫死名單並印 WARN。
+const FEIFAN_NAS_DIR = process.env.FEIFAN_NAS_DIR || "";
 const CASE_CODE_RE = /[A-Z]{2}(\d{7})/g;
 function scanCaseCodes(dir, depth) {
   // 只列資料夾名稱（唯讀），不開任何檔案
@@ -160,13 +162,14 @@ function scanCaseCodes(dir, depth) {
   const codes = [];
   for (const d of names) {
     for (const m of d.name.matchAll(CASE_CODE_RE)) codes.push(m[1]);
-    if (depth < 2) codes.push(...(scanCaseCodes(path.join(dir, d.name), depth + 1) || []));
+    // 物件夾在來源夾往下第 4 層，多看一層（深度跟夜間同步那邊一致）
+    if (depth < 4) codes.push(...(scanCaseCodes(path.join(dir, d.name), depth + 1) || []));
   }
   return codes;
 }
-const feifanCodes = scanCaseCodes(FEIFAN_NAS_DIR, 0);
+const feifanCodes = FEIFAN_NAS_DIR ? scanCaseCodes(FEIFAN_NAS_DIR, 0) : null;
 if (feifanCodes === null) {
-  console.warn(`[sync-videos] WARN 連不到 ${FEIFAN_NAS_DIR}，只用寫死的排除名單（${EXCLUDE_LISTING_CODES.size} 筆）`);
+  console.warn(`[sync-videos] WARN ${FEIFAN_NAS_DIR ? "連不到來源夾 FEIFAN_NAS_DIR" : "沒設 FEIFAN_NAS_DIR"}，只用寫死的排除名單（${EXCLUDE_LISTING_CODES.size} 筆）`);
 } else {
   for (const c of feifanCodes) EXCLUDE_LISTING_CODES.add(c);
   console.log(`[sync-videos] 排除名單：來源夾委編 ${new Set(feifanCodes).size} 筆＋寫死名單，共 ${EXCLUDE_LISTING_CODES.size} 筆`);

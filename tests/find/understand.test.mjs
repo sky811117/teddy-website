@@ -181,3 +181,14 @@ test("回應白名單多了 fields、src；Function 薄包裝存在並交給 han
   assert.match(fn, /import \{ handleUnderstand \} from "\.\.\/\.\.\/\.\.\/src\/lib\/find\/handlers";/);
   assert.match(fn, /export const onRequest = \(ctx: FindCtx\): Promise<Response> => handleUnderstand\(ctx\);/);
 });
+
+test("understand：轉送前先去識別化（2026-11-07）：電話／LINE／門牌不會出現在送往家用機的 body，找房條件留著", async () => {
+  const dirty = "北屯三房1500萬以內，我電話0912345678，LINE id teddy_88，住文心路100號";
+  const { res, n } = await run(good({ text: dirty }));
+  assert.equal(res.status, 200);
+  const sent = JSON.parse(new TextDecoder().decode(upCalls(n)[0].init.body));
+  for (const bad of ["0912345678", "teddy_88", "100號", "文心路100"]) assert.ok(!sent.text.includes(bad), "不得轉送：" + bad + "｜" + sent.text);
+  assert.ok(sent.text.includes("北屯三房") && sent.text.includes("1500萬"), "找房條件要留著：" + sent.text);
+  const v = S.validateUnderstand({ v: 1, text: "  北屯三房 0912-345-678 ", turnstile: "t" });
+  assert.ok(v && !/\d{4}/.test(v.text) && v.text.startsWith("北屯三房"), "validateUnderstand 本身就去識別化：" + (v && v.text));
+});

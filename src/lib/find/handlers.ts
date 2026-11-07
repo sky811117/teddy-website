@@ -685,7 +685,11 @@ export async function handleConfig(ctx: FindCtx, deps: Deps = realDeps()): Promi
   const miss = setupMissing(env);
   // 收件模式時帶原因代碼：cfg-<缺的格子>（官網設定沒齊）或 cfg-home（設定齊了、是家用機回報收件模式／連不上）
   // cfg-home-intake＝家用機自己說收件；cfg-home-h401＝簽章對不上（兩邊密碼不同）；cfg-home-network／timeout＝連不進家用機
-  const diag = mode === "live" ? undefined : miss ? "cfg-" + miss : ("cfg-home" + (healthWhy ? "-" + healthWhy : "")).slice(0, 24);
+  const diagFull = mode === "live" ? "" : miss ? "cfg-" + miss : ("cfg-home" + (healthWhy ? "-" + healthWhy : "")).slice(0, 24);
+  // 2026-11-07 資安稽核（10/17 第 10 項）：細節（缺哪一格、家用機回什麼、簽章 kid 前 8 碼）只進 Functions log，
+  // 公開回應只給粗分類：cfg-setup＝官網設定沒齊、cfg-home＝家用機沒 live／連不上。要查細節看 Cloudflare 即時 log 的 find:config_fail。
+  if (diagFull) logFail("config", diagFull);
+  const diag = mode === "live" ? undefined : miss ? "cfg-setup" : "cfg-home";
   return jsonRes({ ok: true, v: 1, mode, turnstileSiteKey: publicSiteKey(env.TURNSTILE_SITE_KEY), needMax: 300, consentV: CONSENT_V, tplV: 1, evt, diag, caps });
 }
 
