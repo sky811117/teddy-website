@@ -1,11 +1,120 @@
 {
-  "generatedAt": "2026-11-06T22:58:48+08:00",
+  "generatedAt": "2026-11-08T20:10:35+08:00",
   "source": {
-    "registrySyncedAt": "2026-11-06 22:37",
+    "registrySyncedAt": "2026-11-07 22:38",
     "since": "2026-07-01"
   },
-  "count": 76,
+  "count": 84,
   "videos": [
+    {
+      "id": "yt-vCEA0AgTeDE",
+      "platform": "youtube",
+      "videoId": "vCEA0AgTeDE",
+      "url": "https://www.youtube.com/shorts/vCEA0AgTeDE",
+      "title": "台中梧棲｜藍圖UNI｜2房2廳1衛｜1058萬→998萬",
+      "category": "看屋開箱",
+      "district": "梧棲區",
+      "community": "藍圖UNI",
+      "pubDate": "2026-11-07",
+      "listingCodes": [
+        "1211349"
+      ]
+    },
+    {
+      "id": "yt-Eq3w6gHmV0s",
+      "platform": "youtube",
+      "videoId": "Eq3w6gHmV0s",
+      "url": "https://www.youtube.com/shorts/Eq3w6gHmV0s",
+      "title": "台中西屯｜1房1廳1衛｜858萬",
+      "category": "看屋開箱",
+      "district": "西屯區",
+      "pubDate": "2026-11-07",
+      "listingCodes": [
+        "1228258"
+      ]
+    },
+    {
+      "id": "yt-VhG3CsV12A4",
+      "platform": "youtube",
+      "videoId": "VhG3CsV12A4",
+      "url": "https://www.youtube.com/shorts/VhG3CsV12A4",
+      "title": "台中梧棲｜2房2廳1衛｜958萬",
+      "category": "看屋開箱",
+      "district": "梧棲區",
+      "pubDate": "2026-11-07",
+      "listingCodes": [
+        "1228289"
+      ]
+    },
+    {
+      "id": "yt-mlHt78v2r44",
+      "platform": "youtube",
+      "videoId": "mlHt78v2r44",
+      "url": "https://www.youtube.com/shorts/mlHt78v2r44",
+      "title": "台中東區｜台中路三房｜3房3衛｜850萬",
+      "category": "看屋開箱",
+      "district": "東區",
+      "pubDate": "2026-11-07",
+      "listingCodes": [
+        "1211336"
+      ]
+    },
+    {
+      "id": "yt-R7bmMeqdJEQ",
+      "platform": "youtube",
+      "videoId": "R7bmMeqdJEQ",
+      "url": "https://www.youtube.com/shorts/R7bmMeqdJEQ",
+      "title": "台中東勢｜福昌街透天｜5房2廳4衛｜1088萬",
+      "category": "看屋開箱",
+      "district": "東勢區",
+      "community": "福昌街透天",
+      "pubDate": "2026-11-07",
+      "listingCodes": [
+        "0397185"
+      ]
+    },
+    {
+      "id": "yt-z6DXYWZXW8g",
+      "platform": "youtube",
+      "videoId": "z6DXYWZXW8g",
+      "url": "https://www.youtube.com/shorts/z6DXYWZXW8g",
+      "title": "台中北屯｜2房1廳1衛｜1488萬",
+      "category": "看屋開箱",
+      "district": "北屯區",
+      "pubDate": "2026-11-07",
+      "listingCodes": [
+        "1125220",
+        "1228218"
+      ]
+    },
+    {
+      "id": "yt-Rg45lM2-3Rg",
+      "platform": "youtube",
+      "videoId": "Rg45lM2-3Rg",
+      "url": "https://www.youtube.com/shorts/Rg45lM2-3Rg",
+      "title": "台中西區｜3房2廳2衛｜898萬",
+      "category": "看屋開箱",
+      "district": "西區",
+      "pubDate": "2026-11-07",
+      "listingCodes": [
+        "0397186"
+      ]
+    },
+    {
+      "id": "yt-LNEfUSmsPbU",
+      "platform": "youtube",
+      "videoId": "LNEfUSmsPbU",
+      "url": "https://www.youtube.com/shorts/LNEfUSmsPbU",
+      "title": "台中新社｜森林花園｜6間別墅｜1780~2580萬",
+      "category": "看屋開箱",
+      "district": "新社區",
+      "community": "森林花園",
+      "pubDate": "2026-11-06",
+      "listingCodes": [
+        "1211290",
+        "1211291"
+      ]
+    },
     {
       "id": "yt-TUmKS9CKy9Q",
       "platform": "youtube",
@@ -277,6 +386,19 @@
       ]
     },
     {
+      "id": "yt-fgTJOriPf9k",
+      "platform": "youtube",
+      "videoId": "fgTJOriPf9k",
+      "url": "https://www.youtube.com/shorts/fgTJOriPf9k",
+      "title": "台中南屯｜3房2廳2衛｜998萬",
+      "category": "看屋開箱",
+      "district": "南屯區",
+      "pubDate": "2026-11-03",
+      "listingCodes": [
+        "1228251"
+      ]
+    },
+    {
       "id": "yt-Y9gE-ikVYPE",
       "platform": "youtube",
       "videoId": "Y9gE-ikVYPE",
@@ -315,19 +437,6 @@
       "listingCodes": [
         "1139908",
         "1153173"
-      ]
-    },
-    {
-      "id": "yt-9mh1TkwlIkY",
-      "platform": "youtube",
-      "videoId": "9mh1TkwlIkY",
-      "url": "https://www.youtube.com/shorts/9mh1TkwlIkY",
-      "title": "台中南屯｜3房2廳2衛｜998萬",
-      "category": "看屋開箱",
-      "district": "南屯區",
-      "pubDate": "2026-11-03",
-      "listingCodes": [
-        "1228251"
       ]
     },
     {
