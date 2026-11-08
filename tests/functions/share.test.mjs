@@ -42,10 +42,22 @@ const SITE = "https://teddy-house.tw";
 // 三邊約定的 id 範例（字元集 A-Za-z0-9；A3 用 ascii_letters＋digits 隨機產生）
 const A3_NEW_22 = "Ab3dEf6hJk8mNp2qRs4tUv"; // 22 碼
 const A3_QS_24 = "qs" + A3_NEW_22; // 24 碼
-const AIF_QA_32 = "qa008kmn3x7q2pzrtavb5ncdetwoxy4k"; // 32 碼（09 號設計文件的範例）
+// 找房小幫手代號的到期日（qa 後 4 碼，base36 天數，從 2026-01-01 起算）：原本寫死 008k＝2026-11-05，過了那天整支 handler 回 410、測試就紅。
+// 改成「今天＋30 天」動態算；QA_PAST 是「昨天」（過期的對照組）。亂數段 26 碼只准 a-z 與 2-7（shareqa.ts 的 QA_RE）。
+const QA_EPOCH_S = 1767225600; // 2026-01-01T00:00:00Z（跟 src/lib/find/shareqa.ts 的 QA_EPOCH_S 同值）
+const qaDay = offsetDays => (Math.floor((Date.now() / 1000 - QA_EPOCH_S) / 86400) + offsetDays).toString(36).padStart(4, "0");
+const QA_RAND_26 = "mn3x7q2pzrtavb5ncdetwoxy4k";
+const AIF_QA_32 = "qa" + qaDay(30) + QA_RAND_26; // 32 碼（09 號設計文件的格式），30 天後才到期
+const QA_PAST = "qa" + qaDay(-1) + QA_RAND_26; // 昨天到期
 const PAGE_HTML = "<!doctype html><html><head><title>t</title></head><body><h1>推薦頁</h1></body></html>";
+// 2026-11-08：teddy-shares 轉私人 repo 後代理改走 GitHub Contents API（唯讀 PAT 放 Cloudflare Pages secret SHARES_GH_TOKEN）
+const API = "https://api.github.com/repos/sky811117/teddy-shares/contents/";
+const RAW = "https://raw.githubusercontent.com/sky811117/teddy-shares/main/";
+const TOKEN = "github_pat_TESTONLY00000000000000_" + "a".repeat(59); // 格式照 fine-grained PAT；假的
+const ENV = { SHARES_GH_TOKEN: TOKEN };
 
 let fetchCalls = [];
+let fetchInits = [];
 let upstreamImpl;
 const realFetch = globalThis.fetch;
 
@@ -57,17 +69,21 @@ function htmlResponse(html = PAGE_HTML, status = 200, finalUrl = "") {
 
 beforeEach(() => {
   fetchCalls = [];
+  fetchInits = [];
   upstreamImpl = async () => htmlResponse();
   globalThis.fetch = async (url, init) => {
     fetchCalls.push(String(url));
+    fetchInits.push(init || {});
     return upstreamImpl(String(url), init);
   };
 });
 afterEach(() => {
   globalThis.fetch = realFetch;
+  delete globalThis.caches;
 });
 
-async function get(urlOrPath, { method = "GET", headers = {} } = {}) {
+// env／waitUntil 是 2026-11-08 起 handler 會看的（Cloudflare Pages 的環境變數與 waitUntil）；沒給＝沒 token，照舊走 Pages
+async function get(urlOrPath, { method = "GET", headers = {}, env, waitUntil } = {}) {
   const url = urlOrPath.startsWith("http") ? urlOrPath : SITE + urlOrPath;
   const request = new Request(url, { method, headers });
   // 新版只看 request.url 的 pathname；params 是給「舊版」對照測試用的（舊版吃 params.path）。
@@ -80,7 +96,7 @@ async function get(urlOrPath, { method = "GET", headers = {} } = {}) {
   } catch {
     /* 無法 decode 就維持原樣 */
   }
-  return onRequest({ request, params: { path: segs } });
+  return onRequest({ request, params: { path: segs }, env, waitUntil });
 }
 
 function assertBaseHeaders(res, label = "") {
@@ -485,4 +501,321 @@ test("上游 404／500／503 不被當成轉址：照原狀態碼回（既有行
     upstreamImpl = async () => htmlResponse("<html><head></head><body>x</body></html>", code);
     assert.equal((await get("/share/abc12345/")).status, code);
   }
+});
+
+// ───────────────────────── 2026-11-08：teddy-shares 轉私人 repo，改走 GitHub Contents API ─────────────────────────
+// 沒有 token 的所有測試（上面整支檔）必須完全不受影響：repo 還公開的過渡期、或 secret 沒設時，照舊走 Pages／raw。
+const rawResponse = (body, extra = {}) =>
+  new Response(body, {
+    status: 200,
+    headers: {
+      // 實測 GitHub 的回應：content-type 一律這個、Cache-Control private、ETag 是 blob 雜湊、另帶 Vary: Authorization
+      "content-type": "application/vnd.github.raw+json; charset=utf-8",
+      "cache-control": "private, max-age=60, s-maxage=60",
+      vary: "Accept, Authorization, Cookie, X-GitHub-OTP",
+      etag: '"6e9d60ab5a0951fa3c2bda666963531c9dfa77ee"',
+      ...extra,
+    },
+  });
+const apiJson = (status, body = '{"message":"Not Found"}') => new Response(body, { status, headers: { "content-type": "application/json; charset=utf-8" } });
+const noTokenAnywhere = async res => {
+  for (const [, v] of res.headers) assert.ok(!v.includes(TOKEN), "標頭不可含 token");
+  const text = await res.clone().text();
+  assert.ok(!text.includes(TOKEN) && !text.includes("github_pat_"), "本文不可含 token");
+};
+
+test("有 token：頁面本體只打 Contents API（{id}/index.html?ref=main）、帶 Bearer／raw 媒體型別／UA、不帶 cf 快取、不碰 github.io；回應照常注入、快取 5 分鐘、x-share-source=api", async () => {
+  upstreamImpl = async url => (url.startsWith(API) ? rawResponse(PAGE_HTML) : htmlResponse("<html><body>不該走到 Pages</body></html>"));
+  for (const p of ["/share/abc12345/", "/share/abc12345", "/share/" + A3_NEW_22 + "/", "/share/" + A3_QS_24, "/share/" + AIF_QA_32 + "/"]) {
+    fetchCalls = [];
+    fetchInits = [];
+    const res = await get(p, { env: ENV });
+    assert.equal(res.status, 200, p);
+    const id = p.split("/")[2];
+    assert.deepEqual(fetchCalls, [API + id + "/index.html?ref=main"], p);
+    const h = fetchInits[0].headers;
+    assert.equal(h.authorization, "Bearer " + TOKEN);
+    assert.equal(h.accept, "application/vnd.github.raw+json");
+    assert.equal(h["x-github-api-version"], "2022-11-28");
+    assert.ok(h["user-agent"], "GitHub API 一定要有 User-Agent");
+    assert.equal(fetchInits[0].redirect, "manual");
+    assert.ok(!("cf" in fetchInits[0]), "帶 Authorization 的請求不用 cf 快取（Cloudflare 不會快取、也不該快取）");
+    const html = await res.clone().text();
+    assert.match(html, /推薦頁/);
+    assert.match(html, /noindex/);
+    assert.match(html, /想看更多好屋/);
+    assert.equal(res.headers.get("content-type"), "text/html; charset=utf-8");
+    assert.equal(res.headers.get("x-share-source"), "api");
+    assert.equal(res.headers.get("content-security-policy"), mod.SHARE_HTML_CSP);
+    assert.equal(res.headers.get("etag"), null, "HTML 本文有注入、跟上游不同，不給 ETag");
+    assertBaseHeaders(res, "api html " + p);
+    await noTokenAnywhere(res);
+    if (p.includes(AIF_QA_32)) {
+      assert.equal(res.headers.get("cache-control"), "private, max-age=0, no-store", "qa 頁照舊不快取");
+      assert.ok(!html.includes("G-WMQCYK4L88"), "qa 頁照舊不注入分析");
+    } else {
+      assert.equal(res.headers.get("cache-control"), "public, max-age=300", "API 路線快取 5 分鐘");
+      assert.match(html, /G-WMQCYK4L88/);
+    }
+  }
+  // 上游的 private／Vary 標頭不轉出去
+  const res = await get("/share/abc12345/", { env: ENV });
+  assert.equal(res.headers.get("vary"), null);
+  assert.ok(!/private/.test(res.headers.get("cache-control")));
+});
+
+test("有 token：資源檔的 content-type 依副檔名自己設（API 給的一律是 application/vnd.github.raw+json）、ETag 照傳、快取 5 分鐘、沙箱 CSP", async () => {
+  upstreamImpl = async () => rawResponse("PNGDATA", { etag: '"blob-sha-1"' });
+  const res = await get("/share/abc12345/cover.png", { env: ENV });
+  assert.deepEqual(fetchCalls, [API + "abc12345/cover.png?ref=main"]);
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("content-type"), "image/png");
+  assert.equal(res.headers.get("etag"), '"blob-sha-1"');
+  assert.equal(res.headers.get("cache-control"), "public, max-age=300");
+  assert.match(res.headers.get("content-security-policy") || "", /sandbox/);
+  assert.equal(res.headers.get("x-share-source"), "api");
+  assertBaseHeaders(res, "api png");
+  assert.equal(await res.text(), "PNGDATA");
+  const cases = [
+    ["a.jpg", "image/jpeg"], ["a.JPG", "image/jpeg"], ["a.jpeg", "image/jpeg"], ["a.webp", "image/webp"], ["a.gif", "image/gif"], ["a.svg", "image/svg+xml"], ["a.ico", "image/x-icon"],
+    ["a.css", "text/css; charset=utf-8"], ["a.js", "text/javascript; charset=utf-8"], ["a.json", "application/json; charset=utf-8"], ["a.txt", "text/plain; charset=utf-8"],
+    ["a.woff", "font/woff"], ["a.woff2", "font/woff2"],
+  ];
+  for (const [file, ct] of cases) {
+    const r = await get("/share/abc12345/" + file, { env: ENV });
+    assert.equal(r.status, 200, file);
+    assert.equal(r.headers.get("content-type"), ct, file);
+    assertBaseHeaders(r, file);
+  }
+});
+
+test("有 token：If-None-Match 對得上 ETag（含 W/ 弱標記、多個值）→ 304 不帶本文；對不上 → 200", async () => {
+  upstreamImpl = async () => rawResponse("PNGDATA", { etag: '"blob-sha-1"' });
+  const r304 = await get("/share/abc12345/cover.png", { env: ENV, headers: { "if-none-match": '"blob-sha-1"' } });
+  assert.equal(r304.status, 304);
+  assert.equal(await r304.text(), "");
+  assert.equal(r304.headers.get("etag"), '"blob-sha-1"');
+  assert.equal(r304.headers.get("cache-control"), "public, max-age=300");
+  assertBaseHeaders(r304, "304");
+  assert.equal((await get("/share/abc12345/cover.png", { env: ENV, headers: { "if-none-match": 'W/"blob-sha-1", "other"' } })).status, 304);
+  assert.equal((await get("/share/abc12345/cover.png", { env: ENV, headers: { "if-none-match": "*" } })).status, 304);
+  assert.equal((await get("/share/abc12345/cover.png", { env: ENV, headers: { "if-none-match": '"different"' } })).status, 200);
+  // 純函式
+  assert.equal(mod.etagMatches('"a"', '"a"'), true);
+  assert.equal(mod.etagMatches('W/"a"', '"a"'), true);
+  assert.equal(mod.etagMatches('"b", "a"', '"a"'), true);
+  assert.equal(mod.etagMatches('"b"', '"a"'), false);
+  assert.equal(mod.etagMatches(null, '"a"'), false);
+  assert.equal(mod.etagMatches('"a"', ""), false);
+});
+
+test("有 token：API 404 → 再試 Pages／raw（token 權限沒設對時 GitHub 也回 404；repo 還公開的過渡期頁面不能壞）；三邊都 404 → 404", async () => {
+  upstreamImpl = async url => (url.startsWith(API) ? apiJson(404) : htmlResponse());
+  let res = await get("/share/abc12345/", { env: ENV });
+  assert.equal(res.status, 200);
+  assert.deepEqual(fetchCalls, [API + "abc12345/index.html?ref=main", UPSTREAM + "abc12345/"]);
+  assert.equal(res.headers.get("x-share-source"), "pages");
+  assert.equal(res.headers.get("cache-control"), "public, max-age=30", "舊路維持 30 秒");
+  assert.match(await res.text(), /推薦頁/);
+  // Pages 404 → raw 200
+  fetchCalls = [];
+  upstreamImpl = async url => (url.startsWith(API) ? apiJson(404) : url.startsWith(RAW) ? new Response(PAGE_HTML, { headers: { "content-type": "text/plain" } }) : htmlResponse("nope", 404));
+  res = await get("/share/abc12345/", { env: ENV });
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("x-share-source"), "raw");
+  assert.deepEqual(fetchCalls, [API + "abc12345/index.html?ref=main", UPSTREAM + "abc12345/", RAW + "abc12345/index.html"]);
+  // 全部 404
+  fetchCalls = [];
+  upstreamImpl = async url => (url.startsWith(API) ? apiJson(404) : htmlResponse("<html><head></head><body>nope</body></html>", 404));
+  res = await get("/share/abc12345/", { env: ENV });
+  assert.equal(res.status, 404);
+  assert.equal(res.headers.get("cache-control"), "private, max-age=0, no-store");
+  assert.deepEqual(fetchCalls, [API + "abc12345/index.html?ref=main", UPSTREAM + "abc12345/", RAW + "abc12345/index.html"]);
+  assertBaseHeaders(res, "all 404");
+  // 資源檔：API 404 → Pages 404 就 404（不試 raw）
+  fetchCalls = [];
+  upstreamImpl = async url => (url.startsWith(API) ? apiJson(404) : new Response("nope", { status: 404, headers: { "content-type": "text/plain" } }));
+  res = await get("/share/abc12345/cover.png", { env: ENV });
+  assert.equal(res.status, 404);
+  assert.deepEqual(fetchCalls, [API + "abc12345/cover.png?ref=main", UPSTREAM + "abc12345/cover.png"]);
+});
+
+test("有 token：API 出錯（403 限流／401／5xx／3xx／連不上／回目錄清單／太大）→ 走舊路；舊路 200 就用，舊路拿不到 → 502（不說成 404）", async () => {
+  const errors = [
+    ["403 限流", () => apiJson(403, '{"message":"API rate limit exceeded"}')],
+    ["401", () => apiJson(401, '{"message":"Bad credentials"}')],
+    ["502", () => new Response("", { status: 502 })],
+    ["301", () => new Response("", { status: 301, headers: { location: "https://evil.example/" } })],
+    ["連不上", () => { throw new Error("boom"); }],
+    ["目錄清單", () => new Response("[]", { status: 200, headers: { "content-type": "application/json; charset=utf-8" } })],
+    ["太大", () => rawResponse("x", { "content-length": "99999999999" })],
+  ];
+  for (const [label, apiImpl] of errors) {
+    fetchCalls = [];
+    upstreamImpl = async url => (url.startsWith(API) ? apiImpl() : htmlResponse());
+    const ok = await get("/share/abc12345/", { env: ENV });
+    assert.equal(ok.status, 200, `${label}：舊路 200 要照用`);
+    assert.equal(ok.headers.get("x-share-source"), "pages", label);
+    assert.deepEqual(fetchCalls, [API + "abc12345/index.html?ref=main", UPSTREAM + "abc12345/"], label);
+    fetchCalls = [];
+    upstreamImpl = async url => (url.startsWith(API) ? apiImpl() : htmlResponse("<html><head></head><body>nope</body></html>", 404));
+    const bad = await get("/share/abc12345/", { env: ENV });
+    assert.equal(bad.status, 502, `${label}：舊路 404 → 502`);
+    assertBaseHeaders(bad, "502 " + label);
+    await noTokenAnywhere(bad);
+    assert.ok(!(await bad.text()).includes("nope"));
+  }
+  // 舊路本身失敗（連不上／轉址）照舊 502
+  upstreamImpl = async url => (url.startsWith(API) ? apiJson(500) : new Response("moved", { status: 302, headers: { location: "https://evil.example/" } }));
+  assert.equal((await get("/share/abc12345/", { env: ENV })).status, 502);
+});
+
+test("token 不像 PAT（空白、含換行、太短、有怪字元、不是字串）→ 當沒設：只走舊路、不打 API；前後空白會修掉", async () => {
+  for (const bad of ["", "   ", "ghp_short", "github_pat_abc\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "Bearer github_pat_" + "a".repeat(40), "github_pat_" + "a".repeat(40) + "; evil", "github_pat_" + "a".repeat(300), 12345, null, { v: 1 }]) {
+    fetchCalls = [];
+    const res = await get("/share/abc12345/", { env: { SHARES_GH_TOKEN: bad } });
+    assert.equal(res.status, 200, JSON.stringify(bad));
+    assert.deepEqual(fetchCalls, [UPSTREAM + "abc12345/"], JSON.stringify(bad));
+    assert.equal(res.headers.get("x-share-source"), "pages");
+  }
+  for (const env of [undefined, null, {}, { OTHER: TOKEN }, "string"]) {
+    fetchCalls = [];
+    assert.equal((await get("/share/abc12345/", { env })).status, 200);
+    assert.deepEqual(fetchCalls, [UPSTREAM + "abc12345/"], JSON.stringify(env));
+  }
+  upstreamImpl = async () => rawResponse(PAGE_HTML);
+  fetchCalls = [];
+  fetchInits = [];
+  await get("/share/abc12345/", { env: { SHARES_GH_TOKEN: "  " + TOKEN + "\n" } });
+  assert.deepEqual(fetchCalls, [API + "abc12345/index.html?ref=main"]);
+  assert.equal(fetchInits[0].headers.authorization, "Bearer " + TOKEN);
+});
+
+test("有 token：邊緣快取（Cache API）——第一次讀 API 後存 5 分鐘、第二次直接命中不打 API（x-share-source=api-cache）；存的回應 content-type 已改好、Cache-Control 改成 public；快取壞掉不影響回應", async () => {
+  const store = new Map();
+  const fake = {
+    async match(req) { const r = store.get(req.url); return r ? r.clone() : undefined; },
+    async put(req, res) { assert.equal(req.method, "GET"); store.set(req.url, res); },
+  };
+  globalThis.caches = { default: fake };
+  upstreamImpl = async () => rawResponse("PNGDATA", { etag: '"e1"' });
+  const waited = [];
+  const a = await get("/share/abc12345/cover.png", { env: ENV, waitUntil: p => waited.push(p) });
+  await Promise.all(waited);
+  assert.equal(a.status, 200);
+  assert.equal(a.headers.get("x-share-source"), "api");
+  assert.equal(await a.text(), "PNGDATA");
+  assert.equal(store.size, 1);
+  const [key, stored] = [...store.entries()][0];
+  assert.equal(key, "https://teddy-house.tw/__share-upstream/abc12345/cover.png", "鍵＝本站 origin＋/__share-upstream/＋白名單路徑");
+  assert.equal(stored.headers.get("cache-control"), "public, max-age=300", "GitHub 給的 private 要改成 public 才存得進去");
+  assert.equal(stored.headers.get("content-type"), "image/png");
+  assert.equal(stored.headers.get("etag"), '"e1"');
+  assert.equal(stored.headers.get("vary"), null);
+  fetchCalls = [];
+  const b = await get("/share/abc12345/cover.png", { env: ENV });
+  assert.equal(b.status, 200);
+  assert.equal(fetchCalls.length, 0, "命中快取不打 API");
+  assert.equal(b.headers.get("x-share-source"), "api-cache");
+  assert.equal(b.headers.get("content-type"), "image/png");
+  assert.equal(b.headers.get("etag"), '"e1"');
+  assert.equal(b.headers.get("cache-control"), "public, max-age=300");
+  assert.equal(await b.text(), "PNGDATA");
+  assert.equal((await get("/share/abc12345/cover.png", { env: ENV, headers: { "if-none-match": '"e1"' } })).status, 304, "命中快取也能 304");
+  // HTML 也會快取（存的是上游原始檔，注入每次做）；沒給 waitUntil 時直接等存完
+  upstreamImpl = async () => rawResponse(PAGE_HTML);
+  fetchCalls = [];
+  const c1 = await get("/share/qsAbCd1234/", { env: ENV });
+  assert.equal(fetchCalls.length, 1);
+  assert.match(await c1.text(), /想看更多好屋/);
+  fetchCalls = [];
+  const c2 = await get("/share/qsAbCd1234/", { env: ENV });
+  assert.equal(fetchCalls.length, 0);
+  assert.equal(c2.headers.get("x-share-source"), "api-cache");
+  const html = await c2.text();
+  assert.match(html, /推薦頁/);
+  assert.match(html, /想看更多好屋/);
+  assert.match(html, /G-WMQCYK4L88/);
+  assert.equal(store.size, 2);
+  // 快取不會跨代號／跨檔案
+  fetchCalls = [];
+  await get("/share/zzzz9999/", { env: ENV });
+  assert.equal(fetchCalls.length, 1);
+  // 快取壞掉（match／put 丟錯）不影響回應
+  globalThis.caches = { default: { async match() { throw new Error("cache down"); }, async put() { throw new Error("cache down"); } } };
+  fetchCalls = [];
+  const d = await get("/share/abc12345/cover.png", { env: ENV });
+  assert.equal(d.status, 200);
+  assert.equal(fetchCalls.length, 1);
+  assert.equal(d.headers.get("x-share-source"), "api");
+  // 沒有 token 時不碰快取
+  globalThis.caches = { default: { async match() { throw new Error("不該碰快取"); }, async put() { throw new Error("不該碰快取"); } } };
+  upstreamImpl = async () => htmlResponse();
+  assert.equal((await get("/share/abc12345/")).status, 200);
+});
+
+test("子目錄只放行圖片（推薦頁產生器把物件照片放在 {id}/img/{雜湊}/{n}.jpg）；HTML／腳本／字型／隱藏目錄／帶點的目錄／超過兩層一律拒絕", { skip: !HAS_RESOLVER && "舊版沒有這個函式" }, () => {
+  const ok = [
+    ["/share/FgZmEHPH/img/x09193392e0/1.jpg", "FgZmEHPH/img/x09193392e0/1.jpg"],
+    ["/share/FgZmEHPH/img/x09193392e0/cover.jpg", "FgZmEHPH/img/x09193392e0/cover.jpg"],
+    ["/share/abc12345/img/a.png", "abc12345/img/a.png"],
+    ["/share/abc12345/a-b_c/d_e-f/g.webp", "abc12345/a-b_c/d_e-f/g.webp"],
+    ["/share/abc12345/IMG/X/A.JPEG", "abc12345/IMG/X/A.JPEG"],
+  ];
+  for (const [input, up] of ok) {
+    const r = mod.resolveSharePath(input);
+    assert.equal(r.kind, "page", `應放行：${input}（${JSON.stringify(r)}）`);
+    assert.equal(r.upstreamPath, up, input);
+    assert.equal(r.id, input.split("/")[2], input);
+    assert.equal(r.file, input.split("/").pop(), input);
+  }
+  const bad = [
+    "/share/abc12345/img/x/y/z.jpg", // 三層目錄
+    "/share/abc12345/img/a.html", "/share/abc12345/img/x/a.html", "/share/abc12345/img/x/a.js", "/share/abc12345/img/x/a.css",
+    "/share/abc12345/img/x/a.svg", "/share/abc12345/img/x/a.ico", "/share/abc12345/img/x/a.woff2", "/share/abc12345/img/x/a.json", "/share/abc12345/img/x/a.txt",
+    "/share/abc12345/.img/a.png", "/share/abc12345/img/.x/a.png", "/share/abc12345/im.g/a.png", "/share/abc12345/img/x./a.png", "/share/abc12345/img/../a.png",
+    "/share/abc12345/img/x/a.png/", "/share/abc12345/img//a.png", "/share/abc12345//img/a.png",
+    "/share/abc12345/img/x/.a.png", "/share/abc12345/img/x/a", "/share/abc12345/" + "d".repeat(70) + "/a.png", "/share/abc12345/img/x/a..png", "/share/abc12345/img/x/a.php",
+    "/share/abc12345/img/x/a.png.php", "/share/abc12345/img/x/a%2epng", "/share/abc12345/img/中文/a.png", "/share/abc12345/img x/a.png", "/share/abc12345/img;x/a.png",
+  ];
+  for (const input of bad) assert.equal(mod.resolveSharePath(input).kind, "reject", `應拒絕：${input}`);
+});
+
+test("子目錄圖片整支 handler：舊路網址＝白名單組出來的；有 token 時 API 路徑一樣；RT-18 的第一段檢查照常；子目錄 HTML 完全不打上游", async () => {
+  upstreamImpl = async () => new Response("JPG", { status: 200, headers: { "content-type": "image/jpeg" } });
+  const res = await get("/share/FgZmEHPH/img/x09193392e0/1.jpg");
+  assert.equal(res.status, 200);
+  assert.deepEqual(fetchCalls, [UPSTREAM + "FgZmEHPH/img/x09193392e0/1.jpg"]);
+  assert.equal(res.headers.get("content-type"), "image/jpeg");
+  assert.match(res.headers.get("content-security-policy") || "", /sandbox/);
+  assertBaseHeaders(res, "nested jpg");
+  fetchCalls = [];
+  upstreamImpl = async () => rawResponse("JPG");
+  const api = await get("/share/FgZmEHPH/img/x09193392e0/1.jpg", { env: ENV });
+  assert.equal(api.status, 200);
+  assert.deepEqual(fetchCalls, [API + "FgZmEHPH/img/x09193392e0/1.jpg?ref=main"]);
+  assert.equal(api.headers.get("content-type"), "image/jpeg");
+  assert.equal(mod.resolveUpstreamUrl("FgZmEHPH/img/x09193392e0/1.jpg").first, "FgZmEHPH");
+  // 過期 qa 代號的子目錄圖片也是 410、不打上游
+  fetchCalls = [];
+  assert.equal((await get("/share/" + QA_PAST + "/img/x/a.jpg", { env: ENV })).status, 410);
+  for (const u of ["/share/abc12345/img/x/a.html", "/share/abc12345/img/x/y/z.jpg", "/share/abc12345/.git/objects/a.png"]) {
+    assert.equal((await get(u, { env: ENV })).status, 404, u);
+  }
+  assert.equal(fetchCalls.length, 0);
+});
+
+test("有 token：過期的 qa 頁仍然 410，既不打 API 也不打舊路；HEAD 也走 API", async () => {
+  upstreamImpl = async () => rawResponse(PAGE_HTML);
+  const res = await get("/share/" + QA_PAST + "/", { env: ENV });
+  assert.equal(res.status, 410);
+  assert.equal(fetchCalls.length, 0);
+  assert.equal((await get("/share/" + QA_PAST.toUpperCase() + "/", { env: ENV })).status, 410);
+  assert.equal(fetchCalls.length, 0);
+  const head = await get("/share/abc12345/", { env: ENV, method: "HEAD" });
+  assert.equal(head.status, 200);
+  assert.deepEqual(fetchCalls, [API + "abc12345/index.html?ref=main"]);
+  // 方法不對照樣 405、不打任何上游
+  assert.equal((await get("/share/abc12345/", { env: ENV, method: "POST" })).status, 405);
+  assert.equal(fetchCalls.length, 1);
 });

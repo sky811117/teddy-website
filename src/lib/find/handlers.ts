@@ -36,6 +36,8 @@ export interface Env {
   FIND_TG_CHAT?: string;
   CONTACT_TG_TOKEN?: string;
   CONTACT_TG_CHAT?: string;
+  /** 推薦頁原始檔的唯讀 PAT（2026-11-08 teddy-shares 轉私人 repo 後 /api/find/pick 核對頁面用；代理 functions/share/[[path]].ts 讀同一個）。沒設就照舊走 Pages／raw */
+  SHARES_GH_TOKEN?: string;
 }
 export type FindCtx = { request: Request; env: Env; waitUntil?: (p: Promise<unknown>) => void };
 export interface Deps {

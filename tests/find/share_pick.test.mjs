@@ -29,6 +29,10 @@ const ORIGIN = { origin: "https://teddy-house.tw" };
 const TG_ENV = { FIND_TG_TOKEN: "find-token", FIND_TG_CHAT: "11", CONTACT_TG_TOKEN: "contact-token", CONTACT_TG_CHAT: "22" };
 const PAGES = "https://sky811117.github.io/teddy-shares/";
 const RAW = "https://raw.githubusercontent.com/sky811117/teddy-shares/main/";
+// 2026-11-08：teddy-shares 轉私人 repo，有唯讀 PAT（env.SHARES_GH_TOKEN）時核對推薦頁改走 Contents API
+const API = "https://api.github.com/repos/sky811117/teddy-shares/contents/";
+const TOKEN = "github_pat_TESTONLY00000000000000_" + "a".repeat(59);
+const API_ENV = { ...TG_ENV, SHARES_GH_TOKEN: TOKEN };
 
 /* ---------- 推薦頁樣本（照推薦頁產生器的標記：卡片、我喜歡按鈕、單獨一行的 LIKE_NOTIFY） ---------- */
 const h = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#x27;");
@@ -71,13 +75,13 @@ function net({ tg = () => Response.json({ ok: true }), page = () => htmlRes(OWNE
     const u = String(url);
     calls.push({ url: u, init });
     if (u.startsWith("https://api.telegram.org/")) return tg(u, init);
-    if (u.startsWith(PAGES) || u.startsWith(RAW)) return page(u, init);
+    if (u.startsWith(PAGES) || u.startsWith(RAW) || u.startsWith(API)) return page(u, init);
     throw new Error("測試不准連到其他網址：" + u);
   };
   return { calls, deps: { fetch: fetchImpl, now: () => NOW } };
 }
 const tgCalls = n => n.calls.filter(c => c.url.startsWith("https://api.telegram.org/"));
-const pageCalls = n => n.calls.filter(c => c.url.startsWith(PAGES) || c.url.startsWith(RAW));
+const pageCalls = n => n.calls.filter(c => c.url.startsWith(PAGES) || c.url.startsWith(RAW) || c.url.startsWith(API));
 const botOf = c => c.url.slice("https://api.telegram.org/bot".length).split("/")[0];
 const textOf = c => JSON.parse(c.init.body).text;
 function req(body, { method = "POST", headers = {}, url = "https://teddy-house.tw/api/find/pick", env = TG_ENV } = {}) {
@@ -647,12 +651,117 @@ test("R4：同事頁內文（客戶稱呼、標題、物件介紹）寫到 `var 
   assert.equal(SP.isOwnerPage(OWNER_PAGE), true);
 });
 
-test("上游網址：sharepick.ts 與官網代理（functions/share/[[path]].ts）的 UPSTREAM／RAW_UPSTREAM 同值", () => {
+test("上游網址：sharepick.ts 與官網代理（functions/share/[[path]].ts）的 UPSTREAM／RAW_UPSTREAM 同值；Contents API 的網址、token 判斷、副檔名對照兩邊共用 sharepick.ts 的", () => {
   const src = fs.readFileSync(path.join(ROOT, "functions/share/[[path]].ts"), "utf8");
   assert.equal(/const UPSTREAM = "([^"]+)"/.exec(src)[1], SP.SHARE_UPSTREAM);
   assert.equal(/const RAW_UPSTREAM = "([^"]+)"/.exec(src)[1], SP.SHARE_RAW_UPSTREAM);
   assert.equal(SP.SHARE_UPSTREAM, PAGES);
   assert.equal(SP.SHARE_RAW_UPSTREAM, RAW);
+  assert.equal(SP.SHARE_API_UPSTREAM, API);
+  assert.equal(SP.SHARE_API_REF, "main");
+  assert.ok(!/api\.github\.com/.test(src), "代理不自己寫 API 網址，用 sharepick.ts 的");
+  for (const fn of ["shareApiRequest", "shareContentType", "shareToken"]) assert.ok(src.includes(fn), `代理要用 sharepick.ts 的 ${fn}`);
+  const pickSrc = fs.readFileSync(path.join(ROOT, "src/lib/find/pick.ts"), "utf8");
+  assert.ok(!/api\.github\.com/.test(pickSrc) && pickSrc.includes("shareApiRequest") && pickSrc.includes("shareToken"));
+});
+
+/* ===================== 2026-11-08：teddy-shares 轉私人 repo，核對推薦頁改走 Contents API ===================== */
+const apiRaw = (body, extra = {}) => new Response(body, { status: 200, headers: { "content-type": "application/vnd.github.raw+json; charset=utf-8", "cache-control": "private, max-age=60", ...extra } });
+const apiJson = (status, body = '{"message":"Not Found"}') => new Response(body, { status, headers: { "content-type": "application/json; charset=utf-8" } });
+const apiUrl = id => API + id + "/index.html?ref=main";
+
+test("sharepick.ts：shareToken 只收像 PAT 的字串（修掉前後空白）；shareApiRequest 的網址與標頭；shareContentType 依副檔名", () => {
+  assert.equal(SP.shareToken(API_ENV), TOKEN);
+  assert.equal(SP.shareToken({ SHARES_GH_TOKEN: "  " + TOKEN + "\n" }), TOKEN);
+  assert.equal(SP.shareToken({ SHARES_GH_TOKEN: "ghp_" + "A1".repeat(18) }), "ghp_" + "A1".repeat(18));
+  for (const bad of [undefined, null, "x", {}, { SHARES_GH_TOKEN: "" }, { SHARES_GH_TOKEN: "   " }, { SHARES_GH_TOKEN: "short" }, { SHARES_GH_TOKEN: TOKEN + ";x" }, { SHARES_GH_TOKEN: "Bearer " + TOKEN }, { SHARES_GH_TOKEN: 123 }, { SHARES_GH_TOKEN: "a".repeat(300) }, TG_ENV]) {
+    assert.equal(SP.shareToken(bad), null, JSON.stringify(bad));
+  }
+  const r = SP.shareApiRequest("qsAbCd1234/index.html", TOKEN, "ua-test");
+  assert.equal(r.url, apiUrl("qsAbCd1234"));
+  assert.deepEqual(r.headers, { authorization: "Bearer " + TOKEN, accept: "application/vnd.github.raw+json", "x-github-api-version": "2022-11-28", "user-agent": "ua-test" });
+  assert.equal(SP.shareContentType("ab12cd34/index.html"), "text/html; charset=utf-8");
+  assert.equal(SP.shareContentType("ab12cd34/img/x/1.JPG"), "image/jpeg");
+  assert.equal(SP.shareContentType("ab12cd34/a.webp"), "image/webp");
+  assert.equal(SP.shareContentType("ab12cd34/noext"), "application/octet-stream");
+});
+
+test("有 token：核對推薦頁只讀 Contents API（{id}/index.html?ref=main、Bearer、raw 媒體型別、不帶 cf 快取、不跟轉址），不碰 Pages；照常送 Telegram；token 不進訊息", async () => {
+  P.resetPickState();
+  const n = net({ page: u => (u.startsWith(API) ? apiRaw(OWNER_PAGE) : htmlRes("不該走到 Pages", 500)) });
+  const res = await P.handlePick(req(good(), { env: API_ENV }), n.deps);
+  assert.equal(res.status, 200);
+  assert.deepEqual(await jsonOf(res), { ok: true, v: 1, saved: true });
+  assert.deepEqual(pageCalls(n).map(c => c.url), [apiUrl("qsAbCd1234")]);
+  const init = pageCalls(n)[0].init;
+  assert.equal(init.headers.authorization, "Bearer " + TOKEN);
+  assert.equal(init.headers.accept, "application/vnd.github.raw+json");
+  assert.ok(init.headers["user-agent"]);
+  assert.equal(init.redirect, "manual");
+  assert.equal(init.cf, undefined, "帶 Authorization 的請求不放邊緣快取");
+  assert.equal(tgCalls(n).length, 1);
+  const t = textOf(tgCalls(n)[0]);
+  assert.ok(t.includes("1. <code>測試社區A 10樓 2房|1,338 萬|37.57 坪</code>"), "名稱照常取自頁面");
+  assert.ok(!t.includes(TOKEN) && !t.includes("github_pat_"));
+  // 喜歡通知同一條路
+  P.resetPickState();
+  const m = net({ page: u => (u.startsWith(API) ? apiRaw(OWNER_PAGE) : htmlRes("不該走到 Pages", 500)) });
+  assert.deepEqual(await jsonOf(await P.handlePick(req(likeBody(), { env: API_ENV }), m.deps)), { ok: true, v: 1, saved: true });
+  assert.deepEqual(pageCalls(m).map(c => c.url), [apiUrl("qsAbCd1234")]);
+  // 舊路的 cf 快取維持
+  P.resetPickState();
+  const o = net();
+  await P.handlePick(req(good()), o.deps);
+  assert.deepEqual(pageCalls(o)[0].init.cf, { cacheEverything: true, cacheTtlByStatus: { "200-299": 30, "300-599": 0 } });
+});
+
+test("有 token：API 404 → 再走 Pages／raw（token 權限沒設對時也回 404）；API 其他錯誤 → 走舊路，舊路也 404 就回報 API 的錯誤種類（saved:false＋pg-）", async () => {
+  // API 404、Pages 200 → 照常
+  P.resetPickState();
+  let n = net({ page: u => (u.startsWith(API) ? apiJson(404) : htmlRes(OWNER_PAGE)) });
+  assert.deepEqual(await jsonOf(await P.handlePick(req(good(), { env: API_ENV }), n.deps)), { ok: true, v: 1, saved: true });
+  assert.deepEqual(pageCalls(n).map(c => c.url), [apiUrl("qsAbCd1234"), PAGES + "qsAbCd1234/"]);
+  // 三邊都 404 → 沒有這個代號
+  P.resetPickState();
+  n = net({ page: u => (u.startsWith(API) ? apiJson(404) : htmlRes("nope", 404)) });
+  const r = await P.handlePick(req(good(), { env: API_ENV }), n.deps);
+  assert.equal(r.status, 404);
+  assert.deepEqual(pageCalls(n).map(c => c.url), [apiUrl("qsAbCd1234"), PAGES + "qsAbCd1234/", RAW + "qsAbCd1234/index.html"]);
+  assert.equal(tgCalls(n).length, 0);
+  // API 出錯＋舊路 404 → 暫時抓不到（不說成沒有這一頁）
+  const cases = [
+    [() => apiJson(403, '{"message":"rate limit"}'), "pg-h403"],
+    [() => apiJson(401), "pg-h401"],
+    [() => new Response("", { status: 500 }), "pg-h500"],
+    [() => new Response(null, { status: 301, headers: { location: "https://evil.example/" } }), "pg-3xx"],
+    [() => { throw new TypeError("fetch failed"); }, "pg-net"],
+    [() => new Response("[]", { status: 200, headers: { "content-type": "application/json" } }), "pg-h502"], // 目錄清單不是頁面
+  ];
+  for (const [api, diag] of cases) {
+    P.resetPickState();
+    n = net({ page: u => (u.startsWith(API) ? api() : htmlRes("nope", 404)) });
+    const rr = await P.handlePick(req(good(), { env: API_ENV }), n.deps);
+    assert.equal(rr.status, 200, diag);
+    assert.deepEqual(await jsonOf(rr), { ok: true, v: 1, saved: false, diag }, diag);
+    assert.equal(tgCalls(n).length, 0, diag);
+    // API 出錯但舊路 200 → 照常
+    P.resetPickState();
+    const m = net({ page: u => (u.startsWith(API) ? api() : htmlRes(OWNER_PAGE)) });
+    assert.deepEqual(await jsonOf(await P.handlePick(req(good(), { env: API_ENV }), m.deps)), { ok: true, v: 1, saved: true }, diag + " 舊路 200");
+  }
+  // API 200 但不是 HTML（例如檔案被換掉）→ pg-type
+  P.resetPickState();
+  n = net({ page: u => (u.startsWith(API) ? apiRaw("{}") : htmlRes(OWNER_PAGE)) });
+  assert.deepEqual(await jsonOf(await P.handlePick(req(good(), { env: API_ENV }), n.deps)), { ok: true, v: 1, saved: false, diag: "pg-type" });
+  // API 讀到同事頁 → 404（跟舊路一樣）
+  P.resetPickState();
+  n = net({ page: u => (u.startsWith(API) ? apiRaw(MATE_PAGE) : htmlRes(OWNER_PAGE)) });
+  assert.equal((await P.handlePick(req(good(), { env: API_ENV }), n.deps)).status, 404);
+  // fetchSharePage 直接呼叫：沒 token 的舊路不變
+  const o = net({ page: () => htmlRes("nope", 404) });
+  assert.deepEqual(await P.fetchSharePage(o.deps, "qsAbCd1234"), { kind: "missing" });
+  assert.deepEqual(pageCalls(o).map(c => c.url), [PAGES + "qsAbCd1234/", RAW + "qsAbCd1234/index.html"]);
+  assert.deepEqual(await P.fetchSharePage(o.deps, "bad id"), { kind: "missing" });
 });
 
 test("pickver.ts 版本戳沒有過期（public/js/share-pick.js 的 md5 前 10 碼；過期請執行 node scripts/pick-stamp.mjs）", () => {

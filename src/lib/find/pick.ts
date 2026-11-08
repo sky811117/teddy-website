@@ -48,7 +48,7 @@ import { hostAllowed, originAllowed } from "./origin";
 import { hideLinks, isObj, normText } from "./schema";
 import { MemWindow } from "./score";
 import { isQaExpired, parseQa } from "./shareqa";
-import { OLD_ORIGIN, SHARE_RAW_UPSTREAM, SHARE_UPSTREAM, isOwnerPage } from "./sharepick";
+import { OLD_ORIGIN, SHARE_RAW_UPSTREAM, SHARE_UPSTREAM, isOwnerPage, shareApiRequest, shareToken } from "./sharepick";
 
 export const PICK_MAX_BYTES = 4 * 1024;
 export const PICK_ITEMS_MAX = 12;
@@ -274,20 +274,29 @@ export function pageCards(html: string): Map<string, string> {
 
 export type SharePage = { kind: "ok"; html: string } | { kind: "missing" } | { kind: "down"; cls: string };
 
-async function getPage(deps: Deps, url: string): Promise<{ status: number; html: string | null } | { err: string }> {
+/** 一次上游讀取：舊路（Pages／raw）帶邊緣快取；Contents API（帶 Authorization）不放邊緣快取，而且目錄清單（application/json）不算頁面 */
+type PageReq = { url: string; headers: Record<string, string>; edgeCache: boolean; api: boolean };
+const UA_PICK = "teddy-website-pick-check";
+const legacyReq = (url: string): PageReq => ({ url, headers: { "User-Agent": UA_PICK }, edgeCache: true, api: false });
+const apiReq = (id: string, token: string): PageReq => {
+  const r = shareApiRequest(`${id}/index.html`, token, UA_PICK);
+  return { url: r.url, headers: r.headers, edgeCache: false, api: true };
+};
+
+async function getPage(deps: Deps, req: PageReq): Promise<{ status: number; html: string | null } | { err: string }> {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), PICK_PAGE_TIMEOUT_MS);
   try {
-    const res = await deps.fetch(url, {
-      headers: { "User-Agent": "teddy-website-pick-check" },
-      redirect: "manual",
-      signal: ctl.signal,
-      // 跟代理同一套：只快取 2xx 30 秒（剛產生、還沒發布的 404 不快取）。cf 是 Workers 執行期欄位
-      cf: { cacheEverything: true, cacheTtlByStatus: { "200-299": 30, "300-599": 0 } },
-    } as RequestInit);
-    if (res.status !== 200) {
+    const init: RequestInit & { cf?: unknown } = { headers: req.headers, redirect: "manual", signal: ctl.signal };
+    // 跟代理同一套：只快取 2xx 30 秒（剛產生、還沒發布的 404 不快取）。cf 是 Workers 執行期欄位。
+    // API 請求帶 Authorization：Cloudflare 不會快取、也不該快取，不給 cf
+    if (req.edgeCache) init.cf = { cacheEverything: true, cacheTtlByStatus: { "200-299": 30, "300-599": 0 } };
+    const res = await deps.fetch(req.url, init as RequestInit);
+    // Contents API：檔案內容是 application/vnd.github.raw+json；application/json 是目錄清單或錯誤物件 → 不是頁面（當 502）
+    const notFile = req.api && res.status === 200 && (res.headers.get("content-type") || "").toLowerCase().startsWith("application/json");
+    if (res.status !== 200 || notFile) {
       try { await res.body?.cancel(); } catch { /* 不需要本文 */ }
-      return { status: res.status, html: null };
+      return { status: notFile ? 502 : res.status, html: null };
     }
     return { status: 200, html: await res.text() };
   } catch (e) {
@@ -299,14 +308,31 @@ async function getPage(deps: Deps, url: string): Promise<{ status: number; html:
 const looksHtml = (h: string | null): h is string => typeof h === "string" && h.length <= PICK_PAGE_MAX && /<html[\s>]/i.test(h);
 const httpCls = (st: number) => (st >= 300 && st < 400 ? "3xx" : "h" + st);
 
-/** 讀推薦頁：Pages 回 200 就用；回 404 改讀 repo 原始檔（代理的同一個備援）；兩邊都 404 ＝ 沒有這個代號。代號已過白名單（只有英數）。 */
-export async function fetchSharePage(deps: Deps, id: string): Promise<SharePage> {
+/**
+ * 讀推薦頁。2026-11-08 起（teddy-shares 轉私人 repo）有唯讀 PAT 就先走 Contents API（轉私人後唯一讀得到的路）：
+ *   - API 200 → 用；API 404 → 再走舊路（token 權限沒設對時 GitHub 也回 404，repo 還公開的期間舊路仍讀得到）；
+ *   - API 其他錯誤（限流／401／5xx／連不上）→ 再走舊路，舊路也 404 就回報 API 的錯誤種類（暫時抓不到，不是沒有這一頁）。
+ * 沒 token 就只走舊路：Pages 回 200 就用；回 404 改讀 repo 原始檔（代理的同一個備援）；兩邊都 404 ＝ 沒有這個代號。代號已過白名單（只有英數）。
+ */
+export async function fetchSharePage(deps: Deps, id: string, token: string | null = null): Promise<SharePage> {
   if (!PICK_SHARE_ID_RE.test(id)) return { kind: "missing" };
-  const a = await getPage(deps, `${SHARE_UPSTREAM}${id}/`);
+  let apiDown: string | null = null;
+  if (token) {
+    const r = await getPage(deps, apiReq(id, token));
+    if ("err" in r) apiDown = r.err;
+    else if (r.status === 200) return looksHtml(r.html) ? { kind: "ok", html: r.html } : { kind: "down", cls: "type" };
+    else if (r.status !== 404) apiDown = httpCls(r.status);
+  }
+  const legacy = await fetchLegacyPage(deps, id);
+  return apiDown && legacy.kind === "missing" ? { kind: "down", cls: apiDown } : legacy;
+}
+
+async function fetchLegacyPage(deps: Deps, id: string): Promise<SharePage> {
+  const a = await getPage(deps, legacyReq(`${SHARE_UPSTREAM}${id}/`));
   if ("err" in a) return { kind: "down", cls: a.err };
   if (a.status === 200) return looksHtml(a.html) ? { kind: "ok", html: a.html } : { kind: "down", cls: "type" };
   if (a.status !== 404) return { kind: "down", cls: httpCls(a.status) };
-  const b = await getPage(deps, `${SHARE_RAW_UPSTREAM}${id}/index.html`);
+  const b = await getPage(deps, legacyReq(`${SHARE_RAW_UPSTREAM}${id}/index.html`));
   if ("err" in b) return { kind: "down", cls: b.err };
   if (b.status === 200) return looksHtml(b.html) ? { kind: "ok", html: b.html } : { kind: "down", cls: "type" };
   if (b.status === 404) return { kind: "missing" };
@@ -359,8 +385,8 @@ async function ipKey(ip: string | null): Promise<string> {
 }
 
 /** 核對推薦頁（審查 R3）：沒有這個代號／不是本人頁 → 404；上游暫時抓不到 → saved:false＋pg-代碼；通過 → 頁面上的物件（slug → 名稱） */
-async function checkPage(deps: Deps, id: string, where: "pick" | "like"): Promise<{ cards: Map<string, string> } | { res: Response }> {
-  const page = await fetchSharePage(deps, id);
+async function checkPage(deps: Deps, id: string, where: "pick" | "like", token: string | null): Promise<{ cards: Map<string, string> } | { res: Response }> {
+  const page = await fetchSharePage(deps, id, token);
   if (page.kind === "missing") {
     logFail(where, "page_missing");
     return { res: errRes("E_NOT_FOUND") };
@@ -388,7 +414,7 @@ async function handleLike(ctx: FindCtx, deps: Deps, body: unknown): Promise<Resp
     logFail("like", "rate");
     return errRes("E_RATE");
   }
-  const chk = await checkPage(deps, out.share_id, "like");
+  const chk = await checkPage(deps, out.share_id, "like", shareToken(ctx.env));
   if ("res" in chk) return chk.res;
   const name = chk.cards.get(out.slug);
   if (name === undefined) {
@@ -444,7 +470,7 @@ async function handle(ctx: FindCtx, deps: Deps, src: "same" | "old" | null): Pro
     return errRes("E_RATE");
   }
   // 核對推薦頁（審查 R3）
-  const chk = await checkPage(deps, out.share_id, "pick");
+  const chk = await checkPage(deps, out.share_id, "pick", shareToken(env));
   if ("res" in chk) return chk.res;
   const cards = chk.cards;
   const items: PickItem[] = [];

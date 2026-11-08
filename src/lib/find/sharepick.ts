@@ -22,6 +22,59 @@ import { PICK_V } from "./pickver";
 /** 推薦頁上游（跟 functions/share/[[path]].ts 的 UPSTREAM／RAW_UPSTREAM 同值；tests/find/share_pick.test.mjs 有釘住兩邊一致） */
 export const SHARE_UPSTREAM = "https://sky811117.github.io/teddy-shares/";
 export const SHARE_RAW_UPSTREAM = "https://raw.githubusercontent.com/sky811117/teddy-shares/main/";
+/**
+ * 2026-11-08：teddy-shares 轉成私人 repo 之後，GitHub Pages（SHARE_UPSTREAM）會下線、raw（SHARE_RAW_UPSTREAM）也會 404。
+ * 有唯讀 PAT（Cloudflare Pages secret SHARES_GH_TOKEN；fine-grained、只有 teddy-shares 的 Contents: Read）時，
+ * 代理與 /api/find/pick 都改走 GitHub Contents API 讀原始檔；沒 token 時照舊走 Pages／raw（repo 還公開的過渡期不會壞）。
+ * API 回應的 content-type 一律是 application/vnd.github.raw+json、Cache-Control: private：要自己依副檔名設 content-type、自己放邊緣快取。
+ * 目錄清單與錯誤物件才是 application/json，讀到就當「不是檔案」。每小時 5,000 次／token，所以代理那邊一定要有邊緣快取。
+ */
+export const SHARE_API_UPSTREAM = "https://api.github.com/repos/sky811117/teddy-shares/contents/";
+export const SHARE_API_REF = "main";
+/** 只收像 PAT 的字串（fine-grained：github_pat_…；classic：ghp_…；只有英數與底線、20～255 碼），空白、換行、怪字元一律當沒設。值不會寫進任何回應或紀錄。 */
+const TOKEN_RE = /^[A-Za-z0-9_]{20,255}$/;
+export function shareToken(env: unknown): string | null {
+  if (!env || typeof env !== "object") return null;
+  const v = (env as { SHARES_GH_TOKEN?: unknown }).SHARES_GH_TOKEN;
+  if (typeof v !== "string") return null;
+  const t = v.trim();
+  return TOKEN_RE.test(t) ? t : null;
+}
+/** Contents API 的網址與標頭：raw 媒體型別＝直接回檔案內容；GitHub API 一定要有 User-Agent。path 已過白名單（只有英數 . _ - 與斜線）。 */
+export function shareApiRequest(path: string, token: string, userAgent: string): { url: string; headers: Record<string, string> } {
+  return {
+    url: `${SHARE_API_UPSTREAM}${path}?ref=${SHARE_API_REF}`,
+    headers: {
+      authorization: `Bearer ${token}`,
+      accept: "application/vnd.github.raw+json",
+      "x-github-api-version": "2022-11-28",
+      "user-agent": userAgent,
+    },
+  };
+}
+/** 依副檔名給 content-type（API 不給）。白名單以外的副檔名回 octet-stream（代理的白名單在前面就擋掉了，這裡只是保險）。 */
+const CONTENT_TYPES: Record<string, string> = {
+  html: "text/html; charset=utf-8",
+  css: "text/css; charset=utf-8",
+  js: "text/javascript; charset=utf-8",
+  json: "application/json; charset=utf-8",
+  txt: "text/plain; charset=utf-8",
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  webp: "image/webp",
+  svg: "image/svg+xml",
+  ico: "image/x-icon",
+  woff: "font/woff",
+  woff2: "font/woff2",
+};
+export function shareContentType(path: string): string {
+  const file = path.slice(path.lastIndexOf("/") + 1);
+  const dot = file.lastIndexOf(".");
+  const ext = dot > 0 ? file.slice(dot + 1).toLowerCase() : "";
+  return CONTENT_TYPES[ext] || "application/octet-stream";
+}
 /** 舊網址（2026-10-03 搬家前的正式網址；推薦頁連結還在用） */
 export const OLD_HOST = "teddy-website-blog.pages.dev";
 export const OLD_ORIGIN = "https://" + OLD_HOST;
