@@ -1,6 +1,10 @@
 allowBuilds:
   esbuild: true
   sharp: true
+  # workerd 是 wrangler 的依賴：wrangler-action 部署時會臨時 pnpm add wrangler 3.90.0（2026-11-08 刪掉殘留的 package-lock.json 後，
+  # 它從 npm 改成用 pnpm 裝）。pnpm 11 預設 strictDepBuilds=true，建置腳本沒列在這裡就讓整個安裝失敗，11/08 兩次部署都紅在上傳那步。
+  # pages deploy 只上傳 dist、用不到 workerd 的二進位，所以明確設 false＝不跑它的 postinstall。
+  workerd: false
 overrides:
   sharp: ^0.35.5
   fflate: 0.7.5
