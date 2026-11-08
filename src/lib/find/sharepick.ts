@@ -20,7 +20,9 @@ import { hostAllowed } from "./origin";
 import { PICK_V } from "./pickver";
 
 /** 推薦頁上游（跟 functions/share/[[path]].ts 的 UPSTREAM／RAW_UPSTREAM 同值；tests/find/share_pick.test.mjs 有釘住兩邊一致） */
-export const SHARE_UPSTREAM = "https://sky811117.github.io/teddy-shares/";
+// 2026-11-08 下午：上游從 GitHub Pages 換成 Cloudflare Pages 專案 teddy-shares（GitHub 整合直接接私人 repo，不用任何 token）。
+// 轉私人後 sky811117.github.io/teddy-shares/ 會下線；RAW 也只會 404（留著當「剛產生還沒部署」的最後一試，下次整理再拆）。
+export const SHARE_UPSTREAM = "https://teddy-shares.pages.dev/";
 export const SHARE_RAW_UPSTREAM = "https://raw.githubusercontent.com/sky811117/teddy-shares/main/";
 /**
  * 2026-11-08：teddy-shares 轉成私人 repo 之後，GitHub Pages（SHARE_UPSTREAM）會下線、raw（SHARE_RAW_UPSTREAM）也會 404。

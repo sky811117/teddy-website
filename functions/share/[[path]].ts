@@ -19,8 +19,9 @@
  *   - 所有回應（含 404／405／502／302／圖片）都帶 x-content-type-options: nosniff。
  *   - 302 轉址的 Location 用相對路徑，不吃 Host 標頭。
  *   - 不跟隨上游轉址（redirect: "manual"）：上游回 301／302／303／307／308 一律 502（我們組出來的網址都是
- *     「有尾斜線的目錄」或「明確檔名」，GitHub Pages 不需要轉址；有轉址＝上游被改過）。
- *     另外保留「最終網址必須仍在 sky811117.github.io/teddy-shares/ 底下」的第二道檢查，否則 502。
+ *     「有尾斜線的目錄」或「明確檔名」，上游不需要轉址；有轉址＝上游被改過。Cloudflare Pages 會把 /{id}/index.html
+ *     308 到 /{id}/，所以這種請求在白名單階段就先正規化成目錄，見 resolveSharePath）。
+ *     另外保留「最終網址必須仍在 UPSTREAM（teddy-shares.pages.dev）底下」的第二道檢查，否則 502。
  *   - 找房小幫手推薦頁（代號 qa＋到期日 4 碼＋26 碼亂數）：過期回 410（固定頁面、不去抓上游）、不注入 GA、
  *     注入揭露／個人化／回官網三塊（見 src/lib/find/shareqa.ts）。非 qa 代號的頁面內容與修改前相同。
  *
@@ -32,6 +33,11 @@
  *     不能憑空鎖（會把頁面弄壞），列在待辦。2026-10-17 起這組 CSP（見 SHARE_HTML_CSP）擴到所有代號的 HTML 回應。
  *
  * 2026-11-08 teddy-shares 轉私人 repo（資安 S003：公開 repo 列得出 375 份客戶推薦頁、標題含客戶姓氏）：
+ *   - 同日下午定案：景泰不想自己建 PAT，改成「Cloudflare Pages 專案 teddy-shares 用 GitHub 整合直接接私人 repo」
+ *     （Cloudflare 自己跟 GitHub 換授權，沒有任何 token 要保管）。UPSTREAM 從 sky811117.github.io/teddy-shares/ 換成
+ *     teddy-shares.pages.dev/，其餘行為不變；x-share-source 的 pages 現在指 Cloudflare Pages。repo 根目錄補了 404.html
+ *     （Cloudflare Pages 沒有它時，找不到的路徑會拿根目錄 index.html 回 200）。下面那條 SHARES_GH_TOKEN 的 API 路線
+ *     保留當備用（沒設就不走）；RAW_UPSTREAM 轉私人後只會 404，留著等下次整理再拆。
  *   - repo 一轉私人，GitHub Pages（UPSTREAM）就下線、raw（RAW_UPSTREAM）也 404。改走 GitHub Contents API 讀原始檔，
  *     token 是 Cloudflare Pages 的 secret SHARES_GH_TOKEN（fine-grained PAT、只有 teddy-shares 的 Contents: Read；
  *     值只在這支檔案內用、不進任何回應／紀錄／commit；改了 secret 要重新部署才生效）。
@@ -52,7 +58,7 @@ import config from "../../astro-paper.config";
 import { expiredResponse, injectQaBlocks, isQaExpired, parseQa, qaBackToSite } from "../../src/lib/find/shareqa";
 import { injectPick, pickHostOk, shareApiRequest, shareContentType, shareToken } from "../../src/lib/find/sharepick";
 
-const UPSTREAM = "https://sky811117.github.io/teddy-shares/";
+const UPSTREAM = "https://teddy-shares.pages.dev/";
 // 2026-10-07：推薦頁產生器 commit 進 teddy-shares（公開 repo、main 分支）後，GitHub Pages（legacy 建置）要 1～3 分鐘以上才發布
 // （實測 186 秒），客人拿到連結先看到 404。原始檔在 commit 當下就讀得到：Pages 回 404 時，頁面本體（index.html）改從這裡讀。
 // 只用在「白名單解析出的同一個代號的 index.html」，內容一樣走下面的注入與標頭，不轉出 raw 的任何標頭。
@@ -160,7 +166,11 @@ export function resolveSharePath(pathname: string): ShareRoute {
   const id = segs[0];
   if (!SHARE_ID_RE.test(id)) return { kind: "reject", reason: "bad-id" };
   if (segs.length === 1) {
-    // 目錄 → 補尾斜線讓 GitHub Pages 回 index.html
+    // 目錄 → 補尾斜線讓上游回 index.html
+    return { kind: "page", id, file: null, upstreamPath: `${id}/` };
+  }
+  if (segs.length === 2 && segs[1] === "index.html" && !trailingSlash) {
+    // /share/{id}/index.html：Cloudflare Pages 會 308 到 /{id}/，我們不跟轉址，所以在這裡就當成目錄（qa 到期檢查照常）
     return { kind: "page", id, file: null, upstreamPath: `${id}/` };
   }
 
@@ -487,7 +497,7 @@ export const onRequest = async (ctx: EventContext): Promise<Response> => {
   let html = typeof body === "string" ? body : await new Response(body).text();
 
   // 注入 noindex / no-referrer（雙保險，2026-09-06）：
-  //   - 上游 sky811117.github.io 是公開 repo、頁面標題含客戶稱謂與找房需求，
+  //   - 上游 repo 曾是公開的（2026-11-08 轉私人）、頁面標題含客戶稱謂與找房需求，
   //     proxy 回應的 x-robots-tag 只保護 /share/ 路徑；這裡再往 <head> 補一顆 meta，
   //     頁面被複製 / 轉存到別處也帶著 noindex。
   //   - 客戶頁內有大量外連（永慶物件頁、LINE），no-referrer 讓 /share/{id}/ 網址不進對方 log。

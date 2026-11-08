@@ -37,7 +37,7 @@ const mod = await import(pathToFileURL(path.join(FN_DIR, "share", "[[path]].ts")
 const { onRequest } = mod;
 const HAS_RESOLVER = typeof mod.resolveSharePath === "function";
 
-const UPSTREAM = "https://sky811117.github.io/teddy-shares/";
+const UPSTREAM = "https://teddy-shares.pages.dev/";
 const SITE = "https://teddy-house.tw";
 // 三邊約定的 id 範例（字元集 A-Za-z0-9；A3 用 ascii_letters＋digits 隨機產生）
 const A3_NEW_22 = "Ab3dEf6hJk8mNp2qRs4tUv"; // 22 碼
@@ -118,8 +118,8 @@ const VALID = [
   ["/share/" + A3_NEW_22 + "/", A3_NEW_22 + "/"], // A3 新頁：22 碼英數
   ["/share/" + A3_QS_24 + "/", A3_QS_24 + "/"], // A3 查詢台新路徑：qs＋22 碼 = 24 碼
   ["/share/" + AIF_QA_32 + "/", AIF_QA_32 + "/"], // 找房小幫手：qa＋4＋26 = 32 碼（全小寫）
-  ["/share/" + A3_NEW_22 + "/index.html", A3_NEW_22 + "/index.html"],
-  ["/share/abc12345/index.html", "abc12345/index.html"],
+  ["/share/" + A3_NEW_22 + "/index.html", A3_NEW_22 + "/"], // 2026-11-08：Cloudflare Pages 會把 /index.html 轉到目錄，白名單階段就正規化
+  ["/share/abc12345/index.html", "abc12345/"],
   ["/share/abc12345/photo-1_a.JPG", "abc12345/photo-1_a.JPG"],
   ["/SHARE/abc12345/", "abc12345/"], // 路由不分大小寫時
   ["/Share/abc12345", "abc12345/"],
@@ -306,7 +306,7 @@ test("..、%2e%2e、反斜線在 URL 解析階段就被收掉：若跑出 /share
     const res = await get(u);
     assert.ok([200, 404].includes(res.status), `${u} → ${res.status}`);
     for (const c of fetchCalls) {
-      assert.match(c, /^https:\/\/sky811117\.github\.io\/teddy-shares\/[A-Za-z0-9]{4,40}\/(index\.html)?$/, c);
+      assert.match(c, /^https:\/\/(?:teddy-shares\.pages\.dev|raw\.githubusercontent\.com\/sky811117\/teddy-shares\/main)\/[A-Za-z0-9]{4,40}\/(index\.html)?$/, c);
     }
   }
 });
@@ -370,10 +370,11 @@ test("非 HTML（圖片／CSS）：content-type 照傳，帶 nosniff 與 CSP san
 test("上游被導去別的主機／別的 repo（最終網址不在 teddy-shares 底下）→ 502", async () => {
   const bad = [
     "https://evil.example/x",
-    "https://sky811117.github.io/other-repo/abc12345/",
-    "https://sky811117.github.io/teddy-shares-evil/",
-    "https://sky811117.github.io.evil.example/teddy-shares/abc12345/",
-    "http://sky811117.github.io/teddy-shares/abc12345/",
+    "https://other-project.pages.dev/abc12345/",
+    "https://teddy-shares-evil.pages.dev/abc12345/",
+    "https://teddy-shares.pages.dev.evil.example/abc12345/",
+    "http://teddy-shares.pages.dev/abc12345/",
+    "https://sky811117.github.io/teddy-shares/abc12345/",
     "not a url",
   ];
   for (const finalUrl of bad) {

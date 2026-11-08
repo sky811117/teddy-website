@@ -244,13 +244,13 @@ test("RT-18：到期的 qa 代號，任何寫法都拿不到過期頁（大小�
       assert.notEqual(res.status, 200, `繞過成功：${JSON.stringify(a)}`);
       assert.ok(!text.includes("物件們"), `拿到頁面內容：${JSON.stringify(a)}`);
       // 打上游的話，網址的第一段一定是同一個代號（不是別的）
-      for (const u of calls) assert.ok(/\/teddy-shares\/[A-Za-z0-9]{4,40}\/(?:[A-Za-z0-9][A-Za-z0-9._-]*)?$/.test(u), `上游網址不合格：${u}`);
+      for (const u of calls) assert.ok(/^https:\/\/(?:teddy-shares\.pages\.dev|raw\.githubusercontent\.com\/sky811117\/teddy-shares\/main)\/[A-Za-z0-9]{4,40}\/(?:[A-Za-z0-9][A-Za-z0-9._-]*)?$/.test(u), `上游網址不合格：${u}`);
     }
   }));
 });
 
 test("RT-18：resolveUpstreamUrl——解析後的第一段必須是合法代號；跑出目錄之外或含怪字元回 null", () => {
-  assert.deepEqual(NEW.resolveUpstreamUrl("ab12cd34/"), { href: "https://sky811117.github.io/teddy-shares/ab12cd34/", first: "ab12cd34" });
+  assert.deepEqual(NEW.resolveUpstreamUrl("ab12cd34/"), { href: "https://teddy-shares.pages.dev/ab12cd34/", first: "ab12cd34" });
   assert.equal(NEW.resolveUpstreamUrl("ab12cd34/p.png").first, "ab12cd34");
   for (const bad of ["../x/", "a/../../x/", "%2e%2e/x/", "ab/cd/ef/", "", "a_b-c/", "..//x"]) {
     const r = NEW.resolveUpstreamUrl(bad);
@@ -313,7 +313,7 @@ test("Pages 還沒發布（404）時，頁面本體改讀 repo 原始檔：200�
     const html = await res.text();
     assert.ok(html.includes("<p>物件</p>"));
     assert.ok(html.includes('<meta name="robots" content="noindex,nofollow">'));
-    assert.deepEqual(calls, ["https://sky811117.github.io/teddy-shares/qsAbCd1234/", RAW + "qsAbCd1234/index.html"]);
+    assert.deepEqual(calls, ["https://teddy-shares.pages.dev/qsAbCd1234/", RAW + "qsAbCd1234/index.html"]);
   }));
   // 原始檔也沒有 → 照原本 404、不快取
   await withNow(NOW, () => withFetch(() => new Response("nope", { status: 404, headers: { "content-type": "text/plain" } }), async () => {

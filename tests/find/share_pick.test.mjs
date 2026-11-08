@@ -27,7 +27,7 @@ const NOW = Date.UTC(2026, 9, 7, 6, 30, 0);   // 台灣時間 2026-10-07 14:30
 const OLD = "https://teddy-website-blog.pages.dev";
 const ORIGIN = { origin: "https://teddy-house.tw" };
 const TG_ENV = { FIND_TG_TOKEN: "find-token", FIND_TG_CHAT: "11", CONTACT_TG_TOKEN: "contact-token", CONTACT_TG_CHAT: "22" };
-const PAGES = "https://sky811117.github.io/teddy-shares/";
+const PAGES = "https://teddy-shares.pages.dev/";
 const RAW = "https://raw.githubusercontent.com/sky811117/teddy-shares/main/";
 // 2026-11-08：teddy-shares 轉私人 repo，有唯讀 PAT（env.SHARES_GH_TOKEN）時核對推薦頁改走 Contents API
 const API = "https://api.github.com/repos/sky811117/teddy-shares/contents/";

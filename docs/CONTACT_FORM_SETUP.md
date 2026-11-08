@@ -24,7 +24,7 @@ Cloudflare Pages 完全不參與 build，所以：
 | `CONTACT_TG_TOKEN` | Pages Functions（執行期） | **Cloudflare Pages → teddy-website-blog → Settings → Environment variables** | 放 GitHub = Functions 讀不到 |
 | `CONTACT_TG_CHAT` | 同上 | 同上 | 同上 |
 | `NOTION_API_KEY` / `NOTION_SELL_DB_ID` | Pages Functions（賣方表單寫 Notion） | Cloudflare Pages 環境變數 | 沒設只是不寫 Notion，TG 照推 |
-| `SHARES_GH_TOKEN` | Pages Functions（`/share/*` 代理與 `/api/find/pick` 讀推薦頁原始檔，2026-11-08 起） | Cloudflare Pages 環境變數（Secret、Production + Preview）；值＝GitHub fine-grained PAT，只勾 `sky811117/teddy-shares`、Contents: Read-only | 沒設 → 照舊走 GitHub Pages；teddy-shares 已轉私人 repo 的話全部推薦頁 404 |
+| `SHARES_GH_TOKEN` | Pages Functions（`/share/*` 代理與 `/api/find/pick` 讀推薦頁原始檔的**備用**路線，2026-11-08） | Cloudflare Pages 環境變數（Secret、Production + Preview）；值＝GitHub fine-grained PAT，只勾 `sky811117/teddy-shares`、Contents: Read-only | **目前不用設**：推薦頁上游是 Cloudflare Pages 專案 `teddy-shares`（`teddy-shares.pages.dev`，GitHub 整合直接接私人 repo）。設了會改走 Contents API，沒設照走 Pages |
 
 `PUBLIC_*` 開頭的是 `astro:env/client` 變數，**build 時就決定值**，之後改 Cloudflare 後台沒用，要重新跑 GitHub Actions。
 
