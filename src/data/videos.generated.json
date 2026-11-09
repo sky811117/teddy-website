@@ -1,11 +1,134 @@
 {
-  "generatedAt": "2026-11-08T20:10:35+08:00",
+  "generatedAt": "2026-11-09T20:24:20+08:00",
   "source": {
-    "registrySyncedAt": "2026-11-07 22:38",
+    "registrySyncedAt": "2026-11-08 22:38",
     "since": "2026-07-01"
   },
-  "count": 84,
+  "count": 93,
   "videos": [
+    {
+      "id": "yt-NkokszcWOg0",
+      "platform": "youtube",
+      "videoId": "NkokszcWOg0",
+      "url": "https://www.youtube.com/shorts/NkokszcWOg0",
+      "title": "台中清水｜聯悅聚｜3房2廳2衛｜1398萬",
+      "category": "看屋開箱",
+      "district": "清水區",
+      "community": "聯悅聚",
+      "pubDate": "2026-11-08",
+      "listingCodes": [
+        "1228279"
+      ]
+    },
+    {
+      "id": "yt-WBt_ooDiMCk",
+      "platform": "youtube",
+      "videoId": "WBt_ooDiMCk",
+      "url": "https://www.youtube.com/shorts/WBt_ooDiMCk",
+      "title": "台中清水｜3房2廳2衛｜1398萬",
+      "category": "看屋開箱",
+      "district": "清水區",
+      "pubDate": "2026-11-08",
+      "listingCodes": [
+        "0397207",
+        "1228279"
+      ]
+    },
+    {
+      "id": "yt-BuKoW9UAF8M",
+      "platform": "youtube",
+      "videoId": "BuKoW9UAF8M",
+      "url": "https://www.youtube.com/shorts/BuKoW9UAF8M",
+      "title": "台中清水｜富宇中央公園｜3房2廳2衛｜1398萬",
+      "category": "看屋開箱",
+      "district": "清水區",
+      "community": "富宇中央公園",
+      "pubDate": "2026-11-08",
+      "listingCodes": [
+        "0397207"
+      ]
+    },
+    {
+      "id": "yt-S4CnsZ3xkpA",
+      "platform": "youtube",
+      "videoId": "S4CnsZ3xkpA",
+      "url": "https://www.youtube.com/shorts/S4CnsZ3xkpA",
+      "title": "台中沙鹿｜3房3廳4衛｜2198萬",
+      "category": "看屋開箱",
+      "district": "沙鹿區",
+      "pubDate": "2026-11-08",
+      "listingCodes": [
+        "1228219"
+      ]
+    },
+    {
+      "id": "yt-tJurJvPU0jw",
+      "platform": "youtube",
+      "videoId": "tJurJvPU0jw",
+      "url": "https://www.youtube.com/shorts/tJurJvPU0jw",
+      "title": "台中沙鹿｜鎮南路透天｜14房14衛｜1988萬",
+      "category": "看屋開箱",
+      "district": "沙鹿區",
+      "community": "鎮南路透天",
+      "pubDate": "2026-11-08",
+      "listingCodes": [
+        "1211319"
+      ]
+    },
+    {
+      "id": "yt-h4qpBtEqvKc",
+      "platform": "youtube",
+      "videoId": "h4qpBtEqvKc",
+      "url": "https://www.youtube.com/shorts/h4qpBtEqvKc",
+      "title": "台中北屯｜3房2廳2衛｜2538萬",
+      "category": "看屋開箱",
+      "district": "北屯區",
+      "pubDate": "2026-11-08",
+      "listingCodes": [
+        "1228311"
+      ]
+    },
+    {
+      "id": "yt-T8dXX6ZvEYw",
+      "platform": "youtube",
+      "videoId": "T8dXX6ZvEYw",
+      "url": "https://www.youtube.com/shorts/T8dXX6ZvEYw",
+      "title": "台中中區｜3房2廳2衛｜3680萬",
+      "category": "看屋開箱",
+      "district": "中區",
+      "pubDate": "2026-11-08",
+      "listingCodes": [
+        "1228259"
+      ]
+    },
+    {
+      "id": "yt-BmN8f-6SFmk",
+      "platform": "youtube",
+      "videoId": "BmN8f-6SFmk",
+      "url": "https://www.youtube.com/shorts/BmN8f-6SFmk",
+      "title": "台中沙鹿｜悟實參章｜3房3廳4衛｜2280萬→2198萬",
+      "category": "看屋開箱",
+      "district": "沙鹿區",
+      "community": "悟實參章",
+      "pubDate": "2026-11-08",
+      "listingCodes": [
+        "1228219"
+      ]
+    },
+    {
+      "id": "yt-qVmGq9FN3Xw",
+      "platform": "youtube",
+      "videoId": "qVmGq9FN3Xw",
+      "url": "https://www.youtube.com/shorts/qVmGq9FN3Xw",
+      "title": "台中梧棲｜餘慶豐閣｜3房2廳2衛｜1438萬→1250萬",
+      "category": "看屋開箱",
+      "district": "梧棲區",
+      "community": "餘慶豐閣",
+      "pubDate": "2026-11-07",
+      "listingCodes": [
+        "0391462"
+      ]
+    },
     {
       "id": "yt-vCEA0AgTeDE",
       "platform": "youtube",
@@ -181,20 +304,6 @@
       "listingCodes": [
         "1228272",
         "UG1153110"
-      ]
-    },
-    {
-      "id": "yt-G6qB0Fo10oo",
-      "platform": "youtube",
-      "videoId": "G6qB0Fo10oo",
-      "url": "https://www.youtube.com/shorts/G6qB0Fo10oo",
-      "title": "台中清水｜3房2廳2衛｜1398萬",
-      "category": "看屋開箱",
-      "district": "清水區",
-      "pubDate": "2026-11-06",
-      "listingCodes": [
-        "0397207",
-        "1228279"
       ]
     },
     {
@@ -864,6 +973,20 @@
       "pubDate": "2026-09-16",
       "listingCodes": [
         "1211253"
+      ]
+    },
+    {
+      "id": "yt-YXa0URnLI9A",
+      "platform": "youtube",
+      "videoId": "YXa0URnLI9A",
+      "url": "https://www.youtube.com/shorts/YXa0URnLI9A",
+      "title": "台中西屯｜泰御天鑄2｜2房2廳2衛｜1968萬",
+      "category": "看屋開箱",
+      "district": "西屯區",
+      "community": "泰御天鑄2",
+      "pubDate": "2026-09-15",
+      "listingCodes": [
+        "0397194"
       ]
     },
     {
