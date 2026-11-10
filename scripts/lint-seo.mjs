@@ -23,6 +23,9 @@
  * 17. unbuilt 未完工公共建設（藍線／巨蛋／輕軌／BC 標號／「規劃中…捷運」「未來…重劃」…）
  *     — 字表搬自 450_上架巡檢/staging_quality.py，跟三平台上架閘門擋同一份字。
  *     2026-10-03 先設 WARNING；2026-10-15 全站清到 0 後 posts 已發布與 pages/components 改 ERROR（properties 照舊 WARNING），draft 關閉。
+ *     2026-11-11 景泰：「這是廣告不能，沒有廣告，新聞有說就沒差」→ posts 分兩種：
+ *       有 community 欄位（頁面會列在售物件＝廣告）或沒有「📌 資料來源」→ 照舊 ERROR；
+ *       沒有 community 欄位、而且有「📌 資料來源」的新聞／知識文 → 降成 WARNING（照新聞用語寫、標來源就能留）。
  * 18. visitClaim 無法證實的「現場走訪／去看了幾趟／跟在地業務聊過」(2026-10-15 起 ERROR；draft 為 WARNING)
  * 19. prediction 無來源的房價預測（保值／抗跌／看好／會漲…；漲幅／上漲／增值要搭配未來式才算）(WARNING，只掃 posts)
  *     — 刻意不升 ERROR：句意判斷會誤判，每日新聞產線推送前不跑 lint，升了會讓一篇誤判卡住整站部署
@@ -530,7 +533,7 @@ function redlineChecks(whole, allow, severity) {
       if (m[0].length === 0) UNBUILT_RE.lastIndex++;
     }
     if (found.length > 0) {
-      push(severity.unbuilt, `未完工建設: ${found.length} 處，例 ${found.slice(0, 3).join("、")} — 未通車／未完工的建設一律不寫（CLAUDE.md 房產文案規則，廣告不實紅線）；進度報導要留須加 lintAllow: [unbuilt] 並寫理由`);
+      push(severity.unbuilt, `未完工建設: ${found.length} 處，例 ${found.slice(0, 3).join("、")} — 廣告（社區文、物件頁、頁面）一律不寫（CLAUDE.md 房產文案規則，廣告不實紅線）；非廣告新聞文新聞有報可以寫，要照新聞用語並標「📌 資料來源」（2026-11-11）`);
     }
   }
 
@@ -609,6 +612,11 @@ async function lintPosts(errors, warnings) {
     // 8（誇大詞）維持只掃已發布文章。
     const whole = scanText(meta, body, rawFm);
     const level = isDraft ? "warning" : "error";
+    // 17 未完工建設：有 community 欄位＝頁面列在售物件＝廣告，照舊 ERROR；
+    // 沒有 community、又有「📌 資料來源」的新聞／知識文降成 WARNING（2026-11-11 景泰）
+    const isAdPost = stripQuotes(String(meta.community ?? "").trim()) !== "";
+    const hasSourceLine = /📌\s*資料來源/.test(body || "");
+    const unbuiltLevel = isDraft ? "off" : (isAdPost || !hasSourceLine ? "error" : "warning");
     const r = redlineChecks(whole, allow, {
       fabrication: level,
       brand: level,
@@ -617,7 +625,7 @@ async function lintPosts(errors, warnings) {
       exaggerated: isDraft ? "off" : "warning",
       // 17-18：2026-10-15 全站清到 0 後升 ERROR（擋部署）；draft 照舊降級
       // 19 prediction 維持 WARNING：句意判斷誤判率高，每日新聞產線推送前不跑 lint，升 ERROR 會讓一篇誤判卡住整站部署
-      unbuilt: isDraft ? "off" : "error",
+      unbuilt: unbuiltLevel,
       visitClaim: level,
       prediction: isDraft ? "off" : "warning",
     });
