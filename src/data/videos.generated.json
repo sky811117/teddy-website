@@ -1,11 +1,78 @@
 {
-  "generatedAt": "2026-11-09T20:24:20+08:00",
+  "generatedAt": "2026-11-10T20:28:06+08:00",
   "source": {
-    "registrySyncedAt": "2026-11-08 22:38",
+    "registrySyncedAt": "2026-11-09 22:37",
     "since": "2026-07-01"
   },
-  "count": 93,
+  "count": 97,
   "videos": [
+    {
+      "id": "yt-PbkKGGquWCU",
+      "platform": "youtube",
+      "videoId": "PbkKGGquWCU",
+      "url": "https://www.youtube.com/shorts/PbkKGGquWCU",
+      "title": "台中烏日｜同興協記SHOME｜2房2廳1衛｜1430萬",
+      "category": "看屋開箱",
+      "district": "烏日區",
+      "community": "同興協記SHOME",
+      "pubDate": "2026-11-09",
+      "listingCodes": [
+        "1211330"
+      ]
+    },
+    {
+      "id": "yt-7KH6_CaTxTs",
+      "platform": "youtube",
+      "videoId": "7KH6_CaTxTs",
+      "url": "https://www.youtube.com/shorts/7KH6_CaTxTs",
+      "title": "台中西屯｜2房2廳2衛｜1380萬",
+      "category": "看屋開箱",
+      "district": "西屯區",
+      "pubDate": "2026-11-09",
+      "listingCodes": [
+        "1228282"
+      ]
+    },
+    {
+      "id": "yt-lg7BJtNOpp0",
+      "platform": "youtube",
+      "videoId": "lg7BJtNOpp0",
+      "url": "https://www.youtube.com/shorts/lg7BJtNOpp0",
+      "title": "台中新社｜4房2廳5衛｜1780萬",
+      "category": "看屋開箱",
+      "district": "新社區",
+      "pubDate": "2026-11-09",
+      "listingCodes": [
+        "1211297"
+      ]
+    },
+    {
+      "id": "yt-vSfNvwAO4aU",
+      "platform": "youtube",
+      "videoId": "vSfNvwAO4aU",
+      "url": "https://www.youtube.com/shorts/vSfNvwAO4aU",
+      "title": "台中烏日｜凱撒生活園邸｜4房2廳2衛｜996萬→949萬",
+      "category": "看屋開箱",
+      "district": "烏日區",
+      "community": "凱撒生活園邸",
+      "pubDate": "2026-11-09",
+      "listingCodes": [
+        "1211370"
+      ]
+    },
+    {
+      "id": "yt-6vPUrNcdqNE",
+      "platform": "youtube",
+      "videoId": "6vPUrNcdqNE",
+      "url": "https://www.youtube.com/shorts/6vPUrNcdqNE",
+      "title": "台中西屯｜4房2廳2衛｜3398萬",
+      "category": "看屋開箱",
+      "district": "西屯區",
+      "pubDate": "2026-11-09",
+      "listingCodes": [
+        "1211317"
+      ]
+    },
     {
       "id": "yt-NkokszcWOg0",
       "platform": "youtube",
@@ -403,16 +470,16 @@
       ]
     },
     {
-      "id": "yt-xVDQ9DkYNr8",
+      "id": "yt-3GpANibjZvo",
       "platform": "youtube",
-      "videoId": "xVDQ9DkYNr8",
-      "url": "https://www.youtube.com/shorts/xVDQ9DkYNr8",
-      "title": "台中北區｜2房2廳1衛｜1080萬",
+      "videoId": "3GpANibjZvo",
+      "url": "https://www.youtube.com/shorts/3GpANibjZvo",
+      "title": "台中大肚｜2房2廳1衛｜1398萬",
       "category": "看屋開箱",
-      "district": "北區",
-      "pubDate": "2026-11-05",
+      "district": "大肚區",
+      "pubDate": "2026-11-04",
       "listingCodes": [
-        "1228294"
+        "1071186"
       ]
     },
     {
@@ -452,19 +519,6 @@
       "pubDate": "2026-11-04",
       "listingCodes": [
         "0348045"
-      ]
-    },
-    {
-      "id": "yt-hoeiLxSoAtI",
-      "platform": "youtube",
-      "videoId": "hoeiLxSoAtI",
-      "url": "https://www.youtube.com/shorts/hoeiLxSoAtI",
-      "title": "台中大肚｜2房2廳1衛｜1398萬",
-      "category": "看屋開箱",
-      "district": "大肚區",
-      "pubDate": "2026-11-04",
-      "listingCodes": [
-        "1071186"
       ]
     },
     {
