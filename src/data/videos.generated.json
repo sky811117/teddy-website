@@ -1,11 +1,67 @@
 {
-  "generatedAt": "2026-11-10T20:28:06+08:00",
+  "generatedAt": "2026-11-11T20:19:56+08:00",
   "source": {
-    "registrySyncedAt": "2026-11-09 22:37",
+    "registrySyncedAt": "2026-11-10 22:37",
     "since": "2026-07-01"
   },
-  "count": 97,
+  "count": 101,
   "videos": [
+    {
+      "id": "yt-z0T9D3PP6gU",
+      "platform": "youtube",
+      "videoId": "z0T9D3PP6gU",
+      "url": "https://www.youtube.com/shorts/z0T9D3PP6gU",
+      "title": "台中西區｜好萊塢大廈｜1房1衛｜268萬→258萬",
+      "category": "看屋開箱",
+      "district": "西區",
+      "community": "好萊塢大廈",
+      "pubDate": "2026-11-10",
+      "listingCodes": [
+        "1211265"
+      ]
+    },
+    {
+      "id": "yt-sN2z_hjF3mk",
+      "platform": "youtube",
+      "videoId": "sN2z_hjF3mk",
+      "url": "https://www.youtube.com/shorts/sN2z_hjF3mk",
+      "title": "台中北屯｜3房2廳2衛｜1398萬",
+      "category": "看屋開箱",
+      "district": "北屯區",
+      "pubDate": "2026-11-10",
+      "listingCodes": [
+        "1195705",
+        "1228340"
+      ]
+    },
+    {
+      "id": "yt-lAmC8fkgz1A",
+      "platform": "youtube",
+      "videoId": "lAmC8fkgz1A",
+      "url": "https://www.youtube.com/shorts/lAmC8fkgz1A",
+      "title": "台中西區｜台灣商務中心｜4房2廳3衛｜3980萬→3680萬",
+      "category": "看屋開箱",
+      "district": "西區",
+      "community": "台灣商務中心",
+      "pubDate": "2026-11-10",
+      "listingCodes": [
+        "1211295"
+      ]
+    },
+    {
+      "id": "yt-IcaBsiUSOlo",
+      "platform": "youtube",
+      "videoId": "IcaBsiUSOlo",
+      "url": "https://www.youtube.com/shorts/IcaBsiUSOlo",
+      "title": "台中西區｜三中名廈｜2房1廳1衛｜698萬→598萬",
+      "category": "看屋開箱",
+      "district": "西區",
+      "community": "三中名廈",
+      "pubDate": "2026-11-10",
+      "listingCodes": [
+        "1195696"
+      ]
+    },
     {
       "id": "yt-PbkKGGquWCU",
       "platform": "youtube",
@@ -726,6 +782,20 @@
       ]
     },
     {
+      "id": "yt-I-l4ssTKsZQ",
+      "platform": "youtube",
+      "videoId": "I-l4ssTKsZQ",
+      "url": "https://www.youtube.com/shorts/I-l4ssTKsZQ",
+      "title": "台中北屯｜總太心之所向｜2房2廳1衛｜1158萬→1098萬",
+      "category": "看屋開箱",
+      "district": "北屯區",
+      "community": "總太心之所向",
+      "pubDate": "2026-11-01",
+      "listingCodes": [
+        "1228239"
+      ]
+    },
+    {
       "id": "yt-IvPspCCUI14",
       "platform": "youtube",
       "videoId": "IvPspCCUI14",
@@ -1293,20 +1363,6 @@
       "pubDate": "2026-07-21",
       "listingCodes": [
         "1153118"
-      ]
-    },
-    {
-      "id": "yt-UFc4d--XhKs",
-      "platform": "youtube",
-      "videoId": "UFc4d--XhKs",
-      "url": "https://www.youtube.com/shorts/UFc4d--XhKs",
-      "title": "台中大里｜精銳軟園1號B區｜輕屋齡兩房帶平車｜1198萬",
-      "category": "看屋開箱",
-      "district": "大里區",
-      "community": "精銳軟園1號B區",
-      "pubDate": "2026-07-21",
-      "listingCodes": [
-        "1125160"
       ]
     },
     {
