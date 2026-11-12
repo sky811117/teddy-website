@@ -1,11 +1,67 @@
 {
-  "generatedAt": "2026-11-11T20:19:56+08:00",
+  "generatedAt": "2026-11-12T20:20:03+08:00",
   "source": {
-    "registrySyncedAt": "2026-11-10 22:37",
+    "registrySyncedAt": "2026-11-11 22:38",
     "since": "2026-07-01"
   },
-  "count": 101,
+  "count": 102,
   "videos": [
+    {
+      "id": "yt-22AQJ8Liq0w",
+      "platform": "youtube",
+      "videoId": "22AQJ8Liq0w",
+      "url": "https://www.youtube.com/shorts/22AQJ8Liq0w",
+      "title": "台中西屯｜中平路透天厝｜1房2廳5衛｜3980萬",
+      "category": "看屋開箱",
+      "district": "西屯區",
+      "community": "中平路透天厝",
+      "pubDate": "2026-11-11",
+      "listingCodes": [
+        "1211303"
+      ]
+    },
+    {
+      "id": "yt-LAboI3RNVPE",
+      "platform": "youtube",
+      "videoId": "LAboI3RNVPE",
+      "url": "https://www.youtube.com/shorts/LAboI3RNVPE",
+      "title": "台中西區｜澔宇築心｜2房1廳2衛｜1238萬",
+      "category": "看屋開箱",
+      "district": "西區",
+      "community": "澔宇築心",
+      "pubDate": "2026-11-11",
+      "listingCodes": [
+        "1211255"
+      ]
+    },
+    {
+      "id": "yt-XXWCKqrcsKI",
+      "platform": "youtube",
+      "videoId": "XXWCKqrcsKI",
+      "url": "https://www.youtube.com/shorts/XXWCKqrcsKI",
+      "title": "台中太平｜3房2廳2衛｜1588萬",
+      "category": "看屋開箱",
+      "district": "太平區",
+      "pubDate": "2026-11-11",
+      "listingCodes": [
+        "0387245",
+        "1153175"
+      ]
+    },
+    {
+      "id": "yt-VH0QymUFzbM",
+      "platform": "youtube",
+      "videoId": "VH0QymUFzbM",
+      "url": "https://www.youtube.com/shorts/VH0QymUFzbM",
+      "title": "台中西區｜富宇豐馥｜3房2廳2衛｜2620萬→2528萬",
+      "category": "看屋開箱",
+      "district": "西區",
+      "community": "富宇豐馥",
+      "pubDate": "2026-11-10",
+      "listingCodes": [
+        "1211278"
+      ]
+    },
     {
       "id": "yt-z0T9D3PP6gU",
       "platform": "youtube",
@@ -18,20 +74,6 @@
       "pubDate": "2026-11-10",
       "listingCodes": [
         "1211265"
-      ]
-    },
-    {
-      "id": "yt-sN2z_hjF3mk",
-      "platform": "youtube",
-      "videoId": "sN2z_hjF3mk",
-      "url": "https://www.youtube.com/shorts/sN2z_hjF3mk",
-      "title": "台中北屯｜3房2廳2衛｜1398萬",
-      "category": "看屋開箱",
-      "district": "北屯區",
-      "pubDate": "2026-11-10",
-      "listingCodes": [
-        "1195705",
-        "1228340"
       ]
     },
     {
@@ -250,20 +292,6 @@
       "pubDate": "2026-11-07",
       "listingCodes": [
         "0391462"
-      ]
-    },
-    {
-      "id": "yt-vCEA0AgTeDE",
-      "platform": "youtube",
-      "videoId": "vCEA0AgTeDE",
-      "url": "https://www.youtube.com/shorts/vCEA0AgTeDE",
-      "title": "台中梧棲｜藍圖UNI｜2房2廳1衛｜1058萬→998萬",
-      "category": "看屋開箱",
-      "district": "梧棲區",
-      "community": "藍圖UNI",
-      "pubDate": "2026-11-07",
-      "listingCodes": [
-        "1211349"
       ]
     },
     {
@@ -751,20 +779,6 @@
       "pubDate": "2026-11-02",
       "listingCodes": [
         "1211369"
-      ]
-    },
-    {
-      "id": "yt-Vnjo34rUbt8",
-      "platform": "youtube",
-      "videoId": "Vnjo34rUbt8",
-      "url": "https://www.youtube.com/shorts/Vnjo34rUbt8",
-      "title": "台中北屯｜達麗世紀雙星｜2房1廳1衛｜1588萬→1488萬",
-      "category": "看屋開箱",
-      "district": "北屯區",
-      "community": "達麗世紀雙星",
-      "pubDate": "2026-11-02",
-      "listingCodes": [
-        "1228218"
       ]
     },
     {
