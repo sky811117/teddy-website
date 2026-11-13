@@ -1,11 +1,40 @@
 {
-  "generatedAt": "2026-11-12T20:20:03+08:00",
+  "generatedAt": "2026-11-13T20:09:24+08:00",
   "source": {
-    "registrySyncedAt": "2026-11-11 22:38",
+    "registrySyncedAt": "2026-11-12 22:38",
     "since": "2026-07-01"
   },
-  "count": 102,
+  "count": 100,
   "videos": [
+    {
+      "id": "yt-iE_1TKWsOZU",
+      "platform": "youtube",
+      "videoId": "iE_1TKWsOZU",
+      "url": "https://www.youtube.com/shorts/iE_1TKWsOZU",
+      "title": "台中西屯｜櫻花之市｜1房1衛｜458萬",
+      "category": "看屋開箱",
+      "district": "西屯區",
+      "community": "櫻花之市",
+      "pubDate": "2026-11-12",
+      "listingCodes": [
+        "0387239"
+      ]
+    },
+    {
+      "id": "yt-0hCi_dSig0s",
+      "platform": "youtube",
+      "videoId": "0hCi_dSig0s",
+      "url": "https://www.youtube.com/shorts/0hCi_dSig0s",
+      "title": "台中西屯｜市政101｜2房2衛｜1998萬→1995萬",
+      "category": "看屋開箱",
+      "district": "西屯區",
+      "community": "市政101",
+      "pubDate": "2026-11-12",
+      "listingCodes": [
+        "0401072",
+        "1211222"
+      ]
+    },
     {
       "id": "yt-22AQJ8Liq0w",
       "platform": "youtube",
@@ -105,6 +134,19 @@
       ]
     },
     {
+      "id": "yt-zLn0SpYJ8Gk",
+      "platform": "youtube",
+      "videoId": "zLn0SpYJ8Gk",
+      "url": "https://www.youtube.com/shorts/zLn0SpYJ8Gk",
+      "title": "台中西屯｜4房2廳2衛｜3398萬",
+      "category": "看屋開箱",
+      "district": "西屯區",
+      "pubDate": "2026-11-09",
+      "listingCodes": [
+        "1211317"
+      ]
+    },
+    {
       "id": "yt-PbkKGGquWCU",
       "platform": "youtube",
       "videoId": "PbkKGGquWCU",
@@ -156,19 +198,6 @@
       "pubDate": "2026-11-09",
       "listingCodes": [
         "1211370"
-      ]
-    },
-    {
-      "id": "yt-6vPUrNcdqNE",
-      "platform": "youtube",
-      "videoId": "6vPUrNcdqNE",
-      "url": "https://www.youtube.com/shorts/6vPUrNcdqNE",
-      "title": "台中西屯｜4房2廳2衛｜3398萬",
-      "category": "看屋開箱",
-      "district": "西屯區",
-      "pubDate": "2026-11-09",
-      "listingCodes": [
-        "1211317"
       ]
     },
     {
@@ -348,20 +377,6 @@
       ]
     },
     {
-      "id": "yt-z6DXYWZXW8g",
-      "platform": "youtube",
-      "videoId": "z6DXYWZXW8g",
-      "url": "https://www.youtube.com/shorts/z6DXYWZXW8g",
-      "title": "台中北屯｜2房1廳1衛｜1488萬",
-      "category": "看屋開箱",
-      "district": "北屯區",
-      "pubDate": "2026-11-07",
-      "listingCodes": [
-        "1125220",
-        "1228218"
-      ]
-    },
-    {
       "id": "yt-Rg45lM2-3Rg",
       "platform": "youtube",
       "videoId": "Rg45lM2-3Rg",
@@ -453,7 +468,6 @@
       "district": "太平區",
       "pubDate": "2026-11-06",
       "listingCodes": [
-        "1228272",
         "UG1153110"
       ]
     },
@@ -523,20 +537,6 @@
       "pubDate": "2026-11-05",
       "listingCodes": [
         "0391462"
-      ]
-    },
-    {
-      "id": "yt-giTm8fZbFM8",
-      "platform": "youtube",
-      "videoId": "giTm8fZbFM8",
-      "url": "https://www.youtube.com/shorts/giTm8fZbFM8",
-      "title": "台中大里｜沅林築青｜2房2廳1衛｜1358萬",
-      "category": "看屋開箱",
-      "district": "大里區",
-      "community": "沅林築青",
-      "pubDate": "2026-11-05",
-      "listingCodes": [
-        "0397188"
       ]
     },
     {
@@ -896,20 +896,6 @@
       ]
     },
     {
-      "id": "yt-KLPNou6iTe8",
-      "platform": "youtube",
-      "videoId": "KLPNou6iTe8",
-      "url": "https://www.youtube.com/shorts/KLPNou6iTe8",
-      "title": "台中東區｜安居樂業｜3房2廳1衛｜798萬",
-      "category": "看屋開箱",
-      "district": "東區",
-      "community": "安居樂業",
-      "pubDate": "2026-10-28",
-      "listingCodes": [
-        "1228241"
-      ]
-    },
-    {
       "id": "yt-LQOR3dhzHLc",
       "platform": "youtube",
       "videoId": "LQOR3dhzHLc",
@@ -1056,19 +1042,6 @@
       "pubDate": "2026-09-23",
       "listingCodes": [
         "1211255"
-      ]
-    },
-    {
-      "id": "yt-sxzuHfa4vRg",
-      "platform": "youtube",
-      "videoId": "sxzuHfa4vRg",
-      "url": "https://www.youtube.com/shorts/sxzuHfa4vRg",
-      "title": "台中大里｜2房2廳1衛｜1358萬",
-      "category": "看屋開箱",
-      "district": "大里區",
-      "pubDate": "2026-09-23",
-      "listingCodes": [
-        "0397188"
       ]
     },
     {
