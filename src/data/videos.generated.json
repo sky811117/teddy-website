@@ -1,11 +1,80 @@
 {
-  "generatedAt": "2026-11-13T20:09:24+08:00",
+  "generatedAt": "2026-11-14T20:17:04+08:00",
   "source": {
-    "registrySyncedAt": "2026-11-12 22:38",
+    "registrySyncedAt": "2026-11-13 22:38",
     "since": "2026-07-01"
   },
-  "count": 100,
+  "count": 105,
   "videos": [
+    {
+      "id": "yt-RmQaMmnrYTI",
+      "platform": "youtube",
+      "videoId": "RmQaMmnrYTI",
+      "url": "https://www.youtube.com/shorts/RmQaMmnrYTI",
+      "title": "台中西屯｜逢甲101 No.2｜1房1廳1衛｜1150萬",
+      "category": "看屋開箱",
+      "district": "西屯區",
+      "community": "逢甲101 No.2",
+      "pubDate": "2026-11-13",
+      "listingCodes": [
+        "1211350"
+      ]
+    },
+    {
+      "id": "yt-aS2-sGUwZ9w",
+      "platform": "youtube",
+      "videoId": "aS2-sGUwZ9w",
+      "url": "https://www.youtube.com/shorts/aS2-sGUwZ9w",
+      "title": "台中西屯｜潤隆VVS1｜2房2廳1衛｜1550萬",
+      "category": "看屋開箱",
+      "district": "西屯區",
+      "community": "潤隆VVS1",
+      "pubDate": "2026-11-13",
+      "listingCodes": [
+        "1211325"
+      ]
+    },
+    {
+      "id": "yt-C_Ps_bfccL4",
+      "platform": "youtube",
+      "videoId": "C_Ps_bfccL4",
+      "url": "https://www.youtube.com/shorts/C_Ps_bfccL4",
+      "title": "台中西屯｜漢唐盛世｜1房2廳1衛｜858萬",
+      "category": "看屋開箱",
+      "district": "西屯區",
+      "community": "漢唐盛世",
+      "pubDate": "2026-11-13",
+      "listingCodes": [
+        "1228258"
+      ]
+    },
+    {
+      "id": "yt-ldx_rroG69w",
+      "platform": "youtube",
+      "videoId": "ldx_rroG69w",
+      "url": "https://www.youtube.com/shorts/ldx_rroG69w",
+      "title": "台中南屯｜3房2廳4衛｜1888萬",
+      "category": "看屋開箱",
+      "district": "南屯區",
+      "pubDate": "2026-11-13",
+      "listingCodes": [
+        "1195655"
+      ]
+    },
+    {
+      "id": "yt--0PoReOmdSo",
+      "platform": "youtube",
+      "videoId": "-0PoReOmdSo",
+      "url": "https://www.youtube.com/shorts/-0PoReOmdSo",
+      "title": "台中西屯｜泰御天鑄｜2房2廳2衛｜1968萬",
+      "category": "看屋開箱",
+      "district": "西屯區",
+      "community": "泰御天鑄",
+      "pubDate": "2026-11-12",
+      "listingCodes": [
+        "0397194"
+      ]
+    },
     {
       "id": "yt-iE_1TKWsOZU",
       "platform": "youtube",
