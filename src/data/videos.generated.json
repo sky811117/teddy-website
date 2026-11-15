@@ -1,11 +1,39 @@
 {
-  "generatedAt": "2026-11-14T20:17:04+08:00",
+  "generatedAt": "2026-11-15T20:10:24+08:00",
   "source": {
-    "registrySyncedAt": "2026-11-13 22:38",
+    "registrySyncedAt": "2026-11-14 22:38",
     "since": "2026-07-01"
   },
-  "count": 105,
+  "count": 108,
   "videos": [
+    {
+      "id": "yt-RXWGx1SVtdE",
+      "platform": "youtube",
+      "videoId": "RXWGx1SVtdE",
+      "url": "https://www.youtube.com/shorts/RXWGx1SVtdE",
+      "title": "台中西屯｜鉅陞V市政｜3房2廳2衛｜3280萬→3180萬",
+      "category": "看屋開箱",
+      "district": "西屯區",
+      "community": "鉅陞V市政",
+      "pubDate": "2026-11-14",
+      "listingCodes": [
+        "1211202"
+      ]
+    },
+    {
+      "id": "yt-j58XwONLaTo",
+      "platform": "youtube",
+      "videoId": "j58XwONLaTo",
+      "url": "https://www.youtube.com/shorts/j58XwONLaTo",
+      "title": "台中西屯｜逢甲101｜1房1廳1衛｜668萬",
+      "category": "看屋開箱",
+      "district": "西屯區",
+      "community": "逢甲101",
+      "pubDate": "2026-11-14",
+      "listingCodes": [
+        "1211221"
+      ]
+    },
     {
       "id": "yt-RmQaMmnrYTI",
       "platform": "youtube",
@@ -443,6 +471,20 @@
       "pubDate": "2026-11-07",
       "listingCodes": [
         "0397185"
+      ]
+    },
+    {
+      "id": "yt-z6DXYWZXW8g",
+      "platform": "youtube",
+      "videoId": "z6DXYWZXW8g",
+      "url": "https://www.youtube.com/shorts/z6DXYWZXW8g",
+      "title": "台中北屯｜2房1廳1衛｜1488萬",
+      "category": "看屋開箱",
+      "district": "北屯區",
+      "pubDate": "2026-11-07",
+      "listingCodes": [
+        "1125220",
+        "1228218"
       ]
     },
     {
