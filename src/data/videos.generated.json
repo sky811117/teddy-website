@@ -1,11 +1,25 @@
 {
-  "generatedAt": "2026-11-15T20:10:24+08:00",
+  "generatedAt": "2026-11-16T20:18:10+08:00",
   "source": {
-    "registrySyncedAt": "2026-11-14 22:38",
+    "registrySyncedAt": "2026-11-15 22:36",
     "since": "2026-07-01"
   },
-  "count": 108,
+  "count": 109,
   "videos": [
+    {
+      "id": "yt-w_Yr-tmhF6Y",
+      "platform": "youtube",
+      "videoId": "w_Yr-tmhF6Y",
+      "url": "https://www.youtube.com/shorts/w_Yr-tmhF6Y",
+      "title": "台中龍井｜東海雲｜3房2廳2衛｜1398萬",
+      "category": "看屋開箱",
+      "district": "龍井區",
+      "community": "東海雲",
+      "pubDate": "2026-11-15",
+      "listingCodes": [
+        "1211358"
+      ]
+    },
     {
       "id": "yt-RXWGx1SVtdE",
       "platform": "youtube",
