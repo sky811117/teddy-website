@@ -1,11 +1,50 @@
 {
-  "generatedAt": "2026-11-16T20:18:10+08:00",
+  "generatedAt": "2026-11-17T20:11:36+08:00",
   "source": {
-    "registrySyncedAt": "2026-11-15 22:36",
+    "registrySyncedAt": "2026-11-16 22:39",
     "since": "2026-07-01"
   },
-  "count": 109,
+  "count": 108,
   "videos": [
+    {
+      "id": "yt--V8cJ4uWNZ8",
+      "platform": "youtube",
+      "videoId": "-V8cJ4uWNZ8",
+      "url": "https://www.youtube.com/shorts/-V8cJ4uWNZ8",
+      "title": "台中西屯｜1房2廳1衛｜1398萬",
+      "category": "看屋開箱",
+      "district": "西屯區",
+      "pubDate": "2026-11-16",
+      "listingCodes": [
+        "1228271"
+      ]
+    },
+    {
+      "id": "yt-NX9-aBKSmsg",
+      "platform": "youtube",
+      "videoId": "NX9-aBKSmsg",
+      "url": "https://www.youtube.com/shorts/NX9-aBKSmsg",
+      "title": "台中西屯｜4房2廳3衛｜5888萬",
+      "category": "看屋開箱",
+      "district": "西屯區",
+      "pubDate": "2026-11-16",
+      "listingCodes": [
+        "1153151"
+      ]
+    },
+    {
+      "id": "yt-DgfokvEPfW0",
+      "platform": "youtube",
+      "videoId": "DgfokvEPfW0",
+      "url": "https://www.youtube.com/shorts/DgfokvEPfW0",
+      "title": "台中西屯｜4房2廳3衛｜3288萬",
+      "category": "看屋開箱",
+      "district": "西屯區",
+      "pubDate": "2026-11-16",
+      "listingCodes": [
+        "1228315"
+      ]
+    },
     {
       "id": "yt-w_Yr-tmhF6Y",
       "platform": "youtube",
@@ -488,20 +527,6 @@
       ]
     },
     {
-      "id": "yt-z6DXYWZXW8g",
-      "platform": "youtube",
-      "videoId": "z6DXYWZXW8g",
-      "url": "https://www.youtube.com/shorts/z6DXYWZXW8g",
-      "title": "台中北屯｜2房1廳1衛｜1488萬",
-      "category": "看屋開箱",
-      "district": "北屯區",
-      "pubDate": "2026-11-07",
-      "listingCodes": [
-        "1125220",
-        "1228218"
-      ]
-    },
-    {
       "id": "yt-Rg45lM2-3Rg",
       "platform": "youtube",
       "videoId": "Rg45lM2-3Rg",
@@ -715,19 +740,6 @@
       "pubDate": "2026-11-04",
       "listingCodes": [
         "1211351"
-      ]
-    },
-    {
-      "id": "yt-Ac5HxpSItzM",
-      "platform": "youtube",
-      "videoId": "Ac5HxpSItzM",
-      "url": "https://www.youtube.com/shorts/Ac5HxpSItzM",
-      "title": "台中西屯｜1房1廳1衛｜1118萬",
-      "category": "看屋開箱",
-      "district": "西屯區",
-      "pubDate": "2026-11-04",
-      "listingCodes": [
-        "0348045"
       ]
     },
     {
@@ -1421,20 +1433,6 @@
       ]
     },
     {
-      "id": "yt-54RzrShiPeI",
-      "platform": "youtube",
-      "videoId": "54RzrShiPeI",
-      "url": "https://www.youtube.com/shorts/54RzrShiPeI",
-      "title": "台中北屯｜廣三隆園｜頂樓4房2廳2衛＋平車｜1488萬",
-      "category": "看屋開箱",
-      "district": "北屯區",
-      "community": "廣三隆園",
-      "pubDate": "2026-07-25",
-      "listingCodes": [
-        "1116374"
-      ]
-    },
-    {
       "id": "yt-FX8TS124hXg",
       "platform": "youtube",
       "videoId": "FX8TS124hXg",
@@ -1447,20 +1445,6 @@
       "listingCodes": [
         "1139908",
         "1153173"
-      ]
-    },
-    {
-      "id": "yt-ADsLPJssBco",
-      "platform": "youtube",
-      "videoId": "ADsLPJssBco",
-      "url": "https://www.youtube.com/shorts/ADsLPJssBco",
-      "title": "台中西屯｜世界之心｜23F景觀湯屋小豪宅｜文心路三段｜1118萬",
-      "category": "看屋開箱",
-      "district": "西屯區",
-      "community": "世界之心",
-      "pubDate": "2026-07-21",
-      "listingCodes": [
-        "0348045"
       ]
     },
     {
