@@ -24,6 +24,7 @@ export const GET: APIRoute = () => {
     "",
     `Sitemap: ${new URL("sitemap.xml", config.site.url).href}`,
     `Sitemap: ${new URL("sitemap-index.xml", config.site.url).href}`,
+    `Sitemap: ${new URL("video-sitemap.xml", config.site.url).href}`,
     "",
   ].join("\n");
 

@@ -72,6 +72,8 @@ const SRC_LABEL: Record<string, string> = {
   tools: "客戶工具",
   services: "服務項目",
   shorts: "短影音頁",
+  "shorts-home": "短影音物件單支頁",
+  "shorts-news": "短影音新聞頁",
   properties: "在售物件列表",
   "properties-district": "分區在售物件列表",
   projects: "專案頁",

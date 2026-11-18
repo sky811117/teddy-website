@@ -24,6 +24,7 @@
  *   2026-11-17 起：首頁地圖上的物件位置改用臺中市政府數位發展局的門牌開放資料算（建置時算好、放在本站；以前用社區名冊的座標），
  *   圖資出處那一句補上這份資料（只畫到社區或路段；對不到的放在行政區中心附近）。兩份市府資料照授權條款附件的顯名格式
  *   寫「提供機關 年份 資料名稱與版本」：門牌資料換月版（public/data/tc-addr）、範圍圖換版之後，這句的版本字樣要跟著改。
+ *   2026-11-18 起：短影音單支頁一打開就載入 YouTube 播放器（youtube-nocookie.com），第四節加一句。
  * 改了資料流（換後端、加第三方、加追蹤）要同步改這頁，這是對外承諾。
  */
 import Layout from "@/layouts/Layout.astro";
@@ -32,7 +33,7 @@ import Footer from "@/components/Footer.astro";
 import Main from "@/components/Main.astro";
 import config from "@/config";
 
-const updatedAt = "2026-11-17";
+const updatedAt = "2026-11-18";
 const contactEmail = "a0920118756@gmail.com";
 
 // 個資法第 8 條要求告知的八件事，照順序排
@@ -74,6 +75,7 @@ const sections = [
       "傳送與保存用到的服務商（Cloudflare、Telegram、Notion、Google、Anthropic）伺服器在台灣以外的地區，資料會經過或存放在這些服務商的機房。",
       "你在找房小幫手打開地圖時，地圖圖片由內政部國土測繪中心（在台灣）提供。",
       "首頁的在售地圖，空拍影像和路名也由內政部國土測繪中心（在台灣）提供。",
+      "短影音頁的影片由 YouTube 播放。打開影片頁時，你的瀏覽器會連到 YouTube 的隱私強化網域（youtube-nocookie.com）；你按下播放後，觀看資料由 YouTube 依它的隱私權政策處理。",
     ],
   },
   {

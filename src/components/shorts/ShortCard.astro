@@ -1,0 +1,22 @@
+---
+/** 短影音卡片：列表頁只放封面，不載入播放器 */
+type Props = {
+  href: string;
+  cover: string;
+  alt: string;
+  title: string;
+  sub: string;
+  price?: string;
+  filter?: string;
+};
+const { href, cover, alt, title, sub, price, filter } = Astro.props;
+---
+
+<a class="sv-card" href={href} data-sv-item={filter}>
+  <span class="sv-cov">
+    <img src={cover} alt={alt} width="270" height="480" loading="lazy" decoding="async" />
+  </span>
+  <span class="sv-t">{title}</span>
+  <span class="sv-s">{sub}</span>
+  {price && <span class="sv-p">{price}</span>}
+</a>

@@ -1,0 +1,106 @@
+---
+/** 物件短影音分類頁：全部在售物件的影片，可依行政區篩選（篩選在頁內做，網址不變） */
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import AskBar from "@/components/flora/AskBar.astro";
+import ShortCard from "@/components/shorts/ShortCard.astro";
+import config from "@/config";
+import { safeJsonLd } from "@/utils/safeJsonLd";
+import { coverSmall, getHomeShorts } from "@/data/shorts";
+import "@/styles/shorts.css";
+
+const homes = await getHomeShorts();
+const counts = new Map<string, number>();
+for (const h of homes) counts.set(h.district, (counts.get(h.district) ?? 0) + 1);
+const districts = [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([d]) => d);
+
+const canonicalURL = new URL("/shorts/homes/", Astro.site).href;
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  url: canonicalURL,
+  name: "台中物件短影音",
+  mainEntity: {
+    "@type": "ItemList",
+    itemListElement: homes.map((h, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: new URL(`/shorts/homes/${h.code}/`, Astro.site).href,
+      name: h.label,
+    })),
+  },
+  inLanguage: "zh-TW",
+};
+---
+
+<Layout
+  title={`台中物件短影音｜在售房屋影片 ${homes.length} 支 | ${config.site.title}`}
+  description="台中在售物件的看屋短影音，可依行政區挑選。先看影片，再決定要不要約看。"
+  canonicalURL={canonicalURL}
+  showFloatingCTA={false}
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(schema)} />
+  </Fragment>
+  <Header />
+  <AskBar href="/go/line?src=shorts" />
+  <main id="main-content" class="sv">
+    <header class="sv-head">
+      <h1>台中物件短影音</h1>
+      <p>先看影片，再決定要不要約看。</p>
+    </header>
+    <nav class="sv-seg" aria-label="短影音分類">
+      <a href="/shorts/">全部</a>
+      <a href="/shorts/homes/" aria-current="page">物件</a>
+      <a href="/shorts/news/">房市新聞</a>
+    </nav>
+    <div class="sv-seg" role="group" aria-label="依行政區篩選" data-sv-filter="d">
+      <button type="button" data-v="" aria-pressed="true">全部區域</button>
+      {districts.map(d => <button type="button" data-v={d} aria-pressed="false">{d}</button>)}
+    </div>
+    <div class="sv-grid">
+      {
+        homes.map(h => (
+          <ShortCard
+            href={`/shorts/homes/${h.code}/`}
+            cover={coverSmall(h.videoId, h.cover)}
+            alt={`${h.place} 看屋短影音封面`}
+            title={h.place}
+            sub={h.sub}
+            price={h.priceText}
+            filter={h.district}
+          />
+        ))
+      }
+    </div>
+    <p class="sv-legal">
+      一品不動產經紀股份有限公司 有巢氏房屋台中世界之心加盟店<br />
+      不動產經紀人 黃永隆 113彰縣字第324號<br />
+      不動產營業員 陳景泰 114年登字第488296號
+    </p>
+  </main>
+  <Footer />
+</Layout>
+
+<script is:inline>
+  (function () {
+    var box = document.querySelector("[data-sv-filter]");
+    if (!box) return;
+    var items = document.querySelectorAll("[data-sv-item]");
+    function apply(v) {
+      box.querySelectorAll("button").forEach(function (b) {
+        b.setAttribute("aria-pressed", b.dataset.v === v ? "true" : "false");
+      });
+      items.forEach(function (el) {
+        el.hidden = !!v && el.dataset.svItem !== v;
+      });
+    }
+    box.addEventListener("click", function (e) {
+      var b = e.target.closest("button");
+      if (b) apply(b.dataset.v);
+    });
+    var q = new URLSearchParams(location.search).get("d");
+    if (q && box.querySelector('button[data-v="' + CSS.escape(q) + '"]')) apply(q);
+  })();
+</script>

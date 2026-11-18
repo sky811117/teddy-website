@@ -1,0 +1,106 @@
+---
+/** 房市新聞短影音分類頁。⛔ 這頁不放任何物件，維持新聞內容的身分 */
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import AskBar from "@/components/flora/AskBar.astro";
+import ShortCard from "@/components/shorts/ShortCard.astro";
+import config from "@/config";
+import { safeJsonLd } from "@/utils/safeJsonLd";
+import { coverSmall, formatDay, newsShorts } from "@/data/shorts";
+import "@/styles/shorts.css";
+
+const categories = [...new Set(newsShorts.map(n => n.category))];
+const canonicalURL = new URL("/shorts/news/", Astro.site).href;
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  url: canonicalURL,
+  name: "房市新聞短影音",
+  mainEntity: {
+    "@type": "ItemList",
+    itemListElement: newsShorts.map((n, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: new URL(`/shorts/news/${n.slug}/`, Astro.site).href,
+      name: n.title,
+    })),
+  },
+  inLanguage: "zh-TW",
+};
+---
+
+<Layout
+  title={`房市新聞短影音｜政策、貸款、行情講白話 | ${config.site.title}`}
+  description="房市政策、貸款與台中行情的新聞短影音，每支附重點、影片文字和資料來源。"
+  canonicalURL={canonicalURL}
+  showFloatingCTA={false}
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(schema)} />
+  </Fragment>
+  <Header />
+  <AskBar href="/go/line?src=shorts-news" />
+  <main id="main-content" class="sv">
+    <header class="sv-head">
+      <h1>房市新聞短影音</h1>
+      <p>政策、貸款、行情，一分鐘講白話。</p>
+    </header>
+    <nav class="sv-seg" aria-label="短影音分類">
+      <a href="/shorts/">全部</a>
+      <a href="/shorts/homes/">物件</a>
+      <a href="/shorts/news/" aria-current="page">房市新聞</a>
+    </nav>
+    {
+      categories.length > 1 && (
+        <div class="sv-seg" role="group" aria-label="依主題篩選" data-sv-filter="c">
+          <button type="button" data-v="" aria-pressed="true">全部主題</button>
+          {categories.map(c => <button type="button" data-v={c} aria-pressed="false">{c}</button>)}
+        </div>
+      )
+    }
+    {
+      newsShorts.length > 0 ? (
+        <div class="sv-grid">
+          {newsShorts.map(n => (
+            <ShortCard
+              href={`/shorts/news/${n.slug}/`}
+              cover={coverSmall(n.videoId, n.cover)}
+              alt={`${n.title} 短影音封面`}
+              title={n.title}
+              sub={`${formatDay(n.date)}・${n.category}`}
+              filter={n.category}
+            />
+          ))}
+        </div>
+      ) : (
+        <p class="sv-empty">新片整理中，先到 <a href="/posts/">房市筆記</a> 看最新消息。</p>
+      )
+    }
+    <p class="sv-legal">
+      本內容為公開資料整理，不構成投資建議。<br />
+      不動產經紀人 黃永隆 113彰縣字第324號<br />
+      不動產營業員 陳景泰 114年登字第488296號
+    </p>
+  </main>
+  <Footer />
+</Layout>
+
+<script is:inline>
+  (function () {
+    var box = document.querySelector("[data-sv-filter]");
+    if (!box) return;
+    var items = document.querySelectorAll("[data-sv-item]");
+    box.addEventListener("click", function (e) {
+      var b = e.target.closest("button");
+      if (!b) return;
+      var v = b.dataset.v;
+      box.querySelectorAll("button").forEach(function (x) {
+        x.setAttribute("aria-pressed", x === b ? "true" : "false");
+      });
+      items.forEach(function (el) {
+        el.hidden = !!v && el.dataset.svItem !== v;
+      });
+    });
+  })();
+</script>

@@ -91,6 +91,24 @@ for (const s of Array.isArray(schedule) ? schedule : []) {
   for (const id of ids) if (!scheduleDateByYt.has(id)) scheduleDateByYt.set(id, s.date);
 }
 
+// 2026-11-18 短影音專區：一支片對到兩間以上時，用發片排程記的委編認出是哪一間（單支頁網址＝委編）
+const POC_SCHEDULE = process.env.VIDEO_POC_SCHEDULE || path.join(IG_API, "poc_video_schedule.json");
+const pocSchedule = existsSync(POC_SCHEDULE) ? readJson(POC_SCHEDULE) : [];
+const caseNoByYt = new Map();
+for (const s of [...(Array.isArray(schedule) ? schedule : []), ...(Array.isArray(pocSchedule) ? pocSchedule : [])]) {
+  const digits = (String(s?.caseNo || "").match(/\d{7}/) || [])[0];
+  if (!digits) continue;
+  for (const m of JSON.stringify(s?.results || {}).matchAll(/(?:shorts\/|watch\?v=|youtu\.be\/)([\w-]{11})/g)) {
+    caseNoByYt.set(m[1], digits);
+  }
+}
+function pickListingCode(hits, videoId) {
+  const active = hits.filter(p => p.status === "active").map(p => p.listingCode);
+  if (active.length === 1) return active[0];
+  const caseNo = caseNoByYt.get(videoId);
+  return caseNo && active.includes(caseNo) ? caseNo : "";
+}
+
 const STD_TITLE_RE = /^台中(\S{2,3}?)｜([^｜]+)｜/;
 // 門牌：路街段後面接數字巷弄號、或「N巷N弄／N巷N號」；「市政1號院」這種社區名不算
 const ADDRESS_RE = /(?:路|街|大道|段)\s*\d+\s*(?:巷|弄|號)|\d+\s*巷\s*\d+\s*(?:弄|號)|\d+\s*弄\s*\d+\s*號/;
@@ -253,10 +271,12 @@ for (const e of entries) {
   // 第二段是格局（3房2廳2衛）或「三房兩廳」這類敘述就不當社區名
   const looksLayout = /\d+房|[一二三四五六七八九十兩]房|廳|坪|格局/.test(second);
   let matchedCodes = [];
+  let listingCode = "";
   if (!why.length) {
     if (EXCLUDE_COMMUNITIES.some(c => title.includes(c))) why.push("排除名單（社區）");
     const hits = matchProperties(title, district, second, looksLayout);
     matchedCodes = hits.map(p => p.listingCode);
+    listingCode = pickListingCode(hits, videoId);
     if (!hits.length) {
       why.push("對不到官網物件（待景泰確認）");
       unmatched.push({ date, title, videoId });
@@ -283,6 +303,7 @@ for (const e of entries) {
     ...(looksLayout ? {} : { community: second }),
     pubDate: date,
     listingCodes: matchedCodes,
+    listingCode,
     // 同物件判定：去掉最後一段價格（改價「1388萬→1350萬」仍算同一戶），其餘段落都要一樣；
     // 第二段只是格局、沒有社區名時無從分辨，連最終價格一起比（寧可重複，不誤殺別戶）
     _dedupeKey: looksLayout ? `${title.replace(/[^｜]*→/, "")}` : title.split("｜").slice(0, -1).join("｜"),
@@ -301,6 +322,26 @@ for (const v of kept) {
   seen.add(v._dedupeKey);
   const { _dedupeKey, ...rest } = v;
   videos.push(rest);
+}
+
+// 直式高畫質封面：有才用，查不到退回 hqdefault，下一晚再查
+const prevCover = new Map(
+  (existsSync(OUT) ? readJson(OUT).videos ?? [] : []).map(v => [v.videoId, v.cover])
+);
+for (const v of videos) {
+  if (prevCover.get(v.videoId) === "oar2") {
+    v.cover = "oar2";
+    continue;
+  }
+  try {
+    const r = await fetch(`https://i.ytimg.com/vi_webp/${v.videoId}/oar2.webp`, {
+      method: "HEAD",
+      signal: AbortSignal.timeout(6000),
+    });
+    v.cover = r.ok ? "oar2" : "hq";
+  } catch {
+    v.cover = "hq";
+  }
 }
 
 const out = {

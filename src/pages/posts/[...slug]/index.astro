@@ -22,8 +22,10 @@ import { ogThumb } from "@/utils/ogThumb";
 import Cusdis from "@/components/Cusdis.astro";
 import config from "@/config";
 import { wbrSegments } from "@/utils/wbr";
+import { coverSmall, newsShortForPost } from "@/data/shorts";
 // 2026-11 極簡改版：文章頁長相（白底、標題在上、首圖圓角放在作者列底下、內文排版；檔名沿用花店版）
 import "@/styles/flora-post.css";
+import "@/styles/shorts-embed.css";
 
 export async function getStaticPaths() {
   const posts = await getCollection("posts");
@@ -151,6 +153,8 @@ const timeRequired = `PT${timeRequiredMin}M`;
 const COVER_SIZES = "(min-width: 900px) 782px, calc(100vw - 36px)";
 const coverSrcset = coverIsAi && coverImage ? `${ogThumb(coverImage, 640)} 640w, ${ogThumb(coverImage, 960)} 960w` : undefined;
 const titleParts = wbrSegments(title);
+// 同題的房市新聞短影音（社區文不會配到：同步時已排除）
+const newsShort = newsShortForPost(postSlug);
 ---
 
 <PostLayout
@@ -274,6 +278,15 @@ const titleParts = wbrSegments(title);
             <figcaption class="post-cover-note" data-pagefind-ignore>示意圖（AI 生成，非本文社區實景）</figcaption>
           )}
         </figure>
+      )
+    }
+
+    {
+      newsShort && (
+        <a class="sv-postcard" href={`/shorts/news/${newsShort.slug}/`} data-pagefind-ignore>
+          <img src={coverSmall(newsShort.videoId, newsShort.cover)} alt={`${newsShort.title} 短影音封面`} width="76" height="135" loading="lazy" decoding="async" />
+          <span><b>這篇有影片版</b><span>{newsShort.title}</span><i>一分鐘看完</i></span>
+        </a>
       )
     }
 

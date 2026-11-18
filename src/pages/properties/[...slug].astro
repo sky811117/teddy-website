@@ -25,10 +25,12 @@ import {
   stripAddressDetail,
 } from "@/utils/propertyPhotoAlt";
 import AskBar from "@/components/flora/AskBar.astro";
+import { coverSmall, homeShortByCode, playerUrl } from "@/data/shorts";
 import { wbrSegments } from "@/utils/wbr";
 // 2026-11 極簡改版（樣稿 v3）：共用元件在 ax.css，物件頁要補的在 flora-property.css（檔名沿用，順序不能反）
 import "@/styles/ax.css";
 import "@/styles/flora-property.css";
+import "@/styles/shorts-embed.css";
 
 export async function getStaticPaths() {
   const properties = await getCollection(
@@ -65,6 +67,9 @@ type Props = {
 };
 
 const { property, properties, communityPosts } = Astro.props;
+// 這間有短影音：照片上放入口，沒照片時影片直接當第一眼（點了才載入播放器，物件頁速度不受影響）
+const short = homeShortByCode(property.id);
+const shortHref = `/shorts/homes/${property.id}/`;
 const { Content } = await render(property);
 
 const formatPrice = (price: number) => {
@@ -761,6 +766,18 @@ const introSplit = (line: string): [string, string] => {
     propertyCta
   />
 
+  {
+    short && (
+      <dialog class="sv-dlg" data-short-dlg aria-label="這間的短影音">
+        <div class="sv-dlg-frame" data-short-frame></div>
+        <div class="sv-dlg-bar">
+          <a href={shortHref}>到影片頁看</a>
+          <button type="button" data-short-close>關閉</button>
+        </div>
+      </dialog>
+    )
+  }
+
   <main id="main-content" class="ax pd-main">
     {/* Pagefind：只索引 article；站內搜尋才找得到物件（結果可用「物件」filter 分開） */}
     <article class="pd-wrap" data-gallery data-pagefind-body data-pagefind-filter="type:物件">
@@ -789,6 +806,7 @@ const introSplit = (line: string): [string, string] => {
                 </figure>
               ))}
             </div>
+            {short && <a class="sv-pill" href={shortHref} data-short-play={playerUrl(short.videoId, true)}>看影片</a>}
             {/* 上一張／下一張（只有電腦、滑鼠裝置才畫出來；ax-property.ts 有跑起來才打開） */}
             {photos.length > 1 && (
               <div class="pads" data-pagefind-ignore>
@@ -816,6 +834,14 @@ const introSplit = (line: string): [string, string] => {
                 <span class="tnum" data-count="gal">1 / 1</span>
               </p>
             )}
+          </section>
+        ) : short ? (
+          <section class="gal">
+            <a class="sv-poster" href={shortHref} data-short-play={playerUrl(short.videoId, true)}>
+              <img src={coverSmall(short.videoId, short.cover)} alt={`${displayTitle} 短影音封面`} width="540" height="960" loading="eager" fetchpriority="high" decoding="async" />
+              <span class="sv-big" aria-hidden="true"></span>
+              <span class="sr-only">播放這間的短影音</span>
+            </a>
           </section>
         ) : (
           <section class="gal">
@@ -1307,6 +1333,31 @@ const introSplit = (line: string): [string, string] => {
 
   <Footer />
 </Layout>
+
+<script is:inline>
+  // 短影音入口：點了才放播放器；沒有 JavaScript 時就是連到單支影片頁的一般連結
+  (function () {
+    var dlg = document.querySelector("[data-short-dlg]");
+    if (!dlg || !dlg.showModal) return;
+    var frame = dlg.querySelector("[data-short-frame]");
+    document.querySelectorAll("[data-short-play]").forEach(function (a) {
+      a.addEventListener("click", function (e) {
+        e.preventDefault();
+        var f = document.createElement("iframe");
+        f.src = a.getAttribute("data-short-play");
+        f.title = "這間的短影音";
+        f.allow = "autoplay; encrypted-media; picture-in-picture; web-share";
+        f.referrerPolicy = "strict-origin-when-cross-origin";
+        f.allowFullscreen = true;
+        frame.replaceChildren(f);
+        dlg.showModal();
+      });
+    });
+    dlg.addEventListener("close", function () { frame.replaceChildren(); });
+    dlg.querySelector("[data-short-close]").addEventListener("click", function () { dlg.close(); });
+    dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); });
+  })();
+</script>
 
 <script
   is:inline

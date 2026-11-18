@@ -102,6 +102,7 @@ export default defineConfig({
         if (page.includes("/search")) return false;
         if (page.includes("/projects")) return false;
         if (page.endsWith("/manifest.json/")) return false;
+        if (page.includes("/video-sitemap.xml")) return false;
         // robots.txt 現在是 src/pages/robots.txt.ts endpoint；有沒有尾斜線都排除
         if (page.endsWith("/robots.txt/") || page.endsWith("/robots.txt")) return false;
         if (page.endsWith("/rss.xml/")) return false;

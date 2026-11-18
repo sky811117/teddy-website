@@ -1,11 +1,57 @@
 {
-  "generatedAt": "2026-11-17T20:11:36+08:00",
+  "generatedAt": "2026-11-18T13:03:43+08:00",
   "source": {
-    "registrySyncedAt": "2026-11-16 22:39",
+    "registrySyncedAt": "2026-11-17 22:38",
     "since": "2026-07-01"
   },
-  "count": 108,
+  "count": 111,
   "videos": [
+    {
+      "id": "yt-UCM1k7-K2gE",
+      "platform": "youtube",
+      "videoId": "UCM1k7-K2gE",
+      "url": "https://www.youtube.com/shorts/UCM1k7-K2gE",
+      "title": "台中西區｜4房2廳2衛｜1698萬",
+      "category": "看屋開箱",
+      "district": "西區",
+      "pubDate": "2026-11-17",
+      "listingCodes": [
+        "1228273"
+      ],
+      "listingCode": "1228273",
+      "cover": "oar2"
+    },
+    {
+      "id": "yt-7tT3O7g5lIE",
+      "platform": "youtube",
+      "videoId": "7tT3O7g5lIE",
+      "url": "https://www.youtube.com/shorts/7tT3O7g5lIE",
+      "title": "台中大里｜3房2廳2衛｜1288萬",
+      "category": "看屋開箱",
+      "district": "大里區",
+      "pubDate": "2026-11-17",
+      "listingCodes": [
+        "1211312",
+        "1211320"
+      ],
+      "listingCode": "1211312",
+      "cover": "oar2"
+    },
+    {
+      "id": "yt-qSCWVdc_a9Y",
+      "platform": "youtube",
+      "videoId": "qSCWVdc_a9Y",
+      "url": "https://www.youtube.com/shorts/qSCWVdc_a9Y",
+      "title": "台中南屯｜5房2廳6衛｜5388萬",
+      "category": "看屋開箱",
+      "district": "南屯區",
+      "pubDate": "2026-11-17",
+      "listingCodes": [
+        "1187659"
+      ],
+      "listingCode": "1187659",
+      "cover": "oar2"
+    },
     {
       "id": "yt--V8cJ4uWNZ8",
       "platform": "youtube",
@@ -17,7 +63,9 @@
       "pubDate": "2026-11-16",
       "listingCodes": [
         "1228271"
-      ]
+      ],
+      "listingCode": "1228271",
+      "cover": "oar2"
     },
     {
       "id": "yt-NX9-aBKSmsg",
@@ -30,7 +78,9 @@
       "pubDate": "2026-11-16",
       "listingCodes": [
         "1153151"
-      ]
+      ],
+      "listingCode": "1153151",
+      "cover": "oar2"
     },
     {
       "id": "yt-DgfokvEPfW0",
@@ -43,7 +93,9 @@
       "pubDate": "2026-11-16",
       "listingCodes": [
         "1228315"
-      ]
+      ],
+      "listingCode": "1228315",
+      "cover": "oar2"
     },
     {
       "id": "yt-w_Yr-tmhF6Y",
@@ -57,7 +109,9 @@
       "pubDate": "2026-11-15",
       "listingCodes": [
         "1211358"
-      ]
+      ],
+      "listingCode": "1211358",
+      "cover": "oar2"
     },
     {
       "id": "yt-RXWGx1SVtdE",
@@ -71,7 +125,9 @@
       "pubDate": "2026-11-14",
       "listingCodes": [
         "1211202"
-      ]
+      ],
+      "listingCode": "1211202",
+      "cover": "oar2"
     },
     {
       "id": "yt-j58XwONLaTo",
@@ -85,7 +141,9 @@
       "pubDate": "2026-11-14",
       "listingCodes": [
         "1211221"
-      ]
+      ],
+      "listingCode": "1211221",
+      "cover": "oar2"
     },
     {
       "id": "yt-RmQaMmnrYTI",
@@ -99,7 +157,9 @@
       "pubDate": "2026-11-13",
       "listingCodes": [
         "1211350"
-      ]
+      ],
+      "listingCode": "1211350",
+      "cover": "oar2"
     },
     {
       "id": "yt-aS2-sGUwZ9w",
@@ -113,7 +173,9 @@
       "pubDate": "2026-11-13",
       "listingCodes": [
         "1211325"
-      ]
+      ],
+      "listingCode": "1211325",
+      "cover": "oar2"
     },
     {
       "id": "yt-C_Ps_bfccL4",
@@ -127,7 +189,9 @@
       "pubDate": "2026-11-13",
       "listingCodes": [
         "1228258"
-      ]
+      ],
+      "listingCode": "1228258",
+      "cover": "oar2"
     },
     {
       "id": "yt-ldx_rroG69w",
@@ -140,7 +204,9 @@
       "pubDate": "2026-11-13",
       "listingCodes": [
         "1195655"
-      ]
+      ],
+      "listingCode": "1195655",
+      "cover": "oar2"
     },
     {
       "id": "yt--0PoReOmdSo",
@@ -154,7 +220,9 @@
       "pubDate": "2026-11-12",
       "listingCodes": [
         "0397194"
-      ]
+      ],
+      "listingCode": "0397194",
+      "cover": "oar2"
     },
     {
       "id": "yt-iE_1TKWsOZU",
@@ -168,7 +236,9 @@
       "pubDate": "2026-11-12",
       "listingCodes": [
         "0387239"
-      ]
+      ],
+      "listingCode": "0387239",
+      "cover": "oar2"
     },
     {
       "id": "yt-0hCi_dSig0s",
@@ -183,7 +253,9 @@
       "listingCodes": [
         "0401072",
         "1211222"
-      ]
+      ],
+      "listingCode": "0401072",
+      "cover": "oar2"
     },
     {
       "id": "yt-22AQJ8Liq0w",
@@ -197,7 +269,9 @@
       "pubDate": "2026-11-11",
       "listingCodes": [
         "1211303"
-      ]
+      ],
+      "listingCode": "1211303",
+      "cover": "oar2"
     },
     {
       "id": "yt-LAboI3RNVPE",
@@ -211,7 +285,9 @@
       "pubDate": "2026-11-11",
       "listingCodes": [
         "1211255"
-      ]
+      ],
+      "listingCode": "1211255",
+      "cover": "oar2"
     },
     {
       "id": "yt-XXWCKqrcsKI",
@@ -225,7 +301,9 @@
       "listingCodes": [
         "0387245",
         "1153175"
-      ]
+      ],
+      "listingCode": "0387245",
+      "cover": "oar2"
     },
     {
       "id": "yt-VH0QymUFzbM",
@@ -239,7 +317,9 @@
       "pubDate": "2026-11-10",
       "listingCodes": [
         "1211278"
-      ]
+      ],
+      "listingCode": "1211278",
+      "cover": "oar2"
     },
     {
       "id": "yt-z0T9D3PP6gU",
@@ -253,7 +333,9 @@
       "pubDate": "2026-11-10",
       "listingCodes": [
         "1211265"
-      ]
+      ],
+      "listingCode": "1211265",
+      "cover": "oar2"
     },
     {
       "id": "yt-lAmC8fkgz1A",
@@ -267,7 +349,9 @@
       "pubDate": "2026-11-10",
       "listingCodes": [
         "1211295"
-      ]
+      ],
+      "listingCode": "1211295",
+      "cover": "oar2"
     },
     {
       "id": "yt-IcaBsiUSOlo",
@@ -281,7 +365,9 @@
       "pubDate": "2026-11-10",
       "listingCodes": [
         "1195696"
-      ]
+      ],
+      "listingCode": "1195696",
+      "cover": "oar2"
     },
     {
       "id": "yt-zLn0SpYJ8Gk",
@@ -294,7 +380,9 @@
       "pubDate": "2026-11-09",
       "listingCodes": [
         "1211317"
-      ]
+      ],
+      "listingCode": "1211317",
+      "cover": "oar2"
     },
     {
       "id": "yt-PbkKGGquWCU",
@@ -308,7 +396,9 @@
       "pubDate": "2026-11-09",
       "listingCodes": [
         "1211330"
-      ]
+      ],
+      "listingCode": "1211330",
+      "cover": "oar2"
     },
     {
       "id": "yt-7KH6_CaTxTs",
@@ -321,7 +411,9 @@
       "pubDate": "2026-11-09",
       "listingCodes": [
         "1228282"
-      ]
+      ],
+      "listingCode": "1228282",
+      "cover": "oar2"
     },
     {
       "id": "yt-lg7BJtNOpp0",
@@ -334,7 +426,9 @@
       "pubDate": "2026-11-09",
       "listingCodes": [
         "1211297"
-      ]
+      ],
+      "listingCode": "1211297",
+      "cover": "oar2"
     },
     {
       "id": "yt-vSfNvwAO4aU",
@@ -348,7 +442,9 @@
       "pubDate": "2026-11-09",
       "listingCodes": [
         "1211370"
-      ]
+      ],
+      "listingCode": "1211370",
+      "cover": "oar2"
     },
     {
       "id": "yt-NkokszcWOg0",
@@ -362,7 +458,9 @@
       "pubDate": "2026-11-08",
       "listingCodes": [
         "1228279"
-      ]
+      ],
+      "listingCode": "1228279",
+      "cover": "oar2"
     },
     {
       "id": "yt-WBt_ooDiMCk",
@@ -376,7 +474,9 @@
       "listingCodes": [
         "0397207",
         "1228279"
-      ]
+      ],
+      "listingCode": "0397207",
+      "cover": "oar2"
     },
     {
       "id": "yt-BuKoW9UAF8M",
@@ -390,7 +490,9 @@
       "pubDate": "2026-11-08",
       "listingCodes": [
         "0397207"
-      ]
+      ],
+      "listingCode": "0397207",
+      "cover": "oar2"
     },
     {
       "id": "yt-S4CnsZ3xkpA",
@@ -403,7 +505,9 @@
       "pubDate": "2026-11-08",
       "listingCodes": [
         "1228219"
-      ]
+      ],
+      "listingCode": "1228219",
+      "cover": "oar2"
     },
     {
       "id": "yt-tJurJvPU0jw",
@@ -417,7 +521,9 @@
       "pubDate": "2026-11-08",
       "listingCodes": [
         "1211319"
-      ]
+      ],
+      "listingCode": "1211319",
+      "cover": "oar2"
     },
     {
       "id": "yt-h4qpBtEqvKc",
@@ -430,7 +536,9 @@
       "pubDate": "2026-11-08",
       "listingCodes": [
         "1228311"
-      ]
+      ],
+      "listingCode": "1228311",
+      "cover": "oar2"
     },
     {
       "id": "yt-T8dXX6ZvEYw",
@@ -443,7 +551,9 @@
       "pubDate": "2026-11-08",
       "listingCodes": [
         "1228259"
-      ]
+      ],
+      "listingCode": "1228259",
+      "cover": "oar2"
     },
     {
       "id": "yt-BmN8f-6SFmk",
@@ -457,7 +567,9 @@
       "pubDate": "2026-11-08",
       "listingCodes": [
         "1228219"
-      ]
+      ],
+      "listingCode": "1228219",
+      "cover": "oar2"
     },
     {
       "id": "yt-qVmGq9FN3Xw",
@@ -471,7 +583,9 @@
       "pubDate": "2026-11-07",
       "listingCodes": [
         "0391462"
-      ]
+      ],
+      "listingCode": "0391462",
+      "cover": "oar2"
     },
     {
       "id": "yt-Eq3w6gHmV0s",
@@ -484,7 +598,9 @@
       "pubDate": "2026-11-07",
       "listingCodes": [
         "1228258"
-      ]
+      ],
+      "listingCode": "1228258",
+      "cover": "oar2"
     },
     {
       "id": "yt-VhG3CsV12A4",
@@ -497,7 +613,9 @@
       "pubDate": "2026-11-07",
       "listingCodes": [
         "1228289"
-      ]
+      ],
+      "listingCode": "1228289",
+      "cover": "oar2"
     },
     {
       "id": "yt-mlHt78v2r44",
@@ -510,7 +628,9 @@
       "pubDate": "2026-11-07",
       "listingCodes": [
         "1211336"
-      ]
+      ],
+      "listingCode": "1211336",
+      "cover": "oar2"
     },
     {
       "id": "yt-R7bmMeqdJEQ",
@@ -524,7 +644,9 @@
       "pubDate": "2026-11-07",
       "listingCodes": [
         "0397185"
-      ]
+      ],
+      "listingCode": "0397185",
+      "cover": "oar2"
     },
     {
       "id": "yt-Rg45lM2-3Rg",
@@ -537,7 +659,9 @@
       "pubDate": "2026-11-07",
       "listingCodes": [
         "0397186"
-      ]
+      ],
+      "listingCode": "0397186",
+      "cover": "oar2"
     },
     {
       "id": "yt-LNEfUSmsPbU",
@@ -552,7 +676,9 @@
       "listingCodes": [
         "1211290",
         "1211291"
-      ]
+      ],
+      "listingCode": "",
+      "cover": "oar2"
     },
     {
       "id": "yt-TUmKS9CKy9Q",
@@ -565,7 +691,9 @@
       "pubDate": "2026-11-06",
       "listingCodes": [
         "1211363"
-      ]
+      ],
+      "listingCode": "1211363",
+      "cover": "oar2"
     },
     {
       "id": "yt-xVoy1o9gm8Y",
@@ -579,7 +707,9 @@
       "pubDate": "2026-11-06",
       "listingCodes": [
         "1211297"
-      ]
+      ],
+      "listingCode": "1211297",
+      "cover": "oar2"
     },
     {
       "id": "yt-F_2eGV243zg",
@@ -592,7 +722,9 @@
       "pubDate": "2026-11-06",
       "listingCodes": [
         "1211298"
-      ]
+      ],
+      "listingCode": "1211298",
+      "cover": "oar2"
     },
     {
       "id": "yt-hf-vgpk8AcI",
@@ -606,7 +738,9 @@
       "pubDate": "2026-11-06",
       "listingCodes": [
         "1211302"
-      ]
+      ],
+      "listingCode": "1211302",
+      "cover": "oar2"
     },
     {
       "id": "yt-A3QBBlcyWRc",
@@ -619,7 +753,9 @@
       "pubDate": "2026-11-06",
       "listingCodes": [
         "UG1153110"
-      ]
+      ],
+      "listingCode": "UG1153110",
+      "cover": "oar2"
     },
     {
       "id": "yt-bE27dRBZTy0",
@@ -633,7 +769,9 @@
       "pubDate": "2026-11-05",
       "listingCodes": [
         "1195702"
-      ]
+      ],
+      "listingCode": "1195702",
+      "cover": "oar2"
     },
     {
       "id": "yt-ApHAiRjzlmI",
@@ -647,7 +785,9 @@
       "pubDate": "2026-11-05",
       "listingCodes": [
         "1211280"
-      ]
+      ],
+      "listingCode": "1211280",
+      "cover": "oar2"
     },
     {
       "id": "yt-s_CXw-cDOTY",
@@ -660,7 +800,9 @@
       "pubDate": "2026-11-05",
       "listingCodes": [
         "1228275"
-      ]
+      ],
+      "listingCode": "1228275",
+      "cover": "oar2"
     },
     {
       "id": "yt-p2DZwoWp6-M",
@@ -674,7 +816,9 @@
       "pubDate": "2026-11-05",
       "listingCodes": [
         "1211359"
-      ]
+      ],
+      "listingCode": "1211359",
+      "cover": "oar2"
     },
     {
       "id": "yt-25TsnbSOnlU",
@@ -687,7 +831,9 @@
       "pubDate": "2026-11-05",
       "listingCodes": [
         "0391462"
-      ]
+      ],
+      "listingCode": "0391462",
+      "cover": "oar2"
     },
     {
       "id": "yt-vfiYO5ehC7k",
@@ -701,7 +847,9 @@
       "pubDate": "2026-11-05",
       "listingCodes": [
         "1211187"
-      ]
+      ],
+      "listingCode": "1211187",
+      "cover": "oar2"
     },
     {
       "id": "yt-3GpANibjZvo",
@@ -714,7 +862,9 @@
       "pubDate": "2026-11-04",
       "listingCodes": [
         "1071186"
-      ]
+      ],
+      "listingCode": "1071186",
+      "cover": "oar2"
     },
     {
       "id": "yt-ugC4B0beSq4",
@@ -727,7 +877,9 @@
       "pubDate": "2026-11-04",
       "listingCodes": [
         "1228240"
-      ]
+      ],
+      "listingCode": "1228240",
+      "cover": "oar2"
     },
     {
       "id": "yt-3U1YJRQewsQ",
@@ -740,7 +892,9 @@
       "pubDate": "2026-11-04",
       "listingCodes": [
         "1211351"
-      ]
+      ],
+      "listingCode": "1211351",
+      "cover": "oar2"
     },
     {
       "id": "yt-vrfwC7JHoxo",
@@ -754,7 +908,9 @@
       "pubDate": "2026-11-04",
       "listingCodes": [
         "1211260"
-      ]
+      ],
+      "listingCode": "1211260",
+      "cover": "oar2"
     },
     {
       "id": "yt-DoO_l7zQ0bA",
@@ -767,7 +923,9 @@
       "pubDate": "2026-11-04",
       "listingCodes": [
         "1172061"
-      ]
+      ],
+      "listingCode": "1172061",
+      "cover": "oar2"
     },
     {
       "id": "yt-fgTJOriPf9k",
@@ -780,7 +938,9 @@
       "pubDate": "2026-11-03",
       "listingCodes": [
         "1228251"
-      ]
+      ],
+      "listingCode": "1228251",
+      "cover": "oar2"
     },
     {
       "id": "yt-Y9gE-ikVYPE",
@@ -794,7 +954,9 @@
       "pubDate": "2026-11-03",
       "listingCodes": [
         "1211328"
-      ]
+      ],
+      "listingCode": "1211328",
+      "cover": "oar2"
     },
     {
       "id": "yt-aOjDOLH9PWE",
@@ -807,7 +969,9 @@
       "pubDate": "2026-11-03",
       "listingCodes": [
         "1195711"
-      ]
+      ],
+      "listingCode": "1195711",
+      "cover": "oar2"
     },
     {
       "id": "yt-fL0gZuPH7rw",
@@ -821,7 +985,9 @@
       "listingCodes": [
         "1139908",
         "1153173"
-      ]
+      ],
+      "listingCode": "1153173",
+      "cover": "oar2"
     },
     {
       "id": "yt-BB6f1YjytMY",
@@ -834,7 +1000,9 @@
       "pubDate": "2026-11-03",
       "listingCodes": [
         "1211253"
-      ]
+      ],
+      "listingCode": "1211253",
+      "cover": "oar2"
     },
     {
       "id": "yt-9xNE9X6ZrwE",
@@ -849,7 +1017,9 @@
       "listingCodes": [
         "1211238",
         "1211244"
-      ]
+      ],
+      "listingCode": "",
+      "cover": "oar2"
     },
     {
       "id": "yt-pDz-GuZB0Xg",
@@ -862,7 +1032,9 @@
       "pubDate": "2026-11-03",
       "listingCodes": [
         "1211326"
-      ]
+      ],
+      "listingCode": "1211326",
+      "cover": "oar2"
     },
     {
       "id": "yt-a7b5ZEok-C8",
@@ -875,7 +1047,9 @@
       "pubDate": "2026-11-02",
       "listingCodes": [
         "1211355"
-      ]
+      ],
+      "listingCode": "1211355",
+      "cover": "oar2"
     },
     {
       "id": "yt-hpfZVPIgjhE",
@@ -888,7 +1062,9 @@
       "pubDate": "2026-11-02",
       "listingCodes": [
         "0397182"
-      ]
+      ],
+      "listingCode": "0397182",
+      "cover": "oar2"
     },
     {
       "id": "yt-r93F8i16tqw",
@@ -902,7 +1078,9 @@
       "pubDate": "2026-11-02",
       "listingCodes": [
         "1211236"
-      ]
+      ],
+      "listingCode": "1211236",
+      "cover": "oar2"
     },
     {
       "id": "yt-22PYsF36Nrw",
@@ -916,7 +1094,9 @@
       "pubDate": "2026-11-02",
       "listingCodes": [
         "1211369"
-      ]
+      ],
+      "listingCode": "1211369",
+      "cover": "oar2"
     },
     {
       "id": "yt-5d7Djmn5ZOI",
@@ -930,7 +1110,9 @@
       "pubDate": "2026-11-01",
       "listingCodes": [
         "1211282"
-      ]
+      ],
+      "listingCode": "1211282",
+      "cover": "oar2"
     },
     {
       "id": "yt-I-l4ssTKsZQ",
@@ -944,7 +1126,9 @@
       "pubDate": "2026-11-01",
       "listingCodes": [
         "1228239"
-      ]
+      ],
+      "listingCode": "1228239",
+      "cover": "oar2"
     },
     {
       "id": "yt-IvPspCCUI14",
@@ -958,7 +1142,9 @@
       "pubDate": "2026-11-01",
       "listingCodes": [
         "1211361"
-      ]
+      ],
+      "listingCode": "1211361",
+      "cover": "oar2"
     },
     {
       "id": "yt-yFjhKUWHA0M",
@@ -972,7 +1158,9 @@
       "pubDate": "2026-10-31",
       "listingCodes": [
         "0387223"
-      ]
+      ],
+      "listingCode": "0387223",
+      "cover": "oar2"
     },
     {
       "id": "yt-jZcJMPUeJL4",
@@ -988,7 +1176,9 @@
         "1089554",
         "1125158",
         "1211207"
-      ]
+      ],
+      "listingCode": "1211207",
+      "cover": "oar2"
     },
     {
       "id": "yt-NnrRcXpXkdA",
@@ -1002,7 +1192,9 @@
       "pubDate": "2026-10-30",
       "listingCodes": [
         "1211218"
-      ]
+      ],
+      "listingCode": "1211218",
+      "cover": "oar2"
     },
     {
       "id": "yt-nMJ4KwW9EVo",
@@ -1016,7 +1208,9 @@
       "pubDate": "2026-10-30",
       "listingCodes": [
         "1211357"
-      ]
+      ],
+      "listingCode": "1211357",
+      "cover": "oar2"
     },
     {
       "id": "yt-V6VKv-fwt8w",
@@ -1030,7 +1224,9 @@
       "pubDate": "2026-10-30",
       "listingCodes": [
         "1228259"
-      ]
+      ],
+      "listingCode": "1228259",
+      "cover": "oar2"
     },
     {
       "id": "yt-LQOR3dhzHLc",
@@ -1043,7 +1239,9 @@
       "pubDate": "2026-10-17",
       "listingCodes": [
         "1211328"
-      ]
+      ],
+      "listingCode": "1211328",
+      "cover": "oar2"
     },
     {
       "id": "yt--ePTnC2YADY",
@@ -1057,7 +1255,9 @@
       "pubDate": "2026-10-09",
       "listingCodes": [
         "0397187"
-      ]
+      ],
+      "listingCode": "0397187",
+      "cover": "oar2"
     },
     {
       "id": "yt-zkq2k6S5itg",
@@ -1071,7 +1271,9 @@
       "pubDate": "2026-10-08",
       "listingCodes": [
         "1228243"
-      ]
+      ],
+      "listingCode": "1228243",
+      "cover": "oar2"
     },
     {
       "id": "yt-ZUeVwUGjlhU",
@@ -1084,7 +1286,9 @@
       "pubDate": "2026-10-05",
       "listingCodes": [
         "1228243"
-      ]
+      ],
+      "listingCode": "1228243",
+      "cover": "oar2"
     },
     {
       "id": "yt-vCaltY8TK-M",
@@ -1098,7 +1302,9 @@
       "pubDate": "2026-10-03",
       "listingCodes": [
         "1211360"
-      ]
+      ],
+      "listingCode": "1211360",
+      "cover": "oar2"
     },
     {
       "id": "yt-I6y7dqUTBJA",
@@ -1112,7 +1318,9 @@
       "pubDate": "2026-10-02",
       "listingCodes": [
         "1211363"
-      ]
+      ],
+      "listingCode": "1211363",
+      "cover": "oar2"
     },
     {
       "id": "yt-bTFCH1t5Ke0",
@@ -1126,7 +1334,9 @@
       "pubDate": "2026-10-01",
       "listingCodes": [
         "1228223"
-      ]
+      ],
+      "listingCode": "1228223",
+      "cover": "oar2"
     },
     {
       "id": "yt-4s_-Zw7kalU",
@@ -1139,7 +1349,9 @@
       "pubDate": "2026-09-25",
       "listingCodes": [
         "1211369"
-      ]
+      ],
+      "listingCode": "1211369",
+      "cover": "oar2"
     },
     {
       "id": "yt-XTVPW9sOyus",
@@ -1152,7 +1364,9 @@
       "pubDate": "2026-09-24",
       "listingCodes": [
         "1211187"
-      ]
+      ],
+      "listingCode": "1211187",
+      "cover": "oar2"
     },
     {
       "id": "yt-9bqjNW0uviw",
@@ -1166,7 +1380,9 @@
       "pubDate": "2026-09-23",
       "listingCodes": [
         "1211309"
-      ]
+      ],
+      "listingCode": "1211309",
+      "cover": "oar2"
     },
     {
       "id": "yt-tZaVbgV7mww",
@@ -1179,7 +1395,9 @@
       "pubDate": "2026-09-23",
       "listingCodes": [
         "1211255"
-      ]
+      ],
+      "listingCode": "1211255",
+      "cover": "oar2"
     },
     {
       "id": "yt--zgjqMeATWQ",
@@ -1193,7 +1411,9 @@
       "pubDate": "2026-09-21",
       "listingCodes": [
         "0397203"
-      ]
+      ],
+      "listingCode": "0397203",
+      "cover": "oar2"
     },
     {
       "id": "yt-Bt8gXMZesWw",
@@ -1207,7 +1427,9 @@
       "pubDate": "2026-09-20",
       "listingCodes": [
         "1211345"
-      ]
+      ],
+      "listingCode": "1211345",
+      "cover": "oar2"
     },
     {
       "id": "yt-mIPiK2gJ3kg",
@@ -1221,7 +1443,9 @@
       "pubDate": "2026-09-16",
       "listingCodes": [
         "1211253"
-      ]
+      ],
+      "listingCode": "1211253",
+      "cover": "oar2"
     },
     {
       "id": "yt-YXa0URnLI9A",
@@ -1235,7 +1459,9 @@
       "pubDate": "2026-09-15",
       "listingCodes": [
         "0397194"
-      ]
+      ],
+      "listingCode": "0397194",
+      "cover": "oar2"
     },
     {
       "id": "yt-F6UZT2B2EuE",
@@ -1249,7 +1475,9 @@
       "pubDate": "2026-09-08",
       "listingCodes": [
         "0397195"
-      ]
+      ],
+      "listingCode": "0397195",
+      "cover": "oar2"
     },
     {
       "id": "yt-Ozc0MR2K1fQ",
@@ -1262,7 +1490,9 @@
       "pubDate": "2026-09-06",
       "listingCodes": [
         "0397186"
-      ]
+      ],
+      "listingCode": "0397186",
+      "cover": "oar2"
     },
     {
       "id": "yt-nj0FwB31f2k",
@@ -1276,7 +1506,9 @@
       "pubDate": "2026-09-04",
       "listingCodes": [
         "1211246"
-      ]
+      ],
+      "listingCode": "1211246",
+      "cover": "oar2"
     },
     {
       "id": "yt-E3mnTR5pdHo",
@@ -1290,7 +1522,9 @@
       "pubDate": "2026-09-01",
       "listingCodes": [
         "0387218"
-      ]
+      ],
+      "listingCode": "0387218",
+      "cover": "oar2"
     },
     {
       "id": "yt-KXxVVh5B9Co",
@@ -1304,7 +1538,9 @@
       "pubDate": "2026-08-30",
       "listingCodes": [
         "0071856"
-      ]
+      ],
+      "listingCode": "0071856",
+      "cover": "oar2"
     },
     {
       "id": "yt-tDBTAZjW73o",
@@ -1318,7 +1554,9 @@
       "pubDate": "2026-08-29",
       "listingCodes": [
         "1211289"
-      ]
+      ],
+      "listingCode": "1211289",
+      "cover": "oar2"
     },
     {
       "id": "yt-_g_odnNTOvU",
@@ -1332,7 +1570,9 @@
       "pubDate": "2026-08-25",
       "listingCodes": [
         "1211298"
-      ]
+      ],
+      "listingCode": "1211298",
+      "cover": "oar2"
     },
     {
       "id": "yt-ir6kjzdOhKI",
@@ -1346,7 +1586,9 @@
       "pubDate": "2026-08-24",
       "listingCodes": [
         "1211236"
-      ]
+      ],
+      "listingCode": "1211236",
+      "cover": "oar2"
     },
     {
       "id": "yt-n7lyeQT5sC4",
@@ -1360,7 +1602,9 @@
       "pubDate": "2026-08-23",
       "listingCodes": [
         "1211269"
-      ]
+      ],
+      "listingCode": "1211269",
+      "cover": "oar2"
     },
     {
       "id": "yt-bylKRXB5pRc",
@@ -1374,7 +1618,9 @@
       "pubDate": "2026-08-18",
       "listingCodes": [
         "1211276"
-      ]
+      ],
+      "listingCode": "1211276",
+      "cover": "oar2"
     },
     {
       "id": "yt-L-eAgpvgXp0",
@@ -1388,7 +1634,9 @@
       "pubDate": "2026-08-06",
       "listingCodes": [
         "1211226"
-      ]
+      ],
+      "listingCode": "1211226",
+      "cover": "oar2"
     },
     {
       "id": "yt-9lcnfqkALYU",
@@ -1402,7 +1650,9 @@
       "pubDate": "2026-08-03",
       "listingCodes": [
         "1195648"
-      ]
+      ],
+      "listingCode": "1195648",
+      "cover": "oar2"
     },
     {
       "id": "yt-dAqtCjcvzBo",
@@ -1416,7 +1666,9 @@
       "pubDate": "2026-08-02",
       "listingCodes": [
         "1211232"
-      ]
+      ],
+      "listingCode": "1211232",
+      "cover": "oar2"
     },
     {
       "id": "yt-NEewRK-SFao",
@@ -1430,7 +1682,9 @@
       "pubDate": "2026-07-25",
       "listingCodes": [
         "1187632"
-      ]
+      ],
+      "listingCode": "1187632",
+      "cover": "oar2"
     },
     {
       "id": "yt-FX8TS124hXg",
@@ -1445,7 +1699,9 @@
       "listingCodes": [
         "1139908",
         "1153173"
-      ]
+      ],
+      "listingCode": "1153173",
+      "cover": "oar2"
     },
     {
       "id": "yt-jmP26Byye6E",
@@ -1459,7 +1715,9 @@
       "pubDate": "2026-07-21",
       "listingCodes": [
         "1153118"
-      ]
+      ],
+      "listingCode": "1153118",
+      "cover": "oar2"
     },
     {
       "id": "yt-MnSyWdgKZ0w",
@@ -1474,7 +1732,9 @@
       "listingCodes": [
         "1211217",
         "UG1139891"
-      ]
+      ],
+      "listingCode": "",
+      "cover": "oar2"
     },
     {
       "id": "yt-Vwrh-w9POOc",
@@ -1488,7 +1748,9 @@
       "pubDate": "2026-07-05",
       "listingCodes": [
         "1195725"
-      ]
+      ],
+      "listingCode": "1195725",
+      "cover": "oar2"
     }
   ]
 }

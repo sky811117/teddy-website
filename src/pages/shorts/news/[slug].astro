@@ -1,0 +1,148 @@
+---
+/**
+ * 房市新聞單支影片頁：影片是主角，下面放重點、影片文字、資料來源。
+ * ⛔ 這頁不放物件卡、社區銷售句或委託字樣，一放就變廣告；相關內容只接新聞和房市筆記。
+ */
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import AskBar from "@/components/flora/AskBar.astro";
+import ShortCard from "@/components/shorts/ShortCard.astro";
+import config from "@/config";
+import { safeJsonLd } from "@/utils/safeJsonLd";
+import {
+  coverLarge,
+  coverSmall,
+  embedUrl,
+  formatDay,
+  isoDuration,
+  newsShorts,
+  playerUrl,
+  type NewsShort,
+} from "@/data/shorts";
+import "@/styles/shorts.css";
+
+export function getStaticPaths() {
+  return newsShorts.map(short => ({ params: { slug: short.slug }, props: { short } }));
+}
+
+type Props = { short: NewsShort };
+const { short } = Astro.props;
+
+const others = newsShorts.filter(n => n.slug !== short.slug).slice(0, 8);
+const canonicalURL = new URL(`/shorts/news/${short.slug}/`, Astro.site).href;
+const seoDescription = short.description || short.points[0] || short.title;
+const sourceName = (short.sources[0] ?? "").split(/[／/]/)[0].trim();
+
+const videoSchema = {
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  name: short.title,
+  description: seoDescription,
+  thumbnailUrl: [coverLarge(short.videoId, short.cover)],
+  uploadDate: `${short.date}T12:00:00+08:00`,
+  embedUrl: embedUrl(short.videoId),
+  ...(isoDuration(short.duration) ? { duration: isoDuration(short.duration) } : {}),
+  transcript: short.transcript.join(""),
+  inLanguage: "zh-TW",
+};
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "短影音", item: new URL("/shorts/", Astro.site).href },
+    { "@type": "ListItem", position: 2, name: "房市新聞", item: new URL("/shorts/news/", Astro.site).href },
+    { "@type": "ListItem", position: 3, name: short.title, item: canonicalURL },
+  ],
+};
+---
+
+<Layout
+  title={`${short.title}｜房市新聞短影音 | ${config.site.title}`}
+  description={seoDescription}
+  canonicalURL={canonicalURL}
+  showFloatingCTA={false}
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(videoSchema)} />
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(breadcrumbSchema)} />
+  </Fragment>
+  <Header />
+  <AskBar href="/go/line?src=shorts-news" />
+  <main id="main-content" class="sv">
+    <nav class="sv-crumb" aria-label="麵包屑">
+      <a href="/shorts/">短影音</a><span aria-hidden="true">/</span>
+      <a href="/shorts/news/">房市新聞</a>
+    </nav>
+    <article class="sv-watch">
+      <div class="sv-player">
+        <iframe
+          src={playerUrl(short.videoId)}
+          title={`${short.title} 短影音`}
+          allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; web-share"
+          referrerpolicy="strict-origin-when-cross-origin"
+          allowfullscreen></iframe>
+      </div>
+      <div class="sv-info">
+        <h1>{short.title}</h1>
+        <p class="sv-meta">{formatDay(short.date)} 上片{sourceName ? `・資料來源：${sourceName}` : ""}</p>
+        {
+          short.points.length > 0 && (
+            <section class="sv-points">
+              <h2>影片重點</h2>
+              <ul>{short.points.map(p => <li>{p}</li>)}</ul>
+            </section>
+          )
+        }
+        {
+          short.transcript.length > 0 && (
+            <details class="sv-fold">
+              <summary>看影片文字</summary>
+              {short.transcript.map(t => <p>{t}</p>)}
+            </details>
+          )
+        }
+        <details class="sv-fold" open>
+          <summary>資料來源</summary>
+          <ul class="sv-src">{short.sources.map(s => <li>📌 資料來源：{s}</li>)}</ul>
+        </details>
+        {
+          short.relatedPost && (
+            <a class="sv-next" href={`/posts/${short.relatedPost.slug}/`}>
+              <b>想看完整說明</b>
+              <span>{short.relatedPost.title}</span>
+              <i>讀這篇房市筆記</i>
+            </a>
+          )
+        }
+      </div>
+    </article>
+    {
+      others.length > 0 && (
+        <section class="sv-sec">
+          <div class="sv-sec-h">
+            <h2>下一則新聞</h2>
+            <a class="sv-more" href="/shorts/news/">看全部</a>
+          </div>
+          <div class="sv-row">
+            {others.map(n => (
+              <ShortCard
+                href={`/shorts/news/${n.slug}/`}
+                cover={coverSmall(n.videoId, n.cover)}
+                alt={`${n.title} 短影音封面`}
+                title={n.title}
+                sub={`${formatDay(n.date)}・${n.category}`}
+              />
+            ))}
+          </div>
+        </section>
+      )
+    }
+    <p class="sv-legal">
+      本內容為公開資料整理，不構成投資建議。<br />
+      不動產經紀人 黃永隆 113彰縣字第324號<br />
+      不動產營業員 陳景泰 114年登字第488296號
+    </p>
+  </main>
+  <Footer />
+</Layout>

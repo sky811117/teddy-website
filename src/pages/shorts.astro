@@ -1,658 +1,152 @@
 ---
+/**
+ * 短影音專區首頁（2026-11-18 改版）：物件片和房市新聞片分開排，每支有自己的單支頁。
+ * ⛔ 這頁有物件，算廣告頁：提到未完工建設的新聞片不放這裡（hubNewsShorts 已濾掉）。
+ */
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
-import Main from "@/components/Main.astro";
+import AskBar from "@/components/flora/AskBar.astro";
+import ShortCard from "@/components/shorts/ShortCard.astro";
 import config from "@/config";
 import { safeJsonLd } from "@/utils/safeJsonLd";
-import {
-  videos,
-  latestVideos,
-  platformInfo,
-  categoryInfo,
-  categories,
-  authorInfo,
-  getVideoCover,
-  type VideoCategory,
-} from "@/data/videos";
+import { platformInfo } from "@/data/videos";
+import { coverSmall, formatDay, getHomeShorts, hubNewsShorts } from "@/data/shorts";
+import "@/styles/shorts.css";
 
-// 排序：featured 優先、再按 pubDate 倒序
-const sortedVideos = [...videos].sort((a, b) => {
-  if (a.featured && !b.featured) return -1;
-  if (!a.featured && b.featured) return 1;
-  return b.pubDate.getTime() - a.pubDate.getTime();
-});
+const homes = await getHomeShorts();
+const latestHomes = homes.slice(0, 8);
+const latestNews = hubNewsShorts.slice(0, 8);
 
-// 統計每個分類有幾支影片（給 filter chip 顯示）
-const categoryCount: Record<VideoCategory, number> = {
-  看屋開箱: 0,
-  政策快訊: 0,
-  議價心法: 0,
-  客戶見證: 0,
-  其他: 0,
-};
-sortedVideos.forEach(v => {
-  categoryCount[v.category] = (categoryCount[v.category] ?? 0) + 1;
-});
-
-// 最新物件短影音（scripts/sync-videos.mjs 自動同步）：只放最近 LATEST_LIMIT 支，
-// 越舊的物件越可能已成交，更早的請觀眾到 YouTube 頻道看。
-const LATEST_LIMIT = 24;
-const latestShown = latestVideos.slice(0, LATEST_LIMIT);
-
-// 「影片主題」區塊的支數＝代表作＋最新物件短影音
-const topicCount: Record<VideoCategory, number> = { ...categoryCount };
-latestShown.forEach(v => {
-  topicCount[v.category] = (topicCount[v.category] ?? 0) + 1;
-});
-
-const hasVideos = sortedVideos.length > 0 || latestShown.length > 0;
-
-// 「議價心法」「客戶見證」「其他」目前 0 支影片：
-// 沒有真實素材（真實客戶授權 / 真實出價案例）前不在頁面上宣稱，
-// 有影片進來才自動顯示。分類定義本身在 src/data/videos.ts，這裡只控制顯示。
-// 「AI 工作流」分類 2026-11-07 拿掉（10/3 的 30 天凍結已過、一直 0 支影片，台帳待辦）。
-const HIDE_WHEN_EMPTY: readonly string[] = ["議價心法", "客戶見證", "其他"];
-const shownCategories = categories.filter(
-  c => !(HIDE_WHEN_EMPTY.includes(c) && topicCount[c] === 0)
-);
+const districtCount = new Map<string, number>();
+for (const h of homes) districtCount.set(h.district, (districtCount.get(h.district) ?? 0) + 1);
+const districts = [...districtCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
 
 const siteOrigin = new URL("/", Astro.site).href;
 const canonicalURL = new URL("/shorts/", Astro.site).href;
-const realEstateAgentId = `${siteOrigin}#realestateagent`;
-
-// CollectionPage schema
 const collectionSchema = {
   "@context": "https://schema.org",
   "@type": "CollectionPage",
   "@id": `${canonicalURL}#collectionpage`,
   url: canonicalURL,
   name: "景泰的房仲短影音",
-  description:
-    "景泰跨 YouTube / TikTok / Instagram 三平台的房仲短影音作品集 — 看屋開箱、政策快訊。",
-  // 本頁主體是影片清單（ItemList），頁面主題人物放 about
+  description: "台中物件看屋短影音與房市新聞短影音。",
   mainEntity: {
     "@type": "ItemList",
-    itemListElement: [...sortedVideos, ...latestShown].map((v, i) => ({
-      "@type": "ListItem",
-      position: i + 1,
-      url: v.url,
-      name: v.title,
-    })),
+    itemListElement: [
+      ...latestHomes.map(h => ({ url: new URL(`/shorts/homes/${h.code}/`, Astro.site).href, name: h.label })),
+      ...latestNews.map(n => ({ url: new URL(`/shorts/news/${n.slug}/`, Astro.site).href, name: n.title })),
+    ].map((item, i) => ({ "@type": "ListItem", position: i + 1, ...item })),
   },
-  about: { "@id": realEstateAgentId },
+  about: { "@id": `${siteOrigin}#realestateagent` },
   inLanguage: "zh-TW",
 };
-
-// ⛔ 這頁不輸出 VideoObject：影片沒有嵌在頁面上（只有連外＋點擊才載入的 lightbox），
-// GSC 判「影片不在觀賞頁面上」不收。要做影片 rich result 得另做每支一頁、首屏真 iframe 的觀看頁。
-
-// BreadcrumbList
 const breadcrumbSchema = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   itemListElement: [
-    {
-      "@type": "ListItem",
-      position: 1,
-      name: "首頁",
-      item: siteOrigin,
-    },
-    {
-      "@type": "ListItem",
-      position: 2,
-      name: "短影音",
-      item: canonicalURL,
-    },
+    { "@type": "ListItem", position: 1, name: "首頁", item: siteOrigin },
+    { "@type": "ListItem", position: 2, name: "短影音", item: canonicalURL },
   ],
 };
-
-// 格式化發布日期 (yyyy/mm/dd)
-function formatDate(d: Date): string {
-  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
-}
 ---
 
 <Layout
   title={`短影音作品集 | ${config.site.title}`}
-  description="景泰跨 YouTube / TikTok / Instagram 三平台房仲短影音 — 看屋開箱、政策快訊。台中買賣房，看影片比讀文章快。"
+  description="台中物件看屋短影音與房市新聞短影音。先看影片，再決定要不要約看；政策、貸款、行情，一分鐘講白話。"
   canonicalURL={canonicalURL}
+  showFloatingCTA={false}
 >
   <Fragment slot="head">
-    <script
-      type="application/ld+json"
-      is:inline
-      set:html={safeJsonLd(collectionSchema)}
-    />
-    <script
-      type="application/ld+json"
-      is:inline
-      set:html={safeJsonLd(breadcrumbSchema)}
-    />
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(collectionSchema)} />
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(breadcrumbSchema)} />
   </Fragment>
-
   <Header />
+  <AskBar href="/go/line?src=shorts" />
+  <main id="main-content" class="sv">
+    <header class="sv-head">
+      <h1>景泰的房仲短影音</h1>
+      <p>看房子，也看懂房市新聞。</p>
+    </header>
+    <nav class="sv-seg" aria-label="短影音分類">
+      <a href="/shorts/" aria-current="page">全部</a>
+      <a href="/shorts/homes/">物件</a>
+      <a href="/shorts/news/">房市新聞</a>
+    </nav>
 
-  <Main
-    pageTitle="景泰的房仲短影音"
-    pageDesc="景泰在 YouTube、TikTok、Instagram 發的房仲短影音，物件片由合作攝影師拍攝；另收幾支公司自媒體「房仲大看板」的影片。先看影片，再決定要不要約看。"
-  >
-    {/* ====== 3 個平台大卡片 — 直接連主頁看 latest ====== */}
-    <section class="mt-8">
-      <h2 class="text-foreground border-accent border-b-2 pb-2 text-xl font-bold sm:text-2xl">
-        📺 跟著景泰看影片
-      </h2>
-      <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
-        物件影片大多會同時發到這三個平台，挑你平常在用的那個追蹤就好。
-      </p>
-      <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {(["youtube", "tiktok", "instagram"] as const).map(p => {
-          const info = platformInfo[p];
-          return (
-            <a
-              href={info.url}
-              target="_blank"
-              rel="noopener"
-              class:list={[
-                "border-border bg-card hover:border-accent group block rounded-lg border p-5 no-underline transition-colors",
-              ]}
-            >
-              <div class="text-5xl">{info.icon}</div>
-              <h3 class="text-foreground mt-3 text-lg font-bold">
-                {info.name}
-              </h3>
-              <p class="text-accent mt-1 text-sm font-medium">{info.handle}</p>
-              <p class="text-muted-foreground mt-3 text-xs leading-relaxed">
-                {p === "youtube" &&
-                  "物件影片會同步上 YouTube Shorts，這頁的「最新物件短影音」點了就能直接播。"}
-                {p === "tiktok" &&
-                  "物件影片跟 YouTube 大致同一批，習慣滑 TikTok 的人追這個。"}
-                {p === "instagram" &&
-                  "物件 Reels，加上每天的房市新聞貼文。有問題可以直接私訊。"}
-              </p>
-              <p class="text-accent mt-4 text-sm font-medium group-hover:underline">
-                → 看最新影片
-              </p>
-            </a>
-          );
-        })}
-      </div>
-    </section>
-
-    {/* ====== 影片分類介紹 — 即使沒影片資料也有 substance ====== */}
-    <section class="mt-12">
-      <h2 class="text-foreground border-accent border-b-2 pb-2 text-xl font-bold sm:text-2xl">
-        🎯 影片主題
-      </h2>
-      <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
-        目前以台中物件開箱為主，有片的分類會標出支數。
-      </p>
-      <ul class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {shownCategories.map(c => {
-          const info = categoryInfo[c];
-          const count = topicCount[c];
-          return (
-            <li class="border-border bg-card rounded-lg border p-5">
-              <div class="flex items-start gap-3">
-                <span class="text-3xl">{info.icon}</span>
-                <div class="flex-1">
-                  <h3 class="text-foreground flex flex-wrap items-baseline gap-2 text-lg font-bold">
-                    {c}
-                    {count > 0 && (
-                      <span class="text-accent text-xs font-normal">
-                        ({count} 支)
-                      </span>
-                    )}
-                  </h3>
-                  <p class="text-muted-foreground mt-2 text-sm leading-relaxed">
-                    {info.tagline}
-                  </p>
-                </div>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
-
-    {/* ====== 影片 grid — 有資料才顯示 ====== */}
     {
-      sortedVideos.length > 0 ? (
-        <section class="mt-12">
-          <h2 class="text-foreground border-accent border-b-2 pb-2 text-xl font-bold sm:text-2xl">
-            🎬 精選影片 ({sortedVideos.length} 支)
-          </h2>
-
-          {/* category filter chips */}
-          <div
-            class="mt-4 flex flex-wrap gap-2"
-            data-filter-group="category"
-            role="group"
-            aria-label="分類篩選"
-          >
-            <button
-              type="button"
-              data-filter-value=""
-              class="filter-chip filter-chip-active"
-            >
-              全部 ({sortedVideos.length})
-            </button>
-            {categories
-              .filter(c => categoryCount[c] > 0)
-              .map(c => (
-                <button type="button" data-filter-value={c} class="filter-chip">
-                  {categoryInfo[c].icon} {c} ({categoryCount[c]})
-                </button>
-              ))}
+      latestHomes.length > 0 && (
+        <section class="sv-sec">
+          <div class="sv-sec-h">
+            <h2>最新物件</h2>
+            <a class="sv-more" href="/shorts/homes/">全部 {homes.length} 支</a>
           </div>
-
-          <ul
-            class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
-            data-video-list
-          >
-            {sortedVideos.map(v => {
-              const cover = getVideoCover(v);
-              const platform = platformInfo[v.platform];
-              return (
-                <li
-                  class="border-border bg-card group overflow-hidden rounded-lg border transition-shadow hover:shadow-lg"
-                  data-category={v.category}
-                >
-                  <a
-                    href={v.url}
-                    target="_blank"
-                    rel="noopener"
-                    class="block no-underline"
-                    data-track="video"
-                    data-video-id={v.id}
-                    data-video-platform={v.platform}
-                    data-video-category={v.category}
-                    data-youtube-id={v.platform === "youtube" ? v.videoId : undefined}
-                    data-video-title={v.title}
-                  >
-                    <div class="bg-muted relative aspect-video w-full overflow-hidden">
-                      {cover ? (
-                        <img
-                          src={cover}
-                          alt={v.title}
-                          width="480"
-                          height="270"
-                          class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      ) : (
-                        <div class="text-muted-foreground flex h-full w-full items-center justify-center text-5xl">
-                          {platform.icon}
-                        </div>
-                      )}
-                      {/* play button overlay */}
-                      <div class="absolute inset-0 flex items-center justify-center">
-                        <span class="bg-accent/90 text-accent-foreground flex h-14 w-14 items-center justify-center rounded-full text-2xl opacity-0 transition-opacity group-hover:opacity-100">
-                          ▶
-                        </span>
-                      </div>
-                      {/* duration badge */}
-                      {v.duration && (
-                        <span class="absolute right-2 bottom-2 rounded bg-black/70 px-2 py-0.5 font-mono text-xs text-white">
-                          {v.duration}
-                        </span>
-                      )}
-                      {/* platform badge */}
-                      <span class="bg-background/90 text-foreground absolute top-2 left-2 rounded-full px-2.5 py-1 text-xs font-medium">
-                        {platform.icon} {platform.name}
-                      </span>
-                    </div>
-                    <div class="p-4">
-                      {/* author badge — 景泰原作 / 推薦・房仲大看板 */}
-                      <span class="bg-muted text-muted-foreground inline-block rounded px-2 py-0.5 text-[10px] font-medium">
-                        {authorInfo[v.author ?? "teddy"].badge}
-                      </span>
-                      <div class="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-2 text-xs">
-                        <span>{categoryInfo[v.category].icon} {v.category}</span>
-                        <span aria-hidden="true">·</span>
-                        <span>{formatDate(v.pubDate)}</span>
-                        {v.featured && (
-                          <span class="bg-muted text-foreground rounded px-1.5 py-0.5 text-[10px] font-medium">
-                            🔥 精選
-                          </span>
-                        )}
-                      </div>
-                      <h3 class="text-foreground mt-2 line-clamp-2 text-base font-bold">
-                        {v.title}
-                      </h3>
-                      {v.description && (
-                        <p class="text-muted-foreground mt-2 line-clamp-2 text-sm leading-relaxed">
-                          {v.description}
-                        </p>
-                      )}
-                      {(v.district || v.community) && (
-                        <p class="text-muted-foreground mt-2 text-xs">
-                          📍 {v.district ?? ""}
-                          {v.district && v.community ? "・" : ""}
-                          {v.community ?? ""}
-                        </p>
-                      )}
-                    </div>
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
-
-          {/* empty filter state */}
-          <div
-            class="border-border bg-card mt-6 hidden rounded-lg border py-8 text-center"
-            data-filter-empty
-          >
-            <div class="text-3xl">🔍</div>
-            <p class="text-foreground mt-3 font-medium">這個分類目前還沒影片</p>
-            <p class="text-muted-foreground mt-2 text-sm">
-              切回「全部」看其他主題的影片
-            </p>
-          </div>
-        </section>
-      ) : (
-        <section class="mt-12">
-          <h2 class="text-foreground border-accent border-b-2 pb-2 text-xl font-bold sm:text-2xl">
-            🎬 影片都在這三個平台
-          </h2>
-          <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
-            景泰的影片直接發在各平台，點進去就能看最新內容、訂閱不漏接。
-          </p>
-          <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-3">
-            <a
-              href={platformInfo.youtube.url}
-              target="_blank"
-              rel="noopener"
-              class="border-border bg-card hover:border-accent group block rounded-lg border p-6 no-underline transition-colors"
-            >
-              <div class="text-5xl">🎥</div>
-              <h3 class="text-foreground mt-3 text-lg font-bold">YouTube</h3>
-              <p class="text-accent mt-1 text-sm font-medium">{platformInfo.youtube.handle}</p>
-              <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
-                物件影片會同步上 YouTube Shorts，訂閱後新片會通知你。
-              </p>
-              <p class="text-accent mt-4 text-sm font-medium group-hover:underline">
-                → 前往 YouTube 頻道
-              </p>
-            </a>
-            <a
-              href={platformInfo.tiktok.url}
-              target="_blank"
-              rel="noopener"
-              class="border-border bg-card hover:border-accent group block rounded-lg border p-6 no-underline transition-colors"
-            >
-              <div class="text-5xl">🎵</div>
-              <h3 class="text-foreground mt-3 text-lg font-bold">TikTok</h3>
-              <p class="text-accent mt-1 text-sm font-medium">@sky811117</p>
-              <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
-                物件影片跟 YouTube 大致同一批，習慣滑 TikTok 的人追這個。
-              </p>
-              <p class="text-accent mt-4 text-sm font-medium group-hover:underline">
-                → 前往 TikTok 主頁
-              </p>
-            </a>
-            <a
-              href={platformInfo.instagram.url}
-              target="_blank"
-              rel="noopener"
-              class="border-border bg-card hover:border-accent group block rounded-lg border p-6 no-underline transition-colors"
-            >
-              <div class="text-5xl">📸</div>
-              <h3 class="text-foreground mt-3 text-lg font-bold">Instagram Reels</h3>
-              <p class="text-accent mt-1 text-sm font-medium">@nov__817</p>
-              <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
-                物件 Reels，加上每天的房市新聞貼文。有問題可以直接私訊。
-              </p>
-              <p class="text-accent mt-4 text-sm font-medium group-hover:underline">
-                → 前往 Instagram 主頁
-              </p>
-            </a>
-          </div>
-        </section>
-      )
-    }
-
-    {/* ====== 最新物件短影音 — scripts/sync-videos.mjs 自動同步（只收 YT 公開、沒標下架的台中物件片）====== */}
-    {
-      latestShown.length > 0 && (
-        <section class="mt-12" id="latest">
-          <h2 class="text-foreground border-accent border-b-2 pb-2 text-xl font-bold sm:text-2xl">
-            🆕 最新物件短影音 ({latestShown.length} 支)
-          </h2>
-          <p class="text-muted-foreground mt-3 text-sm leading-relaxed">
-            點卡片直接在這頁播放。清單照 YouTube 上的公開影片整理，已設為不公開的不會出現；物件有可能剛成交，想確認還在不在賣，LINE 問最快。
-          </p>
-          <ul class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {latestShown.map(v => (
-              <li class="border-border bg-card group overflow-hidden rounded-lg border transition-shadow hover:shadow-lg">
-                <a
-                  href={v.url}
-                  target="_blank"
-                  rel="noopener"
-                  class="block no-underline"
-                  data-track="video"
-                  data-video-id={v.id}
-                  data-video-platform={v.platform}
-                  data-video-category={v.category}
-                  data-youtube-id={v.videoId}
-                  data-video-title={v.title}
-                >
-                  <div class="bg-muted relative aspect-[9/16] w-full overflow-hidden">
-                    <img
-                      src={getVideoCover(v) ?? ""}
-                      alt={v.title}
-                      width="270"
-                      height="480"
-                      class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    <span class="bg-background/90 text-foreground absolute top-2 left-2 rounded-full px-2.5 py-1 text-xs font-medium">
-                      {platformInfo.youtube.icon} Shorts
-                    </span>
-                  </div>
-                  <div class="p-3">
-                    <p class="text-muted-foreground text-xs">
-                      上片 {formatDate(v.pubDate)}
-                    </p>
-                    <h3 class="text-foreground mt-1 line-clamp-3 text-sm font-bold">
-                      {v.title}
-                    </h3>
-                  </div>
-                </a>
-              </li>
+          <div class="sv-row">
+            {latestHomes.map(h => (
+              <ShortCard
+                href={`/shorts/homes/${h.code}/`}
+                cover={coverSmall(h.videoId, h.cover)}
+                alt={`${h.place} 看屋短影音封面`}
+                title={h.place}
+                sub={h.sub}
+                price={h.priceText}
+              />
             ))}
-          </ul>
-          <p class="mt-6 text-center">
-            <a
-              href={platformInfo.youtube.url}
-              target="_blank"
-              rel="noopener"
-              class="text-accent text-sm font-medium hover:underline"
-            >
-              更早的影片到 YouTube 頻道看 →
-            </a>
-          </p>
+          </div>
         </section>
       )
     }
 
-    {/* ====== 底部 CTA ====== */}
-    <section
-      class="border-border mt-12 rounded-lg border border-dashed p-6 text-center sm:p-8"
-    >
-      <p class="text-foreground text-[18px] font-medium">
-        想看特定物件的影片？LINE 問景泰
-      </p>
-      <p class="text-muted-foreground mt-3 leading-relaxed">
-        影片裡的物件想看現場、或想找某個社區有沒有影片 —<br />
-        LINE 說一聲，有片就傳連結給你，也可以直接約看屋時間。
-      </p>
-      <div class="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-        <a
-          href="/go/line?src=shorts"
-          class="bg-accent text-accent-foreground inline-block rounded px-6 py-2 font-medium no-underline"
-        >
-          💬 LINE 私訊 sky811117
-        </a>
-        <a
-          href="/contact"
-          class="border-accent text-accent inline-block rounded border-2 px-6 py-2 font-medium no-underline hover:bg-accent hover:text-accent-foreground transition-colors"
-        >
-          📝 用表單留聯絡方式 →
-        </a>
-      </div>
-      <p class="text-muted-foreground mt-4 text-xs">
-        一品不動產 有巢氏房屋 台中世界之心加盟店<br />
-        經紀人 黃永隆 113彰縣字324 ・ 營業員 陳景泰 114登字488296
-      </p>
-    </section>
-  </Main>
+    {
+      latestNews.length > 0 && (
+        <section class="sv-sec">
+          <div class="sv-sec-h">
+            <h2>房市新聞</h2>
+            <a class="sv-more" href="/shorts/news/">看全部</a>
+          </div>
+          <div class="sv-row">
+            {latestNews.map(n => (
+              <ShortCard
+                href={`/shorts/news/${n.slug}/`}
+                cover={coverSmall(n.videoId, n.cover)}
+                alt={`${n.title} 短影音封面`}
+                title={n.title}
+                sub={`${formatDay(n.date)}・${n.category}`}
+              />
+            ))}
+          </div>
+        </section>
+      )
+    }
 
-  {/* ====== YouTube lightbox（站內播放） ====== */}
-  {hasVideos && (
-    <div
-      id="video-lightbox"
-      class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/85 p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label="影片播放"
-    >
-      <button
-        type="button"
-        data-lightbox-close
-        class="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-2xl text-black hover:bg-white"
-        aria-label="關閉影片"
-      >
-        ×
-      </button>
-      <div
-        data-lightbox-frame
-        class="aspect-[9/16] h-auto max-h-[90vh] w-full max-w-[26rem]"
-      >
-        <iframe
-          data-lightbox-iframe
-          class="h-full w-full rounded-lg"
-          src=""
-          title="YouTube 影片播放"
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowfullscreen
-        ></iframe>
-      </div>
-    </div>
-  )}
+    {
+      districts.length > 0 && (
+        <section class="sv-sec">
+          <div class="sv-sec-h"><h2>依行政區看</h2></div>
+          <div class="sv-chips">
+            {districts.map(([d, n]) => (
+              <a href={`/shorts/homes/?d=${encodeURIComponent(d)}`}>{d} <small>{n}</small></a>
+            ))}
+          </div>
+        </section>
+      )
+    }
 
+    <aside class="sv-follow">
+      <h2>新片不漏接</h2>
+      <p>挑你常用的平台追蹤。</p>
+      <div>
+        <a href={platformInfo.youtube.url} target="_blank" rel="noopener">YouTube</a>
+        <a href={platformInfo.instagram.url} target="_blank" rel="noopener">Instagram</a>
+        <a href={platformInfo.tiktok.url} target="_blank" rel="noopener">TikTok</a>
+      </div>
+    </aside>
+
+    <p class="sv-legal">
+      一品不動產經紀股份有限公司 有巢氏房屋台中世界之心加盟店<br />
+      不動產經紀人 黃永隆 113彰縣字第324號<br />
+      不動產營業員 陳景泰 114年登字第488296號
+    </p>
+  </main>
   <Footer />
 </Layout>
-
-<style>
-  /* 2026-11 極簡改版：淺灰膠囊、至少 40 高；選到的那顆是藍色實心（--blue 定義在 flora.css） */
-  .filter-chip {
-    display: inline-flex;
-    align-items: center;
-    min-height: 40px;
-    cursor: pointer;
-    border-radius: 9999px;
-    border: 0;
-    background: var(--muted);
-    color: var(--foreground);
-    padding: 0 14px;
-    font-size: 14px;
-    transition:
-      background-color 0.15s,
-      color 0.15s;
-  }
-  .filter-chip:hover {
-    background: var(--press);
-  }
-  .filter-chip-active,
-  .filter-chip-active:hover {
-    background: var(--blue);
-    color: var(--background);
-  }
-</style>
-
-<script is:inline>
-  (function () {
-    const group = document.querySelector("[data-filter-group='category']");
-    if (!group) return;
-    const list = document.querySelector("[data-video-list]");
-    if (!list) return;
-    const items = Array.from(list.children);
-    const emptyEl = document.querySelector("[data-filter-empty]");
-
-    function setActive(value) {
-      group.querySelectorAll(".filter-chip").forEach(b => {
-        const match = (b.dataset.filterValue || "") === value;
-        b.classList.toggle("filter-chip-active", match);
-        b.setAttribute("aria-pressed", match ? "true" : "false");
-      });
-    }
-
-    function apply(value) {
-      let visible = 0;
-      items.forEach(li => {
-        const ok = !value || li.dataset.category === value;
-        li.style.display = ok ? "" : "none";
-        if (ok) visible++;
-      });
-      if (emptyEl) emptyEl.classList.toggle("hidden", visible !== 0);
-      list.classList.toggle("hidden", visible === 0);
-    }
-
-    group.addEventListener("click", e => {
-      const btn = e.target.closest(".filter-chip");
-      if (!btn) return;
-      const v = btn.dataset.filterValue || "";
-      setActive(v);
-      apply(v);
-    });
-  })();
-</script>
-
-<script is:inline>
-  (function () {
-    const lightbox = document.getElementById("video-lightbox");
-    if (!lightbox) return;
-    // 抽到 body 直屬，避開父層 stacking context 蓋不過 header
-    document.body.appendChild(lightbox);
-    const iframe = lightbox.querySelector("[data-lightbox-iframe]");
-    const closeBtn = lightbox.querySelector("[data-lightbox-close]");
-
-    function open(videoId) {
-      iframe.src =
-        "https://www.youtube.com/embed/" +
-        encodeURIComponent(videoId) +
-        "?autoplay=1&rel=0&modestbranding=1";
-      lightbox.classList.remove("hidden");
-      lightbox.classList.add("flex");
-      document.body.style.overflow = "hidden";
-    }
-    function close() {
-      iframe.src = "";
-      lightbox.classList.add("hidden");
-      lightbox.classList.remove("flex");
-      document.body.style.overflow = "";
-    }
-
-    document.querySelectorAll("a[data-youtube-id]").forEach(a => {
-      a.addEventListener("click", e => {
-        const id = a.getAttribute("data-youtube-id");
-        if (!id) return;
-        e.preventDefault();
-        open(id);
-      });
-    });
-
-    closeBtn.addEventListener("click", close);
-    lightbox.addEventListener("click", e => {
-      if (e.target === lightbox) close();
-    });
-    document.addEventListener("keydown", e => {
-      if (e.key === "Escape" && !lightbox.classList.contains("hidden")) close();
-    });
-  })();
-</script>

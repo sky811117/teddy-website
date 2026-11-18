@@ -1,0 +1,154 @@
+---
+/**
+ * 物件單支影片頁：影片是這頁的主角（Google 影片索引的條件），網址用委編，換新片網址不變。
+ * 首屏放真的播放器，不能改成點了才載入；物件下架當晚這頁就不再產出。
+ */
+import Layout from "@/layouts/Layout.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import AskBar from "@/components/flora/AskBar.astro";
+import ShortCard from "@/components/shorts/ShortCard.astro";
+import config from "@/config";
+import { safeJsonLd } from "@/utils/safeJsonLd";
+import {
+  coverLarge,
+  coverSmall,
+  embedUrl,
+  formatDay,
+  getHomeShorts,
+  playerUrl,
+  type HomeShort,
+} from "@/data/shorts";
+import "@/styles/shorts.css";
+
+export async function getStaticPaths() {
+  const homes = await getHomeShorts();
+  return homes.map(short => ({ params: { code: short.code }, props: { short, homes } }));
+}
+
+type Props = { short: HomeShort; homes: HomeShort[] };
+const { short, homes } = Astro.props;
+const { data } = short.property;
+
+const others = [
+  ...homes.filter(h => h.code !== short.code && h.district === short.district),
+  ...homes.filter(h => h.code !== short.code && h.district !== short.district),
+].slice(0, 8);
+
+const headline = `${short.label}｜${short.district}看屋短影音`;
+const seoTitle = `${short.label} ${short.priceText}｜${short.district}看屋短影音`;
+const where = [short.district, short.street].filter(Boolean).join("・");
+const seoDescription = `${[short.place, where, short.layout].filter(Boolean).join("，")}，總價 ${short.priceText}。先看影片了解屋況，再決定要不要約看。`;
+const canonicalURL = new URL(`/shorts/homes/${short.code}/`, Astro.site).href;
+const propertyHref = `/properties/${short.code}/`;
+const specs = [
+  ["格局", short.layout],
+  ["建坪", data.area ? `${data.area} 坪` : ""],
+  ["樓層", data.floor ?? ""],
+  ["屋齡", data.age != null ? `${data.age} 年` : ""],
+  ["車位", data.parking ?? ""],
+  ["單價", data.pricePerPing ? `${data.pricePerPing} 萬/坪` : ""],
+].filter(([, v]) => v);
+
+const videoSchema = {
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  name: seoTitle,
+  description: seoDescription,
+  thumbnailUrl: [coverLarge(short.videoId, short.cover)],
+  uploadDate: `${short.pubDate}T12:00:00+08:00`,
+  embedUrl: embedUrl(short.videoId),
+  inLanguage: "zh-TW",
+};
+const breadcrumbSchema = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "短影音", item: new URL("/shorts/", Astro.site).href },
+    { "@type": "ListItem", position: 2, name: "物件", item: new URL("/shorts/homes/", Astro.site).href },
+    { "@type": "ListItem", position: 3, name: short.place, item: canonicalURL },
+  ],
+};
+---
+
+<Layout
+  title={`${seoTitle} | ${config.site.title}`}
+  description={seoDescription}
+  canonicalURL={canonicalURL}
+  ogImage={typeof data.coverImage === "string" ? data.coverImage : data.coverImage?.src}
+  showFloatingCTA={false}
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(videoSchema)} />
+    <script type="application/ld+json" is:inline set:html={safeJsonLd(breadcrumbSchema)} />
+  </Fragment>
+  <Header />
+  <AskBar
+    main="用 LINE 問這間"
+    sub={`${short.district}・${short.priceText}`}
+    href="/go/line?src=shorts-home"
+    msg={`你好，我想問影片裡的 ${short.label} ${short.priceText}（委編 ${short.code}）`}
+  />
+  <main id="main-content" class="sv">
+    <nav class="sv-crumb" aria-label="麵包屑">
+      <a href="/shorts/">短影音</a><span aria-hidden="true">/</span>
+      <a href="/shorts/homes/">物件</a><span aria-hidden="true">/</span>
+      <span>{short.district}</span>
+    </nav>
+    <article class="sv-watch">
+      <div class="sv-player">
+        <iframe
+          src={playerUrl(short.videoId)}
+          title={`${short.place} 看屋短影音`}
+          allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; web-share"
+          referrerpolicy="strict-origin-when-cross-origin"
+          allowfullscreen></iframe>
+      </div>
+      <div class="sv-info">
+        <h1>{headline}</h1>
+        <p class="sv-meta">{where}・{formatDay(short.pubDate)} 上片</p>
+        <p class="sv-price">{short.priceText}</p>
+        <dl class="sv-spec">
+          {specs.map(([k, v]) => <div><dt>{k}</dt><dd>{v}</dd></div>)}
+        </dl>
+        <div class="sv-btns"><a class="sv-btn" href={propertyHref}>看這間的完整資料</a></div>
+        {
+          short.points.length > 0 && (
+            <section class="sv-points">
+              <h2>影片重點</h2>
+              <ul>{short.points.map(p => <li>{p}</li>)}</ul>
+            </section>
+          )
+        }
+      </div>
+    </article>
+    {
+      others.length > 0 && (
+        <section class="sv-sec">
+          <div class="sv-sec-h">
+            <h2>{short.district}還有</h2>
+            <a class="sv-more" href={`/shorts/homes/?d=${encodeURIComponent(short.district)}`}>看全部</a>
+          </div>
+          <div class="sv-row">
+            {others.map(h => (
+              <ShortCard
+                href={`/shorts/homes/${h.code}/`}
+                cover={coverSmall(h.videoId, h.cover)}
+                alt={`${h.place} 看屋短影音封面`}
+                title={h.place}
+                sub={h.sub}
+                price={h.priceText}
+              />
+            ))}
+          </div>
+        </section>
+      )
+    }
+    <p class="sv-legal">
+      一品不動產經紀股份有限公司 有巢氏房屋台中世界之心加盟店<br />
+      不動產經紀人 黃永隆 113彰縣字第324號<br />
+      不動產營業員 陳景泰 114年登字第488296號
+    </p>
+  </main>
+  <Footer />
+</Layout>
