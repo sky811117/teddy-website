@@ -107,15 +107,19 @@ const posts = loadPosts();
 const dayDiff = (a, b) => Math.abs(Date.parse(a) - Date.parse(b)) / 86400000;
 
 function relatedPost(item, keywords) {
-  const nums = new Set(`${item.title} ${item.points.join(" ")}`.match(/\d+\.\d+/g) ?? []);
+  const text = `${item.title} ${item.description} ${item.points.join(" ")} ${item.transcript.join(" ")}`;
+  const nums = new Set(text.match(/\d+\.\d+/g) ?? []);
   let best = null;
   for (const p of posts) {
-    if (dayDiff(p.date, item.date) > 10) continue;
+    const days = dayDiff(p.date, item.date);
+    if (days > 10) continue;
     const hay = `${p.title} ${p.description}`;
-    const numHit = [...nums].some(n => hay.includes(n));
+    const numHits = [...nums].filter(n => hay.includes(n)).length;
     const kwHit = keywords.filter(k => k && k.length >= 2 && hay.includes(k)).length;
-    const score = (numHit ? 10 : 0) + (kwHit >= 2 ? kwHit : 0);
-    if (score > 0 && (!best || score > best.score)) best = { slug: p.slug, title: p.title, score };
+    if (!numHits && kwHit < 2) continue;
+    // 共用的精確數字最重要，同分時選日期最近的那篇
+    const score = numHits * 10 + (kwHit >= 2 ? kwHit : 0) - days / 10;
+    if (!best || score > best.score) best = { slug: p.slug, title: p.title, score };
   }
   return best ? { slug: best.slug, title: best.title } : null;
 }
