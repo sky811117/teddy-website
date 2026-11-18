@@ -155,7 +155,6 @@ function formatDate(d: Date): string {
               rel="noopener"
               class:list={[
                 "border-border bg-card hover:border-accent group block rounded-lg border p-5 no-underline transition-colors",
-                `bg-gradient-to-br ${info.color}`,
               ]}
             >
               <div class="text-5xl">{info.icon}</div>
@@ -300,27 +299,13 @@ function formatDate(d: Date): string {
                         </span>
                       )}
                       {/* platform badge */}
-                      <span
-                        class:list={[
-                          "absolute top-2 left-2 rounded px-2 py-1 text-xs font-medium",
-                          v.platform === "youtube" && "bg-red-600 text-white",
-                          v.platform === "tiktok" && "bg-black text-white",
-                          v.platform === "instagram" &&
-                            "bg-gradient-to-r from-pink-500 to-amber-500 text-white",
-                          v.platform === "facebook" && "bg-blue-600 text-white",
-                        ]}
-                      >
+                      <span class="bg-background/90 text-foreground absolute top-2 left-2 rounded-full px-2.5 py-1 text-xs font-medium">
                         {platform.icon} {platform.name}
                       </span>
                     </div>
                     <div class="p-4">
                       {/* author badge — 景泰原作 / 推薦・房仲大看板 */}
-                      <span
-                        class:list={[
-                          "inline-block rounded px-2 py-0.5 text-[10px] font-medium",
-                          authorInfo[v.author ?? "teddy"].badgeColor,
-                        ]}
-                      >
+                      <span class="bg-muted text-muted-foreground inline-block rounded px-2 py-0.5 text-[10px] font-medium">
                         {authorInfo[v.author ?? "teddy"].badge}
                       </span>
                       <div class="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-2 text-xs">
@@ -328,7 +313,7 @@ function formatDate(d: Date): string {
                         <span aria-hidden="true">·</span>
                         <span>{formatDate(v.pubDate)}</span>
                         {v.featured && (
-                          <span class="bg-accent text-accent-foreground rounded px-1.5 py-0.5 text-[10px] font-medium">
+                          <span class="bg-muted text-foreground rounded px-1.5 py-0.5 text-[10px] font-medium">
                             🔥 精選
                           </span>
                         )}
@@ -464,7 +449,7 @@ function formatDate(d: Date): string {
                       loading="lazy"
                       decoding="async"
                     />
-                    <span class="absolute top-2 left-2 rounded bg-red-600 px-2 py-1 text-xs font-medium text-white">
+                    <span class="bg-background/90 text-foreground absolute top-2 left-2 rounded-full px-2.5 py-1 text-xs font-medium">
                       {platformInfo.youtube.icon} Shorts
                     </span>
                   </div>
@@ -564,27 +549,28 @@ function formatDate(d: Date): string {
 </Layout>
 
 <style>
+  /* 2026-11 極簡改版：淺灰膠囊、至少 40 高；選到的那顆是藍色實心（--blue 定義在 flora.css） */
   .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
     cursor: pointer;
     border-radius: 9999px;
-    border: 1px solid var(--border);
-    background: var(--background);
+    border: 0;
+    background: var(--muted);
     color: var(--foreground);
-    padding: 0.25rem 0.75rem;
-    font-size: 0.875rem;
+    padding: 0 14px;
+    font-size: 14px;
     transition:
-      border-color 0.15s,
       background-color 0.15s,
       color 0.15s;
   }
   .filter-chip:hover {
-    border-color: var(--accent);
-    color: var(--accent);
+    background: var(--press);
   }
   .filter-chip-active,
   .filter-chip-active:hover {
-    border-color: var(--accent);
-    background: var(--accent);
+    background: var(--blue);
     color: var(--background);
   }
 </style>

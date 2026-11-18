@@ -1,0 +1,129 @@
+/*
+ * 首頁第一眼的「在售物件地圖」（2026-11 極簡改版；接在 ax-home.css 後面，一樣不包 @layer）。程式在 public/js/home-map.js。
+ * 第一眼的大圖換成一張台中的地圖：一個點是一間在售的房子，圖上標區名。
+ * 打「北屯」鏡頭推過去；再打房數、預算，不符合的淡掉，數字跟著變；點一顆跳出那一間的小卡。
+ * 底圖兩種：沒有前綴的規則＝亮底版（一開始、也是接不到空拍圖時的樣子）；.hm.is-sat 開頭的＝接上空拍圖之後。
+ * 全部掛在 .hm（就是那個 figure）底下，不會動到別的 .shot；顏色用 ax.css 的變數。
+ * 數字那一塊（.hm-hud）是伺服器先印好的：寬版的排法寫在 @media 裡（不等程式加 class），沒有 JavaScript、或地圖起不來時一樣排得對。
+ * 規矩照 ax.css：給客人看的字最小 14、按鈕至少 40；過場只動位移、縮放、透明度（外加接上空拍圖那一下，數字那一塊的字色）；減少動態與 .lite 時不做過場。
+ */
+.hm{isolation:isolate;touch-action:pan-x pan-y}
+.hm.is-off{touch-action:auto}
+/* 空拍圖底下墊一層深色：數字那一側的空拍圖會淡一點、露出這一層，白字才看得清楚。接上空拍圖時跟著淡入（亮底版看不到它） */
+.hm::before{content:"";position:absolute;inset:0;background:#0b1220;opacity:0;pointer-events:none;transition:opacity .6s}
+.hm.is-sat::before{opacity:1}
+/* 數字那一塊底下的光點淡掉，字才不會被蓋住 */
+.hm canvas{position:absolute;inset:0;width:100%;height:100%;display:block;-webkit-mask-image:linear-gradient(180deg,transparent 34px,#000 122px);mask-image:linear-gradient(180deg,transparent 34px,#000 122px)}
+.hm.hm-wide canvas{-webkit-mask-image:linear-gradient(90deg,transparent 12%,#000 33%);mask-image:linear-gradient(90deg,transparent 12%,#000 33%)}
+/* 空拍圖那一張畫布一開始就在（在光點底下），接上了才淡入 */
+.hm .hm-tiles{opacity:0;transition:opacity .6s}
+.hm.is-sat .hm-tiles{opacity:1}
+.hm .hm-hud{position:absolute;left:22px;top:20px;z-index:2;text-align:left;color:var(--tx);pointer-events:none}
+.hm .hm-hud b{display:block;font-size:48px;line-height:1;font-weight:600;letter-spacing:-.02em}
+.hm .hm-hud span{display:block;margin-top:6px;font-size:17px;line-height:1.3}
+/* 「一個點是一間房子」那一行：地圖畫出來（.is-on）才顯示；位置先留著，出現時數字不會跳 */
+.hm .hm-hud small{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:14px;line-height:1.3;color:var(--tx2);visibility:hidden}
+.hm.is-on .hm-hud small{visibility:visible}
+.hm .hm-hud small::before{content:"";width:8px;height:8px;flex:none;border-radius:50%;background:var(--blue)}
+@media (min-width:735px){
+  .hm .hm-hud{left:6%;top:50%;transform:translateY(-50%)}
+  .hm .hm-hud b{font-size:clamp(88px,10vw,128px);letter-spacing:-.03em}
+  .hm .hm-hud span{font-size:20px;margin-top:12px}
+  .hm .hm-hud small{font-size:17px;margin-top:8px}
+}
+.hm .hm-tag{position:absolute;left:0;top:0;z-index:2;display:flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:980px;background:rgba(29,29,31,.84);color:#fff;font-size:14px;font-weight:600;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .35s;will-change:transform}
+.hm .hm-tag.on{opacity:1}
+/* 空拍圖版：空拍圖整塊鋪滿，數字那一側讓圖片淡一點、露出深色底，白字才看得清楚；光點是白邊藍芯的實心點。 */
+.hm.is-sat canvas{-webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.42) 0,rgba(0,0,0,.42) 44px,#000 150px);mask-image:linear-gradient(180deg,rgba(0,0,0,.42) 0,rgba(0,0,0,.42) 44px,#000 150px)}
+.hm.is-sat.hm-wide canvas{-webkit-mask-image:linear-gradient(90deg,rgba(0,0,0,.38) 0,rgba(0,0,0,.38) 8%,#000 40%);mask-image:linear-gradient(90deg,rgba(0,0,0,.38) 0,rgba(0,0,0,.38) 8%,#000 40%)}
+.hm.is-sat .hm-hud{color:#fff;text-shadow:0 1px 14px rgba(0,0,0,.5);transition:color .3s .15s}
+.hm.is-sat .hm-hud small{color:rgba(255,255,255,.9)}
+.hm.is-sat .hm-hud small::before{background:#0a84ff;box-shadow:0 0 0 2px #fff}
+.hm.is-sat .hm-tag{background:#fff;color:#1d1d1f;box-shadow:0 2px 12px rgba(0,0,0,.35)}
+/* 右下角出處：第一行（影像、路名）接上空拍圖才顯示；第二行（範圍線）、第三行（點位、空心點）一直都在。這一塊是圖資的使用條件，不能拿掉 */
+.hm .hm-credit{position:absolute;right:14px;bottom:10px;z-index:2;margin:0;font-size:14px;line-height:1.3;text-align:right;color:var(--tx2);text-shadow:0 0 3px var(--tile),0 0 3px var(--tile);pointer-events:none;transition:transform .4s var(--out)}
+.hm .hm-credit span{display:block;text-wrap:balance}
+.hm .hm-credit span:first-child{display:none}
+.hm.is-sat .hm-credit{color:rgba(255,255,255,.92);text-shadow:0 1px 4px rgba(0,0,0,.75)}
+.hm.is-sat .hm-credit span:first-child{display:block}
+/* 自己推近、拖到路面上時，白字底下的空拍圖可能很亮：出處加一塊跟左上角小牌子一樣的深色底，字才讀得到（預設畫面不加，免得蓋住底下的點） */
+.hm.is-sat.is-free .hm-credit{padding:4px 10px;border-radius:12px;background:rgba(12,18,30,.64);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);text-shadow:none}
+.hm.has-strip .hm-credit{transform:translate3d(0,-104px,0)}
+/* 小卡滑出來時出處往上讓；圖塊不高的時候（平板直放、縮小的視窗）會讓到右邊那三顆鈕的高度，寬版就再往左讓一個鈕的寬度，不被鈕蓋住 */
+.hm.hm-wide.has-strip .hm-credit{transform:translate3d(-52px,-104px,0)}
+/* 選了一區、或打了條件之後：圖塊底下滑出一排房子小卡。
+   卡片可以左右滑，點卡片進那間的物件頁；最後一張是「看全部」。收起來的時候鍵盤走不進去（visibility，程式另外加 inert）。
+   上下各留 6px：選中的藍框、鍵盤的聚焦框才不會被這一排的捲動範圍切掉（卡片離圖塊底邊一樣是 12px）。 */
+.hm .hm-strip{position:absolute;left:0;right:0;bottom:6px;z-index:3;display:flex;gap:10px;padding:6px 12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-left:12px;scrollbar-width:none;-webkit-overflow-scrolling:touch;opacity:0;visibility:hidden;transform:translate3d(0,18px,0);pointer-events:none;transition:opacity .3s,transform .5s var(--out),visibility 0s .5s}
+.hm .hm-strip::-webkit-scrollbar{display:none}
+.hm .hm-strip.on{opacity:1;visibility:visible;transform:none;pointer-events:auto;transition-delay:0s}
+.hm .hm-strip.is-drag{scroll-snap-type:none;cursor:grabbing}
+.hm .hm-card{flex:0 0 auto;width:min(292px,80%);min-height:92px;display:flex;align-items:center;gap:12px;padding:8px 14px 8px 8px;border-radius:18px;background:#fff;color:var(--tx);box-shadow:0 6px 22px rgba(0,0,0,.26);scroll-snap-align:start;text-align:left;-webkit-user-drag:none;user-select:none;-webkit-user-select:none;transition:box-shadow .2s}
+/* 小卡的照片：權重要壓過頁面的 .shot img（那一條會把圖撐滿整個圖塊） */
+.hm a.hm-card img{width:76px;height:76px;flex:none;border-radius:12px;object-fit:cover;object-position:50% 50%;background:var(--chip)}
+.hm .hm-ct{min-width:0;display:flex;flex-direction:column;gap:2px}
+.hm .hm-ct b{font-size:20px;line-height:1.2;font-weight:600;letter-spacing:-.01em}
+.hm .hm-ct span{font-size:14px;line-height:1.35;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hm .hm-card.is-sel{box-shadow:0 0 0 2.5px #0a84ff,0 6px 22px rgba(0,0,0,.26)}
+.hm .hm-more{width:auto;justify-content:center;padding:0 24px;font-size:17px;font-weight:600;color:var(--link);white-space:nowrap}
+.hm .hm-nav{display:none;position:absolute;bottom:38px;z-index:4;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:#fff;color:var(--tx);box-shadow:0 2px 10px rgba(0,0,0,.3);place-items:center;cursor:pointer}
+.hm.hm-wide .hm-strip{left:34%;padding:6px 16px;scroll-padding-left:16px}
+.hm.hm-wide .hm-card{width:300px}
+.hm.hm-wide.has-strip .hm-nav{display:grid;transition:opacity .2s}
+.hm .hm-nav:disabled{opacity:0;pointer-events:none}
+.hm .hm-nav-l{left:calc(34% + 4px)}
+.hm .hm-nav-r{right:8px}
+/* 地圖可以自己操作：滾輪放大縮小、按住拖著移動；手機一根手指照常捲網頁、兩根手指移動和縮放；
+   右邊三顆鈕＝放大、縮小、回到全台中（用不到的時候是 disabled）。 */
+.hm.can-pick{cursor:pointer}
+.hm.is-pan{cursor:grabbing}
+/* 鈕和鈕之間的縫、不能按的鈕（disabled）點下去要穿到地圖上：底下壓著的那幾間（例如手機上的東勢區）才點得開 */
+.hm .hm-zoom{position:absolute;right:12px;top:50%;z-index:4;display:flex;flex-direction:column;gap:8px;transform:translateY(-50%);transition:transform .4s var(--out);pointer-events:none}
+.hm .hm-zoom button{width:44px;height:44px;padding:0;border:0;border-radius:50%;display:grid;place-items:center;background:#fff;color:var(--tx);box-shadow:0 2px 10px rgba(0,0,0,.28);cursor:pointer;transition:opacity .2s,transform .2s var(--ease);pointer-events:auto}
+.hm .hm-zoom button:active{transform:scale(.94)}
+.hm .hm-zoom button:disabled{opacity:.4;pointer-events:none}
+.hm.hm-wide .hm-zoom button{width:40px;height:40px}
+/* 手機（窄版）：小卡滑出來時三顆鈕往上讓，不蓋到往上讓的出處。
+   2026-11-17 出處多一行（點位：數位發展局）後每一段都多讓 22px；不到 384 寬時圖塊比較矮；
+   不到 366 寬時第三行會折成兩行（自己操作時出處多了內距，366 寬以下也會折），再多讓一點 */
+@media (max-width:734px){
+  .hm.has-strip .hm-zoom{transform:translateY(calc(-50% - 22px))}
+}
+@media (max-width:383px){
+  .hm.has-strip .hm-zoom{transform:translateY(calc(-50% - 50px))}
+}
+@media (max-width:365px){
+  .hm.has-strip .hm-zoom{transform:translateY(calc(-50% - 82px))}
+}
+/* 平板直放、窄一點的視窗（寬版但圖塊不高）：小卡滑出來時，大數字和三顆鈕往上讓一點，不被第一張小卡蓋到。
+   自己在操作時（.is-free）數字已經縮成左上角的小牌子，不用讓 */
+@media (min-width:735px) and (max-width:859px){
+  /* 2026-11-17 出處多一行後，-28px 時數字底下那行說明會跟出處第三行接成同一行（「點一下看看點位：…」），再往上讓到 -52px */
+  .hm.has-strip:not(.is-free) .hm-hud{transform:translateY(calc(-50% - 52px))}
+  .hm.has-strip .hm-zoom{transform:translateY(calc(-50% - 18px))}
+}
+/* 自己在操作地圖時：數字那一塊縮成左上角的小牌子，整張圖都讓出來（按「回到全台中」就變回大數字） */
+.hm.is-free canvas{-webkit-mask-image:none!important;mask-image:none!important}
+.hm.is-free .hm-hud{left:12px;top:12px;transform:none;padding:10px 16px 12px;border-radius:18px;background:rgba(12,18,30,.64);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);color:#fff;text-shadow:none;transition:none}
+.hm.is-free .hm-hud b{display:inline;font-size:32px;letter-spacing:-.01em}
+.hm.is-free .hm-hud span{display:inline;margin:0 0 0 8px;font-size:17px;color:#fff}
+.hm.is-free .hm-hud small{margin-top:4px;font-size:14px;color:rgba(255,255,255,.88)}
+/* 電腦：點開的那一間，卡片跳在那一顆旁邊，底下一個小三角指著它 */
+.hm .hm-pop{position:absolute;left:0;top:0;z-index:5;width:300px;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .18s,visibility 0s .18s;will-change:transform}
+.hm .hm-pop.on{opacity:1;visibility:visible;pointer-events:auto;transition-delay:0s}
+.hm .hm-pop.on.away{opacity:0;visibility:hidden;pointer-events:none;transition-delay:0s,.18s}
+.hm .hm-pop .hm-card{position:relative;z-index:1;width:100%}
+.hm .hm-pop::after{content:"";position:absolute;left:var(--ax,150px);bottom:-7px;width:16px;height:16px;margin-left:-8px;background:#fff;transform:rotate(45deg);border-radius:3px;box-shadow:3px 3px 8px rgba(0,0,0,.14)}
+.hm .hm-pop.below::after{bottom:auto;top:-7px;box-shadow:none}
+/* 鍵盤走到的鈕和小卡：一圈看得到的框（空拍圖上、亮底上都看得出來） */
+.hm .hm-card:focus-visible,.hm .hm-nav:focus-visible,.hm .hm-zoom button:focus-visible,.hm .hm-all:focus-visible{outline:3px solid #0a84ff;outline-offset:2px}
+/* 沒有 JavaScript、或地圖起不來（.is-off）時：數字照樣在，旁邊一顆「看全部在售物件」 */
+.hm .hm-all{position:absolute;left:50%;top:58%;z-index:2;transform:translate(-50%,-50%);display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 22px;border-radius:980px;background:var(--blue);color:#fff;font-size:17px;line-height:1.2;white-space:nowrap}
+@media (min-width:735px){
+  .hm .hm-all{left:66%;top:50%}
+}
+/* 減少動態、.lite（低階手機、省流量）：不做過場，直接換 */
+@media (prefers-reduced-motion:reduce){
+  .hm,.hm::before,.hm *,.hm *::after{transition:none!important}
+}
+html.lite .hm,html.lite .hm::before,html.lite .hm *,html.lite .hm *::after{transition:none!important}

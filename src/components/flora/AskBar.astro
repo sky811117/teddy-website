@@ -1,0 +1,59 @@
+---
+/**
+ * 底部詢問列（2026-11 花店風改版，全站唯一的記憶點）：玻璃膠囊＋實心「用 LINE 問…」＋電話（＋表單）圓鈕。
+ * 跟著看的那一間走：頁面上標了 data-ask-main／data-ask-sub／data-ask-msg／data-ask-href 的區塊捲到畫面中線帶時，
+ * flora.ts 把主句、副行、要複製的話、連結換成那一區的（例如首頁滑到某間精選就變「用 LINE 問這間」）。
+ * 景泰的 LINE 是個人帳號，不能預填訊息 → 按下去先把寫好的那句話複製起來，再照原路 /go/line 開 LINE（TG 通知照舊）。
+ * 頁面上看得到別的實心按鈕時（同一畫面只放一顆實心），詢問列先往下讓位。
+ * 沒有 JavaScript：就是一般連結，照樣開 LINE、撥電話。
+ */
+type Props = {
+  main?: string;
+  sub?: string;
+  href?: string;
+  msg?: string;
+  formHref?: string;
+  formLabel?: string;
+  /** 物件頁沿用原本手機底部 CTA 的追蹤屬性（GA4 事件靠 [data-property-mobile-cta]） */
+  propertyCta?: boolean;
+};
+const {
+  main = "用 LINE 問景泰",
+  // 2026-11 極簡改版：預設不放副行（按下去的提示「已複製訊息，到 LINE 貼上就好」會自己跳出來）；物件頁、跟著物件卡走時才有副行
+  sub = "",
+  // 沿用原本右下角浮動鈕的代碼 float：TG 通知、GA4 的 LINE 來源統計可以跟改版前直接比（/go/line 用 Referer 記是哪一頁）
+  href = "/go/line?src=float",
+  msg = "",
+  formHref,
+  formLabel = "留聯絡方式",
+  propertyCta = false,
+} = Astro.props;
+---
+
+<aside class="askbar g-pill" aria-label="問景泰" data-askbar data-property-mobile-cta={propertyCta ? "" : undefined}>
+  <a class="ask-main" href={href} data-ask-link data-msg={msg} data-def-main={main} data-def-sub={sub} data-def-href={href}>
+    <svg class="lg" viewBox="0 0 32 32" aria-hidden="true"
+      ><circle cx="16" cy="16" r="16" fill="#06C755"></circle><g transform="translate(5.6 6.2) scale(.866)"
+        ><path
+          fill="#fff"
+          d="M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"
+        ></path><path
+          fill="#06C755"
+          d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629"
+        ></path></g
+      ></svg
+    >
+    <span class="t"><b data-ask-main>{main}</b><small data-ask-sub>{sub}</small></span>
+  </a>
+  <a class="ask-circle tel" href="tel:+886920118756" aria-label="打電話給景泰">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h3l1.5 4-2 1.3a11 11 0 0 0 6.2 6.2l1.3-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2z"></path></svg>
+  </a>
+  {
+    formHref && (
+      <a class="ask-circle" href={formHref} aria-label={formLabel}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="m13.5 6.5 4 4" /></svg>
+      </a>
+    )
+  }
+</aside>
+<div class="fl-toast g-sheet" role="status" aria-live="polite" data-toast hidden></div>

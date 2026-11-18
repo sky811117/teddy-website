@@ -118,9 +118,9 @@ const quickLinks = [
         {quickLinks.map(({ Icon, label, href }) => (
           <a
             href={href}
-            class="card-interactive flex min-h-11 items-center gap-2.5 px-4 py-3 text-sm font-medium no-underline"
+            class="bg-muted text-foreground hover:bg-(--press) flex min-h-11 items-center gap-2.5 rounded-xl px-4 py-3 text-sm no-underline transition-colors"
           >
-            <Icon class="text-accent size-5 shrink-0" aria-hidden="true" />
+            <Icon class="text-muted-foreground size-5 shrink-0" aria-hidden="true" />
             <span>{label}</span>
           </a>
         ))}

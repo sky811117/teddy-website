@@ -219,7 +219,7 @@ const breadcrumbSchema = {
           area && (
             <a
               href={`/areas/${area.slug}/`}
-              class="border-border bg-card hover:border-accent inline-block rounded-full border px-4 py-2 no-underline transition-colors"
+              class="bg-muted text-foreground hover:bg-(--press) inline-flex min-h-10 items-center rounded-full px-4 no-underline transition-colors"
             >
               {area.emoji} {area.shortName}買房指南 →
             </a>
@@ -227,7 +227,7 @@ const breadcrumbSchema = {
         }
         <a
           href={`/properties/?district=${encodeURIComponent(district)}`}
-          class="border-border bg-card hover:border-accent inline-block rounded-full border px-4 py-2 no-underline transition-colors"
+          class="bg-muted text-foreground hover:bg-(--press) inline-flex min-h-10 items-center rounded-full px-4 no-underline transition-colors"
         >
           再篩總價・房型・屋齡 →
         </a>
@@ -264,7 +264,7 @@ const breadcrumbSchema = {
               <li>
                 <a
                   href={`/properties/${d.slug}/`}
-                  class="border-border bg-card hover:border-accent inline-block rounded-full border px-4 py-2 text-sm no-underline transition-colors"
+                  class="bg-muted text-foreground hover:bg-(--press) inline-flex min-h-10 items-center rounded-full px-4 text-sm no-underline transition-colors"
                 >
                   {d.district} ({d.count})
                 </a>

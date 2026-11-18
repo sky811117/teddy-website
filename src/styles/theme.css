@@ -30,31 +30,33 @@
   --shadow-card: var(--elev-1);
   --shadow-card-hover: var(--elev-2);
   --shadow-cta: var(--elev-cta);
-  --radius-card: 1rem;
-  --radius-btn: 0.625rem;
+  /* 形狀三級：按得下去的全圓、面板 20px、照片直角 */
+  --radius-card: 1.125rem;
+  --radius-btn: 999px;
 }
 
 /* Light theme — 米色 + 淺木色（景泰美學鐵則：現代簡約北歐風）
  * accent 從 #a0826d 略加深 → #8a6539（深駝木色），達 WCAG AA 4.5:1 */
 :root,
 [data-theme="light"] {
-  --background: #f5f1eb; /* 米色 */
+  /* 2026-11 極簡改版（景泰 11/12 定案，參考 Apple 台灣官網）：白底、淺灰區塊、黑字、藍色連結與按鈕 */
+  --background: #ffffff;
   --card: #ffffff;
-  --foreground: #2c2522; /* 深棕黑 */
-  --accent: #8a6539; /* 深駝木色 — 對米色 contrast 4.7:1 */
+  --foreground: #1d1d1f; /* 黑字，白底 16.8:1 */
+  --accent: #0066cc; /* 連結藍，白底 5.6:1 */
   --accent-foreground: #ffffff;
-  --muted: #efe9de; /* 米色再深一點 */
-  --muted-foreground: #6b5e54; /* 深暖灰 — 對米色 contrast 5.5:1 */
-  --border: #e8e0d5;
-  /* 深色節奏帶：深咖啡底 + 米色字 + 暖金強調 */
-  --surface-inverse: #241f1a;
-  --surface-inverse-foreground: #f5f1eb;
-  --surface-inverse-muted: #b3a89e;
-  --surface-inverse-accent: #c9a87c;
-  /* 暖棕陰影（rgb 取自 foreground #2c2522） */
-  --elev-1: 0 1px 3px rgb(44 37 34 / 0.06), 0 4px 12px rgb(44 37 34 / 0.05);
-  --elev-2: 0 4px 8px rgb(44 37 34 / 0.08), 0 14px 28px rgb(44 37 34 / 0.11);
-  --elev-cta: 0 4px 14px rgb(138 101 57 / 0.35);
+  --muted: #f5f5f7; /* 淺灰：照片佔位、頁尾、淺底區塊 */
+  --muted-foreground: #6e6e73; /* 白底 5.0:1、淺灰底 4.6:1 */
+  --border: #e3e3e8;
+  /* 原本的深色節奏帶一律用淺灰帶（字色跟著反過來） */
+  --surface-inverse: #f5f5f7;
+  --surface-inverse-foreground: #1d1d1f;
+  --surface-inverse-muted: #6e6e73;
+  --surface-inverse-accent: #0066cc;
+  /* 陰影很淡、中性色 */
+  --elev-1: 0 1px 2px rgb(0 0 0 / 0.04);
+  --elev-2: 0 6px 20px rgb(0 0 0 / 0.08);
+  --elev-cta: none;
 }
 
 /* Dark theme — 深咖啡 + 暖金 */
@@ -81,19 +83,13 @@
 /* CJK 字型 — 內文走系統字（刻意不含 Noto Sans TC：webfont 只給標題層用，
  * 內文若也吃 webfont 會拖下數百 KB 的 CJK 切片）*/
 :root {
+  /* 2026-11 極簡改版：英數字先用系統字（iPhone／Mac 是 SF、Windows 是 Segoe UI），中文照舊蘋方／正黑體；不下載任何字型檔 */
   --font-app-cjk:
-    "PingFang TC", "Heiti TC", "Microsoft JhengHei", "微軟正黑體", sans-serif;
+    -apple-system, BlinkMacSystemFont, "PingFang TC", "Segoe UI", "Heiti TC", "Microsoft JhengHei", "微軟正黑體", sans-serif;
 }
 
-/* 標題字面：手機走系統字（Android 系統字本來就是 Noto Sans CJK、iOS 是 PingFang），
- * ≥768px 才掛 Noto Sans TC webfont（700/900、woff2 unicode-range 切片）。
- * 手機上沒有任何元素引用 Noto 的 family，瀏覽器就不會去抓切片（每頁 330–734KB，LCP 主因）。
- * Tailwind 不允許 @media 寫在 @theme 裡，所以放這裡。 */
+/* 標題字面：2026-11 改版起全站一律走系統字（手機原本就是）。改版標題用細字（300），
+ * 原本桌機才下載的 Noto Sans TC 700/900 webfont 用不到了，每頁桌機少下載數百 KB。 */
 :root {
   --font-heading-face: var(--font-app-cjk);
-}
-@media (min-width: 768px) {
-  :root {
-    --font-heading-face: var(--font-noto-sans-tc), var(--font-app-cjk);
-  }
 }

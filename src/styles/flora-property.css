@@ -1,0 +1,503 @@
+/*
+ * 物件頁（2026-11 極簡改版，照樣稿 v3）：照片左右滑、大數字價格、兩顆膠囊按鈕、大字規格，其餘的字收進「＋」裡。
+ * 元件本體在 ax.css（.ln .gal .ph .pd .crumb .lab .pr .per .spec .intro .acc .seg .car .card .tiles .tile …），
+ * 這支只放物件頁要補的、要微調的；一樣不包 @layer（蓋得過頁面上原本的 Tailwind class）。
+ * 規則都包在 .ax.pd-main（<main>）或 .ax.pd-top（上方小列的外框，在 <main> 外面）底下，權重比 ax.css 多一級，
+ * 不靠樣式檔載入的先後順序。唯一的例外是檔尾那條底部詢問列（它在 <main> 外面，也不在 .ax 裡）。
+ * 規矩照 ax.css：給客人看的字最小 14、內文 17；按鈕至少 40 高；動畫只動位移、縮放、透明度。
+ * 檔名沿用花店版（flora-property.css），內容整支重寫。
+ */
+
+/* ── 整頁的基本字（ax.css 只定義元件，內文字級要自己給）── */
+.ax.pd-main {
+  padding-bottom: 12px;
+  font-size: 17px;
+  line-height: 1.47;
+  color: var(--tx);
+}
+/* ax.css 檔頭寫了 .d-only（手機不顯示、電腦才顯示），但規則本身還沒搬進去；物件頁先自己補，之後 ax.css 補上也不衝突 */
+@media (max-width: 734px) {
+  .ax.pd-main .d-only,
+  .ax.pd-top .d-only {
+    display: none !important;
+  }
+}
+
+/* ── 上方小列：捲過價格與按鈕才滑出來（ax.ts 加 .on、切換 inert）。手機只有名稱和價格 ── */
+.ax.pd-top .ln .pill {
+  min-height: 40px;
+}
+.ax.pd-top .ln .loc {
+  display: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (min-width: 735px) {
+  /* 左右邊線對齊下面兩欄（最寬 1200、左右各留 32） */
+  .ax.pd-top .ln {
+    gap: 10px;
+    padding-inline: max(32px, calc((100% - 1136px) / 2));
+  }
+  .ax.pd-top .ln b {
+    margin-right: 6px;
+  }
+}
+@media (min-width: 1068px) {
+  .ax.pd-top .ln .loc {
+    display: block;
+    max-width: 30vw;
+  }
+}
+
+/* ── 照片：左右滑，每張都是開燈箱的按鈕 ── */
+.ax.pd-main .gal .ph {
+  /* 按鈕裡給讀屏的字（sr-only）是絕對定位，要關在自己這一張裡，不然會把整頁撐出水平捲動 */
+  position: relative;
+  margin: 0;
+}
+.ax.pd-main .gal .ph button {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+.ax.pd-main .gal .ph button:focus-visible {
+  outline-offset: -5px;
+  border-radius: 22px;
+}
+.ax.pd-main .gal .ph img {
+  display: block;
+}
+/* 上一張／下一張：電腦用滑鼠滑不動橫向照片才需要（ax-property.ts 確認能用才加 .on）；手機用手指滑，不顯示。
+   .pads 是蓋在照片上的一層（跟照片同一個比例、從 .gal 的最上面開始），本身不擋點擊，只有兩顆圓鈕可以按；
+   滑鼠移到照片區才淡出來，平常畫面跟樣稿一樣乾淨 */
+.ax.pd-main .gal .pads {
+  display: none;
+}
+@media (min-width: 735px) and (hover: hover) {
+  .ax.pd-main .gal .pads.on {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    aspect-ratio: 16 / 11;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+    pointer-events: none;
+  }
+  .ax.pd-main .gal .pads.on .pad {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.86);
+    color: var(--tx);
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.06),
+      0 4px 14px rgba(0, 0, 0, 0.14);
+    opacity: 0;
+    pointer-events: auto;
+    transition:
+      opacity 0.25s,
+      transform 0.2s var(--ease);
+  }
+  .ax.pd-main .gal:hover .pads.on .pad,
+  .ax.pd-main .gal .pads.on .pad:focus-visible {
+    opacity: 1;
+  }
+  .ax.pd-main .gal .pads.on .pad:active {
+    transform: scale(0.94);
+  }
+  /* 到第一張／最後一張：那一邊的圓鈕收掉（要寫在上面那條 hover 之後） */
+  .ax.pd-main .gal:hover .pads.on .pad:disabled,
+  .ax.pd-main .gal .pads.on .pad:disabled {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+/* 沒有照片：同一個位置放一塊淺灰的說明（電腦維持左欄的照片比例，手機照內容高度） */
+.ax.pd-main .gal .ph.none {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 12px;
+  padding: 28px 16px;
+  aspect-ratio: auto;
+  text-align: center;
+  font-size: 14px;
+  color: var(--tx2);
+}
+.ax.pd-main .gal .ph.none p:first-child {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--tx);
+}
+.ax.pd-main .gal .ph.none .pill {
+  margin-top: 10px;
+}
+
+/* ── 第一眼：返回、小標、標題、位置、價格、按鈕、兩行小字 ── */
+/* 標題按詞換行（.kw＋<wbr>）再加一層：每一段（到標點為止）是一塊。放得下就整段不拆、標點不會跑到行首；
+   一段比一行還長時，只在那一段裡面平均換行，不會剩一兩個字自己一行。字沒有動，只多了 <span class="tseg">（不能叫 .seg，那是 ax.css 的分段切換） */
+.ax.pd-main .pd h1 .tseg {
+  display: inline-block;
+  max-width: 100%;
+  word-break: normal;
+  text-wrap: balance;
+}
+.ax.pd-main .lab {
+  flex-wrap: wrap;
+  gap: 2px 12px;
+}
+/* 原始碼的順序是 委編 → 本店專任 → 新上架 → 降價（跟改版前同一段字）；畫面上新上架、降價排前面 */
+.ax.pd-main .lab .new {
+  order: -2;
+}
+.ax.pd-main .lab .drop {
+  order: -1;
+}
+.ax.pd-main .lab .code {
+  font-weight: 400;
+  color: var(--tx2);
+}
+.ax.pd-main .lab .ex {
+  color: var(--tx);
+}
+.ax.pd-main .pd .top .foot + .foot {
+  margin-top: 6px;
+}
+.ax.pd-main .pd .spec + .foot {
+  margin-top: 20px;
+}
+
+/* ── 規格：長的值（車位型態、格局帶陽台）自己換行，不把格子撐寬 ── */
+.ax.pd-main .spec > div {
+  min-width: 0;
+}
+.ax.pd-main .spec dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  /* 真的要換行時兩行平均，不留一個字自己一行 */
+  text-wrap: balance;
+}
+@media (max-width: 734px) {
+  /* 手機一欄只有一百多寬：長的值收小一級（20），多數就放得下一行 */
+  .ax.pd-main .spec dd.long {
+    font-size: 20px;
+  }
+}
+
+/* ── 收合區 ── */
+.ax.pd-main .acc {
+  margin-top: 44px;
+}
+.ax.pd-main .acc summary {
+  padding: 10px 0;
+}
+/* 原本就是 H2 的標題（物件介紹、物件亮點、社區文）留著 H2，長相跟其他列一樣 */
+.ax.pd-main .acc summary h2 {
+  margin: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+.ax.pd-main .acc .in > p {
+  margin: 0;
+}
+/* 物件介紹：「小標｜說明」的小標用深色粗字，跟說明排同一行（字一個都沒動） */
+.ax.pd-main .intro p b {
+  display: inline;
+}
+/* 介紹超過九行：先露六行，其餘按「看完整介紹」展開；展開後那顆按鈕收掉，字接著往下讀 */
+.ax.pd-main .acc .fold {
+  margin-top: 0;
+  border-top: 0;
+  text-align: left;
+}
+.ax.pd-main .acc .fold > summary {
+  display: inline-flex;
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 17px;
+  line-height: 1.3;
+  font-weight: 400;
+  color: var(--link);
+}
+.ax.pd-main .acc .fold[open]:not(.closing) > summary {
+  display: none;
+}
+.ax.pd-main .acc .fold > .in > * {
+  padding-bottom: 0;
+}
+.ax.pd-main .intro.rest {
+  margin-top: 0;
+}
+.ax.pd-main .intro.rest p:first-child {
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+/* 物件亮點：跟物件介紹同一種細線分隔 */
+.ax.pd-main .hl {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ax.pd-main .hl li {
+  padding: 12px 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+.ax.pd-main .hl li:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+/* 月付試算 */
+.ax.pd-main .seg button {
+  height: 40px;
+}
+.ax.pd-main [data-pay] .foot {
+  margin-top: 16px;
+}
+/* 社區文：標題一行（藍色連結）、摘要最多兩行 */
+.ax.pd-main .posts {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ax.pd-main .posts a {
+  display: block;
+  padding: 12px 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+.ax.pd-main .posts li:last-child a {
+  padding-bottom: 0;
+}
+.ax.pd-main .posts .d {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-top: 2px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--tx2);
+}
+/* 區域指南、分區列表：一句話一行，連結自己一行（至少 40 高，手指好按） */
+.ax.pd-main .go .more {
+  display: flex;
+  min-height: 40px;
+}
+
+/* ── 聯絡表單（全站共用元件，只在物件頁這裡換長相）：收在「詢問」那一格裡 ── */
+.ax.pd-main #contact-form-section {
+  /* 從底部詢問列、上方小列點過來時，讓出頁首下面那條小列的高度 */
+  scroll-margin-top: 68px;
+}
+.ax.pd-main .form [data-contact-form-section] {
+  margin: 0;
+  /* 左右留 3px：輸入框的對焦外框不會被收合區的 overflow 切掉 */
+  padding: 2px 3px 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+.ax.pd-main .form h2 {
+  font-size: 21px;
+  line-height: 1.3;
+}
+.ax.pd-main .form header p + p {
+  font-size: 14px;
+  color: var(--tx2);
+}
+.ax.pd-main .form input:not([type="checkbox"]),
+.ax.pd-main .form textarea,
+.ax.pd-main .form select {
+  border-color: var(--line);
+  border-radius: 12px;
+  font-size: 17px;
+}
+/* 表單裡原本的收合（區域偏好、進階需求）不是手風琴的一列：把 .acc 的列樣式還原 */
+.ax.pd-main .acc .form details {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.ax.pd-main .acc .form summary {
+  display: block;
+  min-height: 0;
+  padding: 12px 16px;
+  font-size: 17px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+/* 「想約看屋／想問貸款／想要實照」三顆快捷鈕：至少 40 高 */
+.ax.pd-main .form [data-contact-form] > .flex > button {
+  min-height: 40px;
+  padding: 0 16px;
+  border-color: var(--line);
+}
+.ax.pd-main .form [data-submit-btn] {
+  min-height: 44px;
+  padding: 10px 24px;
+  border-radius: 980px;
+  background: var(--blue);
+  font-size: 17px;
+}
+/* .ax 把連結都變成藍字，表單備援面板的實心 LINE 鈕要把白字補回來 */
+.ax.pd-main .form a.btn-line,
+.ax.pd-main .form a.btn-outline:hover {
+  color: #fff;
+}
+
+/* ── 不想填表單：LINE、電話、公司與證號（法規揭露，直接看得到）── */
+.ax.pd-main .quick {
+  margin-top: 32px;
+}
+.ax.pd-main .quick > p:first-child {
+  font-weight: 600;
+}
+.ax.pd-main .quick .cta {
+  margin-top: 12px;
+}
+
+/* ── 物件介紹抽不到時的整段內文（<Content />）── */
+.ax.pd-main [data-property-content] {
+  max-width: none;
+  margin-top: 36px;
+  font-size: 17px;
+}
+
+/* ── 同社區其他在售、同縣市其他物件：灰底區塊＋橫向卡片 ── */
+.ax.pd-main .pd-wrap:last-child {
+  padding-bottom: 64px;
+}
+.ax.pd-main .tile .h2 {
+  text-wrap: balance;
+}
+/* 戶數跟改版前一樣留在 H2 裡面，長相是標題下面的一行副標 */
+.ax.pd-main .tile .h2 .cnt {
+  display: block;
+  margin-top: 8px;
+  font-size: 19px;
+  line-height: 1.37;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--tx2);
+}
+/* 社區名很長時「看全部…」放不下一行：讓它換行，不把畫面撐寬 */
+.ax.pd-main .tile .cta .pill {
+  max-width: 100%;
+  padding-block: 9px;
+  white-space: normal;
+  text-align: center;
+}
+.ax.pd-main .tile .car {
+  list-style: none;
+}
+.ax.pd-main .tile .card > a {
+  display: block;
+  height: 100%;
+  color: inherit;
+}
+.ax.pd-main .tile .card figure {
+  margin: 0;
+}
+.ax.pd-main .tile .card figure.none {
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  color: var(--tx2);
+}
+.ax.pd-main .tile .card .t {
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--tx);
+}
+
+/* ── 燈箱：白色毛玻璃、灰色圓鈕（開合與切換沿用原本的行內程式）── */
+.ax.pd-main [data-gallery-lightbox] {
+  background: rgba(255, 255, 255, 0.92);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  color: var(--tx);
+}
+.ax.pd-main [data-gallery-lightbox]::backdrop {
+  background: rgba(0, 0, 0, 0.2);
+}
+.ax.pd-main [data-gallery-lightbox] img {
+  border-radius: 12px;
+}
+.ax.pd-main [data-gallery-lightbox] button {
+  background: var(--chip);
+  color: var(--tx);
+}
+.ax.pd-main [data-gallery-lightbox] button:hover {
+  background: #dcdce1;
+}
+.ax.pd-main [data-gallery-lightbox] [data-gallery-lightbox-counter] {
+  background: var(--chip);
+  color: var(--tx);
+  font-family: inherit;
+  font-size: 14px;
+}
+
+/* ── 平板以上：左邊照片黏住、右邊資料 ── */
+@media (min-width: 735px) {
+  /* 黏住時多讓出上方小列（52）的高度，小列滑出來才不會壓到照片 */
+  .ax.pd-main .gal {
+    top: calc(var(--gn) + 68px);
+  }
+  .ax.pd-main .gal .ph.none {
+    margin: 0;
+    aspect-ratio: 16 / 11;
+  }
+  /* 相關物件：一排三張、放不下就換排（最多六張＝兩排），不用左右滑 */
+  .ax.pd-main .tile .car {
+    flex-wrap: wrap;
+  }
+  .ax.pd-main .tile .card {
+    flex: 0 0 calc((100% - 24px) / 3);
+  }
+}
+/* 735～1067：右欄只有兩三百寬，標題與價格收小一級 */
+@media (min-width: 735px) and (max-width: 1067px) {
+  .ax.pd-main .pd-wrap {
+    column-gap: 32px;
+  }
+  .ax.pd-main .pd h1 {
+    font-size: 32px;
+    line-height: 1.16;
+  }
+  .ax.pd-main .pr b {
+    font-size: 48px;
+  }
+  .ax.pd-main .spec dd {
+    font-size: 21px;
+  }
+}
+
+/* ── 例外（不在 .ax 裡）：底部詢問列。cookie 同意框打開時 Analytics.astro 會直接改它的 bottom，這裡把 12px 間距補回去 ── */
+.askbar[data-property-mobile-cta] {
+  bottom: calc(
+    max(12px, env(safe-area-inset-bottom)) + var(--consent-h, 0px)
+  ) !important;
+}
+@media (min-width: 600px) {
+  /* 跟 flora.css 一樣：600 以上詢問列在右下角，離底 24 */
+  .askbar[data-property-mobile-cta] {
+    bottom: calc(
+      max(24px, env(safe-area-inset-bottom)) + var(--consent-h, 0px)
+    ) !important;
+  }
+}

@@ -22,7 +22,7 @@
  *                               base 預設是環境變數 LEAK_BASE，再沒有就 main。⚠️ 合併進 main 之後 main 對 main 是空的，
  *                               要改指「上一次上線的 commit 或 tag」，不然什麼都掃不到。
  *   --dist <dir>                掃建置產物：<dir>/find/**、首頁、隱私頁、404、新 JS（find-app、need-extract、wait-game、wait-board、find-brief、
- *                               find-scope、find-map）、find-map.css、自架的地圖程式庫 js/vendor/**、_astro/*.js、含 u2- 的 CSS（設計系統）、
+ *                               find-scope、find-map、home-map）、find-map.css、自架的地圖程式庫 js/vendor/**、_astro/*.js、含 u2- 的 CSS（設計系統）、
  *                               sitemap／llms.txt／_headers／_redirects
  *   --bundle <dir>              掃 Function 打包物（T1、T2；T3 允許）。打包物要用 charset=utf8 產生，否則中文被轉成 \uXXXX
  *                               （本腳本也會解開，但請兩邊都做）
@@ -53,7 +53,8 @@ const opt = n => {
 };
 const cwd = process.cwd();
 
-const BROWSER_JS = ["find-app.js", "need-extract.js", "wait-game.js", "wait-board.js", "find-brief.js", "find-scope.js", "find-map.js"];
+// 2026-11-13 加 home-map.js（首頁第一眼的在售地圖：每次打開首頁都會載，而且會連國土測繪中心的圖磚主機）
+const BROWSER_JS = ["find-app.js", "need-extract.js", "wait-game.js", "wait-board.js", "find-brief.js", "find-scope.js", "find-map.js", "home-map.js"];
 // 跟著瀏覽器端 JS 出貨的其他檔：地圖畫面的樣式（find-map.css）；自架的地圖程式庫整個資料夾（js/vendor/**，2026-10-09 Leaflet 1.9.4）
 const BROWSER_OTHER = ["find-map.css"];
 const VENDOR_DIR = ["js", "vendor"];
@@ -63,7 +64,8 @@ const T3_OK = [/^functions\//, /^src\/lib\/find\//, /^scripts\//, /^tests\//];
 const HOST_OK = new Set(["teddy-house.tw", "www.teddy-house.tw", "challenges.cloudflare.com", "www.googletagmanager.com", "www.google-analytics.com"]);
 // 只准出現在特定檔案的主機（2026-10-09 地圖圖片＝內政部國土測繪中心開放圖資）：網域只能寫在 find-map.js（TILE_URL 那一處）
 // 與 _headers（/find/ 的 CSP img-src）。其他任何檔出現這個網域都算違規——不管是不是載入型寫法（find.astro 檔頭的規定）
-const HOST_FILE_ONLY = { "wmts.nlsc.gov.tw": /(^|[\\/])(?:js[\\/]find-map\.js|_headers(?:\.txt)?)$/ };
+// 2026-11-13 加 home-map.js：首頁在售地圖的空拍圖與路名（網址只寫在 TILE、TILE_LAB 兩處）
+const HOST_FILE_ONLY = { "wmts.nlsc.gov.tw": /(^|[\\/])(?:js[\\/](?:find|home)-map\.js|_headers(?:\.txt)?)$/ };
 // 二進位（圖片、字型…）不逐行掃；svg 是文字，要掃
 const BINARY_EXT = /\.(png|jpe?g|webp|gif|ico|avif|woff2?|ttf|otf|mp4|webm|mp3|pdf|zip|gz|br|map)$/i;
 const IMAGE_EXT = /\.(png|jpe?g|webp|gif|avif|ico)$/i;

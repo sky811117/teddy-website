@@ -334,7 +334,7 @@ const areaTools = [
 
     {/* Hero summary */}
     <section
-      class={`border-border bg-card rounded-lg border p-6 sm:p-8 ${area.heroImage ? "mt-6" : ""}`}
+      class={`bg-muted rounded-card p-6 sm:p-8 ${area.heroImage ? "mt-6" : ""}`}
     >
       <p class="text-foreground text-lg leading-relaxed">{area.summary}</p>
       {
@@ -503,16 +503,14 @@ const areaTools = [
       <h2 class="text-foreground text-xl font-bold sm:text-2xl">
         💬 {area.shortName}常見問題
       </h2>
-      <div class="mt-4 space-y-3">
+      <div class="fl-qa mt-4">
         {
           area.faqs.map(item => (
-            <details
-              class="border-border bg-card group rounded-lg border p-4"
-            >
-              <summary class="text-foreground cursor-pointer text-base font-bold sm:text-lg">
+            <details>
+              <summary>
                 {item.q}
               </summary>
-              <p class="text-foreground mt-3 leading-relaxed">{item.a}</p>
+              <p class="text-foreground">{item.a}</p>
             </details>
           ))
         }
@@ -658,7 +656,7 @@ const areaTools = [
             <li>
               <a
                 href={`/areas/${a.slug}/`}
-                class="border-border bg-card hover:border-accent inline-block rounded-full border px-4 py-2 text-sm no-underline transition-colors"
+                class="bg-muted text-foreground hover:bg-(--press) inline-flex min-h-10 items-center rounded-full px-4 text-sm no-underline transition-colors"
               >
                 {a.emoji} {a.name}
               </a>

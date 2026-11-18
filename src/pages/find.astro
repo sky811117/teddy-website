@@ -10,7 +10,8 @@
  * 地圖畫面在 public/js/find-map.js（按「在地圖上圈範圍」才載入，程式庫放本站 /js/vendor/）。入口只在家用機回報支援（config 的 caps）時才出現。
  *
  * 對外只呼叫同源的 /api/find/*。這個檔、這些腳本與樣式都在公開 repo：不得出現搜尋來源的任何痕跡；地圖圖片服務例外——
- * 名稱只能出現在圖資標示、s1 的「範圍怎麼來的」與常見問題的資料說明，網域只能出現在 find-map.js 的 TILE_URL。
+ * 名稱只能出現在圖資標示、s1 的「範圍怎麼來的」與常見問題的資料說明，網域只能出現在 find-map.js 的 TILE_URL
+ * （2026-11-13 起另有首頁在售地圖 home-map.js 的 TILE、TILE_LAB；scripts/leak-audit.mjs 照這兩個檔擋）。
  * 資料怎麼用的承諾見 /privacy/；改了資料流要同步改那一頁。
  */
 import fs from "node:fs";
@@ -26,6 +27,8 @@ import { safeJsonLd } from "@/utils/safeJsonLd";
 import config from "@/config";
 import "@/styles/ui2-core.css";
 import "@/styles/ui2-find.css";
+// 2026-11 極簡改版：只換顏色／圓角（用同名變數蓋過 ui2-core.css，上面兩支有測試釘住不動）
+import "@/styles/ax-find.css";
 
 const pageURL = new URL("/find/", Astro.site).href;
 

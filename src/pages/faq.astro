@@ -331,16 +331,16 @@ const breadcrumbSchema = {
     pageTitle={pageTitle}
     pageDesc={`台中買賣房最常被問的 ${faqCount} 個問題 — 短答先看，想深入每題都有完整說明。`}
   >
-    {/* 快速跳轉導航 */}
-    <nav class="border-border bg-card mt-6 rounded-lg border p-4">
-      <p class="text-muted-foreground mb-2 text-sm tracking-wide">快速跳到</p>
-      <ul class="flex flex-wrap gap-x-3 gap-y-1 text-sm">
+    {/* 快速跳轉導航（2026-11 極簡改版：淺灰底面板，不畫框；連結至少 40 高） */}
+    <nav class="bg-muted rounded-card mt-2 px-5 py-4">
+      <p class="text-muted-foreground text-sm">快速跳到</p>
+      <ul class="flex flex-wrap gap-x-5 text-sm">
         {
           faqs.map((cat, i) => (
             <li>
               <a
                 href={`#cat-${i}`}
-                class="text-accent hover:underline"
+                class="text-accent inline-flex min-h-10 items-center hover:underline"
               >
                 {cat.cat}
               </a>
@@ -350,23 +350,21 @@ const breadcrumbSchema = {
       </ul>
     </nav>
 
-    {/* FAQ 主體 */}
-    <div class="mt-8 space-y-10">
+    {/* FAQ 主體（2026-11 極簡改版：每題不再是一張框卡，改用全站同一套細線開合 .fl-qa；分類標題底下的粗藍線拿掉） */}
+    <div class="mt-10 space-y-12">
       {
         faqs.map((cat, i) => (
           <section id={`cat-${i}`} class="scroll-mt-20">
-            <h2 class="border-accent text-foreground border-b-2 pb-2 text-xl font-bold sm:text-2xl">
+            <h2 class="text-foreground text-xl font-bold sm:text-2xl">
               {cat.cat}
             </h2>
-            <div class="mt-4 space-y-4">
+            <div class="fl-qa mt-4">
               {cat.items.map(item => (
-                <details
-                  class="border-border bg-card group rounded-lg border p-4 transition-colors"
-                >
-                  <summary class="text-foreground cursor-pointer text-base font-bold sm:text-lg">
+                <details>
+                  <summary>
                     {item.q}
                   </summary>
-                  <p class="text-foreground mt-3 leading-relaxed">{item.a}</p>
+                  <p class="text-foreground">{item.a}</p>
                   {item.src && (
                     <p class="text-muted-foreground mt-2 text-sm">
                       📌 資料來源：

@@ -105,9 +105,9 @@ const breadcrumbSchema = {
   {/* 本頁自帶 #breadcrumb（ProfilePage.breadcrumb 指向它），元件的 JSON-LD 關掉，只留可見 nav */}
   <Breadcrumb currentLabel={about.data.title} schema={false} />
 
-  <main id="main-content" class="pb-4">
+  <main id="main-content" class="axp pb-4">
     {/* ===== 頂部 hero：左文右圖、手機照片在上 ===== */}
-    <section class="from-muted to-background bg-gradient-to-b">
+    <section>
       <div
         class="app-layout-wide grid grid-cols-1 items-center gap-8 py-10 sm:grid-cols-[1fr_auto] sm:gap-12 sm:py-16"
       >
@@ -116,12 +116,12 @@ const breadcrumbSchema = {
           alt="陳景泰 / 泰迪 — 一品不動產有巢氏房屋台中世界之心加盟店"
           width="815"
           height="1041"
-          class="rounded-card shadow-card-hover mx-auto w-full max-w-sm object-cover sm:order-2"
+          class="rounded-card mx-auto w-full max-w-sm object-cover sm:order-2"
           loading="eager"
           fetchpriority="high"
         />
         <div class="sm:order-1">
-          <p class="text-accent font-heading text-sm font-bold tracking-wide">
+          <p class="text-muted-foreground text-sm">
             {about.data.description}
           </p>
           <h1 class="mt-2 text-3xl font-extrabold sm:text-4xl">
@@ -196,13 +196,13 @@ const breadcrumbSchema = {
     {/* ===== 垂直時間軸：廚師 13 年 → 轉房仲 → 學寫程式（白色節奏帶）===== */}
     <section class="bg-card py-12 sm:py-16">
       <div class="app-layout">
-        <ol class="border-accent relative ms-2 border-s-2">
+        <ol class="border-border relative ms-2 border-s">
           {/* 節點 1：廚師那 13 年 */}
           <li class="relative ps-8 pb-12">
             <span
-              class="bg-accent absolute -start-[7px] top-1.5 size-3 rounded-full"
+              class="bg-foreground absolute -start-[5.5px] top-2 size-2.5 rounded-full"
               aria-hidden="true"></span>
-            <p class="text-accent font-heading text-sm font-bold tracking-wide">
+            <p class="text-muted-foreground text-sm">
               2012-2025 廚師 13 年
             </p>
             <h2 class="mt-1 text-2xl font-extrabold">廚師那 13 年</h2>
@@ -242,9 +242,9 @@ const breadcrumbSchema = {
           {/* 節點 2：為什麼轉房仲 */}
           <li class="relative ps-8 pb-12">
             <span
-              class="bg-accent absolute -start-[7px] top-1.5 size-3 rounded-full"
+              class="bg-foreground absolute -start-[5.5px] top-2 size-2.5 rounded-full"
               aria-hidden="true"></span>
-            <p class="text-accent font-heading text-sm font-bold tracking-wide">
+            <p class="text-muted-foreground text-sm">
               2025-03 轉房仲
             </p>
             <h2 class="mt-1 text-2xl font-extrabold">為什麼轉房仲</h2>
@@ -285,9 +285,9 @@ const breadcrumbSchema = {
           {/* 節點 3：為什麼我學寫程式 */}
           <li class="relative ps-8 pb-2">
             <span
-              class="bg-accent absolute -start-[7px] top-1.5 size-3 rounded-full"
+              class="bg-foreground absolute -start-[5.5px] top-2 size-2.5 rounded-full"
               aria-hidden="true"></span>
-            <p class="text-accent font-heading text-sm font-bold tracking-wide">
+            <p class="text-muted-foreground text-sm">
               2026-04 開始寫程式
             </p>
             <h2 class="mt-1 text-2xl font-extrabold">為什麼我學寫程式</h2>
@@ -350,7 +350,7 @@ const breadcrumbSchema = {
             class="flex cursor-pointer list-none items-center gap-3 p-5 font-bold [&::-webkit-details-marker]:hidden"
           >
             <IconHelpCircle
-              class="text-accent size-6 shrink-0"
+              class="text-muted-foreground size-6 shrink-0"
               aria-hidden="true"
             />
             <span class="flex-1"
@@ -379,7 +379,7 @@ const breadcrumbSchema = {
             class="flex cursor-pointer list-none items-center gap-3 p-5 font-bold [&::-webkit-details-marker]:hidden"
           >
             <IconHelpCircle
-              class="text-accent size-6 shrink-0"
+              class="text-muted-foreground size-6 shrink-0"
               aria-hidden="true"
             />
             <span class="flex-1"
@@ -412,7 +412,7 @@ const breadcrumbSchema = {
             class="flex cursor-pointer list-none items-center gap-3 p-5 font-bold [&::-webkit-details-marker]:hidden"
           >
             <IconHelpCircle
-              class="text-accent size-6 shrink-0"
+              class="text-muted-foreground size-6 shrink-0"
               aria-hidden="true"
             />
             <span class="flex-1"
@@ -441,7 +441,7 @@ const breadcrumbSchema = {
             class="flex cursor-pointer list-none items-center gap-3 p-5 font-bold [&::-webkit-details-marker]:hidden"
           >
             <IconHelpCircle
-              class="text-accent size-6 shrink-0"
+              class="text-muted-foreground size-6 shrink-0"
               aria-hidden="true"
             />
             <span class="flex-1"

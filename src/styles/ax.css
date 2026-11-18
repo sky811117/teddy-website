@@ -1,0 +1,327 @@
+/*
+ * 2026-11 極簡改版（景泰指定參考 Apple 台灣官網）：首頁、物件頁共用的元件。
+ * 由樣稿 v3（房仲工作站\500_Strategy\SEO_GEO\改版2026-11\樣稿_v3極簡\a.css）搬過來。
+ * 全部包在 .ax 底下：只有 <main class="ax"> 的頁面吃得到，不會動到其他頁。
+ * 這支跟 flora.css 一樣不包 @layer（蓋得過 Tailwind 的 utilities）。
+ * 規矩：
+ *   1. 一個區塊只講一件事：標題、最多一句副標、一到兩顆膠囊按鈕、一張圖。
+ *   2. 字都留在網頁裡；說明收進 <details>（點「＋」才展開），手機放不下的加 .d-only（電腦版才顯示）。
+ *      不准用看不見的隱藏字去保留文字。
+ *   3. 動畫只動位移、縮放、透明度；進場用 flora.ts 的 data-r="rise"（第一屏不藏，不拖慢首屏）。
+ *   4. 給客人看的字最小 14、內文 17；按鈕至少 40 高。
+ */
+@keyframes rdIn{from{opacity:0;transform:translate3d(0,8px,0) scale(.96)}to{opacity:1;transform:none}}
+@keyframes zoomIn{from{transform:scale(1.16)}to{transform:scale(1)}}
+@keyframes growIn{from{transform:scale(.88)}to{transform:scale(1)}}
+
+.ax {
+  --f:-apple-system,BlinkMacSystemFont,"SF Pro TC","SF Pro Display","PingFang TC","Noto Sans TC","Microsoft JhengHei","Helvetica Neue",Arial,sans-serif;
+  --tx:#1d1d1f;--tx2:#6e6e73;--tx3:#86868b;--line:#d2d2d7;
+  --bg:#ffffff;--tile:#f5f5f7;--chip:#e8e8ed;
+  --blue:#0071e3;--link:#0066cc;--blue-d:#2997ff;
+  --green:#00802b;--orange:#b64400;
+  --m:22px;
+  --ease:cubic-bezier(.28,.11,.32,1);
+  --out:cubic-bezier(.2,.8,.2,1);
+  --gn:48px;
+  a{color:var(--link);text-decoration:none}
+  .ic{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .tnum{font-variant-numeric:tabular-nums}
+  /* ── 頂列：半透明白、毛玻璃 ── */
+  /* ── 按鈕：藍色膠囊 ── */
+  .pill{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 18px;border:1px solid transparent;border-radius:980px;font-size:16px;line-height:1.2;font-weight:400;white-space:nowrap;cursor:pointer;transition:transform .2s var(--ease),background-color .2s,border-color .2s,color .2s}
+  .pill:active{transform:scale(.96)}
+  .pill.f{background:var(--blue);color:#fff}
+  .pill.f:hover{background:#0077ed}
+  .pill.o{background:none;border-color:var(--link);color:var(--link)}
+  .pill.o:hover{background:var(--link);color:#fff}
+  .dark .pill.o{border-color:var(--blue-d);color:var(--blue-d)}
+  .dark .pill.o:hover{background:var(--blue-d);color:#000}
+  .cta{display:flex;flex-wrap:wrap;justify-content:center;gap:12px 14px;margin-top:18px}
+  .more{display:inline-flex;align-items:center;gap:2px;font-size:17px}
+  .more .ic{width:14px;height:14px;transition:transform .25s var(--ease)}
+  .more:hover .ic{transform:translateX(3px)}
+  .dark .more{color:var(--blue-d)}
+  /* ── 字 ── */
+  /* 大標（SEO 固定的那一句）留在原始碼最前面；畫面上排到大圖後面，當一句聲明 */
+  .h-pre,.h-main{display:block;font-size:28px;line-height:1.2;font-weight:600;letter-spacing:-.005em}
+  .h-pre{color:var(--tx3)}
+  .h-main{margin-top:2px}
+  /* 第一眼的大字：就是輸入框的那個問題 */
+  .q{font-size:clamp(26px,8.4vw,34px);line-height:1.15;font-weight:600;letter-spacing:-.01em}
+  .q label{cursor:text}
+  .h2{font-size:32px;line-height:1.125;font-weight:600;letter-spacing:-.005em}
+  .sub{margin-top:8px;font-size:19px;line-height:1.37}
+  .foot{font-size:14px;line-height:1.5;color:var(--tx2)}
+  /* ── 第一眼 ── */
+  .hero{display:flex;flex-direction:column;padding:44px var(--m) 0;text-align:center}
+  .hero h1{order:9;margin-top:56px}
+  .field{display:flex;align-items:center;gap:8px;width:100%;max-width:520px;min-height:54px;margin:22px auto 0;padding:6px 6px 6px 20px;border-radius:28px;background:var(--tile);box-shadow:inset 0 0 0 1px transparent;transition:box-shadow .25s var(--ease),background-color .25s}
+  .field:focus-within{background:#fff;box-shadow:inset 0 0 0 1px var(--blue),0 0 0 4px rgba(0,113,227,.2)}
+  .field textarea{flex:1;min-width:0;height:26px;max-height:78px;padding:0;border:0;outline:0;background:none;resize:none;font-size:17px;line-height:26px;text-align:left}
+  .field textarea::placeholder{color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .field button{width:42px;height:42px;flex:none;display:grid;place-items:center;border:0;border-radius:50%;background:var(--blue);color:#fff;cursor:pointer;transition:transform .2s var(--ease),background-color .2s}
+  .field button:active{transform:scale(.92)}
+  .field button .ic{width:20px;height:20px;stroke-width:2}
+  .reads{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;width:100%;max-width:520px;margin:0 auto;height:0;opacity:0;overflow:hidden;transition:height .45s var(--out),opacity .35s,margin .45s var(--out)}
+  .reads.on{height:var(--h,34px);opacity:1;margin-top:12px}
+  .rd{display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:980px;background:var(--chip);font-size:14px;color:var(--tx);animation:rdIn .5s var(--out) both}
+  .tries{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:14px}
+  .try{min-height:34px;padding:0 14px;border:0;border-radius:980px;background:none;box-shadow:inset 0 0 0 1px var(--line);font-size:14px;color:var(--tx2);cursor:pointer;transition:transform .2s var(--ease),box-shadow .2s,color .2s}
+  .try:hover{color:var(--tx);box-shadow:inset 0 0 0 1px var(--tx3)}
+  .try:active{transform:scale(.96)}
+  .links{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 22px;margin-top:20px}
+  /* 例句和說明：平常收著，點到輸入框才滑出來 */
+  .assist{display:grid;grid-template-rows:0fr;opacity:0;visibility:hidden;transition:grid-template-rows .5s var(--out),opacity .4s,visibility 0s .5s}
+  .assist>.in{min-height:0;overflow:hidden}
+  .hero.on .assist{grid-template-rows:1fr;opacity:1;visibility:visible;transition-delay:0s}
+  .assist .foot{max-width:520px;margin:12px auto 0}
+  .reads.on+.assist .tries{display:none}
+  details.closing>summary .plus{transform:none}
+  .shot{margin:32px calc(12px - var(--m)) 0;border-radius:28px;overflow:hidden;background:var(--tile);aspect-ratio:4/5}
+  .hp{margin-right:-.5em}
+  .shot img{width:100%;height:100%;object-fit:cover}
+  /* ── 三個數字、我是誰（收合）── */
+  .proof{padding:0 var(--m)}
+  .nums{display:flex;flex-wrap:wrap;justify-content:center;gap:28px 26px;padding-top:44px;text-align:center}
+  .nums b{display:block;font-size:32px;line-height:1.1;font-weight:600;letter-spacing:-.015em;white-space:nowrap}
+  .nums b small{font-size:17px;font-weight:600;margin:0 1px}
+  .nums span{display:block;margin-top:6px;font-size:14px;line-height:1.4;color:var(--tx2);white-space:nowrap}
+  .nums span i{font-style:normal}
+  .fold.me{margin-top:30px}
+  .fold.me>summary{gap:10px;min-height:48px;color:var(--tx);font-weight:600}
+  .fold.me>summary img{width:32px;height:32px;border-radius:50%}
+  .fold.me>.in{max-width:560px;margin:0 auto;text-align:left}
+  .big{padding-top:14px;font-size:21px;line-height:1.4;font-weight:600;color:var(--tx3)}
+  .big b{font-weight:600;color:var(--tx)}
+  .corp{display:flex;flex-direction:column;align-items:center;gap:10px;padding-top:28px;text-align:center}
+  .corp img{height:30px;width:auto}
+  /* ── 區塊（磚）── */
+  .tiles{display:grid;gap:12px;margin-top:64px}
+  .tile{position:relative;background:var(--tile);padding:44px var(--m) 0;text-align:center;overflow:hidden}
+  .tile.dark{background:#000;color:#f5f5f7}
+  .tile.dark .sub{color:#f5f5f7}
+  .tile.pb{padding-bottom:48px}
+  .tile .art{margin:32px calc(-1 * var(--m)) 0;aspect-ratio:16/10;overflow:hidden}
+  .tile .art img{width:100%;height:100%;object-fit:cover}
+  .tile.dark .art{-webkit-mask-image:linear-gradient(#0000,#000 34%);mask-image:linear-gradient(#0000,#000 34%)}
+  /* 收起來的字：按 ＋ 才展開 */
+  .fold{margin-top:14px;text-align:center}
+  .fold summary{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 4px;list-style:none;cursor:pointer;font-size:17px;color:var(--link)}
+  .dark .fold summary{color:var(--blue-d)}
+  .fold summary::-webkit-details-marker{display:none}
+  .plus{width:26px;height:26px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--chip);color:var(--tx);transition:transform .45s var(--out),background-color .2s}
+  .dark .plus{background:#333336;color:#f5f5f7}
+  .plus .ic{width:14px;height:14px;stroke-width:2}
+  details[open]>summary .plus{transform:rotate(45deg)}
+  .fold .in{overflow:hidden}
+  .fold ul{max-width:420px;margin:6px auto 0;text-align:left}
+  .fold li{padding:11px 0;border-top:1px solid rgba(0,0,0,.1);font-size:17px;line-height:1.45;color:var(--tx2)}
+  .dark .fold li{border-color:rgba(255,255,255,.16);color:#a1a1a6}
+  .fold .lead{max-width:420px;margin:0 auto;text-align:left;color:var(--tx2)}
+  .dark .fold .lead{color:#a1a1a6}
+  .fold .lead+ul{margin-top:10px}
+  .fold .lead+.foot{max-width:420px;margin:12px auto 0;text-align:left}
+  /* 角落的 ＋：這一塊的細項都在裡面，畫面上不佔字 */
+  .fold.corner{margin-top:0}
+  .fold.corner>summary{position:absolute;top:8px;right:8px;width:48px;height:48px;min-height:0;padding:0;justify-content:center}
+  .fold.corner>summary .plus{width:32px;height:32px;background:rgba(0,0,0,.08)}
+  .dark .fold.corner>summary .plus{background:#333336}
+  .fold.corner>summary .plus .ic{width:16px;height:16px}
+  .fold.corner>.in{padding-top:20px}
+  /* ── 橫向滑動的卡片 ── */
+  .car{display:flex;gap:12px;margin:28px calc(-1 * var(--m)) 0;padding:0 var(--m) 6px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 var(--m);scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .car::-webkit-scrollbar{display:none}
+  .card{flex:0 0 78%;max-width:330px;scroll-snap-align:start;background:#fff;border-radius:18px;overflow:hidden;text-align:left;color:var(--tx);transition:transform .35s var(--out)}
+  .card:active{transform:scale(.985)}
+  .card figure{aspect-ratio:4/3;overflow:hidden;background:var(--chip)}
+  .card figure img{width:100%;height:100%;object-fit:cover;transition:transform .8s var(--out)}
+  .card:hover figure img{transform:scale(1.04)}
+  .card .b{padding:14px 18px 20px}
+  .card .p{font-size:24px;line-height:1.2;font-weight:600;letter-spacing:-.01em}
+  .card .p small{font-size:17px;font-weight:600;margin-left:2px}
+  .card .p em{float:right;margin-top:6px;font-style:normal;font-size:14px;font-weight:400;color:var(--tx2)}
+  .card .t{margin-top:6px;font-size:17px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .d{margin-top:2px;font-size:14px;color:var(--tx2)}
+  .card .p i{float:right;margin-top:8px;font-style:normal;font-size:14px;font-weight:400;letter-spacing:0;color:var(--tx2)}
+  .card .u{margin-top:2px;font-size:14px;color:var(--tx2)}
+  /* 文章卡：只放標題 */
+  .note{flex:0 0 78%;max-width:330px;scroll-snap-align:start;display:flex;flex-direction:column;gap:10px;min-height:172px;padding:22px 22px 18px;border-radius:18px;background:var(--tile);text-align:left;color:var(--tx);transition:transform .35s var(--out)}
+  .note:active{transform:scale(.985)}
+  .note b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;font-size:21px;line-height:1.3;font-weight:600}
+  .note small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-size:14px;line-height:1.5;color:var(--tx2)}
+  .note .go{margin-top:auto;align-self:flex-end;width:32px;height:32px;display:grid;place-items:center;border-radius:50%;background:rgba(0,0,0,.08);color:var(--tx)}
+  .note .go .ic{width:14px;height:14px;stroke-width:2}
+  .dots{display:flex;justify-content:center;gap:8px;margin-top:14px}
+  .dots i{width:7px;height:7px;border-radius:50%;background:#c7c7cc;transition:background-color .3s,transform .3s var(--out)}
+  .dots i.on{background:var(--tx);transform:scale(1.15)}
+  /* ── 四步 ── */
+  .steps{display:flex;align-items:flex-start;gap:12px;margin:28px calc(-1 * var(--m)) 0;padding:0 var(--m) 6px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 var(--m);scrollbar-width:none}
+  .steps::-webkit-scrollbar{display:none}
+  .step{position:relative;flex:0 0 70%;max-width:300px;scroll-snap-align:start;padding:22px 22px 26px;border-radius:18px;background:var(--tile);text-align:left}
+  .step b{display:block;font-size:40px;line-height:1;font-weight:600;color:#c7c7cc}
+  .step h3{margin-top:18px;font-size:21px;line-height:1.2;font-weight:600}
+  .step .fold{text-align:left}
+  .step .fold.corner>.in{padding-top:0}
+  .step p{padding-top:8px;color:var(--tx2)}
+  /* ── 一般段落區 ── */
+  .sec{padding:72px var(--m) 0;max-width:760px;margin:0 auto}
+  .sec.c{text-align:center}
+  .sec .sub{color:var(--tx2)}
+  .acc{margin-top:24px;border-bottom:1px solid var(--line)}
+  .acc details{border-top:1px solid var(--line)}
+  .acc summary{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:64px;list-style:none;cursor:pointer;font-size:19px;line-height:1.3;font-weight:600}
+  .acc summary::-webkit-details-marker{display:none}
+  .acc summary em{font-style:normal;font-weight:400;font-size:17px;color:var(--tx2);margin-left:auto;white-space:nowrap}
+  .acc .in{overflow:hidden}
+  .acc .in>*{padding-bottom:22px;color:var(--tx2)}
+  .rows{margin-top:20px;border-bottom:1px solid var(--line)}
+  .rows a{display:flex;align-items:center;gap:12px;min-height:60px;padding:10px 0;border-top:1px solid var(--line);color:var(--tx)}
+  .rows a span{flex:1;min-width:0;font-size:17px;line-height:1.35;font-weight:600;overflow:hidden}
+  .rows a .ic{color:var(--tx3);width:16px;height:16px}
+  .rows a small{display:block;margin-top:3px;font-size:14px;font-weight:400;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* ── 頁尾 ── */
+  /* ── 底部詢問列：毛玻璃膠囊 ── */
+  /* ── 物件頁 ── */
+  .ln{position:fixed;top:var(--gn);left:0;right:0;z-index:39;display:flex;align-items:center;gap:12px;height:52px;padding:0 12px 0 var(--m);background:rgba(255,255,255,.82);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);box-shadow:0 1px 0 rgba(0,0,0,.1);transform:translate3d(0,-110%,0);opacity:0;transition:transform .5s var(--out),opacity .3s}
+  .ln.on{transform:none;opacity:1}
+  .ln b{flex:1;min-width:0;font-size:17px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ln span{font-size:14px;color:var(--tx2);white-space:nowrap}
+  .ln .pill{min-height:34px;padding:0 14px;font-size:14px}
+  .gal{padding-top:12px}
+  .gal .car{margin:0;padding:0 12px 0;scroll-padding:0 12px;gap:8px}
+  .gal .ph{flex:0 0 100%;scroll-snap-align:center;border-radius:22px;overflow:hidden;aspect-ratio:16/11;background:var(--tile)}
+  .gal .ph img{width:100%;height:100%;object-fit:cover}
+  .gal .foot{margin-top:10px;text-align:center}
+  .pd{padding:26px var(--m) 0}
+  .crumb{display:inline-flex;align-items:center;gap:2px;min-height:40px;font-size:14px}
+  .crumb .ic{width:14px;height:14px}
+  .lab{display:flex;gap:12px;margin-top:6px;font-size:14px;font-weight:600}
+  .lab .new{color:var(--orange)}
+  .lab .drop{color:var(--green)}
+  .pd h1{margin-top:6px;font-size:28px;line-height:1.2;font-weight:600;letter-spacing:-.005em}
+  .pd .where{margin-top:10px;font-size:17px;color:var(--tx2)}
+  .pr{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;margin-top:26px}
+  .pr b{font-size:48px;line-height:1.05;font-weight:600;letter-spacing:-.02em}
+  .pr b small{font-size:24px;font-weight:600;margin-left:3px;letter-spacing:0}
+  .pr s{font-size:17px;color:var(--tx3)}
+  .per{margin-top:8px;font-size:17px;color:var(--tx2)}
+  .pd .cta{justify-content:flex-start;margin-top:22px}
+  .pd .foot{margin-top:18px}
+  .spec{display:grid;grid-template-columns:1fr 1fr;gap:28px 16px;margin-top:44px;padding-top:36px;border-top:1px solid var(--line)}
+  .spec dt{font-size:14px;color:var(--tx2);order:2;margin-top:4px}
+  .spec dd{font-size:24px;line-height:1.2;font-weight:600;letter-spacing:-.005em}
+  .spec dd small{font-size:17px;font-weight:600;margin-left:2px}
+  .spec div{display:flex;flex-direction:column}
+  .intro{margin-top:14px}
+  .intro p{padding:12px 0;border-top:1px solid rgba(0,0,0,.08);color:var(--tx2)}
+  .intro p:first-child{border-top:0;padding-top:0}
+  .intro p b{display:block;font-weight:600;color:var(--tx)}
+  .pay-big{display:flex;align-items:baseline;gap:6px;font-size:17px;color:var(--tx2)}
+  .pay-big b{font-size:40px;line-height:1.1;font-weight:600;color:var(--tx);letter-spacing:-.015em}
+  .seg{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:3px;margin-top:8px;border-radius:12px;background:var(--chip)}
+  .seg i{position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px) / var(--n));border-radius:9px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12);transform:translate3d(calc(var(--i) * 100%),0,0);transition:transform .45s var(--out)}
+  .seg button{position:relative;height:36px;border:0;background:none;font-size:15px;color:var(--tx);cursor:pointer}
+  .seg-l{margin-top:16px;font-size:14px;color:var(--tx2)}
+  /* ── 進場動畫：只動位移與透明度 ── */
+  @supports (animation-timeline:view()){
+    .zoom img{animation:zoomIn linear both;animation-timeline:view();animation-range:entry 0% cover 55%}
+    .sgrow{animation:growIn linear both;animation-timeline:view();animation-range:entry 0% cover 38%}
+  }
+  /* ── 平板以上 ── */
+  @media (min-width:735px){
+    --m:32px;--gn:44px;
+    .h-pre,.h-main{font-size:48px;line-height:1.1}
+    .h-main{margin-top:4px}
+    .q{font-size:64px;line-height:1.07}
+    .h2{font-size:48px;line-height:1.08}
+    .sub{font-size:24px;line-height:1.3}
+    .pill{min-height:44px;padding:0 22px;font-size:17px}
+    .hero{padding-top:72px}
+    .hero h1{margin-top:110px}
+    .field{margin-top:30px;min-height:58px}
+    .shot{margin:56px auto 0;width:min(1200px,calc(100% - 44px));aspect-ratio:16/8;border-radius:32px}
+    .nums{gap:0 80px;padding-top:72px}
+    .nums b{font-size:56px}
+    .nums b small{font-size:24px}
+    .fold.me{margin-top:44px}
+    .big{font-size:28px;line-height:1.32}
+    .step .fold.corner>summary{display:none}
+    .note{flex:0 1 330px}
+    .tiles{margin-top:110px;padding:0 12px}
+    .tiles.two{grid-template-columns:1fr 1fr}
+    .tile{padding-top:56px}
+    .tile .art{aspect-ratio:16/8}
+    .tiles.two .tile .art{aspect-ratio:16/10}
+    .car{justify-content:center;margin:40px 0 0;padding:0 0 8px;overflow:visible}
+    .card{flex:0 1 330px}
+    .dots{display:none}
+    .steps{display:grid;grid-template-columns:repeat(4,1fr);align-items:stretch;margin:40px 0 0;padding:0;overflow:visible}
+    .step{max-width:none}
+    .sec{padding-top:120px;max-width:980px}
+    .acc,.rows{max-width:760px;margin-left:auto;margin-right:auto}
+    .pd-wrap{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);column-gap:48px;max-width:1200px;margin:0 auto;padding:24px 32px 0;align-items:start}
+    .gal{padding-top:0;position:sticky;top:calc(var(--gn) + 20px)}
+    .gal .car{padding:0;justify-content:flex-start;overflow-x:auto}
+    .gal .dots{display:flex}
+    .pd{padding:0}
+    .pd h1{font-size:40px;line-height:1.12}
+    .pr b{font-size:64px}
+  }
+  @media (min-width:1068px){
+    .q{font-size:80px;line-height:1.05}
+    .h-pre,.h-main{font-size:56px;line-height:1.08}
+    .h2{font-size:56px;line-height:1.07}
+    .sub{font-size:28px;line-height:1.25}
+  }
+  /* 手機上不顯示、電腦上才顯示的字（字都還在原始碼裡） */
+  /* mobile: the bottom bar already has the LINE button, so the top mini bar shows name and price only */
+  @media (max-width:734px){.ln .pill{display:none}.ln{padding-right:var(--m)}}
+  @media (min-width:735px){.shot img{object-position:50% 30%}}
+  .pay-big{padding-bottom:0}
+  .acc .in>div>*:last-child{margin-bottom:0}
+}
+
+/* ── 基本字、共用小零件（搬進預覽版時補的） ── */
+.ax {
+  font-size: 17px;
+  line-height: 1.47;
+  color: var(--tx);
+  picture {
+    display: block;
+  }
+  .h2 {
+    text-wrap: balance;
+  }
+  .h2.c {
+    text-align: center;
+  }
+  /* 句子裡的連結加底線：藍字跟旁邊的灰字、黑字對比不到 3:1，只靠顏色分不出來（Lighthouse 的 link-in-text-block）。
+     單獨一行的連結（.more）和按鈕（.pill）不用。 */
+  p a:not(.more, .pill) {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+  }
+  /* 標題裡不想被拆開的一段（換行只發生在段與段之間） */
+  .nw {
+    display: inline-block;
+  }
+  /* ui2 的圖示（Sprite.astro 的 <use>） */
+  .u2-ico {
+    width: 1.2em;
+    height: 1.2em;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+}
+/* 手機上不顯示、電腦上才顯示的字（字都還在原始碼裡） */
+@media (max-width: 734px) {
+  .ax .d-only {
+    display: none !important;
+  }
+}

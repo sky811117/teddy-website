@@ -1,0 +1,585 @@
+/*
+ * 文章頁（2026-11 極簡改版，景泰 11/12 定案：參考 Apple 台灣官網；檔名沿用花店版）。
+ * 白底一欄到底：返回 → 標籤 → 粗字標題 → 作者／日期小灰字 → 首圖（圓角，不釘、沒有白紙蓋上來）→ 目錄 → 內文。
+ * 內文欄寬與字級（20px）照舊，字一字不刪，只換排版。
+ * 沒包 @layer：蓋過頁面上原本的 Tailwind class 與 typography.css 的 .app-prose。
+ * 顏色一律用 flora.css 的變數（--ink 黑字、--gauze 灰字、--wood 連結藍、--mist 淺灰底、--press 按下的灰、--hair 細線），不寫死色碼。
+ */
+.post-main {
+  color: var(--ink);
+}
+/* 頁面上原本的 Tailwind 字級／字重 class 收進同一把尺（:where 不加權重，下面各區塊的指定照樣優先） */
+.post-main :where(.text-xs, .text-sm, [class~="text-[13px]"], [class~="text-[15px]"]) {
+  font-size: 14px;
+}
+.post-main :where(.font-medium) {
+  font-weight: 400;
+}
+.post-main :where(.font-bold, .font-semibold):not(h1, h2, h3) {
+  font-weight: 600;
+}
+.post-paper {
+  padding-top: 4px;
+}
+.post-col {
+  padding-inline: var(--m);
+  padding-bottom: var(--gap-s);
+  max-width: calc(46rem + 2 * var(--m));
+}
+
+/* ── 返回、標籤、標題、作者列 ── */
+.post-back a {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  margin-left: -6px;
+  font-size: 14px;
+  color: var(--gauze);
+  text-decoration: none;
+  transition: color var(--t-hover);
+}
+.post-back svg {
+  width: 20px;
+  height: 20px;
+}
+.post-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 16px;
+}
+.post-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: var(--r-pill);
+  background: var(--mist);
+  color: var(--gauze);
+  font-size: 14px;
+  text-decoration: none;
+  transition:
+    background-color var(--t-hover),
+    color var(--t-hover);
+}
+@media (hover: hover) {
+  .post-back a:is(:hover, :focus-visible),
+  .post-tag:is(:hover, :focus-visible) {
+    color: var(--ink);
+  }
+  .post-tag:is(:hover, :focus-visible) {
+    background: var(--press);
+  }
+}
+.post-h1 {
+  font-size: clamp(26px, 7vw, 40px);
+  line-height: 1.3;
+  margin: 0;
+}
+/* 作者列：小頭像在左；第一行署名，日期、閱讀時間、字數排在第二行 */
+.post-meta {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 14px;
+  row-gap: 2px;
+  min-height: 40px;
+  margin: 20px 0 0;
+  padding-left: 52px;
+  color: var(--gauze);
+}
+.post-meta,
+.post-meta :is(span, a, time) {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.post-meta > span:first-of-type {
+  flex-basis: 100%;
+}
+.post-meta > [aria-hidden="true"],
+.post-meta span > [aria-hidden="true"],
+.post-meta svg {
+  display: none;
+}
+/* 作者名是句子裡的連結：加底線（藍字跟旁邊的灰字只靠顏色分不出來，Lighthouse 的 link-in-text-block） */
+.post-meta a[rel="author"] {
+  color: var(--wood);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+.post-avatar {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* ── 首圖：欄寬裡的圓角圖，說明在圖底下 ── */
+.post-cover {
+  margin: 24px 0 0;
+}
+.post-cover picture {
+  display: contents;
+}
+.post-cover img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1.905 / 1;
+  object-fit: cover;
+  border-radius: var(--r-sheet);
+  background: var(--mist);
+}
+.post-cover-note {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--gauze);
+}
+
+/* ── 目錄：細線開合（flora.css 的 .fl-qa） ── */
+.post-toc {
+  margin-top: 28px;
+}
+.post-toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 16px;
+  display: grid;
+  gap: 2px;
+}
+.post-toc ul a {
+  display: block;
+  padding: 8px 0;
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--ink);
+  text-decoration: none;
+  transition: color var(--t-hover);
+}
+@media (hover: hover) {
+  .post-toc ul a:is(:hover, :focus-visible) {
+    color: var(--wood);
+  }
+}
+
+/* ── 內文 ── */
+.post-main #article {
+  margin-top: 28px;
+  font-size: 20px;
+  line-height: 1.9;
+}
+.post-main .app-prose h2 {
+  font-size: clamp(24px, 6vw, 32px);
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 2em;
+  margin-bottom: 0.5em;
+}
+.post-main .app-prose h3 {
+  border-left: 0;
+  padding-left: 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.post-main .app-prose a {
+  color: var(--wood);
+  font-weight: inherit;
+  text-decoration: underline;
+  text-decoration-style: solid;
+  text-decoration-thickness: 1px;
+  text-decoration-color: currentColor;
+  text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+  text-underline-offset: 0.24em;
+}
+@media (hover: hover) {
+  .post-main .app-prose a:is(:hover, :focus-visible) {
+    text-decoration-color: currentColor;
+  }
+}
+.post-main .app-prose li::marker {
+  color: var(--gauze);
+}
+.post-main hr,
+.post-main .app-prose hr {
+  border: 0;
+  border-top: 1px solid var(--hair);
+}
+/* 引用、註記：淺灰底圓角框，不畫左邊的粗線、不用假斜體 */
+.post-main .app-prose blockquote {
+  margin: 1.4em 0;
+  padding: 16px 20px;
+  border: 0;
+  border-radius: var(--r-sheet);
+  background: var(--mist);
+  color: var(--ink);
+  font-style: normal;
+  font-weight: 400;
+  opacity: 1;
+  quotes: none;
+}
+.post-main .app-prose blockquote p {
+  margin: 0;
+}
+.post-main .app-prose blockquote p + p {
+  margin-top: 0.8em;
+}
+.post-main .app-prose blockquote p::before,
+.post-main .app-prose blockquote p::after {
+  content: none;
+}
+/* 表格：表頭淺灰底、列與列之間一條細線；太寬就左右滑 */
+.post-main .app-prose table {
+  display: block;
+  overflow-x: auto;
+  margin: 1.4em 0;
+  border: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 17px;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+}
+.post-main .app-prose :is(thead, tbody, tr) {
+  border: 0;
+}
+.post-main .app-prose :is(th, td) {
+  border: 0;
+  border-bottom: 1px solid var(--hair);
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+.post-main .app-prose thead th {
+  border-bottom: 0;
+  background: var(--mist);
+  color: var(--ink);
+  font-weight: 600;
+  vertical-align: bottom;
+}
+.post-main .app-prose thead th:first-child {
+  border-radius: var(--r-chip) 0 0 var(--r-chip);
+}
+.post-main .app-prose thead th:last-child {
+  border-radius: 0 var(--r-chip) var(--r-chip) 0;
+}
+.post-main .app-prose thead th:only-child {
+  border-radius: var(--r-chip);
+}
+.post-main .app-prose img {
+  border: 0;
+  border-radius: var(--r-chip);
+}
+.post-main .app-prose figcaption {
+  font-size: 14px;
+  color: var(--gauze);
+  opacity: 1;
+}
+.post-main .app-prose :not(pre) > code {
+  background: var(--mist);
+  border-radius: 6px;
+}
+.post-main .app-prose pre {
+  border-radius: var(--r-chip);
+}
+/* 標題旁的「#」段落連結：很淡的灰，不搶標題 */
+.post-main .app-prose .heading-link {
+  font-weight: inherit;
+  color: var(--hair);
+  text-decoration: none;
+}
+@media (hover: hover) {
+  .post-main .app-prose .heading-link:is(:hover, :focus-visible) {
+    color: var(--gauze);
+  }
+}
+
+/* 作者卡：不畫框，頂端一條細線 */
+.post-main aside[aria-label="本文作者"] {
+  margin-top: var(--gap-s);
+  padding: 28px 0 0;
+  border: 0;
+  border-top: 1px solid var(--hair);
+  border-radius: 0;
+  box-shadow: none;
+  background: none;
+}
+
+/* 常見問題（id="faq"、h2「常見問題」不變；第一題預設打開） */
+.post-faq {
+  margin-top: var(--gap-s);
+}
+.post-faq h2 {
+  margin: 0 0 12px;
+}
+.post-ans {
+  margin: 0;
+  padding: 0 0 20px;
+  line-height: 1.85;
+}
+
+/* 社區在售：圓角照片在上，標題、規格、價格依序往下 */
+.post-lst ul {
+  gap: 28px 16px;
+}
+.post-lst-item {
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+}
+.post-lst-item a > :first-child {
+  border-radius: var(--r-sheet);
+  overflow: hidden;
+}
+.post-lst-tx {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 0 0;
+}
+.post-lst-tx .text-sm {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--ink);
+}
+.post-lst-tx .text-xs {
+  font-size: 14px;
+}
+.post-lst-pr {
+  margin-top: 6px;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.post-lst > p,
+.post-main nav[aria-labelledby="area-guide-nav-heading"] p {
+  font-size: 14px;
+}
+/* 各區買房指南的小膠囊：至少 40 高 */
+.post-main nav[aria-labelledby="area-guide-nav-heading"] li a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 14px;
+  color: var(--ink);
+}
+
+/* 文末 LINE：淺灰面板 */
+.post-cta {
+  margin-top: var(--gap-s);
+  padding: 24px 20px;
+  border-radius: var(--r-sheet);
+  background: var(--mist);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-start;
+}
+.post-cta .text-lg {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+@media (min-width: 640px) {
+  .post-cta {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px;
+  }
+}
+
+/* 分享：一行字＋細框圓鈕 */
+.post-share {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.post-share > span {
+  font-size: 14px;
+  color: var(--gauze);
+}
+.post-share > div {
+  display: flex;
+  gap: 8px;
+}
+.post-share a {
+  width: 44px;
+  height: 44px;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--hair);
+  transition: background-color var(--t-hover);
+}
+.post-share svg {
+  width: 20px;
+  height: 20px;
+}
+@media (hover: hover) {
+  .post-share a:is(:hover, :focus-visible) {
+    background: var(--mist);
+    color: var(--ink);
+  }
+}
+
+/* 相關文章：細線分隔的列，小圖在左、標題在右 */
+.post-rel {
+  margin: var(--gap-s) 0 0;
+}
+.post-rel h2 {
+  margin: 0;
+}
+.post-rel h2 svg {
+  display: none;
+}
+.post-rel ul {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  margin-top: 16px;
+  border-top: 1px solid var(--hair);
+}
+.post-rel-item {
+  border: 0;
+  border-bottom: 1px solid var(--hair);
+  border-radius: 0;
+  background: none;
+  overflow: visible;
+}
+.post-rel-item > a {
+  display: grid;
+  grid-template-columns: 112px 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 0;
+}
+.post-rel-item > a > :first-child {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  border-radius: var(--r-chip);
+  background: var(--mist);
+}
+.post-rel-tx {
+  min-width: 0;
+  padding: 0;
+}
+.post-rel-tx h3 {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--ink);
+  transition: color var(--t-hover);
+}
+.post-rel-tx p {
+  margin-top: 4px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+@media (hover: hover) {
+  .post-rel-item > a:is(:hover, :focus-visible) h3 {
+    color: var(--wood);
+  }
+}
+
+/* 上一篇／下一篇：細線分隔的文字連結 */
+.post-adj {
+  display: grid;
+  grid-template-columns: 1fr;
+  margin: var(--gap-s) 0 0;
+  border-top: 1px solid var(--hair);
+}
+.post-adj a {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  min-height: 44px;
+  padding: 16px 0;
+  color: var(--ink);
+  text-decoration: none;
+}
+.post-adj a + a {
+  border-top: 1px solid var(--hair);
+}
+/* 下一篇：手機字靠左、箭頭在最右；640 以上放右欄、字靠右 */
+.post-adj-next {
+  justify-content: space-between;
+}
+.post-adj svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  color: var(--gauze);
+}
+.post-adj-k {
+  display: block;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--gauze);
+}
+.post-adj-t {
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--ink);
+  transition: color var(--t-hover);
+}
+@media (hover: hover) {
+  .post-adj a:is(:hover, :focus-visible) .post-adj-t {
+    color: var(--wood);
+  }
+}
+
+@media (min-width: 640px) {
+  .post-rel ul {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 32px;
+  }
+  .post-rel-item > a {
+    grid-template-columns: 144px 1fr;
+  }
+  .post-adj {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 32px;
+  }
+  .post-adj a + a {
+    border-top: 0;
+  }
+  .post-adj-next {
+    grid-column: 2;
+    justify-content: flex-end;
+    text-align: right;
+  }
+}
+
+/* 文末幾個區塊的標題（在售物件、各區買房指南）跟「常見問題」「相關文章」同一個大小 */
+.post-main :is(.post-lst, nav[aria-labelledby="area-guide-nav-heading"]) h2 {
+  font-size: clamp(24px, 6vw, 32px);
+  line-height: 1.25;
+}
+
+/* 文章裡的斜體只用在整行的聲明與署名（全站 136 處都是整行、沒有行內強調）：中文沒有真斜體，改成不斜的灰字 */
+.post-main .app-prose em {
+  font-style: normal;
+  color: var(--gauze);
+}
+
+/* 作者列裡的連結加底線：藍字跟旁邊的灰字只靠顏色分不出來（Lighthouse 的 link-in-text-block，11/12 測速抓到） */
+.post-meta a {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}

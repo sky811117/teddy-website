@@ -13,7 +13,6 @@ import { slugifyStr } from "@/utils/slugify";
 import EditPost from "./_components/EditPost.astro";
 import ShareLinks from "./_components/ShareLinks.astro";
 import BackButton from "./_components/BackButton.astro";
-import BackToTopButton from "./_components/BackToTopButton.astro";
 import AdjacentPostNav from "./_components/AdjacentPostNav.astro";
 import RelatedPosts from "@/components/RelatedPosts.astro";
 import CommunityListings from "@/components/CommunityListings.astro";
@@ -22,6 +21,9 @@ import { normalizeFaqSchema } from "@/utils/faqSchema";
 import { ogThumb } from "@/utils/ogThumb";
 import Cusdis from "@/components/Cusdis.astro";
 import config from "@/config";
+import { wbrSegments } from "@/utils/wbr";
+// 2026-11 極簡改版：文章頁長相（白底、標題在上、首圖圓角放在作者列底下、內文排版；檔名沿用花店版）
+import "@/styles/flora-post.css";
 
 export async function getStaticPaths() {
   const posts = await getCollection("posts");
@@ -87,6 +89,12 @@ const community = post.data.community?.trim() || "";
 // 賣方相關文章（稅務 / 過戶 / 政策 / 賣房）加第二顆「行情評估」鈕
 const SELLER_TAG = /賣方|稅務|policy|過戶|賣房/i;
 const isSellerTopic = tags.some(tag => SELLER_TAG.test(tag));
+/* 內部用的英文標籤，畫面上顯示成中文（網址與 /tags/ 頁不變） */
+const TAG_LABEL: Record<string, string> = {
+  "community-review": "社區評價",
+  "monthly-market": "每月行情",
+  "weekly-recap": "每週回顧",
+};
 const lineHref = `/go/line?src=post-end&p=${encodeURIComponent(postSlug)}`;
 
 // 結構化 FAQ 也要在頁面上看得到（Google 規範：schema 內容必須是使用者可見的內容）。
@@ -137,6 +145,12 @@ const wordCount = rawBody.length;
 const timeRequiredMin = Math.max(1, Math.round(wordCount / 350));
 // ISO 8601 duration: PT5M
 const timeRequired = `PT${timeRequiredMin}M`;
+
+// 封面在標題與作者列底下、仍是首屏最大圖（LCP）：AI 封面有 640／960 webp 縮圖，preload 跟 <source> 一致。
+// 2026-11 極簡改版：封面收在內文欄寬裡（桌機 782px、手機扣掉左右邊距），sizes 跟著改
+const COVER_SIZES = "(min-width: 900px) 782px, calc(100vw - 36px)";
+const coverSrcset = coverIsAi && coverImage ? `${ogThumb(coverImage, 640)} 640w, ${ogThumb(coverImage, 960)} 960w` : undefined;
+const titleParts = wbrSegments(title);
 ---
 
 <PostLayout
@@ -150,38 +164,44 @@ const timeRequired = `PT${timeRequiredMin}M`;
   wordCount={wordCount}
   timeRequired={timeRequired}
   faqSchema={faqSchema}
+  lcpImage={coverImage ? (coverSrcset ? ogThumb(coverImage, 960) : coverImage) : undefined}
+  lcpImageSrcset={coverSrcset}
+  lcpImageSizes={COVER_SIZES}
 >
   <Header />
 
-  <BackButton />
-
   <main
     id="main-content"
-    class:list={["app-layout", { "mt-8": !config.features.showBackButton }]}
+    class="post-main axp"
     data-pagefind-body
     data-pagefind-filter="type:文章"
   >
+    {/* 2026-11 極簡改版：白底一欄到底。順序＝返回 → 標籤 → 標題 → 作者列 → 首圖（圓角，不釘、沒有白紙蓋上來）→ 目錄 → 內文 */}
+    <div class="post-paper">
+    <div class="app-layout post-col">
+    <div class="post-back" data-pagefind-ignore><BackButton /></div>
     <header>
       {
         tags.length > 0 && (
-          <div class="mb-3 flex flex-wrap gap-2">
+          <div class="post-tags">
             {tags.map(tag => (
               <a
                 href={getRelativeLocaleUrl(locale, `tags/${slugifyStr(tag)}/`)}
-                class="bg-muted text-muted-foreground hover:text-accent rounded-full px-2.5 py-1 text-xs no-underline transition-colors"
+                class="post-tag"
               >
-                #{tag}
+                #{TAG_LABEL[tag] ?? tag}
               </a>
             ))}
           </div>
         )
       }
 
-      <h1 class="text-accent inline-block text-2xl font-bold sm:text-3xl">
-        {title}
+      <h1 class="post-h1 kw">
+        {titleParts.map((part, i) => (i < titleParts.length - 1 ? <>{part}<wbr /></> : part))}
       </h1>
 
-      <div class="my-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+      <div class="post-meta">
+        <img class="post-avatar" src="/photos/teddy-avatar.jpg" alt="" width="40" height="40" loading="eager" decoding="async" />
         <span class="text-muted-foreground text-[14px] sm:text-[15px]">
           作者：<a href="/about/" rel="author" class="hover:text-accent">{post.data.author}</a>（一品不動產 有巢氏房屋 台中世界之心加盟店・營業員）
         </span>
@@ -203,7 +223,7 @@ const timeRequired = `PT${timeRequiredMin}M`;
           閱讀時間 {timeRequiredMin} 分鐘
         </span>
         <span class="text-muted-foreground text-[14px] sm:text-[15px]">
-          · {wordCount.toLocaleString()} 字
+          <span aria-hidden="true">· </span>{wordCount.toLocaleString()} 字
         </span>
         <span
           aria-hidden="true"
@@ -217,66 +237,62 @@ const timeRequired = `PT${timeRequiredMin}M`;
         <EditPost {hideEditPost} {post} class="max-sm:hidden" />
       </div>
 
-      {
-        coverImage && (
-          <figure class="mt-4">
-            {coverIsAi ? (
-              <picture>
-                <source
-                  type="image/webp"
-                  srcset={`${ogThumb(coverImage, 640)} 640w, ${ogThumb(coverImage, 960)} 960w`}
-                  sizes="(min-width: 768px) 736px, calc(100vw - 32px)"
-                />
-                <img
-                  src={coverImage}
-                  alt={coverAlt}
-                  width="800"
-                  height="450"
-                  class="rounded-card aspect-[16/9] w-full object-cover"
-                  loading="eager"
-                  fetchpriority="high"
-                  decoding="async"
-                />
-              </picture>
-            ) : (
+    </header>
+
+    {/* 首圖：收在欄寬裡、圓角；AI 示意圖的說明放在圖底下（原本是浮在照片上的小牌，文字不變）。
+        data-pagefind-meta：站內搜尋結果的縮圖固定用這張（上面作者列的小頭像排在它前面，不指定會被當成縮圖） */}
+    {
+      coverImage && (
+        <figure class="post-cover">
+          {coverIsAi ? (
+            <picture>
+              <source type="image/webp" srcset={coverSrcset} sizes={COVER_SIZES} />
               <img
                 src={coverImage}
                 alt={coverAlt}
                 width="800"
                 height="450"
-                class="rounded-card aspect-[16/9] w-full object-cover"
                 loading="eager"
                 fetchpriority="high"
                 decoding="async"
+                data-pagefind-meta="image[src], image_alt[alt]"
               />
-            )}
-            {coverIsAi && (
-              <figcaption class="text-muted-foreground mt-1 text-xs">
-                示意圖（AI 生成，非本文社區實景）
-              </figcaption>
-            )}
-          </figure>
-        )
-      }
-    </header>
+            </picture>
+          ) : (
+            <img
+              src={coverImage}
+              alt={coverAlt}
+              width="800"
+              height="450"
+              loading="eager"
+              fetchpriority="high"
+              decoding="async"
+              data-pagefind-meta="image[src], image_alt[alt]"
+            />
+          )}
+          {coverIsAi && (
+            <figcaption class="post-cover-note" data-pagefind-ignore>示意圖（AI 生成，非本文社區實景）</figcaption>
+          )}
+        </figure>
+      )
+    }
 
     {
       tocHeadings.length >= 4 && (
-        <details class="card-surface mt-8 px-4 py-3" data-toc>
-          <summary class="cursor-pointer font-bold select-none">目錄</summary>
-          <ul class="mt-2 flex flex-col gap-1.5 text-sm">
+        <div class="fl-qa post-toc">
+        <details data-toc>
+          <summary>目錄</summary>
+          <ul>
             {tocHeadings.map(({ slug, text }) => (
               <li>
-                <a
-                  href={`#${slug}`}
-                  class="text-muted-foreground hover:text-accent no-underline"
-                >
+                <a href={`#${slug}`}>
                   {text}
                 </a>
               </li>
             ))}
           </ul>
         </details>
+        </div>
       )
     }
 
@@ -297,15 +313,15 @@ const timeRequired = `PT${timeRequiredMin}M`;
     {/* 常見問題：frontmatter faqSchema 的可見版（純文字插值，不用 set:html） */}
     {
       faqs.length > 0 && (
-        <section id="faq" class="mt-10" data-pagefind-ignore>
-          <h2 class="text-xl font-bold sm:text-2xl">常見問題</h2>
-          <div class="mt-4 space-y-3">
-            {faqs.map(item => (
-              <details class="card-surface p-4">
-                <summary class="cursor-pointer font-bold">
+        <section id="faq" class="post-faq" data-pagefind-ignore>
+          <h2>常見問題</h2>
+          <div class="fl-qa">
+            {faqs.map((item, i) => (
+              <details open={i === 0}>
+                <summary>
                   {item.name.replace(/\?\s*/g, "？").trim()}
                 </summary>
-                <p class="mt-3 leading-relaxed">{item.acceptedAnswer.text}</p>
+                <p class="post-ans">{item.acceptedAnswer.text}</p>
               </details>
             ))}
           </div>
@@ -318,9 +334,7 @@ const timeRequired = `PT${timeRequiredMin}M`;
     <CommunityListings community={post.data.community} tags={post.data.tags} />
 
     <!-- 文末 LINE CTA — 內文結束、分享列之前。href 帶 p={slug}，/go/line 記得住是哪篇文章 -->
-    <div
-      class="card-surface mt-10 flex flex-col items-center gap-4 p-6 text-center sm:flex-row sm:justify-between sm:text-left"
-    >
+    <div class="post-cta">
       <div>
         {
           community ? (
@@ -358,58 +372,26 @@ const timeRequired = `PT${timeRequiredMin}M`;
       </div>
     </div>
 
-    <hr class="my-8 border-dashed" />
+    <hr class="my-8" />
 
     <EditPost class="sm:hidden" {hideEditPost} {post} />
 
-    <BackToTopButton />
-
     <ShareLinks />
 
-    <hr class="my-8 border-dashed" />
+    <hr class="my-8" />
 
     <RelatedPosts {post} />
 
     <AdjacentPostNav {prevPost} {nextPost} />
 
     <Cusdis title={title} pageId={post.id} pageUrl={Astro.url.href} />
+    </div>
+    </div>
   </main>
   <Footer />
 </PostLayout>
 
 <script is:inline data-astro-rerun>
-  function createProgressBar() {
-    const progressContainer = document.createElement("div");
-    progressContainer.className =
-      "progress-container fixed top-0 z-10 h-1 w-full bg-background";
-
-    const progressBar = document.createElement("div");
-    progressBar.className = "progress-bar h-1 w-0 bg-accent";
-    progressBar.id = "myBar";
-
-    progressContainer.appendChild(progressBar);
-    document.body.appendChild(progressContainer);
-  }
-  createProgressBar();
-
-  function updateScrollProgress() {
-    document.addEventListener("scroll", () => {
-      const winScroll =
-        document.body.scrollTop || document.documentElement.scrollTop;
-      const height =
-        document.documentElement.scrollHeight -
-        document.documentElement.clientHeight;
-      const scrolled = (winScroll / height) * 100;
-      if (document) {
-        const myBar = document.getElementById("myBar");
-        if (myBar) {
-          myBar.style.width = scrolled + "%";
-        }
-      }
-    });
-  }
-  updateScrollProgress();
-
   function addHeadingLinks() {
     // 只掛在文章正文內、而且真的有 id 的標題上。原本全頁掃描會把「相關文章」卡片、
     // 在售物件區的 h3 也塞一顆 href="#" 的假錨點，手機上肉眼可見、點了還跳回頁首。

@@ -110,22 +110,21 @@ const breadcrumbSchema = {
   )
 }
 
-<nav class="app-layout mt-8 mb-1" aria-label="breadcrumb">
-  <ul
-    class="font-light [&>li]:inline [&>li:not(:last-child)>a]:hover:opacity-100"
-  >
+{/* 2026-11 極簡改版：14px 灰字（原本是細字＋半透明），長相在 ax-pages.css 的 .axp-crumb */}
+<nav class="app-layout axp-crumb" aria-label="breadcrumb">
+  <ul>
     <li>
-      <a href={getRelativeLocaleUrl(locale, "")} class="opacity-80">
+      <a href={getRelativeLocaleUrl(locale, "")}>
         {t.nav.home}
       </a>
-      <span aria-hidden="true" class="opacity-80">&raquo;</span>
+      <span aria-hidden="true">&raquo;</span>
     </li>
     {
       breadcrumbList.map((breadcrumb, index) =>
         index + 1 === breadcrumbList.length ? (
           <li>
             <span
-              class:list={["capitalize opacity-75", { lowercase: index > 0 }]}
+              class:list={["capitalize", { lowercase: index > 0 }]}
               aria-current="page"
             >
               {/* make the last part lowercase in Home > Tags > some-tag */}
@@ -136,11 +135,11 @@ const breadcrumbSchema = {
           <li>
             <a
               href={getRelativeLocaleUrl(locale, breadcrumb)}
-              class="capitalize opacity-70"
+              class="capitalize"
             >
               {navLabels[breadcrumb] ?? decodeSegment(breadcrumb)}
             </a>
-            <span aria-hidden="true" class="opacity-70">
+            <span aria-hidden="true">
               &raquo;
             </span>
           </li>

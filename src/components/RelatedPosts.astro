@@ -179,7 +179,7 @@ const getCover = (data: CollectionEntry<"posts">["data"]): string | null => {
 
 {
   recommended.length > 0 && (
-    <section data-pagefind-ignore class="my-10">
+    <section data-pagefind-ignore class="my-10 post-rel">
       <h2 class="text-foreground text-xl font-bold sm:text-2xl">
         <IconNotes class="size-5 inline-block" aria-hidden="true" /> 相關文章
       </h2>
@@ -190,7 +190,7 @@ const getCover = (data: CollectionEntry<"posts">["data"]): string | null => {
         {recommended.map(({ post }) => {
           const cover = getCover(post.data);
           return (
-            <li class="border-border bg-card overflow-hidden rounded-lg border transition-shadow hover:shadow-lg">
+            <li class="post-rel-item">
               <a
                 href={getPostUrl(post.id, post.filePath, locale)}
                 class="block no-underline"
@@ -210,7 +210,7 @@ const getCover = (data: CollectionEntry<"posts">["data"]): string | null => {
                     照片整理中
                   </div>
                 )}
-                <div class="p-4">
+                <div class="post-rel-tx">
                   <h3 class="text-foreground line-clamp-2 text-base font-bold">
                     {post.data.title}
                   </h3>

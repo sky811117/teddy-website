@@ -1,0 +1,100 @@
+---
+/**
+ * 頁首（2026-11 極簡改版）：固定在最上面的毛玻璃白列＋「選單」對話框（選單鈕是兩條線的圖示，「選單」兩個字留給讀屏）。
+ * 原本兩套頁首（Header.astro 給內頁、ui2/Header2.astro 給首頁與 /find/）都改成渲染這一支，
+ * 連結取兩套的聯集，所以每一頁的站內連結只會多不會少（新舊比對工具會驗）。
+ * 日夜切換鈕拿掉：改版只有白色版（Layout 的行內程式固定 data-theme=light）。
+ * 選單 <dialog> 放在 header 外面：backdrop-filter 不能巢狀，裡面那層會透不到照片。
+ */
+import { getRelativeLocaleUrl } from "astro:i18n";
+import { Image } from "astro:assets";
+import ycLogo from "@/assets/logos/yochaoshi.png";
+import { stripBase, stripLocale } from "@/utils/withBase";
+import { useTranslations } from "@/i18n";
+import config from "@/config";
+
+type Props = { current?: string };
+const { current } = Astro.props;
+const { features } = config;
+const locale = Astro.currentLocale ?? config.site.lang;
+const t = useTranslations(locale);
+const rel = stripBase(Astro.url.pathname);
+const noSlash = rel.endsWith("/") && rel !== "/" ? rel.slice(0, -1) : rel;
+const here = current ?? stripLocale(noSlash, locale);
+const isActive = (p: string) => {
+  const a = here.split("/").filter((x: string) => x.trim());
+  const b = p.split("/").filter((x: string) => x.trim());
+  return here === p || (b.length > 0 && a[0] === b[0]);
+};
+const u = (seg: string) => getRelativeLocaleUrl(locale, seg);
+// 桌機頁首直接看得到的五項（跟原本 ui2 頁首一樣）
+const main = [
+  { href: u("buy"), label: "買房", key: "/buy" },
+  { href: u("sell"), label: "賣房", key: "/sell" },
+  { href: u("properties"), label: "在售物件", key: "/properties" },
+  { href: u("posts"), label: "房市筆記", key: "/posts" },
+  { href: u("areas"), label: "台中各區", key: "/areas" },
+];
+// 目錄裡的全部連結：兩套舊頁首的聯集
+const all = [
+  { href: u("posts"), label: "房市筆記", key: "/posts" },
+  { href: u("properties"), label: "在售物件", key: "/properties" },
+  { href: "/find/", label: "找房小幫手", key: "/find" },
+  { href: u("areas"), label: "台中各區", key: "/areas" },
+  { href: u("buy"), label: "買房", key: "/buy" },
+  { href: u("sell"), label: "賣房", key: "/sell" },
+  { href: u("tools"), label: "工具", key: "/tools" },
+  { href: u("faq"), label: "常見問題", key: "/faq" },
+  { href: u("services"), label: "服務", key: "/services" },
+  { href: u("media"), label: "影音", key: "/media" },
+  { href: u("contact"), label: "聯絡", key: "/contact" },
+  { href: u("about"), label: t.nav.about, key: "/about" },
+  ...(features.showArchives ? [{ href: u("archives"), label: t.nav.archives, key: "/archives" }] : []),
+  ...(features.search !== false ? [{ href: u("search"), label: t.nav.search, key: "/search" }] : []),
+];
+---
+
+<a id="skip-to-content" class="skip" href="#main-content">{t.a11y.skipToContent}</a>
+<header class="hdr g-bar" data-hdr>
+  <a class="brand" href={u("")}>
+    <Image
+      src={ycLogo}
+      alt="有巢氏房屋"
+      width={65}
+      widths={[65, 130, 195]}
+      sizes="65px"
+      format="webp"
+      loading="eager"
+      decoding="async"
+    />
+    <b>陳景泰</b><small>/ 泰迪</small>
+  </a>
+  <nav class="hnav" aria-label="主選單">
+    {main.map(l => <a href={l.href} aria-current={isActive(l.key) ? "page" : undefined}>{l.label}</a>)}
+  </nav>
+  {
+    features.search !== false && (
+      <a class="hbtn" href={u("search")} title="搜尋" aria-label="搜尋文章">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.5 15.5 20 20" /></svg>
+      </a>
+    )
+  }
+  <button
+    class="menu-btn"
+    type="button"
+    id="menu-btn"
+    aria-haspopup="dialog"
+    aria-controls="site-menu"
+    aria-expanded="false"
+  ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M4 15h16" /></svg><span class="sr-only">選單</span></button>
+</header>
+<dialog class="menu g-sheet" id="site-menu" aria-label="網站選單">
+  <button class="hbtn menu-x" type="button" data-menu-close aria-label={t.a11y.closeMenu}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+  </button>
+  <nav aria-label="主選單（全部）">
+    {all.map(l => <a href={l.href} aria-current={isActive(l.key) ? "page" : undefined}>{l.label}</a>)}
+    <a href="/go/line?src=header" title="LINE 私訊景泰 sky811117">LINE 問景泰</a>
+  </nav>
+  <p class="menu-sub"><a href="tel:+886920118756">0920-118-756</a></p>
+</dialog>

@@ -46,36 +46,31 @@ const rawBody = (body ?? "")
 const readingMin = Math.max(1, Math.round(rawBody.length / 350));
 ---
 
+{/* 2026-11 極簡改版：不畫卡片框，列與列之間一條細線；標題黑色粗字、滑過才變藍。長相在 ax-pages.css 的 .axp-post */}
 {
   variant === "featured" ? (
-    <li class="my-6">
-      <a
-        href={postUrl}
-        class="card-interactive group block overflow-hidden no-underline"
-      >
+    <li class="axp-post axp-post--lead">
+      <a href={postUrl}>
         {coverSrc ? (
           <img
             src={coverSrc}
             alt=""
             width="800"
             height="450"
-            class="aspect-[16/9] w-full object-cover transition-opacity group-hover:opacity-90"
             loading={priority ? "eager" : "lazy"}
             fetchpriority={priority ? "high" : undefined}
             decoding={priority ? "sync" : "async"}
           />
         ) : (
-          <div class="bg-muted flex aspect-[16/9] w-full items-center justify-center">
+          <div class="axp-post-ph flex items-center justify-center">
             <IconNotes
               class="text-muted-foreground size-10"
               aria-hidden="true"
             />
           </div>
         )}
-        <div class="p-4 sm:p-5">
-          <h2
-            class="text-accent text-2xl font-bold decoration-dashed underline-offset-4 group-hover:underline"
-          >
+        <div>
+          <h2 class="axp-post-t">
             {title}
           </h2>
           <p class="text-muted-foreground mt-2 line-clamp-2">{description}</p>
@@ -88,24 +83,20 @@ const readingMin = Math.max(1, Math.round(rawBody.length / 350));
       </a>
     </li>
   ) : (
-    <li class="my-4">
-      <a
-        href={postUrl}
-        class="card-interactive group flex gap-4 p-3 no-underline sm:p-4"
-      >
+    <li class="axp-post">
+      <a href={postUrl}>
         {coverSrc ? (
           <img
             src={ogThumb(coverSrc)}
             alt=""
             width="320"
             height="240"
-            class="aspect-[4/3] w-36 shrink-0 rounded-lg object-cover transition-opacity group-hover:opacity-90 sm:w-40"
             loading={priority ? "eager" : "lazy"}
             fetchpriority={priority ? "high" : undefined}
             decoding={priority ? "sync" : "async"}
           />
         ) : (
-          <div class="bg-muted flex aspect-[4/3] w-36 shrink-0 items-center justify-center rounded-lg sm:w-40">
+          <div class="axp-post-ph flex items-center justify-center">
             <IconNotes
               class="text-muted-foreground size-8"
               aria-hidden="true"
@@ -113,9 +104,7 @@ const readingMin = Math.max(1, Math.round(rawBody.length / 350));
           </div>
         )}
         <div class="flex min-w-0 flex-col">
-          <h2
-            class="text-accent line-clamp-2 text-lg font-bold decoration-dashed underline-offset-4 group-hover:underline"
-          >
+          <h2 class="axp-post-t line-clamp-2">
             {title}
           </h2>
           <p class="text-muted-foreground mt-1 line-clamp-2 text-sm">

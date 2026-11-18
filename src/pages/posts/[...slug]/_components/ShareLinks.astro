@@ -29,21 +29,21 @@ const items = await Promise.all(
 );
 ---
 
+{/* 2026-11 極簡改版：一行小灰字＋細框圓鈕（不旋轉、不放大），長相在 flora-post.css 的 .post-share */}
 {
   items.some(({ Icon }) => Icon) && (
-    <div class="flex flex-none flex-col items-center justify-center gap-1 md:items-start">
-      <span class="italic">{t.post.sharePostIntro}</span>
-      <div class="text-center">
+    <div class="post-share">
+      <span>{t.post.sharePostIntro}</span>
+      <div>
         {items.map(({ url, title, Icon }) =>
           Icon ? (
             <LinkButton
               href={`${url}${pageUrl}`}
-              class="scale-90 p-2 hover:rotate-6 sm:p-1"
               title={title}
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Icon class="inline-block size-6 scale-125 fill-transparent stroke-current stroke-2 opacity-90 group-hover:fill-transparent sm:scale-110" />
+              <Icon class="fill-transparent stroke-current stroke-2" />
               <span class="sr-only">{title}</span>
             </LinkButton>
           ) : null

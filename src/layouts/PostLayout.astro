@@ -17,6 +17,10 @@ type Props = {
   // 文章 frontmatter 的 faqSchema（content.config.ts 是 z.unknown()，
   // 結構沒被驗過，所以這裡也收 unknown，交給 normalizeFaqSchema 把關）
   faqSchema?: unknown;
+  // 2026-11 改版：封面移到最上面成為首屏最大圖，preload 參數往下傳給 Layout
+  lcpImage?: string;
+  lcpImageSrcset?: string;
+  lcpImageSizes?: string;
 };
 
 const { site } = config;
@@ -32,6 +36,9 @@ const {
   wordCount,
   timeRequired,
   faqSchema: rawFaqSchema,
+  lcpImage,
+  lcpImageSrcset,
+  lcpImageSizes,
 } = Astro.props;
 
 // GA4 post tracking props
@@ -126,7 +133,7 @@ const structuredData = {
 const faqSchema = normalizeFaqSchema(rawFaqSchema);
 ---
 
-<Layout {title} {description} {ogImage} {canonicalURL} ogType="article">
+<Layout {title} {description} {ogImage} {canonicalURL} ogType="article" {lcpImage} {lcpImageSrcset} {lcpImageSizes}>
   <Fragment slot="head">
     {
       pubDatetime && (

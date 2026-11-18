@@ -384,6 +384,8 @@ test("--dist：find-scope.js、find-map.js、find-map.css、自架程式庫 js/v
     ["dist/js/find-map.css", `.u2-map{content:'${T}'}`, "T1-1"],
     ["dist/js/vendor/leaflet/1.9.4/leaflet.js", `!function(){var x="${T}"}();`, "T1-1"],
     ["dist/js/vendor/leaflet/1.9.4/LICENSE", `BSD\n${T}`, "T1-1"],
+    // 2026-11-13 首頁在售地圖：每次打開首頁都會載，一樣要掃
+    ["dist/js/home-map.js", `var a='${T}';`, "T1-1"],
   ]) {
     const r = auditHtml("<p>乾淨</p>", { [f]: t });
     assert.equal(r.code, 1, f);
@@ -397,6 +399,8 @@ test("--hosts：地圖圖片主機（內政部國土測繪中心）只准出現�
   write(d, "dist/find/index.html", "<html><p>乾淨</p></html>");
   write(d, "dist/js/find-map.js", "var TILE_URL='https://wmts.nlsc.gov.tw/wmts/x/{z}/{y}/{x}';x.src='https://wmts.nlsc.gov.tw/a.png';");
   write(d, "dist/_headers", "/find/*\n  Content-Security-Policy: img-src 'self' data: https://wmts.nlsc.gov.tw");
+  // 2026-11-13 首頁在售地圖（home-map.js）的空拍圖與路名也准用這台主機
+  write(d, "dist/js/home-map.js", "var TILE='https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/G/{z}/{y}/{x}';im.src='https://wmts.nlsc.gov.tw/a.png';");
   assert.equal(run(d, ["--hosts", "--dist", "dist"]).code, 0);
   // 2026-10-09 審查 SEC-07：原本是全域白名單，任何建置檔都能從那台主機載資源。改成只准那兩個檔
   for (const [f, t] of [
@@ -414,6 +418,7 @@ test("--hosts：地圖圖片主機（內政部國土測繪中心）只准出現�
   }
   for (const [f, t] of [
     ["dist/js/find-map.js", "fetch('https://elsewhere.example/tiles');"],
+    ["dist/js/home-map.js", "fetch('https://elsewhere.example/tiles');"],
     ["dist/js/find-map.css", ".u2-map{background:url(https://elsewhere.example/x.png)}"],
     ["dist/js/vendor/leaflet/1.9.4/leaflet.js", "x.src='https://elsewhere.example/x.js';"],
   ]) {

@@ -38,22 +38,25 @@ const t = useTranslations(locale);
     <p class="text-muted-foreground mb-4 text-sm">
       括號內是該主題的文章篇數；主要主題 {mainTags.length} 個，其餘 {minorTags.length} 個收在下方「更多主題」。
     </p>
-    <ul class="flex flex-wrap gap-6">
+    <ul class="flex flex-wrap gap-2">
       {mainTags.map(({ tag, tagName, count }) => <Tag {tag} {tagName} {count} />)}
     </ul>
 
+    {/* 2026-11 極簡改版：「更多主題」用全站同一套細線開合（flora.css 的 .fl-qa） */}
     {
       minorTags.length > 0 && (
-        <details class="mt-10">
-          <summary class="text-accent cursor-pointer text-lg font-bold">
+        <div class="fl-qa mt-10">
+        <details>
+          <summary>
             更多主題（{minorTags.length} 個，各 1–{THIN_TAG_MIN_POSTS - 1} 篇）
           </summary>
-          <ul class="mt-6 flex flex-wrap gap-4">
+          <ul class="flex flex-wrap gap-2">
             {minorTags.map(({ tag, tagName, count }) => (
               <Tag {tag} {tagName} {count} size="sm" />
             ))}
           </ul>
         </details>
+        </div>
       )
     }
   </Main>

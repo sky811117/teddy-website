@@ -18,28 +18,16 @@ const locale = Astro.currentLocale ?? config.site.lang;
 
 {/* 沒開 ClientRouter，transition:name 只會替每個 tag 灌一段 <style>（/tags/ 曾 857KB），不要加回來 */}
 <li>
+  {/* 2026-11 極簡改版：淺灰底膠囊（原本是字底下一條粗虛線），長相在 ax-pages.css 的 .axp-tag */}
   <a
     href={getRelativeLocaleUrl(locale, `tags/${tag}/`)}
-    class:list={[
-      "flex items-center gap-0.5",
-      "border-foreground border-b-2 border-dashed",
-      "hover:border-accent hover:text-accent hover:-mt-0.5",
-      "focus-visible:text-accent focus-visible:border-none",
-      { "text-sm": size === "sm" },
-      { "text-lg": size === "lg" },
-    ]}
+    class:list={["axp-tag", { "axp-tag--sm": size === "sm" }]}
   >
-    <IconHash
-      class:list={[
-        "opacity-80",
-        { "size-5": size === "lg" },
-        { "size-4": size === "sm" },
-      ]}
-    />
+    <IconHash />
     {tagName}
     {
       typeof count === "number" && (
-        <span class="text-muted-foreground ms-1 text-sm">({count})</span>
+        <span class="axp-tag-n">({count})</span>
       )
     }
   </a>

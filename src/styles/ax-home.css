@@ -1,0 +1,391 @@
+/*
+ * 2026-11 極簡改版：首頁專用（接在 ax.css 後面；一樣不包 @layer）。
+ * 首頁的字幾乎都收起來了：第一眼只有一句問句、一個輸入框、兩個連結、一張大圖。
+ * 手機畫面上看得到的字約 350 個（改版前約 930）；原始碼裡的字一個都沒少，新增區塊請照這個密度。
+ */
+.ax-home {
+  /* ── 第一眼 ── */
+  .lbl {
+    display: block;
+    cursor: text;
+  }
+  .lbl .q,
+  .lbl .sub {
+    display: block;
+  }
+  .links button.more {
+    border: 0;
+    background: none;
+    padding: 0;
+    font: inherit;
+    font-size: 17px;
+    color: var(--link);
+    cursor: pointer;
+  }
+  .links .more {
+    min-height: 40px;
+  }
+  .links button.more .ic {
+    transition: transform 0.35s var(--out);
+  }
+  .links button.more[aria-expanded="true"] .ic {
+    transform: rotate(90deg);
+  }
+  .shot {
+    position: relative;
+  }
+  /* 400 寬以下的手機，輸入框裡那句例子放不下會被切掉：例句的字小一級（輸入的字仍是 17，不會觸發 iPhone 自動放大）。
+     實測：390 寬用 17px 會差 2px 被切；15px 在 360–399 剛好放得下；340 以下再小一級到 14（最小字級），放不下的尾巴用「…」。 */
+  @media (max-width: 399px) {
+    .field textarea::placeholder {
+      font-size: 15px;
+    }
+  }
+  @media (max-width: 339px) {
+    .field textarea::placeholder {
+      font-size: 14px;
+    }
+  }
+  .shot picture {
+    height: 100%;
+  }
+
+  /* 條件篩選：點了「用條件篩選」才展開 */
+  .filt {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      grid-template-rows 0.5s var(--out),
+      opacity 0.4s,
+      visibility 0s 0.5s;
+  }
+  .filt > .in {
+    min-height: 0;
+    overflow: hidden;
+  }
+  .filt.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+  .filt-grid {
+    display: grid;
+    gap: 10px;
+    width: 100%;
+    max-width: 520px;
+    margin: 16px auto 0;
+  }
+  .filt-grid :is(select, input) {
+    width: 100%;
+    height: 48px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 14px;
+    background-color: var(--tile);
+    font-size: 17px;
+    color: var(--tx);
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .filt-grid select {
+    padding-right: 40px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6' fill='none' stroke='%236e6e73' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 16px;
+  }
+  .filt-grid :is(select, input):focus-visible {
+    outline: 0;
+    background-color: #fff;
+    box-shadow:
+      inset 0 0 0 1px var(--blue),
+      0 0 0 4px rgba(0, 113, 227, 0.2);
+  }
+  .filt-grid .pill {
+    width: 100%;
+    min-height: 48px;
+    border: 0;
+    font-size: 17px;
+  }
+  .hot {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    max-width: 520px;
+    margin: 16px auto 0;
+    font-size: 14px;
+  }
+  .hot-lead {
+    align-self: center;
+    color: var(--tx2);
+  }
+  .hot a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: 980px;
+    box-shadow: inset 0 0 0 1px var(--line);
+    color: var(--tx2);
+  }
+  @media (scripting: none) {
+    .filt,
+    .assist {
+      grid-template-rows: 1fr;
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+
+  /* 小幫手對話預覽：裝飾，電腦版壓在大圖角落 */
+  .hero-chat {
+    position: absolute;
+    left: 28px;
+    bottom: 28px;
+    display: grid;
+    gap: 8px;
+    max-width: 360px;
+    text-align: left;
+    font-size: 17px;
+    line-height: 1.4;
+  }
+  .hero-chat p {
+    justify-self: start;
+    padding: 10px 16px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.84);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    color: var(--tx);
+  }
+  .hero-chat .me {
+    justify-self: end;
+    background: var(--blue);
+    color: #fff;
+  }
+
+  /* ── 我是誰 ── */
+  .fold.me > summary img {
+    object-fit: cover;
+  }
+  .big .k,
+  .big strong {
+    color: var(--tx);
+    font-weight: 600;
+  }
+  .corp p {
+    max-width: 30em;
+  }
+
+  /* ── 在售精選卡 ── */
+  .card > a {
+    display: block;
+    color: inherit;
+  }
+  .card .b {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    column-gap: 12px;
+  }
+  .card .p {
+    grid-area: 1 / 1;
+    letter-spacing: -0.01em;
+  }
+  .card .d {
+    grid-area: 1 / 2;
+    margin: 0;
+  }
+  .card .t {
+    grid-area: 2 / 1 / 3 / 3;
+    font-weight: 400;
+  }
+  .card .u {
+    grid-area: 3 / 1 / 4 / 3;
+  }
+  .card .noimg {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    color: var(--tx3);
+    font-size: 40px;
+  }
+
+  /* ── 買／賣 ── */
+  .gap-h {
+    margin: 64px var(--m) 0;
+    text-align: center;
+    font-size: 24px;
+    line-height: 1.2;
+  }
+  .gap-h + .tiles {
+    margin-top: 20px;
+  }
+  .tile .art {
+    position: relative;
+  }
+  .tile .art picture {
+    height: 100%;
+  }
+  .mark {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    padding: 4px 12px;
+    border-radius: 980px;
+    background: rgba(255, 255, 255, 0.84);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    backdrop-filter: saturate(180%) blur(14px);
+    font-size: 14px;
+    color: var(--tx);
+  }
+
+  /* ── 四步：號碼用計數器畫，不佔原始碼的字 ── */
+  .steps {
+    counter-reset: step;
+  }
+  .step {
+    counter-increment: step;
+  }
+  .step::before {
+    content: counter(step);
+    display: block;
+    font-size: 40px;
+    line-height: 1;
+    font-weight: 600;
+    color: #c7c7cc;
+  }
+
+  /* ── 手風琴 ── */
+  .acc summary :is(h2, h3) {
+    margin: 0;
+    font: inherit;
+    letter-spacing: 0;
+    color: inherit;
+  }
+  .acc .in > .foot {
+    padding-bottom: 8px;
+  }
+  .acc .in > p:has(> .more) {
+    padding-top: 6px;
+  }
+
+  /* ── 目錄列、社群列 ── */
+  .acc .in > .rows {
+    margin-top: 0;
+    border-bottom: 0;
+    padding-bottom: 8px;
+    color: var(--tx);
+  }
+  .rows h3 {
+    font-size: 17px;
+    line-height: 1.35;
+    font-weight: 600;
+  }
+  .rows .dsc {
+    display: block;
+    margin-top: 3px;
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--tx2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .rows.chan a {
+    gap: 14px;
+  }
+  .rows.chan .u2-ico {
+    width: 22px;
+    height: 22px;
+    color: var(--tx2);
+  }
+  .rows.chan a span {
+    font-weight: 400;
+  }
+  .rows.chan b {
+    font-weight: 600;
+  }
+  .rows.chan small {
+    display: inline;
+    margin: 0;
+    white-space: normal;
+  }
+
+  /* ── 文章卡：手機只放標題 ── */
+  .note {
+    display: block;
+    min-height: 0;
+    padding: 0;
+  }
+  .note > a {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 100%;
+    min-height: 172px;
+    padding: 22px 22px 18px;
+    color: inherit;
+  }
+  .note h3 {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+    font-size: 21px;
+    line-height: 1.3;
+    font-weight: 600;
+  }
+  .note p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--tx2);
+  }
+
+  /* ── 最後一塊 ── */
+  .pill .u2-ico {
+    width: 18px;
+    height: 18px;
+  }
+  .tile .tel {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 40px;
+    font-size: 17px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (min-width: 735px) {
+    .gap-h {
+      margin-top: 110px;
+      font-size: 32px;
+    }
+    .gap-h + .tiles {
+      margin-top: 28px;
+    }
+    .filt-grid {
+      grid-template-columns: 1fr 1fr 1fr auto;
+      max-width: 760px;
+    }
+    .filt-grid .pill {
+      width: auto;
+      padding: 0 28px;
+    }
+    .hot {
+      max-width: 760px;
+    }
+    .note > a {
+      min-height: 220px;
+    }
+  }
+}

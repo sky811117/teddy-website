@@ -99,11 +99,11 @@ const intentList = Object.keys(intentTips) as Intent[];
 >
   <Header />
 
-  <main id="main-content" class="app-layout max-w-app py-12">
+  <main id="main-content" class="app-layout axp max-w-app py-12">
     {/* 主訊息 */}
     <div class="text-center">
       <div
-        class="bg-accent text-accent-foreground mx-auto flex h-20 w-20 items-center justify-center rounded-full text-4xl"
+        class="bg-muted text-foreground mx-auto flex h-20 w-20 items-center justify-center rounded-full text-4xl"
       >
         ✓
       </div>
@@ -171,7 +171,7 @@ const intentList = Object.keys(intentTips) as Intent[];
           <ul class="mt-4 space-y-3">
             {intentTips[name].tips.map((tip, i) => (
               <li class="border-border bg-card flex gap-4 rounded-lg border p-4">
-                <span class="bg-accent text-accent-foreground flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[15px] font-bold">
+                <span class="bg-muted text-foreground flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[15px] font-bold">
                   {i + 1}
                 </span>
                 <div class="min-w-0">

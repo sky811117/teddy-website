@@ -24,10 +24,11 @@ import {
   publicCommunityName,
   stripAddressDetail,
 } from "@/utils/propertyPhotoAlt";
-import IconMapPin from "@/assets/icons/IconMapPin.svg";
-import IconPhone from "@/assets/icons/IconPhone.svg";
-import IconClipboardList from "@/assets/icons/IconClipboardList.svg";
-import IconLine from "@/assets/icons/socials/line.svg";
+import AskBar from "@/components/flora/AskBar.astro";
+import { wbrSegments } from "@/utils/wbr";
+// 2026-11 極簡改版（樣稿 v3）：共用元件在 ax.css，物件頁要補的在 flora-property.css（檔名沿用，順序不能反）
+import "@/styles/ax.css";
+import "@/styles/flora-property.css";
 
 export async function getStaticPaths() {
   const properties = await getCollection(
@@ -654,6 +655,57 @@ const specLoanText = isResidential
 // 底部 CTA bar 的 bottom：cookie 同意橫幅出現時 Analytics.astro 會把橫幅高度寫進
 // --consent-h，CTA 就往上讓開；沒橫幅時是 0px。
 const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
+
+// 2026-11 改版：標題按詞換行、底部詢問列寫「問這間」、物件介紹先露 6 行（字都還在，按「看完整介紹」展開）
+const titleParts = wbrSegments(displayTitle);
+const priceText = formatPrice(property.data.totalPrice);
+const askSub = `${property.data.district}・${priceText}`;
+const askMsg = `你好，我在官網看到「${displayTitle}」（委編 ${fullListingCode}，${priceText}），想約看屋`;
+const INTRO_SHOW = introLines && introLines.length > 9 ? 6 : (introLines?.length ?? 0);
+
+// ── 2026-11 極簡改版（樣稿 v3）：以下只給畫面排版用，上面的資料邏輯與 SEO 欄位都沒動 ──
+// 大數字價格：把「數字」和「萬／億」分開（單位用小一號的字）；兩段接回去跟 formatPrice 的字一樣
+const splitPrice = (price: number): [string, string] => {
+  const text = formatPrice(price);
+  const unit = text.slice(-1);
+  return unit === "萬" || unit === "億" ? [text.slice(0, -1).trim(), unit] : [text, ""];
+};
+const [priceNum, priceUnit] = splitPrice(property.data.totalPrice);
+// 規格（大字數值＋小字標籤）：項目、順序、有沒有值的判斷都跟原本的規格卡一樣
+type SpecItem = { k: string; v: string; u: string };
+const specItems: SpecItem[] = [
+  { k: "格局", v: property.data.layout, u: "" },
+  { k: `權狀${parkingSuffix}`, v: String(property.data.area), u: "坪" },
+  ...(property.data.indoorArea !== undefined
+    ? [{ k: "主建物", v: String(property.data.indoorArea), u: "坪" }]
+    : []),
+  ...(property.data.floor ? [{ k: "樓層", v: property.data.floor, u: "" }] : []),
+  ...(property.data.parking ? [{ k: "車位", v: property.data.parking, u: "" }] : []),
+  ...(property.data.age !== undefined ? [{ k: "屋齡", v: String(property.data.age), u: "年" }] : []),
+  ...(propertyType ? [{ k: "類型", v: propertyType, u: "" }] : []),
+  ...(property.data.pricePerPing
+    ? [{ k: `單價${parkingSuffix}`, v: property.data.pricePerPing.toFixed(1), u: "萬/坪" }]
+    : []),
+];
+// 規格的值太長（例「3房2廳2衛2陽台」「坡道平面固定車位」）手機一欄放不下大字，最後一個字會自己掉到下一行：
+// 粗估寬度（中文字算 1、英數算 0.56），超過就標 long，CSS 在手機上收小一級
+const specIsLong = (v: string) =>
+  [...v].reduce((n, ch) => n + (ch.charCodeAt(0) < 0x2e80 ? 0.56 : 1), 0) > 6.4;
+// 月付試算可以切的成數、年限：樣稿的選項＋設定檔 loan 的預設值（預設值一定在選項裡）
+const payRatios = [...new Set<number>([0.7, 0.8, loan.ratio])].sort((a, b) => a - b);
+const payYears = [...new Set<number>([20, 30, 40, loan.years])].sort((a, b) => a - b);
+// 「區域指南＋分區列表」那一格的標題（裡面有什麼就寫什麼）
+const areaAccTitle =
+  area && districtActiveCount > 0
+    ? `${property.data.district}行情與其他在售`
+    : area
+      ? `${property.data.district}行情`
+      : `${property.data.district}其他在售`;
+// 物件介紹的行如果是「小標｜說明」，把小標另外包一層（深色粗字）；字與順序不變，兩段接回去就是原本那一行
+const introSplit = (line: string): [string, string] => {
+  const m = line.match(/^([^｜，。：；！？\s]{2,14})(｜.+)$/);
+  return m ? [m[1], m[2]] : ["", line];
+};
 ---
 
 <Layout
@@ -679,310 +731,435 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
 
   <Header />
 
-  {/* 桌面版 sticky CTA bar — 滾動超過 600px 才出現，常駐在視窗底部直到看完。
-      隱藏時同時掛 inert，aria-hidden 內才不會有可聚焦的按鈕 */}
-  <div
-    data-property-sticky
-    class="border-border bg-card/95 fixed inset-x-0 bottom-0 z-30 hidden translate-y-full border-t shadow-lg backdrop-blur transition-transform duration-300 sm:block"
-    style={ctaBottomStyle}
-    aria-hidden="true"
-    inert
-  >
-    <div class="app-layout max-w-app flex flex-wrap items-center justify-between gap-4 py-3">
-      <div class="min-w-0 flex-1">
-        <p class="text-foreground line-clamp-1 text-sm font-semibold">
-          {displayTitle}
-        </p>
-        <p class="text-muted-foreground flex items-center gap-1 text-xs">
-          <IconMapPin class="size-3.5 shrink-0" aria-hidden="true" />
-          <span class="line-clamp-1">
-            {property.data.district}
-            {streetAreaClean ? `・${streetAreaClean}` : ""}
-            ・{property.data.layout} ・{property.data.area} 坪
-          </span>
-        </p>
-      </div>
-      <div class="text-accent shrink-0 text-xl font-bold sm:text-2xl">
-        {formatPrice(property.data.totalPrice)}
-      </div>
-      <div class="flex shrink-0 items-center gap-2">
-        <a href="#contact-form-section" class="btn-outline text-sm">
-          <IconClipboardList class="size-4" aria-hidden="true" />
-          詢問
-        </a>
-        <a href="tel:+886920118756" class="btn-outline text-sm">
-          <IconPhone class="size-4" aria-hidden="true" />
-          撥打
-        </a>
-        <a href="/go/line?src=property-sticky" class="btn-line text-sm">
-          <IconLine class="size-4" aria-hidden="true" />
-          LINE 景泰
-        </a>
-      </div>
+  {/* 上方小列（原本電腦版貼在視窗底部的價格列，改到頁首下面）：捲過價格與按鈕才滑出來，
+      ax.ts 會加 .on 並切換 inert（收起來時鍵盤 tab 不進去）。標題、位置、價格、三個連結都跟原本一樣；
+      手機只顯示名稱與價格（位置與按鈕收起來，底部詢問列已經有 LINE、電話、詢問）。
+      外面那層 .ax 只是讓 ax.css／ax.ts 認得它（它在 <main> 外面）。 */}
+  <div class="ax pd-top">
+    <div class="ln" data-property-sticky inert>
+      <b>{displayTitle}</b>
+      <span class="loc d-only">
+        {property.data.district}
+        {streetAreaClean ? `・${streetAreaClean}` : ""}
+        ・{property.data.layout} ・{property.data.area} 坪
+      </span>
+      <span class="tnum">{formatPrice(property.data.totalPrice)}</span>
+      <a href="#contact-form-section" class="pill o">詢問</a>
+      <a href="tel:+886920118756" class="pill o">撥打</a>
+      <a href="/go/line?src=property-sticky" class="pill f">LINE 景泰</a>
     </div>
   </div>
 
-  {/* 手機版常駐底部 CTA bar — 細價格列 + 三鍵、純 CSS、只在手機出現 */}
-  <div
-    class="border-border bg-card/95 fixed inset-x-0 bottom-0 z-40 border-t shadow-lg backdrop-blur sm:hidden"
-    style={ctaBottomStyle}
-    data-property-mobile-cta
-  >
-    <div class="border-border flex h-8 min-w-0 items-center justify-between gap-2 border-b px-3">
-      <p class="text-foreground line-clamp-1 min-w-0 flex-1 text-xs">{displayTitle}</p>
-      <span class="text-accent shrink-0 text-base font-bold">{formatPrice(property.data.totalPrice)}</span>
-    </div>
-    <div class="grid grid-cols-3">
-      <a href="tel:+886920118756" class="text-accent flex min-h-11 flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-medium no-underline"><IconPhone class="size-5" aria-hidden="true" />撥電話</a>
-      <a href="/go/line?src=property-bar" class="bg-line flex min-h-11 flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-medium text-white no-underline"><IconLine class="size-5" aria-hidden="true" />LINE 景泰</a>
-      <a href="#contact-form-section" class="text-accent flex min-h-11 flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-medium no-underline"><IconClipboardList class="size-5" aria-hidden="true" />詢問</a>
-    </div>
-  </div>
+  {/* 底部詢問列（取代原本手機底部三鍵）：LINE 照用 property-bar 代碼、電話、表單錨點；data-property-mobile-cta 給 GA4 */}
+  <AskBar
+    main="用 LINE 問這間"
+    sub={askSub}
+    href="/go/line?src=property-bar"
+    msg={askMsg}
+    formHref="#contact-form-section"
+    formLabel="詢問"
+    propertyCta
+  />
 
-  <main id="main-content" class="app-layout max-w-app py-8 pb-24 sm:pb-24">
-    <a
-      href="/properties/"
-      class="text-muted-foreground hover:text-accent mb-4 inline-block text-sm no-underline"
-    >
-      ← 返回在售物件列表
-    </a>
-
+  <main id="main-content" class="ax pd-main">
     {/* Pagefind：只索引 article；站內搜尋才找得到物件（結果可用「物件」filter 分開） */}
-    <article data-pagefind-body data-pagefind-filter="type:物件">
-      <h1 class="text-accent text-2xl font-bold sm:text-3xl" data-pagefind-meta="title">
-        {displayTitle}
-      </h1>
-
-      <p class="text-muted-foreground mt-2 flex items-center gap-1 text-sm">
-        <IconMapPin class="size-4 shrink-0" aria-hidden="true" />
-        <span>
-          {property.data.district}
-          {streetAreaClean ? `・${streetAreaClean}` : ""}
-          {communityName && "・"}
-          {
-            communityName && communityHref ? (
-              <a href={communityHref} class="text-accent underline decoration-dotted underline-offset-4">
-                {communityName}
-              </a>
-            ) : (
-              communityName
-            )
-          }
-        </span>
-      </p>
-
-      {/* 委編 / 專任 / 新上架 / 降價 badge 列 */}
-      <div class="mt-3 flex flex-wrap items-center gap-2">
-        {fullListingCode && (
-          <span class="bg-muted text-muted-foreground inline-block rounded px-2 py-0.5 text-xs">
-            委編 {fullListingCode}
-          </span>
-        )}
-        {isExclusive && (
-          <span class="inline-block rounded border border-emerald-700 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:border-emerald-400 dark:text-emerald-400">
-            本店專任
-          </span>
-        )}
-        {showNewBadge && isNew && (
-          <span class="inline-block rounded-full bg-emerald-700 px-2 py-0.5 text-xs font-medium text-white">
-            新上架
-          </span>
-        )}
-        {dropPct && (
-          <span class="inline-block rounded-full bg-rose-700 px-2 py-0.5 text-xs font-medium text-white">
-            降價 {dropPct}%
-          </span>
-        )}
-      </div>
-
-      <div class="text-accent mt-3 flex flex-wrap items-baseline gap-3 text-3xl font-bold sm:text-4xl">
-        <span>{formatPrice(property.data.totalPrice)}</span>
-        {
-          dropPct && property.data.lastPrice && (
-            <span class="text-muted-foreground text-lg font-normal line-through">
-              {formatPrice(property.data.lastPrice)}
-            </span>
-          )
-        }
-        {
-          property.data.pricePerPing && (
-            <span class="text-muted-foreground text-base font-normal">
-              單坪{parkingSuffix} {property.data.pricePerPing.toFixed(1)} 萬
-            </span>
-          )
-        }
-      </div>
-      {/* 資料日期（稽核 X006）：用「資料更新日」不寫「核對日」——目前沒有每晚比價 */}
-      <p class="text-muted-foreground mt-1 text-xs">{priceChecked ? `價格核對日 ${priceChecked}` : `資料更新日 ${twDate(dataDate)}`}・價格、格局與屋況以委託契約及現場說明為準</p>
-
-      {/* 月付試算（住宅型才顯示；參數在 src/config.ts 的 loan）*/}
-      {
-        isResidential ? (
-          <p class="text-muted-foreground mt-2 text-sm">
-            {loanRatioText} {loan.years} 年・利率 {loanRatePct}% 試算 → 月付約 {monthlyPaymentText} 萬
-            <span class="text-muted-foreground ml-1 text-xs">
-              （{loan.note}，{loan.asOf} 更新）
-            </span>
-            <a href="/tools/" class="text-accent ml-1 underline underline-offset-2">
-              試算工具 →
-            </a>
-          </p>
-        ) : (
-          <p class="text-muted-foreground mt-2 text-sm">
-            這類物件的貸款成數與年限依銀行鑑價而定，要試算月付
-            <a href="/go/line?src=property" class="text-accent ml-1 underline underline-offset-2">
-              LINE 問景泰 →
-            </a>
-          </p>
-        )
-      }
-
+    <article class="pd-wrap" data-gallery data-pagefind-body data-pagefind-filter="type:物件">
+      {/* 照片：全部做成左右滑（手機用手指滑；電腦滑鼠滑不動，另外有上一張／下一張圓鈕）。
+          每一張都是按鈕，點了開原本的燈箱。第一張是首屏最大圖（eager＋fetchpriority=high，
+          Layout 的 lcpImage 預先載入同一張），其餘 lazy；從物件卡點進來時照片會接到第一張（data-house-target）。 */}
       {
         photos.length > 0 ? (
-          <div class="my-6" data-gallery>
-            {/* 桌面 collage（照片 ≥3 張、sm 以上）：主圖 2x2 + 副圖 2-4 張 */}
-            {useCollage && (
-              <div
-                class="hidden gap-2 sm:grid sm:aspect-[2/1] sm:grid-cols-4 sm:grid-rows-2"
-                data-gallery-collage
-              >
-                <button
-                  type="button"
-                  data-collage-index="0"
-                  class="bg-muted group relative col-span-2 row-span-2 cursor-zoom-in overflow-hidden rounded-lg"
-                  aria-label="查看第 1 張"
-                >
-                  <img
-                    src={photos[0]}
-                    alt={photoAlts[0]}
-                    width="800"
-                    height="600"
-                    class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    loading="eager"
-                    fetchpriority="high"
-                    decoding="sync"
-                    data-pagefind-meta="image[src]"
-                  />
+          <section class="gal">
+            <div class="car" data-car="gal">
+              {photos.map((ph, i) => (
+                <figure class="ph" data-house-target={i === 0 ? "" : undefined}>
+                  <button type="button" data-collage-index={i}>
+                    <img
+                      src={ph}
+                      alt={photoAlts[i]}
+                      width="800"
+                      height="600"
+                      loading={i === 0 ? "eager" : "lazy"}
+                      fetchpriority={i === 0 ? "high" : undefined}
+                      decoding={i === 0 ? "sync" : "async"}
+                      data-pagefind-meta={i === 0 ? "image[src]" : undefined}
+                    />
+                    <span class="sr-only" data-pagefind-ignore>點擊放大</span>
+                  </button>
+                </figure>
+              ))}
+            </div>
+            {/* 上一張／下一張（只有電腦、滑鼠裝置才畫出來；ax-property.ts 有跑起來才打開） */}
+            {photos.length > 1 && (
+              <div class="pads" data-pagefind-ignore>
+                <button type="button" class="pad" data-gal-prev disabled>
+                  <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>
+                  <span class="sr-only">上一張</span>
                 </button>
-                {collageSide.map((p, i) => {
-                  // 依副圖張數決定 span 避免破格：2 張各佔整排、3 張時最後一張補滿第二排
-                  const spanClass =
-                    collageSide.length === 2
-                      ? "col-span-2"
-                      : collageSide.length === 3 && i === 2
-                        ? "col-span-2"
-                        : "";
-                  const isLastTile = i === collageSide.length - 1;
-                  const showMore = isLastTile && collageHiddenCount > 0;
-                  return (
-                    <button
-                      type="button"
-                      data-collage-index={i + 1}
-                      class={`bg-muted group relative cursor-zoom-in overflow-hidden rounded-lg ${spanClass}`}
-                      aria-label={
-                        showMore
-                          ? `查看第 ${i + 2} 張，還有 +${collageHiddenCount} 張`
-                          : `查看第 ${i + 2} 張`
-                      }
-                    >
-                      <img
-                        src={p}
-                        alt={photoAlts[i + 1]}
-                        width="400"
-                        height="300"
-                        class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                      {showMore && (
-                        <span class="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/55 text-xl font-bold text-white">
-                          +{collageHiddenCount} 張
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+                <button type="button" class="pad" data-gal-next>
+                  <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+                  <span class="sr-only">下一張</span>
+                </button>
               </div>
             )}
-
-            {/* 主圖 + 縮圖列（手機維持現狀；<3 張時桌面也用這套）。
-                有可見文字（計數／點擊放大）就不另掛 aria-label，避免 label 與可見文字不一致 */}
-            <div class={useCollage ? "sm:hidden" : ""}>
-              {/* 主圖（點擊開 lightbox） */}
-              <button
-                type="button"
-                data-gallery-main-btn
-                class="bg-muted group relative block aspect-[4/3] w-full cursor-zoom-in overflow-hidden rounded-lg"
-              >
-                <img
-                  src={photos[0]}
-                  alt={photoAlts[0]}
-                  width="800"
-                  height="600"
-                  class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  loading="eager"
-                  fetchpriority="high"
-                  decoding="sync"
-                  data-gallery-main
-                  data-pagefind-meta={useCollage ? undefined : "image[src]"}
-                />
-                <span
-                  class="pointer-events-none absolute right-3 bottom-3 rounded bg-black/60 px-2 py-1 font-mono text-xs text-white"
-                  data-gallery-counter
-                >
-                  1 / {photos.length}
-                </span>
-                <span class="pointer-events-none absolute top-3 right-3 rounded bg-black/60 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
-                  點擊放大
-                </span>
-              </button>
-
-              {/* 縮圖列（橫向 scroll） */}
-              {photos.length > 1 && (
-                <div
-                  class="mt-3 flex gap-2 overflow-x-auto pb-2"
-                  data-gallery-thumbs
-                  style="scrollbar-width: thin;"
-                >
-                  {photos.map((p, i) => (
-                    <button
-                      type="button"
-                      data-gallery-index={i}
-                      aria-label={`查看第 ${i + 1} 張`}
-                      class={`bg-muted aspect-[4/3] w-20 shrink-0 overflow-hidden rounded border-2 transition-all sm:w-24 ${
-                        i === 0
-                          ? "border-accent opacity-100"
-                          : "border-transparent opacity-60 hover:opacity-100"
-                      }`}
-                    >
-                      <img
-                        src={p}
-                        alt=""
-                        width="120"
-                        height="90"
-                        loading="lazy"
-                        decoding="async"
-                        class="h-full w-full object-cover"
-                      />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+            {/* 圓點＋第幾張（ax.ts 會跟著滑動更新）。只有一張照片時沒有圓點，只留「1 / 1」（改版前照片角落就有這個數字） */}
+            {photos.length > 1 ? (
+              <>
+                <div class="dots" data-dots="gal" aria-hidden="true"></div>
+                <p class="foot">
+                  {/* 張數只講一次：前面只報「第幾張」（data-fmt 給 ax.ts 用），總數在後面那句 */}
+                  <span data-pagefind-ignore><span class="tnum" data-count="gal" data-fmt="第 {i} 張">第 1 張</span>・</span>共 {photos.length} 張照片，點任一張可以放大
+                </p>
+              </>
+            ) : (
+              <p class="foot" data-pagefind-ignore>
+                <span class="tnum" data-count="gal">1 / 1</span>
+              </p>
+            )}
+          </section>
         ) : (
-          <div class="bg-muted rounded-card my-6 flex h-48 w-full flex-col items-center justify-center gap-3 sm:h-56">
-            <p class="text-foreground text-base font-medium">📷 照片整理中</p>
-            <p class="text-muted-foreground text-sm">
-              想先看實照／影片？
-            </p>
-            <a href="/go/line?src=property" class="btn-line text-sm">
-              <IconLine class="size-4" aria-hidden="true" />
-              LINE 索取實照
-            </a>
-          </div>
+          <section class="gal">
+            <div class="ph none">
+              <p>📷 照片整理中</p>
+              <p>想先看實照／影片？</p>
+              <a href="/go/line?src=property" class="pill f">LINE 索取實照</a>
+            </div>
+          </section>
         )
       }
+
+      <section class="pd">
+        {/* 第一眼這一塊捲出畫面後，上方小列才滑出來（ax.ts 看 data-ln-after） */}
+        <div class="top" data-ln-after>
+          <a href="/properties/" class="crumb" data-pagefind-ignore>
+            ← 返回在售物件列表
+          </a>
+
+          {/* 委編 / 專任 / 新上架 / 降價：原始碼順序跟改版前同一段（委編 → 專任 → 新上架 → 降價），
+              畫面上新上架、降價排前面（CSS order）。寫法照舊，不改判斷 */}
+          <p class="lab">
+            {fullListingCode && <span class="code">委編 {fullListingCode}</span>}
+            {isExclusive && <span class="ex">本店專任</span>}
+            {showNewBadge && isNew && <span class="new">新上架</span>}
+            {dropPct && <span class="drop">降價 {dropPct}%</span>}
+          </p>
+
+          {/* 標題：字與 <wbr> 斷詞照舊，只多包一層 .tseg（每一段到標點為止是一塊；不能叫 .seg，那是 ax.css 的分段切換）——
+              放得下就整段不拆、標點不會跑到行首；一段比一行還長時只在那一段裡平均換行，不會剩一兩個字自己一行 */}
+          <h1 class="kw" data-pagefind-meta="title">
+            {titleParts.map((part, i) => (i < titleParts.length - 1 ? <><span class="tseg">{part}</span><wbr /></> : <span class="tseg">{part}</span>))}
+          </h1>
+
+          <p class="where">
+            {property.data.district}
+            {streetAreaClean ? `・${streetAreaClean}` : ""}
+            {communityName && "・"}
+            {
+              communityName && communityHref ? (
+                <a href={communityHref}>{communityName}</a>
+              ) : (
+                communityName
+              )
+            }
+          </p>
+
+          {/* 大數字價格；舊價（刪除線）與單價那句緊接在後面，跟改版前是同一段字 */}
+          <p class="pr">
+            <b class="tnum">{priceNum}<small>{priceUnit}</small></b>
+            {
+              dropPct && property.data.lastPrice && (
+                <s class="tnum">{formatPrice(property.data.lastPrice)}</s>
+              )
+            }
+          </p>
+          {
+            property.data.pricePerPing && (
+              <p class="per">
+                單價{parkingSuffix} {property.data.pricePerPing.toFixed(1)} 萬/坪
+              </p>
+            )
+          }
+
+          <div class="cta" data-pagefind-ignore>
+            <a href="/go/line?src=property" class="pill f">用 LINE 問這間</a>
+            <a href="#contact-form-section" class="pill o">詢問</a>
+          </div>
+
+          {/* 資料日期（稽核 X006）：用「資料更新日」不寫「核對日」——目前沒有每晚比價 */}
+          <p class="foot">{priceChecked ? `價格核對日 ${priceChecked}` : `資料更新日 ${twDate(dataDate)}`}・價格、格局與屋況以委託契約及現場說明為準</p>
+
+          {/* 月付那一句（住宅型才有試算；參數在 src/config.ts 的 loan）。成數、年限、利率都寫在同一句，數字不單獨露出 */}
+          {
+            isResidential ? (
+              <p class="foot">
+                {loanRatioText} {loan.years} 年・利率 {loanRatePct}% 試算 → 月付約 {monthlyPaymentText} 萬
+                <span>（{loan.note}，{loan.asOf} 更新）</span>
+                <a href="/tools/">試算工具 →</a>
+              </p>
+            ) : (
+              <p class="foot">
+                這類物件的貸款成數與年限依銀行鑑價而定，要試算月付
+                <a href="/go/line?src=property">LINE 問景泰 →</a>
+              </p>
+            )
+          }
+        </div>
+
+        {/* 規格：格局 / 權狀 / 主建物 / 樓層 / 車位 / 屋齡 / 類型 / 單價（大字數值＋小字標籤）。
+            原始碼裡標籤在前、數值在後（跟改版前一樣），畫面上標籤排在數值下面（ax.css 的 order） */}
+        <dl class="spec">
+          {specItems.map((s, i) => (
+            <div data-r="rise" style={`--i:${i % 2}`}>
+              <dt>{s.k}</dt>
+              <dd class:list={["tnum", { long: specIsLong(s.v) }]}>{s.v}{s.u && <small>{s.u}</small>}</dd>
+            </div>
+          ))}
+        </dl>
+        {
+          includesParking && (
+            <p class="foot">
+              單價＝總價÷權狀坪數（含車位），車位坪數與價格未拆分，以不動產說明書為準。
+            </p>
+          )
+        }
+
+        {/* 物件介紹抽不到（內文格式跑掉）才會走這裡：整段內文照放，下方行內程式會把跟規格重複的段落拿掉 */}
+        {
+          !introLines && (
+            <div
+              class="app-prose max-w-app prose-pre:bg-(--shiki-light-bg) dark:prose-pre:bg-(--shiki-dark-bg) mt-8"
+              data-property-content
+            >
+              <Content />
+            </div>
+          )
+        }
+
+        {/* 其餘的字收進「＋」，點了才展開（字都在原始碼裡）。ax.ts 負責順順展開；沒有 JavaScript 就是瀏覽器原生的開合。
+            原本是 H2 的標題（物件介紹、物件亮點、社區文）照樣是 H2，放在 summary 裡 */}
+        <div class="acc">
+          {
+            introLines && introLines.length > 0 && (
+              <details open data-property-intro>
+                <summary>
+                  <h2>物件介紹</h2>
+                  <span class="plus"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></span>
+                </summary>
+                <div class="in">
+                  <div>
+                    <div class="intro">
+                      {introLines.slice(0, INTRO_SHOW).map(line => {
+                        const [lead, rest] = introSplit(line);
+                        return <p>{lead && <b>{lead}</b>}{rest}</p>;
+                      })}
+                    </div>
+                    {introLines.length > INTRO_SHOW && (
+                      <details class="fold">
+                        <summary>
+                          看完整介紹
+                          <span class="plus"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></span>
+                        </summary>
+                        <div class="in">
+                          <div class="intro rest">
+                            {introLines.slice(INTRO_SHOW).map(line => {
+                              const [lead, rest] = introSplit(line);
+                              return <p>{lead && <b>{lead}</b>}{rest}</p>;
+                            })}
+                          </div>
+                        </div>
+                      </details>
+                    )}
+                  </div>
+                </div>
+              </details>
+            )
+          }
+
+          {
+            uniqueHighlights.length > 0 && (
+              <details>
+                <summary>
+                  <h2>物件亮點</h2>
+                  <span class="plus"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></span>
+                </summary>
+                <div class="in">
+                  <div>
+                    <ul class="hl">
+                      {uniqueHighlights.map(h => (
+                        <li>{h}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </details>
+            )
+          }
+
+          {/* 月付試算（住宅型才有）：可以切成數、年限，ax.ts 用同一條本息平均攤還公式重算 data-pay-out 的數字 */}
+          {
+            isResidential && (
+              <details
+                data-pay
+                data-price={property.data.totalPrice}
+                data-rate={loanRatePct}
+                data-ratio={loan.ratio}
+                data-years={loan.years}
+                data-pagefind-ignore
+              >
+                <summary>
+                  月付試算
+                  <em>約 <span class="tnum" data-pay-out>{monthlyPaymentText}</span> 萬</em>
+                  <span class="plus"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></span>
+                </summary>
+                <div class="in">
+                  <div>
+                    <p class="pay-big">月付約 <b class="tnum" data-pay-out>{monthlyPaymentText}</b> 萬</p>
+                    <p class="seg-l">貸款成數</p>
+                    <div class="seg" data-k="ratio" style={`--n:${payRatios.length};--i:${payRatios.indexOf(loan.ratio)}`}>
+                      <i></i>
+                      {payRatios.map(v => (
+                        <button type="button" data-v={v} aria-pressed={v === loan.ratio ? "true" : "false"}>{Math.round(v * 10)} 成</button>
+                      ))}
+                    </div>
+                    <p class="seg-l">年限</p>
+                    <div class="seg" data-k="years" style={`--n:${payYears.length};--i:${payYears.indexOf(loan.years)}`}>
+                      <i></i>
+                      {payYears.map(v => (
+                        <button type="button" data-v={v} aria-pressed={v === loan.years ? "true" : "false"}>{v} 年</button>
+                      ))}
+                    </div>
+                    <p class="foot">利率 {loanRatePct}% 試算（{loan.note}，{loan.asOf} 更新）</p>
+                  </div>
+                </div>
+              </details>
+            )
+          }
+
+          {/* 規格的散文版（稽核 F037）：只用既有欄位，給 snippet 與 AI 擷取 */}
+          <details>
+            <summary data-pagefind-ignore>
+              詳細資料
+              <span class="plus"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></span>
+            </summary>
+            <div class="in">
+              <p data-property-facts>
+                {specFactText}
+                {specLoanText && <span> {specLoanText}</span>}
+              </p>
+            </div>
+          </details>
+
+          {/* 社區深度文 + 區域頁 + 分區列表：物件頁的內容出口（沒有的那一格就不出現） */}
+          {
+            communityPosts.length > 0 && (
+              <details data-pagefind-ignore>
+                <summary>
+                  <h2>
+                    {communityName} 評價／實價登錄整理
+                  </h2>
+                  <span class="plus"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></span>
+                </summary>
+                <div class="in">
+                  <div>
+                    <p>
+                      看這戶之前，先看這個社區的實價登錄、優缺點、適合誰。
+                      {includesParking && "社區中位數為扣車位口徑，與本戶含車位單價計算方式不同。"}
+                    </p>
+                    <ul class="posts">
+                      {communityPosts.slice(0, 3).map(post => (
+                        <li>
+                          <a
+                            href={`/posts/${post.id}/`}
+                            data-track="post"
+                            data-post-id={post.id}
+                          >
+                            <span>
+                              {post.data.title} →
+                            </span>
+                            <span class="d">
+                              {post.data.description}
+                            </span>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </details>
+            )
+          }
+          {
+            (area || districtActiveCount > 0) && (
+              <details data-pagefind-ignore>
+                <summary>
+                  {areaAccTitle}
+                  <span class="plus"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></span>
+                </summary>
+                <div class="in">
+                  <div class="go">
+                    {area && (
+                      <p>
+                        想先看{area.shortName}整體行情、哪些人適合買？
+                        <a href={`/areas/${area.slug}/`} class="more">
+                          {area.shortName}買房指南 →
+                        </a>
+                      </p>
+                    )}
+                    {districtActiveCount > 0 && (
+                      <p>
+                        <a href={districtListUrl} class="more">
+                          看{property.data.district}全部 {districtActiveCount + 1} 筆在售 →
+                        </a>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </details>
+            )
+          }
+
+          {/* 主表單 — 預填物件編號 + 標題。id 給「詢問」的錨點用：底部詢問列、上方小列、標題下的按鈕點了，
+              ax.ts 會先把這一格打開再捲過來。表單把 23 個行政區、預算選項全印在頁上，不能進 Pagefind 索引 */}
+          <details id="contact-form-section" data-pagefind-ignore>
+            <summary>
+              詢問
+              <span class="plus"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></span>
+            </summary>
+            <div class="in">
+              <div class="form">
+                <ContactForm
+                  propertyId={property.data.listingCode}
+                  propertyTitle={displayTitle}
+                  defaultIntent="buy"
+                  title="想看這戶？留你的聯絡方式"
+                  subtitle="物件編號已幫你預填、補完聯絡方式就送出。30 分鐘內回。"
+                />
+              </div>
+            </div>
+          </details>
+        </div>
+
+        {/* 快速 LINE / 電話通道 — 給急的人。公司與證號是法規揭露，不收合。
+            data-hide-ask：這顆實心 LINE 鈕在畫面上時，底部詢問列先讓位（跟改版前一樣，flora.ts），證號那一行不會被蓋住 */}
+        <div class="quick" data-pagefind-ignore>
+          <p>
+            想直接聊、不想填表單？
+          </p>
+          <div class="cta">
+            <a href="/go/line?src=property-bottom" class="pill f" data-hide-ask>
+              LINE sky811117
+            </a>
+            <a href="tel:+886920118756" class="pill o">
+              0920-118-756
+            </a>
+          </div>
+          <p class="foot">
+            一品不動產 有巢氏房屋 台中世界之心加盟店<br />
+            經紀人 {property.data.brokerLicense}
+            ・ 營業員 {property.data.agentLicense}
+          </p>
+        </div>
+      </section>
 
       {/* Lightbox 全螢幕瀏覽 */}
       {
@@ -1044,305 +1221,88 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
           </dialog>
         )
       }
+    </article>
 
-      {/* 規格卡：格局 / 權狀 / 主建物 / 樓層 / 車位 / 屋齡 / 類型 / 單價 */}
-      <div class="card-surface mt-6 grid grid-cols-2 gap-4 p-5 sm:grid-cols-4">
-        <div>
-          <div class="text-muted-foreground text-xs">格局</div>
-          <div class="mt-1 text-lg font-bold">{property.data.layout}</div>
-        </div>
-        <div>
-          <div class="text-muted-foreground text-xs">權狀{parkingSuffix}</div>
-          <div class="mt-1 text-lg font-bold">{property.data.area} 坪</div>
-        </div>
-        {
-          property.data.indoorArea !== undefined && (
-            <div>
-              <div class="text-muted-foreground text-xs">主建物</div>
-              <div class="mt-1 text-lg font-bold">
-                {property.data.indoorArea} 坪
-              </div>
-            </div>
-          )
-        }
-        {
-          property.data.floor && (
-            <div>
-              <div class="text-muted-foreground text-xs">樓層</div>
-              <div class="mt-1 text-lg font-bold">{property.data.floor}</div>
-            </div>
-          )
-        }
-        {
-          property.data.parking && (
-            <div>
-              <div class="text-muted-foreground text-xs">車位</div>
-              <div class="mt-1 text-lg font-bold">{property.data.parking}</div>
-            </div>
-          )
-        }
-        {
-          property.data.age !== undefined && (
-            <div>
-              <div class="text-muted-foreground text-xs">屋齡</div>
-              <div class="mt-1 text-lg font-bold">{property.data.age} 年</div>
-            </div>
-          )
-        }
-        {
-          propertyType && (
-            <div>
-              <div class="text-muted-foreground text-xs">類型</div>
-              <div class="mt-1 text-lg font-bold">{propertyType}</div>
-            </div>
-          )
-        }
-        {
-          property.data.pricePerPing && (
-            <div>
-              <div class="text-muted-foreground text-xs">單價{parkingSuffix}</div>
-              <div class="mt-1 text-lg font-bold">
-                {property.data.pricePerPing.toFixed(1)} 萬/坪
-              </div>
-            </div>
-          )
-        }
-      </div>
-      {
-        includesParking && (
-          <p class="text-muted-foreground mt-2 text-xs">
-            單價＝總價÷權狀坪數（含車位），車位坪數與價格未拆分，以不動產說明書為準。
-          </p>
-        )
-      }
-
-      {/* 規格卡的散文版（稽核 F037）：只用既有欄位，給 snippet 與 AI 擷取 */}
-      <p class="text-foreground mt-4 leading-relaxed" data-property-facts>
-        {specFactText}
-        {specLoanText && <span class="text-muted-foreground"> {specLoanText}</span>}
-      </p>
-
-      {/* 社區深度文 + 區域頁 + 分區列表：物件頁的內容出口（三者皆無才整段不出現） */}
-      {
-        (communityPosts.length > 0 || area || districtActiveCount > 0) && (
-          <div class="mt-6 space-y-3" data-pagefind-ignore>
-            {communityPosts.length > 0 && (
-              <div class="card-surface p-5">
-                <h2 class="text-lg font-bold">
-                  {communityName} 評價／實價登錄整理
-                </h2>
-                <p class="text-muted-foreground mt-1 text-sm">
-                  看這戶之前，先看這個社區的實價登錄、優缺點、適合誰。
-                  {includesParking && "社區中位數為扣車位口徑，與本戶含車位單價計算方式不同。"}
+    {/* 同社區其他在售 → 同縣市其他物件（同一套卡片，先社區後縣市）：灰底區塊＋橫向卡片（手機左右滑、電腦一排三張）。
+        卡片留著 data-house-link：點了照片會接到下一頁的第一張；底部詢問列不跟這些卡 */}
+    {
+      relatedSections.length > 0 && (
+        <div class="tiles">
+          {relatedSections.map(section => (
+            <section class="tile pb" data-pagefind-ignore data-related={section.key}>
+              <h2 class="h2" data-r="rise">
+                {section.heading}
+                <span class="cnt">
+                  ({section.count} {section.countLabel})
+                </span>
+              </h2>
+              {section.moreHref && (
+                <p class="cta" data-r="rise">
+                  <a href={section.moreHref} class="pill f">
+                    {section.moreText}
+                  </a>
                 </p>
-                <ul class="mt-3 space-y-3">
-                  {communityPosts.slice(0, 3).map(post => (
-                    <li>
+              )}
+              <ul class="car" data-car={`rel-${section.key}`} data-r="rise">
+                {section.list.map(p => {
+                  const cardTitle = cleanPropertyTitle(
+                    p.data.title,
+                    [p.data.community?.trim() || p.data.district, p.data.layout]
+                      .filter(Boolean)
+                      .join(" "),
+                    p.data.district
+                  );
+                  const [cardNum, cardUnit] = splitPrice(p.data.totalPrice);
+                  return (
+                    <li class="card" data-house-link>
                       <a
-                        href={`/posts/${post.id}/`}
-                        class="group block no-underline"
-                        data-track="post"
-                        data-post-id={post.id}
+                        href={`/properties/${p.id}/`}
+                        data-track="property"
+                        data-property-id={p.id}
+                        data-property-title={cardTitle}
+                        data-property-price={p.data.totalPrice}
+                        data-property-district={p.data.district}
                       >
-                        <span class="text-accent font-medium group-hover:underline">
-                          {post.data.title} →
-                        </span>
-                        <span class="text-muted-foreground mt-0.5 line-clamp-2 block text-sm">
-                          {post.data.description}
-                        </span>
+                        {p.data.coverImage ? (
+                          <figure>
+                            {/* 相關卡用 400×300 縮圖（F027）；縮圖不在就退回原圖（coverThumb 保底） */}
+                            <img
+                              src={coverThumb(coverSrcOf(p.data.coverImage) ?? "", 400)}
+                              srcset={coverSrcset(coverSrcOf(p.data.coverImage) ?? "")}
+                              sizes={
+                                coverSrcset(coverSrcOf(p.data.coverImage) ?? "")
+                                  ? "(min-width: 735px) 330px, 70vw"
+                                  : undefined
+                              }
+                              alt=""
+                              width="400"
+                              height="300"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          </figure>
+                        ) : (
+                          <figure class="none">
+                            <p>📷 照片整理中</p>
+                          </figure>
+                        )}
+                        {/* price-first：價格在上、標題在下 */}
+                        <div class="b">
+                          <p class="p tnum">{cardNum}<small>{cardUnit}</small><em>{p.data.district}</em></p>
+                          <h3 class="t">{cardTitle}</h3>
+                          <p class="d">{p.data.layout} · {p.data.area} 坪</p>
+                        </div>
                       </a>
                     </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {area && (
-              <p class="text-muted-foreground text-sm">
-                想先看{area.shortName}整體行情、哪些人適合買？
-                <a
-                  href={`/areas/${area.slug}/`}
-                  class="text-accent ml-1 underline underline-offset-2"
-                >
-                  {area.shortName}買房指南 →
-                </a>
-              </p>
-            )}
-            {districtActiveCount > 0 && (
-              <p class="text-muted-foreground text-sm">
-                <a
-                  href={districtListUrl}
-                  class="text-accent no-underline hover:underline"
-                >
-                  看{property.data.district}全部 {districtActiveCount + 1} 筆在售 →
-                </a>
-              </p>
-            )}
-          </div>
-        )
-      }
-
-      {
-        uniqueHighlights.length > 0 && (
-          <div class="mt-6">
-            <h2 class="text-lg font-bold">物件亮點</h2>
-            <ul class="mt-2 list-disc space-y-1 ps-6">
-              {uniqueHighlights.map(h => (
-                <li>{h}</li>
-              ))}
-            </ul>
-          </div>
-        )
-      }
-
-      {
-        introLines ? (
-          introLines.length > 0 && (
-            <div class="mt-8" data-property-intro>
-              <h2 class="text-lg font-bold">物件介紹</h2>
-              <div class="text-foreground mt-2 space-y-1.5 leading-relaxed">
-                {introLines.map(line => (
-                  <p>{line}</p>
-                ))}
-              </div>
-            </div>
-          )
-        ) : (
-          <div
-            class="app-prose max-w-app prose-pre:bg-(--shiki-light-bg) dark:prose-pre:bg-(--shiki-dark-bg) mt-8"
-            data-property-content
-          >
-            <Content />
-          </div>
-        )
-      }
-
-      {/* 同社區其他在售 → 同縣市其他物件（同一套卡片，先社區後縣市） */}
-      {
-        relatedSections.map(section => (
-          <div class="mt-12" data-pagefind-ignore data-related={section.key}>
-            <h2 class="text-lg font-bold">
-              {section.heading}
-              <span class="text-muted-foreground ml-2 text-sm font-normal">
-                ({section.count} {section.countLabel})
-              </span>
-            </h2>
-            <ul class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {section.list.map(p => {
-                const cardTitle = cleanPropertyTitle(
-                  p.data.title,
-                  [p.data.community?.trim() || p.data.district, p.data.layout]
-                    .filter(Boolean)
-                    .join(" "),
-                  p.data.district
-                );
-                return (
-                  <li class="card-interactive overflow-hidden">
-                    <a
-                      href={`/properties/${p.id}/`}
-                      class="block no-underline"
-                      data-track="property"
-                      data-property-id={p.id}
-                      data-property-title={cardTitle}
-                      data-property-price={p.data.totalPrice}
-                      data-property-district={p.data.district}
-                    >
-                      {p.data.coverImage ? (
-                        <div class="bg-muted aspect-[4/3] w-full overflow-hidden">
-                          {/* 相關卡用 400×300 縮圖（F027）；縮圖不在就退回原圖（coverThumb 保底） */}
-                          <img
-                            src={coverThumb(coverSrcOf(p.data.coverImage) ?? "", 400)}
-                            srcset={coverSrcset(coverSrcOf(p.data.coverImage) ?? "")}
-                            sizes={
-                              coverSrcset(coverSrcOf(p.data.coverImage) ?? "")
-                                ? "(min-width: 640px) 33vw, 50vw"
-                                : undefined
-                            }
-                            alt=""
-                            width="400"
-                            height="300"
-                            class="h-full w-full object-cover"
-                            loading="lazy"
-                            decoding="async"
-                          />
-                        </div>
-                      ) : (
-                        <div class="bg-muted flex aspect-[4/3] w-full flex-col items-center justify-center gap-1 overflow-hidden">
-                          <p class="text-muted-foreground text-sm">📷 照片整理中</p>
-                        </div>
-                      )}
-                      {/* price-first：價格在上、標題在下 */}
-                      <div class="p-3">
-                        <div class="text-accent text-lg font-bold">
-                          {formatPrice(p.data.totalPrice)}
-                        </div>
-                        <h3 class="text-foreground mt-1 line-clamp-1 text-xs font-medium">
-                          {cardTitle}
-                        </h3>
-                        <p class="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
-                          <IconMapPin class="size-3.5 shrink-0" aria-hidden="true" />
-                          {p.data.district}
-                        </p>
-                        <div class="text-muted-foreground mt-1 text-xs">
-                          {p.data.layout} · {p.data.area} 坪
-                        </div>
-                      </div>
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
-            {section.moreHref && (
-              <p class="mt-3 text-sm">
-                <a href={section.moreHref} class="text-accent no-underline hover:underline">
-                  {section.moreText}
-                </a>
-              </p>
-            )}
-          </div>
-        ))
-      }
-
-      <hr class="my-8 border-dashed" />
-
-      {/* 主表單 — 預填物件編號 + 標題（id 給 sticky CTA 錨點用）。
-          表單把 23 個行政區、預算選項全印在頁上，不能進 Pagefind 索引 */}
-      <div id="contact-form-section" class="scroll-mt-20" data-pagefind-ignore>
-        <ContactForm
-          propertyId={property.data.listingCode}
-          propertyTitle={displayTitle}
-          defaultIntent="buy"
-          title="想看這戶？留你的聯絡方式"
-          subtitle="物件編號已幫你預填、補完聯絡方式就送出。30 分鐘內回。"
-        />
-      </div>
-
-      {/* 快速 LINE / 電話通道 — 給急的人 */}
-      <div
-        class="border-border rounded-lg border border-dashed p-6 text-center"
-        data-pagefind-ignore
-      >
-        <p class="text-foreground text-[17px] font-medium">
-          想直接聊、不想填表單？
-        </p>
-        <div
-          class="mt-4 flex flex-col items-center justify-center gap-3 sm:flex-row"
-        >
-          <a href="/go/line?src=property-bottom" class="btn-line text-[17px]">
-            <IconLine class="size-5" aria-hidden="true" />
-            LINE sky811117
-          </a>
-          <a href="tel:+886920118756" class="btn-outline text-[17px]">
-            <IconPhone class="size-5" aria-hidden="true" />
-            0920-118-756
-          </a>
+                  );
+                })}
+              </ul>
+              <div class="dots" data-dots={`rel-${section.key}`} aria-hidden="true"></div>
+            </section>
+          ))}
         </div>
-        <p class="text-muted-foreground mt-4 text-[13px]">
-          一品不動產 有巢氏房屋 台中世界之心加盟店<br />
-          經紀人 {property.data.brokerLicense}
-          ・ 營業員 {property.data.agentLicense}
-        </p>
-      </div>
-    </article>
+      )
+    }
   </main>
 
   <Footer />
@@ -1472,36 +1432,12 @@ const ctaBottomStyle = "bottom: calc(0px + var(--consent-h, 0px))";
   })();
 </script>
 
-<script is:inline>
-  // 桌面版 sticky CTA bar 滑入/滑出：滾過 600px 出現、靠近 ContactForm 時收回。
-  // 收起時 aria-hidden + inert 一起掛，鍵盤不會 tab 進看不見的按鈕。
-  (function () {
-    const sticky = document.querySelector("[data-property-sticky]");
-    if (!sticky) return;
-    const form = document.getElementById("contact-form-section");
-
-    let raf = null;
-    function update() {
-      raf = null;
-      const scrolled = window.scrollY > 600;
-      let nearForm = false;
-      if (form) {
-        const rect = form.getBoundingClientRect();
-        // ContactForm 進到視窗 60% 以上 → 隱藏 sticky（已經看到表單就不用 CTA bar）
-        nearForm = rect.top < window.innerHeight * 0.6;
-      }
-      const show = scrolled && !nearForm;
-      sticky.classList.toggle("translate-y-full", !show);
-      sticky.setAttribute("aria-hidden", show ? "false" : "true");
-      sticky.inert = !show;
-    }
-    function onScroll() {
-      if (raf === null) raf = requestAnimationFrame(update);
-    }
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll, { passive: true });
-    update();
-  })();
+{/* 2026-11 極簡改版：原本這裡控制電腦版貼底價格列（data-property-sticky）的行內程式拿掉了——
+    那一列改成頁首下面的小列（.ln），什麼時候滑出來由 ax.ts 的觀察器負責（看 data-ln-after），不要兩套同時跑。 */}
+<script>
+  // 共用互動（收合區順順展開、點錨點先打開收合區、橫向卡片圓點與第幾張、上方小列、月付試算）＋物件頁專用（照片的上一張／下一張）
+  import "@/scripts/ax";
+  import "@/scripts/ax-property";
 </script>
 
 <script is:inline>

@@ -1,5 +1,4 @@
 ---
-import { Font } from "astro:assets";
 import { getRelativeLocaleUrl } from "astro:i18n";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -7,11 +6,15 @@ import sharp from "sharp";
 import { resolveDefaultOgImagePath } from "@/utils/resolveDefaultOgImagePath";
 import { getAssetPath } from "@/utils/withBase";
 import { safeJsonLd } from "@/utils/safeJsonLd";
-import FloatingCTA from "@/components/FloatingCTA.astro";
+import AskBar from "@/components/flora/AskBar.astro";
 import Analytics from "@/components/Analytics.astro";
 import config from "@/config";
 import { YT_CHANNEL_URL } from "@/astro-paper.config";
 import "@/styles/global.css";
+// 2026-11 極簡改版：全站共用長相（沒有 @layer，會蓋過 Tailwind utilities，見檔頭說明；檔名沿用花店版）
+import "@/styles/flora.css";
+// 首頁、物件頁以外的頁型要補的樣式
+import "@/styles/ax-pages.css";
 
 type Props = {
   title?: string;
@@ -35,6 +38,10 @@ type Props = {
   lcpImage?: string;
   lcpImageSrcset?: string;
   lcpImageSizes?: string;
+  // 首屏圖用 <picture> 給 AVIF 時，preload 要帶 type（不支援的瀏覽器會略過這條 preload，改抓 <img> 的 WebP）
+  lcpImageType?: string;
+  // 首屏圖只在某個螢幕寬度才用這張時（例：首頁手機／電腦用不同的 <source media>），preload 也要帶同一個 media，不然另一邊會白抓一張
+  lcpImageMedia?: string;
 };
 
 const { site } = config;
@@ -54,6 +61,8 @@ const {
   lcpImage,
   lcpImageSrcset,
   lcpImageSizes,
+  lcpImageType,
+  lcpImageMedia,
 } = Astro.props;
 
 // Cloudflare Pages 一律 308 轉址到帶尾斜線的網址（實測 /properties/0066565 →
@@ -129,7 +138,10 @@ const rssHref = getRelativeLocaleUrl(
 >
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light only" />
+    {/* 跨頁轉場開關一定要寫在 head 行內（花店踩過的坑：Chromium 插入 body 那一刻就判斷，外部 CSS 還沒到就放棄轉場） */}
+    <style is:inline>@media (prefers-reduced-motion:no-preference){@view-transition{navigation:auto}}</style>
     <link rel="icon" type="image/svg+xml" href={getAssetPath("favicon.svg")} />
     <link rel="icon" href={getAssetPath("favicon.ico")} />
     {/* iOS 不吃 SVG 的 apple-touch-icon，要 180×180 PNG（public/apple-touch-icon.png，
@@ -170,11 +182,14 @@ const rssHref = getRelativeLocaleUrl(
           href={lcpImage}
           imagesrcset={lcpImageSrcset}
           imagesizes={lcpImageSrcset ? lcpImageSizes : undefined}
+          type={lcpImageType}
+          media={lcpImageMedia}
           fetchpriority="high"
         />
       )
     }
-    <Font cssVariable="--font-noto-sans-tc" />
+    {/* 2026-11 改版：桌機標題原本的 Noto Sans TC webfont（<Font cssVariable="--font-noto-sans-tc" />）拿掉，
+        全站一律系統字、標題細字（theme.css 的 --font-heading-face 同步改）。OG 圖用的 --font-noto-sans-tc-og 不受影響。 */}
 
     <!-- Primary meta -->
     <title>{title}</title>
@@ -212,8 +227,7 @@ const rssHref = getRelativeLocaleUrl(
     />
 
     <!-- Theme color：對 light / dark mode 各設 default，theme.ts runtime 會覆蓋成精確值 -->
-    <meta name="theme-color" content="#f5f1eb" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#1f1b17" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" />
 
     <!-- JSON-LD: 多 schema @graph（影響 Google 搜尋呈現） -->
     <script
@@ -415,20 +429,51 @@ const rssHref = getRelativeLocaleUrl(
     <!-- Extra head content injected by child layouts (e.g. JSON-LD, article meta) -->
     <slot name="head" />
 
-    <!--
-      Inline FOUC-prevention script: sets data-theme on <html> before
-      the browser paints. Runs synchronously, no defer/async.
-    -->
+    {/* 2026-11 花店風改版：只有白色版（固定 data-theme=light，舊的日夜切換拿掉）＋版面旗標（CSS 之前就要有）：
+        .motion 沒開減少動態｜.lite 低階 Android／省流量／2G｜.solid 記憶體 ≤2GB 玻璃全變白底｜.first 這分頁第一頁或重新整理｜
+        .morph 從物件卡點進來（照片接過去）｜.inapp IG／FB／LINE 內建瀏覽器（換頁轉場一律跳過，沒實機驗過）。
+        換頁接圖只接 [data-house-link] 裡的第一張圖 → 新頁 [data-house-target] 裡的圖；返回、帶 #hash 的連結不接。 */}
     <script is:inline>
       (function () {
-        const stored = localStorage.getItem("theme");
-        const prefersDark = window.matchMedia(
-          "(prefers-color-scheme: dark)"
-        ).matches;
-        const theme = stored ?? (prefersDark ? "dark" : "light");
-        document.firstElementChild?.setAttribute("data-theme", theme);
-        // Expose value so theme.ts can skip re-detection.
-        window.__theme = { value: theme };
+        var r = document.documentElement, c = r.classList, u = navigator.userAgent || "", n = navigator.connection || {};
+        var low = navigator.deviceMemory && navigator.deviceMemory <= 2, app = /Instagram|FBAN|FBAV|FB_IAB|Line\//i.test(u), m = 0, clk, nm;
+        r.setAttribute("data-theme", "light");
+        window.__theme = { value: "light" };
+        if (low) c.add("solid");
+        if (low || (/Android/.test(u) && navigator.hardwareConcurrency <= 4) || n.saveData || /2g/.test(n.effectiveType || "")) c.add("lite");
+        try {
+          var s = sessionStorage, nv = performance.getEntriesByType("navigation")[0];
+          if (s.getItem("fl-lite")) c.add("lite");
+          if (!s.getItem("fl") || (nv && nv.type === "reload")) c.add("first");
+          s.setItem("fl", "1");
+          if (s.getItem("fl-morph")) { c.add("morph"); m = 1; s.removeItem("fl-morph"); }
+        } catch (x) { c.add("first"); }
+        if (!matchMedia("(prefers-reduced-motion:reduce)").matches) c.add("motion");
+        if (app) c.add("inapp");
+        document.addEventListener("touchstart", function () {}, { passive: true });
+        addEventListener("click", function (ev) { clk = ev.target.closest && ev.target.closest("a[href]"); }, true);
+        addEventListener("pageswap", function (ev) {
+          var vt = ev.viewTransition, a = clk; clk = null;
+          if (ev.activation && ev.activation.navigationType === "traverse") a = null;
+          if (!vt) return;
+          if (c.contains("lite") || app) { vt.skipTransition(); return; }
+          document.querySelectorAll("[data-press]").forEach(function (x) { x.removeAttribute("data-press"); });
+          var i = a && !a.hash && a.closest("[data-house-link]") && a.querySelector("img");
+          if (i) { i.style.viewTransitionName = "house"; nm = i; try { sessionStorage.setItem("fl-morph", "1"); } catch (x) {} }
+        });
+        addEventListener("pageshow", function (ev) {
+          if (!ev.persisted) return;
+          if (nm) { nm.style.viewTransitionName = ""; nm = null; }
+          try { sessionStorage.removeItem("fl-morph"); } catch (x) {}
+        });
+        addEventListener("pagereveal", function (ev) {
+          var hit = m, vt = ev.viewTransition; m = 0;
+          if (!vt) return;
+          if (c.contains("lite") || app) { vt.skipTransition(); return; }
+          if (!hit) return;
+          var i = document.querySelector("[data-house-target] img");
+          if (i) { i.style.viewTransitionName = "house"; vt.finished.finally(function () { i.style.viewTransitionName = ""; }); }
+        });
       })();
     </script>
 
@@ -437,9 +482,11 @@ const rssHref = getRelativeLocaleUrl(
     class="bg-background font-app text-foreground selection:bg-accent/75 selection:text-accent-foreground flex min-h-svh flex-col"
   >
     <slot />
-    {showFloatingCTA && <FloatingCTA />}
+    {/* 全站底部詢問列（取代原本右下角浮動 LINE 鈕）。物件頁、找房頁、兩支地圖工具傳 false：物件頁自己放帶物件資訊的那一條，其他頁有自己的操作 */}
+    {showFloatingCTA && <AskBar />}
     <script>
       import "@/scripts/theme";
+      import "@/scripts/flora";
     </script>
   </body>
 </html>

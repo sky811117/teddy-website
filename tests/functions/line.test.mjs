@@ -378,7 +378,8 @@ test("站上實際在用的每一個 /go/line?src=代碼都已登錄（不然 sr
 
 test("純函式 srcLabel：已登錄／未登錄／空／原型鏈名稱", async () => {
   const mod = await loadLine();
-  assert.equal(mod.srcLabel("float"), "右下角浮動按鈕");
+  // 2026-11 改版：float 改成底部詢問列（代碼沿用，報表跟改版前可以直接比），名稱跟著改
+  assert.equal(mod.srcLabel("float"), "底部詢問列（2026-11 改版前是右下角浮動按鈕）");
   assert.equal(mod.srcLabel(""), "未標示");
   assert.equal(mod.srcLabel("nope"), "未標示（代碼未登錄）");
   for (const k of ["constructor", "__proto__", "toString", "hasOwnProperty"]) {

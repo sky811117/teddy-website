@@ -86,7 +86,7 @@ test("隱私聲明與頁面承諾一致：30 天、180 天、不交給外部的�
   assert.match(priv, /保存 30 天後刪除/);
   assert.match(priv, /180 天/);
   assert.match(priv, /姓名、聯絡方式、在意的事與你打的那一句話不會交給這個搜尋服務/);
-  assert.match(priv, /updatedAt = "2026-10-29"/);
+  assert.match(priv, /updatedAt = "2026-11-17"/);
   // 2026-10-29 景泰「AI在輸入需求那邊就要介入了」→「照兩步做」：開場打的那一句話都先交給 Anthropic 的模型整理成條件（/api/find/understand）。
   // 交給誰、交出去前先拿掉什麼、拿不乾淨的要老實講；政策兩段與找房頁兩處都要寫，而且不能再說「那句話不會交出去」
   assert.match(priv, /會交給 AI 服務商 Anthropic 的模型整理成「區域、預算、房數」這類條件/);

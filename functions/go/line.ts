@@ -35,7 +35,7 @@ const LINE_URL = "https://line.me/ti/p/~sky811117";
 // 按鈕位置代碼 → 看得懂的名稱。命名規範：<page>-<placement>
 const SRC_LABEL: Record<string, string> = {
   // 全站共用
-  float: "右下角浮動按鈕",
+  float: "底部詢問列（2026-11 改版前是右下角浮動按鈕）",
   header: "頁首 LINE 圓鈕",
   footer: "頁尾",
   socials: "頁尾社群 icon",
@@ -93,6 +93,8 @@ const SRC_LABEL: Record<string, string> = {
   property: "物件詳細頁（舊代碼）",
   "property-sticky": "物件頁桌機底部價格列",
   "property-bar": "物件頁手機底部三鍵",
+  // 2026-11 花店風改版：底部詢問列跟著捲到的那一間換字時用 ask-follow，p 帶那一間的路徑（預設狀態沿用 float）
+  "ask-follow": "底部詢問列（跟著捲到的那一間物件）",
   "property-nophoto": "物件頁無照片佔位",
   "property-bottom": "物件頁頁底表單旁",
 };

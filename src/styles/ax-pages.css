@@ -1,0 +1,432 @@
+/*
+ * 2026-11 極簡改版：首頁、物件頁以外的頁型（文章、列表、各區、常見問題、工具…）要補的樣式放這裡。
+ * 跟 flora.css 一樣不包 @layer。顏色一律用 flora.css／theme.css 的變數（--ink、--gauze、--wood、--mist、--hair、--press、--blue、--paper），不要寫死色碼。
+ * 只寫「有指定對象」的規則；能靠變數自動換色的就不要另外寫。
+ *
+ * 範圍：只管 <main class="axp"> 裡面（src/components/Main.astro 與各內頁自己的 <main> 都掛了 axp）。
+ *   首頁、物件詳細頁、找房頁、垃圾車／嫌惡設施／學區三支地圖工具沒有掛，這支不會碰到它們。
+ *   main 外面的共用零件（麵包屑、分頁、內頁主視覺）用 axp- 開頭的 class 指定。
+ * 權重：跨頁的通用規則整段包 :where()（權重 0），只蓋得過 Tailwind 的 utility，各頁自己的指定照樣優先；
+ *   同權重寫在後面的贏，所以「圓角 → 虛線框 → 按鈕」的順序不要動。
+ * 形狀三級：卡片 18px（--r-sheet）、輸入框與小元件 12px（--r-chip）、按鈕全圓（--r-pill）。
+ */
+
+/* ── 頁首區塊：粗字標題＋一行灰字說明 ── */
+.axp-h1 {
+  margin: clamp(28px, 5vw, 56px) 0 0;
+  line-height: 1.25;
+}
+.axp-crumb + .axp .axp-h1 {
+  margin-top: 8px;
+}
+.axp-lede {
+  margin: 8px 0 24px;
+  color: var(--gauze);
+  line-height: 1.6;
+}
+.axp-lede:empty {
+  margin: 0 0 16px;
+}
+
+/* ── 內頁主視覺（工具總覽）：白底純文字＋一排淺灰數字卡 ── */
+.axp-hero {
+  padding-top: clamp(28px, 5vw, 56px);
+}
+.axp-hero h1 {
+  margin: 4px 0 0;
+  line-height: 1.25;
+}
+.axp-eyebrow {
+  margin: 0;
+  font-size: 14px;
+  color: var(--gauze);
+}
+.axp-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 0 0 40px;
+  padding: 0;
+  list-style: none;
+}
+.axp-stats li {
+  padding: 16px 18px;
+  border-radius: var(--r-sheet);
+  background: var(--mist);
+}
+.axp-stat-n {
+  display: block;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.axp-stat-n small {
+  margin: 0 3px;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--gauze);
+}
+.axp-stat-n small:first-child {
+  margin-left: 0;
+}
+.axp-stat-l {
+  display: block;
+  margin-top: 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--gauze);
+}
+@media (min-width: 640px) {
+  .axp-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ── 麵包屑（main 外面）：14px 灰字 ── */
+.axp-crumb {
+  margin-top: 20px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--gauze);
+}
+.axp-crumb li {
+  display: inline;
+}
+.axp-crumb a {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--t-hover);
+}
+.axp-crumb [aria-hidden="true"] {
+  margin: 0 4px;
+}
+@media (hover: hover) {
+  .axp-crumb a:is(:hover, :focus-visible) {
+    color: var(--ink);
+  }
+}
+
+/* ── 字色：藍色只留給連結。不是連結、也不在連結裡的強調字回到黑色；標題裡的也是 ── */
+.axp :where(p, span, div, li, dt, dd, td, strong):where(.text-accent):where(:not(a *)) {
+  color: var(--ink);
+}
+.axp :where(h1, h2, h3) :where(.text-accent) {
+  color: inherit;
+}
+/* 卡片上的價格（text-xl 粗字）：黑色。更大的數字 flora.css 已經處理 */
+.axp :where(.text-accent):where(.text-xl, .text-lg):where(.font-bold, .font-semibold):where(:not(a, h1, h2, h3, h4, summary)) {
+  color: var(--ink);
+}
+/* 卡片裡的小標題（class 沒有寫 sm: 放大的 h2）：20px，不跟區段標題一樣大 */
+.axp h2:where(.text-lg, .text-xl, [class~="text-[18px]"]):where(:not([class*="sm:text-"])) {
+  font-size: 20px;
+  line-height: 1.4;
+}
+/* 區段標題底下原本的粗色線：改一條細線 */
+.axp :where(.border-accent):where(.border-b-2, .border-b-4) {
+  border-bottom: 1px solid var(--hair);
+}
+/* 圖示底下的淡藍方塊：改淺灰底、圖示黑色 */
+.axp :where(.bg-accent\/10, .bg-accent\/5) {
+  background-color: var(--mist);
+}
+.axp :where(.bg-accent\/10) :where(svg.text-accent) {
+  color: var(--ink);
+}
+
+/* ── 形狀：有框的區塊算卡片 18px，其餘（縮圖、淡底塊、輸入框、小標）12px ── */
+.axp :where(.rounded, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl) {
+  border-radius: var(--r-chip);
+}
+.axp :where(.rounded-lg, .rounded-xl, .rounded-2xl):where(.border, .border-2) {
+  border-radius: var(--r-sheet);
+}
+/* 陰影：只留 theme.css 那組很淡的 shadow-card，其餘（含滑過才出現的）拿掉 */
+.axp :where([class*="shadow"]):where(:not([class*="shadow-card"])) {
+  box-shadow: none;
+}
+/* 分隔線：一律細實線 */
+.axp :where(hr) {
+  border-style: solid;
+  border-color: var(--hair);
+}
+/* 虛線框：改成淺灰底的面板，不畫框 */
+.axp :where(.border-dashed):where(.border, .border-2) {
+  border: 0;
+  border-radius: var(--r-sheet);
+  background: var(--mist);
+}
+/* 輸入框：細線框（點進去的藍框照 Tailwind 原本的 focus: 樣式） */
+.axp :where(input, select, textarea):where(.border):where(:not(:focus)) {
+  border-color: var(--hair);
+}
+
+/* ── 按鈕：頁面上手寫的實心／框線按鈕收成同一套膠囊（跟 global.css 的 btn-primary／btn-outline 同長相） ── */
+.axp :where(a, button):where(.bg-accent.text-accent-foreground) {
+  background-color: var(--blue);
+  color: var(--paper);
+  font-weight: 400;
+  text-decoration: none;
+  transition: background-color var(--t-hover);
+}
+.axp :where(a, button):where(.bg-accent.text-accent-foreground):where(:not(.rounded-full)),
+.axp :where(a, button):where(.border-accent.text-accent):where(.border, .border-2) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 24px;
+  border-radius: var(--r-pill);
+  line-height: 1.3;
+}
+.axp :where(a, button):where(.border-accent.text-accent):where(.border, .border-2) {
+  border: 1px solid var(--wood);
+  background-color: transparent;
+  color: var(--wood);
+  font-weight: 400;
+  text-decoration: none;
+  transition:
+    background-color var(--t-hover),
+    color var(--t-hover);
+}
+.axp :where(a, button):where(.bg-accent.text-accent-foreground, .border-accent.text-accent):where(.block, .flex, .w-full) {
+  display: flex;
+}
+@media (hover: hover) {
+  .axp :where(a, button):where(.bg-accent.text-accent-foreground):where(:hover, :focus-visible) {
+    background-color: color-mix(in srgb, var(--blue) 90%, var(--paper));
+  }
+  .axp :where(a, button):where(.border-accent.text-accent):where(.border, .border-2):where(:hover, :focus-visible) {
+    background-color: var(--wood);
+    color: var(--paper);
+  }
+}
+.axp :where(a, button):where(.bg-accent.text-accent-foreground, .border-accent.text-accent):where(:active, [data-press]) {
+  scale: 0.96;
+}
+.axp :where(button):where(.bg-accent.text-accent-foreground):where(:disabled) {
+  opacity: 0.6;
+}
+
+/* ── 共用細線開合（flora.css 的 .fl-qa）用在內頁的常見問題：答案的間距 ── */
+.axp .fl-qa > details > summary + * {
+  margin-top: 0;
+}
+.axp .fl-qa > details > :last-child:not(summary) {
+  padding-bottom: 20px;
+}
+.axp .fl-qa > details > :not(summary) {
+  line-height: 1.85;
+}
+
+/* ── 文章列表（Card.astro）：細線分隔的列，第一頁第一篇是大圖 ── */
+.axp-post + .axp-post {
+  border-top: 1px solid var(--hair);
+}
+.axp-post > a {
+  display: flex;
+  gap: 16px;
+  padding: 16px 0;
+  color: inherit;
+  text-decoration: none;
+}
+.axp-post img,
+.axp-post-ph {
+  flex: none;
+  width: 112px;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--r-chip);
+  background: var(--mist);
+}
+.axp-post-t {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.45;
+  letter-spacing: 0;
+  color: var(--ink);
+  transition: color var(--t-hover);
+}
+.axp-post--lead > a {
+  display: block;
+  padding: 8px 0 24px;
+}
+.axp-post--lead img,
+.axp-post--lead .axp-post-ph {
+  width: 100%;
+  aspect-ratio: 1.905 / 1;
+  border-radius: var(--r-sheet);
+}
+.axp-post--lead .axp-post-t {
+  margin-top: 16px;
+  font-size: clamp(20px, 5.4vw, 28px);
+  line-height: 1.35;
+}
+@media (hover: hover) {
+  .axp-post > a:is(:hover, :focus-visible) .axp-post-t {
+    color: var(--wood);
+  }
+}
+@media (min-width: 640px) {
+  .axp-post img,
+  .axp-post-ph {
+    width: 160px;
+  }
+  .axp-post--lead img,
+  .axp-post--lead .axp-post-ph {
+    width: 100%;
+  }
+}
+
+/* ── 物件卡的價格（PropertyCard.astro）：黑色粗字、不斷行；640 以上卡片變窄，字小一級 ── */
+.axp-price {
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+@media (min-width: 640px) {
+  .axp-price {
+    font-size: 24px;
+  }
+}
+
+/* ── 分頁（main 外面）：頁碼是圓的，目前這頁淺灰底粗字 ── */
+.axp-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 8px;
+  margin: 24px auto 48px;
+  padding-inline: 16px;
+  font-size: 17px;
+}
+.axp-pager ol {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.axp-pager :is(a, [aria-current="page"], [aria-disabled="true"]) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: var(--r-pill);
+  color: var(--ink);
+  text-decoration: none;
+  transition: background-color var(--t-hover);
+}
+.axp-pager [aria-current="page"] {
+  background: var(--press);
+  font-weight: 600;
+}
+.axp-pager [aria-disabled="true"] {
+  color: var(--gauze);
+  opacity: 0.5;
+}
+.axp-pager svg {
+  width: 18px;
+  height: 18px;
+}
+/* 上一頁／下一頁：字兩邊不用留那麼寬，手機才排得進一行 */
+.axp-pager > :is(a, span) {
+  padding: 0 6px;
+}
+@media (max-width: 479px) {
+  .axp-pager {
+    gap: 4px 2px;
+    padding-inline: 8px;
+  }
+  .axp-pager ol {
+    gap: 0;
+  }
+  .axp-pager ol :is(a, [aria-current="page"]) {
+    min-width: 36px;
+    padding: 0 6px;
+  }
+}
+/* 手機排不進一行：頁碼自己一行，上一頁／下一頁並排在下面（只換畫面順序，原始碼順序不變） */
+@media (max-width: 479px) {
+  .axp-pager ol {
+    order: -1;
+    flex-basis: 100%;
+    justify-content: center;
+  }
+}
+@media (hover: hover) {
+  .axp-pager a:is(:hover, :focus-visible) {
+    background: var(--mist);
+    color: var(--ink);
+  }
+}
+
+/* ── 標籤膠囊（Tag.astro）：淺灰底，不畫虛線 ── */
+.axp-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: var(--r-pill);
+  background: var(--mist);
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1.3;
+  text-decoration: none;
+  transition: background-color var(--t-hover);
+}
+.axp-tag svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--gauze);
+}
+.axp-tag-n {
+  margin-left: 4px;
+  font-size: 14px;
+  color: var(--gauze);
+}
+.axp-tag--sm {
+  font-size: 14px;
+}
+@media (hover: hover) {
+  .axp-tag:is(:hover, :focus-visible) {
+    background: var(--press);
+    color: var(--ink);
+  }
+}
+
+/* ── 404：大數字 ── */
+.axp-404 {
+  font-size: clamp(64px, 20vw, 112px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* ── 搜尋頁（Pagefind 內建介面）：它預設把字縮成 0.8 倍，清除鈕 11px、篩選與摘要 13px；給客人看的字最小 14，拉回來 ── */
+.axp .pagefind-ui .pagefind-ui__search-clear,
+.axp .pagefind-ui .pagefind-ui__filter-name,
+.axp .pagefind-ui .pagefind-ui__filter-label,
+.axp .pagefind-ui .pagefind-ui__result-excerpt,
+.axp .pagefind-ui .pagefind-ui__result-tag,
+.axp .pagefind-ui .pagefind-ui__message {
+  font-size: 14px;
+}
+.axp .pagefind-ui .pagefind-ui__button {
+  font-size: 14px;
+}

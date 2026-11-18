@@ -21,17 +21,15 @@ const locale = Astro.currentLocale ?? config.site.lang;
 const t = useTranslations(locale);
 ---
 
-<div data-pagefind-ignore class="my-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
+{/* 2026-11 極簡改版：細線分隔的文字連結（小灰字「上一篇／下一篇」＋黑字標題），長相在 flora-post.css 的 .post-adj */}
+<div data-pagefind-ignore class="post-adj">
   {
     prevPost && (
-      <a
-        href={getPostUrl(prevPost.id, prevPost.filePath, locale)}
-        class="flex w-full gap-1 hover:opacity-75"
-      >
-        <IconArrowLeft class="inline-block flex-none rtl:rotate-180" />
+      <a href={getPostUrl(prevPost.id, prevPost.filePath, locale)}>
+        <IconArrowLeft class="rtl:rotate-180" />
         <div>
-          <span>{t.post.previousPost}</span>
-          <div class="text-accent text-sm">{prevPost.title}</div>
+          <span class="post-adj-k">{t.post.previousPost}</span>
+          <div class="post-adj-t">{prevPost.title}</div>
         </div>
       </a>
     )
@@ -40,13 +38,13 @@ const t = useTranslations(locale);
     nextPost && (
       <a
         href={getPostUrl(nextPost.id, nextPost.filePath, locale)}
-        class="flex w-full justify-end gap-1 text-end hover:opacity-75 sm:col-start-2"
+        class="post-adj-next"
       >
         <div>
-          <span>{t.post.nextPost}</span>
-          <div class="text-accent text-sm">{nextPost.title}</div>
+          <span class="post-adj-k">{t.post.nextPost}</span>
+          <div class="post-adj-t">{nextPost.title}</div>
         </div>
-        <IconArrowRight class="inline-block flex-none rtl:rotate-180" />
+        <IconArrowRight class="rtl:rotate-180" />
       </a>
     )
   }

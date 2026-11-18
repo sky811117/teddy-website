@@ -1,0 +1,48 @@
+/*
+ * 2026-11 極簡改版：找房頁（/find/）只換顏色、圓角、陰影，功能、文字、版面都不動。
+ * ui2-core.css／ui2-find.css 有測試釘住不能改，所以在這裡用同名變數蓋過去（這支沒有 @layer，一定贏）。
+ * 只作用在 <main class="ui2 ui2--system">（找房頁），首頁不受影響。
+ * ⚠️ scripts/contrast-check.mjs 只讀 ui2-core.css，量不到這裡的顏色；這一組是手算的（WCAG 對比）：
+ *    黑字 #1d1d1f／白 16.8、次要字 #424245／白 9.9、最次要 #6e6e73／淺灰 #f5f5f7 4.6、
+ *    連結 #0066cc／白 5.6、主按鈕 #0071e3 白字 4.7（滑過 #0066cc 5.6）、輸入框線 #86868b／白 3.6。
+ *    改這裡的顏色請重算，文字至少 4.5、框線與圖形至少 3。
+ */
+.ui2.ui2--system {
+  /* 紙與面 */
+  --u2-paper: #ffffff;
+  --u2-sunken: #e8e8ed;
+  --u2-vellum: #f5f5f7;
+  --u2-inverse: #1d1d1f;
+  --u2-inverse-ink: #f5f5f7;
+  --u2-inverse-ink-2: #a1a1a6;
+  --u2-inverse-gold: #2997ff;
+  /* 字 */
+  --u2-ink: #1d1d1f;
+  --u2-ink-2: #424245;
+  --u2-ink-3: #6e6e73;
+  /* 原本的木色 → 藍 */
+  --u2-wood: #0066cc;
+  --u2-wood-500: #0071e3;
+  --u2-wood-600: #0071e3;
+  --u2-wood-700: #0066cc;
+  --u2-on-wood: #ffffff;
+  --u2-wood-100: #eaf2fd;
+  --u2-wood-200: #b8d4f5;
+  /* 線 */
+  --u2-line: #e3e3e8;
+  --u2-line-strong: #86868b;
+  --u2-focus: #0071e3;
+  /* 陰影：中性色、很淡 */
+  --u2-sh-1: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 20px -8px rgb(0 0 0 / 0.1);
+  --u2-sh-2: 0 4px 10px rgb(0 0 0 / 0.06), 0 20px 40px -14px rgb(0 0 0 / 0.16);
+  /* 形狀：按鈕全圓，其餘跟首頁一致 */
+  --u2-r-tag: 8px;
+  --u2-r-field: 14px;
+  --u2-r-btn: 999px;
+  --u2-r-opt: 14px;
+  --u2-r-panel: 18px;
+  /* 字體跟全站一致（英數字用系統字） */
+  --u2-font: var(--font-app-cjk);
+  --u2-font-head: var(--font-app-cjk);
+  background: #fff;
+}

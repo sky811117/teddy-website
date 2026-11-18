@@ -1,0 +1,75 @@
+---
+/**
+ * 頁尾（2026-11 花店風改版）：淡米灰底，被最後一張白紙蓋住、捲到底才露出（放得下才加 .stick，flora.ts 量）。
+ * 原本兩套頁尾（Footer.astro、ui2/Footer2.astro）都改成渲染這一支：連結取聯集（含「找房小幫手」），
+ * 品牌／公司／證號／電話文字與原本逐字相同（法規揭露，不得改）。
+ */
+import type { HTMLAttributes } from "astro/types";
+import LineIcon from "@/assets/icons/socials/line.svg";
+import config from "@/config";
+
+type Props = HTMLAttributes<"footer">;
+const { class: className, ...attrs } = Astro.props;
+const currentYear = new Date().getFullYear();
+const siteLinks = [
+  { label: "在售物件", href: "/properties/" },
+  { label: "我要買房", href: "/buy/" },
+  { label: "我要賣房", href: "/sell/" },
+  { label: "找房小幫手", href: "/find/" },
+  { label: "台中各區", href: "/areas/" },
+  { label: "房市筆記", href: "/posts/" },
+  { label: "客戶工具", href: "/tools/" },
+  { label: "常見問題", href: "/faq/" },
+  { label: "關於景泰", href: "/about/" },
+];
+const icons = import.meta.glob<{ default: (_props: Record<string, unknown>) => unknown }>(
+  "/src/assets/icons/socials/*.svg"
+);
+const socialItems = await Promise.all(
+  config.socials.map(async ({ name, url, linkTitle }) => {
+    const mod = await icons[`/src/assets/icons/socials/${name}.svg`]?.();
+    return { name, url, linkTitle, Icon: mod?.default };
+  })
+);
+---
+
+<footer class:list={["ft", className]} data-ft {...attrs}>
+  <div class="ft-in">
+    <div>
+      <p class="who">
+        <img src="/photos/teddy-avatar.jpg" alt="陳景泰 / 泰迪" width="44" height="44" loading="lazy" decoding="async" />
+        <b>陳景泰｜台中房仲</b>
+      </p>
+      <p class="co">一品不動產 有巢氏房屋 台中世界之心加盟店</p>
+      <p class="lic">經紀人 黃永隆 113彰縣字324 ・ 營業員 陳景泰 114登字488296 ・ 0920-118-756</p>
+    </div>
+    <nav aria-label="站內連結">
+      <p class="h">站內連結</p>
+      <ul>
+        {siteLinks.map(({ label, href }) => <li><a href={href}>{label}</a></li>)}
+      </ul>
+    </nav>
+    <div>
+      <p class="h">聯絡景泰</p>
+      <a class="tel" href="tel:+886920118756">0920-118-756</a>
+      <div>
+        <a class="line-ring" href="/go/line?src=footer" title="LINE 私訊景泰 sky811117">
+          <LineIcon aria-hidden="true" />LINE 私訊景泰
+        </a>
+      </div>
+      <div class="soc">
+        {
+          socialItems.map(({ url, linkTitle, Icon }) =>
+            Icon ? (
+              <a href={url} title={linkTitle}>
+                <Icon aria-hidden="true" />
+                <span class="sr-only">{linkTitle}</span>
+              </a>
+            ) : null
+          )
+        }
+      </div>
+    </div>
+    <p class="cp">&#169; {currentYear} 陳景泰 / 泰迪 ・ <a href="/privacy/">隱私權政策</a></p>
+  </div>
+</footer>

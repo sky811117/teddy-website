@@ -36,24 +36,26 @@
 /* ===== 卡片 elevation 系統（token 在 theme.css）===== */
 /* 靜態資訊卡 */
 @utility card-surface {
-  @apply bg-card border-border/60 rounded-card shadow-card border;
+  @apply bg-card border-border rounded-card border;
 }
 /* 可點擊卡 — hover 浮起 */
 @utility card-interactive {
-  @apply bg-card border-border/60 rounded-card shadow-card hover:shadow-card-hover border transition-all duration-300 hover:-translate-y-0.5;
+  @apply bg-card border-border rounded-card hover:shadow-card-hover border transition-shadow duration-300;
 }
 
-/* LINE 官方綠 CTA — 全站 LINE 按鈕統一這顆 */
+/* LINE CTA — 2026-11 改版：墨色全圓實心、圖示一點 LINE 綠（花店同一套：同一畫面只有一顆實心按鈕，
+ * 底部詢問列看到頁面上的實心按鈕會自己讓位）。白字在墨色上 15:1。 */
+/* 2026-11 極簡改版：實心按鈕一律藍色膠囊（#0071e3 白字 4.7:1），次要按鈕是藍框藍字；至少 44 高 */
 @utility btn-line {
-  @apply bg-line hover:bg-line-hover rounded-btn shadow-cta inline-flex min-h-11 items-center justify-center gap-2 px-6 py-3 font-medium text-white no-underline transition-colors;
+  @apply rounded-btn inline-flex min-h-11 items-center justify-center gap-2 bg-[#0071e3] px-6 py-2.5 font-normal text-white no-underline transition-colors hover:bg-[#0077ed] [&_svg]:text-white;
 }
 
 /* 主要 / 次要 CTA */
 @utility btn-primary {
-  @apply bg-accent text-accent-foreground rounded-btn shadow-cta inline-flex min-h-11 items-center justify-center gap-2 px-6 py-3 font-medium no-underline transition-shadow hover:shadow-lg;
+  @apply rounded-btn inline-flex min-h-11 items-center justify-center gap-2 bg-[#0071e3] px-6 py-2.5 font-normal text-white no-underline transition-colors hover:bg-[#0077ed];
 }
 @utility btn-outline {
-  @apply border-accent text-accent hover:bg-accent hover:text-accent-foreground rounded-btn inline-flex min-h-11 items-center justify-center gap-2 border-2 px-6 py-3 font-medium no-underline transition-colors;
+  @apply rounded-btn inline-flex min-h-11 items-center justify-center gap-2 border border-[#0066cc] bg-transparent px-6 py-2.5 font-normal text-[#0066cc] no-underline transition-colors hover:bg-[#0066cc] hover:text-white;
 }
 
 @utility active-nav {

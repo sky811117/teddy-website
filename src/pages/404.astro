@@ -18,46 +18,47 @@ const t = useTranslations(locale);
 >
   <Header />
 
+  {/* 2026-11 極簡改版：大數字黑色粗字、選項收成淺灰膠囊、LINE 是唯一一顆藍色實心按鈕（長相在 ax-pages.css 的 .axp-404） */}
   <main
     id="main-content"
-    class="app-layout flex flex-1 items-center justify-center"
+    class="app-layout axp flex flex-1 items-center justify-center py-16"
   >
-    <div class="mb-14 flex flex-col items-center justify-center max-w-md">
-      <h1 class="text-accent text-9xl font-bold">404</h1>
-      <span aria-hidden="true"> ¯\_(ツ)_/¯ </span>
-      <p class="mt-4 text-2xl sm:text-3xl">{t.notFound.message}</p>
+    <div class="flex flex-col items-center justify-center max-w-md">
+      <h1 class="axp-404">404</h1>
+      <span aria-hidden="true" class="text-muted-foreground"> ¯\_(ツ)_/¯ </span>
+      <p class="mt-4 text-center text-2xl font-semibold">{t.notFound.message}</p>
 
-      <p class="text-muted-foreground mt-6 text-center text-[15px] leading-relaxed">
+      <p class="text-muted-foreground mt-4 text-center text-[15px] leading-relaxed">
         這頁不存在了 — 可能被搬走或拼錯網址。試試這些：
       </p>
-      <ul class="mt-4 grid grid-cols-2 gap-3 w-full">
+      <ul class="mt-6 flex w-full flex-wrap justify-center gap-2">
         <li>
-          <a href="/" class="border-border bg-card hover:border-accent block rounded-lg border p-3 text-center text-sm no-underline transition-colors">
+          <a href="/" class="bg-muted text-foreground hover:bg-(--press) inline-flex min-h-11 items-center rounded-full px-5 text-sm no-underline transition-colors">
             🏠 首頁
           </a>
         </li>
         <li>
-          <a href="/properties" class="border-border bg-card hover:border-accent block rounded-lg border p-3 text-center text-sm no-underline transition-colors">
+          <a href="/properties" class="bg-muted text-foreground hover:bg-(--press) inline-flex min-h-11 items-center rounded-full px-5 text-sm no-underline transition-colors">
             🏘️ 在售物件
           </a>
         </li>
         <li>
-          <a href="/posts" class="border-border bg-card hover:border-accent block rounded-lg border p-3 text-center text-sm no-underline transition-colors">
+          <a href="/posts" class="bg-muted text-foreground hover:bg-(--press) inline-flex min-h-11 items-center rounded-full px-5 text-sm no-underline transition-colors">
             📝 房市筆記
           </a>
         </li>
         <li>
-          <a href="/search" class="border-border bg-card hover:border-accent block rounded-lg border p-3 text-center text-sm no-underline transition-colors">
+          <a href="/search" class="bg-muted text-foreground hover:bg-(--press) inline-flex min-h-11 items-center rounded-full px-5 text-sm no-underline transition-colors">
             🔍 搜尋
           </a>
         </li>
         <li>
-          <a href="/faq" class="border-border bg-card hover:border-accent block rounded-lg border p-3 text-center text-sm no-underline transition-colors">
+          <a href="/faq" class="bg-muted text-foreground hover:bg-(--press) inline-flex min-h-11 items-center rounded-full px-5 text-sm no-underline transition-colors">
             ❓ 常見問題
           </a>
         </li>
         <li>
-          <a href="/go/line?src=404" class="bg-accent text-accent-foreground hover:opacity-90 block rounded-lg p-3 text-center text-sm no-underline">
+          <a href="/go/line?src=404" class="btn-line text-sm">
             💬 LINE 景泰
           </a>
         </li>
@@ -65,7 +66,7 @@ const t = useTranslations(locale);
 
       <LinkButton
         href={getRelativeLocaleUrl(locale, "")}
-        class="my-6 text-lg underline decoration-dashed underline-offset-8"
+        class="fl-link mt-6 min-h-11"
       >
         {t.notFound.goHome}
       </LinkButton>
