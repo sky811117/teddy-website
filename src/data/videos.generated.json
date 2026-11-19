@@ -1,11 +1,103 @@
 {
-  "generatedAt": "2026-11-18T13:03:43+08:00",
+  "generatedAt": "2026-11-19T20:33:29+08:00",
   "source": {
-    "registrySyncedAt": "2026-11-17 22:38",
+    "registrySyncedAt": "2026-11-18 22:38",
     "since": "2026-07-01"
   },
-  "count": 111,
+  "count": 114,
   "videos": [
+    {
+      "id": "yt-PazaDIykrbg",
+      "platform": "youtube",
+      "videoId": "PazaDIykrbg",
+      "url": "https://www.youtube.com/shorts/PazaDIykrbg",
+      "title": "台中南屯｜4房2廳2衛｜1100萬",
+      "category": "看屋開箱",
+      "district": "南屯區",
+      "pubDate": "2026-11-18",
+      "listingCodes": [
+        "0401085"
+      ],
+      "listingCode": "0401085",
+      "cover": "oar2"
+    },
+    {
+      "id": "yt-zEiobUgLP7E",
+      "platform": "youtube",
+      "videoId": "zEiobUgLP7E",
+      "url": "https://www.youtube.com/shorts/zEiobUgLP7E",
+      "title": "台中西屯｜4房2廳2衛｜2298萬",
+      "category": "看屋開箱",
+      "district": "西屯區",
+      "pubDate": "2026-11-18",
+      "listingCodes": [
+        "1228344"
+      ],
+      "listingCode": "1228344",
+      "cover": "oar2"
+    },
+    {
+      "id": "yt-TVQrOEXQq6E",
+      "platform": "youtube",
+      "videoId": "TVQrOEXQq6E",
+      "url": "https://www.youtube.com/shorts/TVQrOEXQq6E",
+      "title": "台中北屯｜4房2廳2衛｜2688萬",
+      "category": "看屋開箱",
+      "district": "北屯區",
+      "pubDate": "2026-11-18",
+      "listingCodes": [
+        "1172006",
+        "1228341"
+      ],
+      "listingCode": "1228341",
+      "cover": "oar2"
+    },
+    {
+      "id": "yt-521CyRN-nd4",
+      "platform": "youtube",
+      "videoId": "521CyRN-nd4",
+      "url": "https://www.youtube.com/shorts/521CyRN-nd4",
+      "title": "台中烏日｜3房2廳3衛｜1798萬",
+      "category": "看屋開箱",
+      "district": "烏日區",
+      "pubDate": "2026-11-18",
+      "listingCodes": [
+        "1195693"
+      ],
+      "listingCode": "1195693",
+      "cover": "oar2"
+    },
+    {
+      "id": "yt-yzib4tnIc00",
+      "platform": "youtube",
+      "videoId": "yzib4tnIc00",
+      "url": "https://www.youtube.com/shorts/yzib4tnIc00",
+      "title": "台中北屯｜悅讀大城-雲詠｜3房2廳2衛｜2538萬",
+      "category": "看屋開箱",
+      "district": "北屯區",
+      "community": "悅讀大城-雲詠",
+      "pubDate": "2026-11-18",
+      "listingCodes": [
+        "1228311"
+      ],
+      "listingCode": "1228311",
+      "cover": "oar2"
+    },
+    {
+      "id": "yt-EskuzfMmH2w",
+      "platform": "youtube",
+      "videoId": "EskuzfMmH2w",
+      "url": "https://www.youtube.com/shorts/EskuzfMmH2w",
+      "title": "台中北屯｜2房2廳2衛｜2268萬",
+      "category": "看屋開箱",
+      "district": "北屯區",
+      "pubDate": "2026-11-18",
+      "listingCodes": [
+        "1211232"
+      ],
+      "listingCode": "1211232",
+      "cover": "oar2"
+    },
     {
       "id": "yt-UCM1k7-K2gE",
       "platform": "youtube",
@@ -95,22 +187,6 @@
         "1228315"
       ],
       "listingCode": "1228315",
-      "cover": "oar2"
-    },
-    {
-      "id": "yt-w_Yr-tmhF6Y",
-      "platform": "youtube",
-      "videoId": "w_Yr-tmhF6Y",
-      "url": "https://www.youtube.com/shorts/w_Yr-tmhF6Y",
-      "title": "台中龍井｜東海雲｜3房2廳2衛｜1398萬",
-      "category": "看屋開箱",
-      "district": "龍井區",
-      "community": "東海雲",
-      "pubDate": "2026-11-15",
-      "listingCodes": [
-        "1211358"
-      ],
-      "listingCode": "1211358",
       "cover": "oar2"
     },
     {
@@ -238,23 +314,6 @@
         "0387239"
       ],
       "listingCode": "0387239",
-      "cover": "oar2"
-    },
-    {
-      "id": "yt-0hCi_dSig0s",
-      "platform": "youtube",
-      "videoId": "0hCi_dSig0s",
-      "url": "https://www.youtube.com/shorts/0hCi_dSig0s",
-      "title": "台中西屯｜市政101｜2房2衛｜1998萬→1995萬",
-      "category": "看屋開箱",
-      "district": "西屯區",
-      "community": "市政101",
-      "pubDate": "2026-11-12",
-      "listingCodes": [
-        "0401072",
-        "1211222"
-      ],
-      "listingCode": "0401072",
       "cover": "oar2"
     },
     {
@@ -1701,22 +1760,6 @@
         "1153173"
       ],
       "listingCode": "1153173",
-      "cover": "oar2"
-    },
-    {
-      "id": "yt-jmP26Byye6E",
-      "platform": "youtube",
-      "videoId": "jmP26Byye6E",
-      "url": "https://www.youtube.com/shorts/jmP26Byye6E",
-      "title": "台中北區｜錦繡庭園世界｜一中商圈全新裝潢三房｜999萬",
-      "category": "看屋開箱",
-      "district": "北區",
-      "community": "錦繡庭園世界",
-      "pubDate": "2026-07-21",
-      "listingCodes": [
-        "1153118"
-      ],
-      "listingCode": "1153118",
       "cover": "oar2"
     },
     {
