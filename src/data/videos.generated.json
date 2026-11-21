@@ -1,11 +1,56 @@
 {
-  "generatedAt": "2026-11-20T20:21:40+08:00",
+  "generatedAt": "2026-11-21T20:13:06+08:00",
   "source": {
-    "registrySyncedAt": "2026-11-19 22:38",
+    "registrySyncedAt": "2026-11-20 22:38",
     "since": "2026-07-01"
   },
-  "count": 118,
+  "count": 117,
   "videos": [
+    {
+      "id": "yt-syRMm5T5qBY",
+      "platform": "youtube",
+      "videoId": "syRMm5T5qBY",
+      "url": "https://www.youtube.com/shorts/syRMm5T5qBY",
+      "title": "台中西區｜3房2廳2衛｜680萬",
+      "category": "看屋開箱",
+      "district": "西區",
+      "pubDate": "2026-11-20",
+      "listingCodes": [
+        "1235926"
+      ],
+      "listingCode": "1235926",
+      "cover": "oar2"
+    },
+    {
+      "id": "yt-8i-iU_Ncpb8",
+      "platform": "youtube",
+      "videoId": "8i-iU_Ncpb8",
+      "url": "https://www.youtube.com/shorts/8i-iU_Ncpb8",
+      "title": "台中北屯｜3房2廳2衛｜1686萬",
+      "category": "看屋開箱",
+      "district": "北屯區",
+      "pubDate": "2026-11-20",
+      "listingCodes": [
+        "1228223"
+      ],
+      "listingCode": "1228223",
+      "cover": "oar2"
+    },
+    {
+      "id": "yt-nVSe4iwl6wU",
+      "platform": "youtube",
+      "videoId": "nVSe4iwl6wU",
+      "url": "https://www.youtube.com/shorts/nVSe4iwl6wU",
+      "title": "台中南屯｜3房2廳2衛｜1198萬",
+      "category": "看屋開箱",
+      "district": "南屯區",
+      "pubDate": "2026-11-19",
+      "listingCodes": [
+        "1228339"
+      ],
+      "listingCode": "1228339",
+      "cover": "oar2"
+    },
     {
       "id": "yt-i-awJiSjvwc",
       "platform": "youtube",
@@ -64,21 +109,6 @@
         "1235896"
       ],
       "listingCode": "1235896",
-      "cover": "oar2"
-    },
-    {
-      "id": "yt-nVSe4iwl6wU",
-      "platform": "youtube",
-      "videoId": "nVSe4iwl6wU",
-      "url": "https://www.youtube.com/shorts/nVSe4iwl6wU",
-      "title": "台中南屯｜3房2廳2衛｜1198萬",
-      "category": "看屋開箱",
-      "district": "南屯區",
-      "pubDate": "2026-11-19",
-      "listingCodes": [
-        "1228339"
-      ],
-      "listingCode": "1228339",
       "cover": "oar2"
     },
     {
@@ -247,22 +277,6 @@
         "1228315"
       ],
       "listingCode": "1228315",
-      "cover": "oar2"
-    },
-    {
-      "id": "yt-RXWGx1SVtdE",
-      "platform": "youtube",
-      "videoId": "RXWGx1SVtdE",
-      "url": "https://www.youtube.com/shorts/RXWGx1SVtdE",
-      "title": "台中西屯｜鉅陞V市政｜3房2廳2衛｜3280萬→3180萬",
-      "category": "看屋開箱",
-      "district": "西屯區",
-      "community": "鉅陞V市政",
-      "pubDate": "2026-11-14",
-      "listingCodes": [
-        "1211202"
-      ],
-      "listingCode": "1211202",
       "cover": "oar2"
     },
     {
@@ -1093,22 +1107,6 @@
       "cover": "oar2"
     },
     {
-      "id": "yt-fL0gZuPH7rw",
-      "platform": "youtube",
-      "videoId": "fL0gZuPH7rw",
-      "url": "https://www.youtube.com/shorts/fL0gZuPH7rw",
-      "title": "台中西屯｜3房2廳2衛｜1298萬",
-      "category": "看屋開箱",
-      "district": "西屯區",
-      "pubDate": "2026-11-03",
-      "listingCodes": [
-        "1139908",
-        "1153173"
-      ],
-      "listingCode": "1153173",
-      "cover": "oar2"
-    },
-    {
       "id": "yt-BB6f1YjytMY",
       "platform": "youtube",
       "videoId": "BB6f1YjytMY",
@@ -1803,23 +1801,6 @@
         "1187632"
       ],
       "listingCode": "1187632",
-      "cover": "oar2"
-    },
-    {
-      "id": "yt-FX8TS124hXg",
-      "platform": "youtube",
-      "videoId": "FX8TS124hXg",
-      "url": "https://www.youtube.com/shorts/FX8TS124hXg",
-      "title": "台中西屯｜熊貓天下｜3房2廳2衛＋車位｜1298萬",
-      "category": "看屋開箱",
-      "district": "西屯區",
-      "community": "熊貓天下",
-      "pubDate": "2026-07-23",
-      "listingCodes": [
-        "1139908",
-        "1153173"
-      ],
-      "listingCode": "1153173",
       "cover": "oar2"
     },
     {
